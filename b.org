@@ -1,5 +1,14 @@
+#+hugo_base_dir: ./
+#+hugo_section: blog
+
+#+hugo_weight: auto
+#+hugo_auto_set_lastmod: t
+#+hugo_menu: :menu nil
+
+#+author: Will Clarke
+
 * Blog Ideas
-** Get things done > tech used
+** Get things done > tech used :tech:
 :PROPERTIES:
 :EXPORT_FILE_NAME: getting-things-done
 :EXPORT_DATE: 2019-09-10
@@ -10,7 +19,10 @@ Technology is a lever. It lets us do things.
 As Steve Jobs said:
 > Man is a toolmaker, has the ability to make a tool to amplify the amount of inherent ability that he has.
 
+
 {{< youtube 4x8wTj-n33A >}}
+
+
 
 The whole point of technology is that it let's us *do* things.
 
@@ -18,13 +30,15 @@ As a software engineer, it can be tempting to fall into the trap of spending loa
 
 - Which shiny new thing should I use?
 - Is there a vim plugin to save me 3 seconds per day?
-- Can I [[https://github.com/NARKOZ/hacker-scripts][automate a coffee machine from my terminal?]] 
+- Can I [[https://github.com/NARKOZ/hacker-scripts][automate a coffee machine from my terminal?]]
 
 These are all loads of fun, and you learn loads by doing them... but the end result is just that you'll be better at doing a (potentially very specific) job in the future.
 
-Technology can impact every facet of our lives for enormous good. We have the ability to improve the world *loads*... and there's more to technology than just a slick development environment. Maybe try finishing that side-project, or sitting down and thinking what you really want to *achieve*, rather than *how*.
+Technology can impact every facet of our lives for enormous good. We have the ability to improve the world *loads*... and there's more to technology than just a slick development environment.
 
-** Defaults are good. Try them out!
+Maybe try finishing that side-project, or sitting down and thinking what you really want to *achieve*, rather than *how*.
+
+** Defaults are good. Try them out! :tips:unix:
 :PROPERTIES:
 :EXPORT_FILE_NAME: defaults-are-good
 :EXPORT_DATE: 2019-08-10
@@ -32,15 +46,15 @@ Technology can impact every facet of our lives for enormous good. We have the ab
 
 Most defaults have been carefully thought out. It's worth at least looking over them before deciding that they're useless & old-fashioned.
 
-While it's true that many defaults are the result of some old-fashioned constraints (eg. QWERTY keyboard or the vim homerow being one key to the left), it may be worth your time just accepting their flawed premises and trying to use them anyway. There's value if people are also using them.
+While it's true that many defaults are the result of some old-fashioned constraints (eg. =QWERTY= keyboard or the vim homerow being one key to the left), it may be worth your time just accepting their flawed premises and trying to use them anyway. There's value if people are also using them.
 
-If your vim config is totally unique to you (or you're a dvorak user), you'll have a hard time pairing with someone else or SSH-ing into a server.
+If your vim config is totally unique to you (or you're a =dvorak= user), you'll have a hard time pairing with someone else or =SSH=-ing into a server.
 
 The creators of customisable products have hopefully thought long and hard about the best way to use *their* creations. They'll be far more invested in making it work well than you will and they'll have a vision of how they want their products being used.
 
 Sometimes it's sensible to just accept defaults.
 
-** Boring product names FTW
+** Boring product names FTW :tech:
 :PROPERTIES:
 :EXPORT_FILE_NAME: boring-product-names-ftw
 :EXPORT_DATE: 2019-07-11
@@ -50,166 +64,294 @@ It was a smaller version of another product called `cargo`, which did something 
 
 The question is, what should we call it?
 Here are some names we came up with:
-  - parcel
-  - package
-  - freight
-  - cargo-mini
-  - gateway
-  - specific-and-boring-product-description
-  - catalyst
+- =parcel=
+- =package=
+- =freight=
+- =cargo-mini=
+- =gateway=
+- =specific-and-boring-product-description=
+- =catalyst=
 
 Any guesses which are the best names?
 
-Our developers and users already knew about `cargo`. They had the mental context in their head. Because of this, `cargo-mini` makes sense as a smaller version of `cargo`.
-I'm quite a fan of absurdly verbose but specific names, so I'm also a fan of `specific-and-boring-product-description`
+Our developers and users already knew about =cargo=. They had the mental context in their head. Because of this, =cargo-mini= makes sense as a smaller version of =cargo=.
+I'm quite a fan of absurdly verbose but specific names, so I'm also a fan of =specific-and-boring-product-description=
 
-** document EVERYTHING!!!
+** Document EVERYTHING!!!
+:PROPERTIES:
+:EXPORT_FILE_NAME: document-everything
+:EXPORT_DATE: 2019-06-08
+:END:
 
-   code != documentation.
+People leave jobs all the time. People get run over by busses or win the lottery. People forget stuff.
 
-   Processes, etc..
-   information should not live inside people. Bus / lottery factor!
-** use cron jobs
-** automate repetitive tasks
-   but don't go overboard.
-   maybe try vim
+It's important to document things, especially technical things.
 
-** We should all know git
+#+BEGIN_SRC
+code != documentation
+#+END_SRC
+
+Source code explains *how* things work... it's simply telling the computer the algorithm you want run.
+What's not often mentioned is wider context.
+
+- Why do we want this thing at all?
+- What problem does it solve?
+- Why don't we approach this in a different way?
+- What are the current constraints? Is there time / business / financial pressure?
+- Is this meant to be scalable or an MVP?
+- What does this object / table represent?
+
+Use comments and documentation widely to make it easier for the next person - often you.
+
+** Cron is cool
+:PROPERTIES:
+:EXPORT_FILE_NAME: document-everything
+:EXPORT_DATE: 2019-06-08
+:END:
+Cron jobs have a slightly terrifying syntax.
+But there are loads of easy online [[https://crontab-generator.org/][tools like this one to help.]]
+
+It can be really useful to have background jobs doing all sorts of things in the background.
+
+The whole point of computers is to automate stuff... and =cron= is a really easy UNIX-y way of doing this.
+
+Disclaimer: For one-off scripts, cron jobs can be great...but it doesn't scale particularly well. Eg. if you need to syncronise lots of background jobs, it's probably better to look for something else.
+
+** Automate Repetitive Tasks
+:PROPERTIES:
+:EXPORT_FILE_NAME: automate-repetitive-tasks
+:EXPORT_DATE: 2019-05-02
+:END:
+
+Computers are good at doing boring things.
+Humans are too, but humans are also good at doing other, more interesting and creative things.
+
+In every job I've been at, there have always been loads of ways to save human time by telling a computer to do some stuff instead of doing it manually.
+This is especially true for non-super-technical areas; there could be lots of delicious low-hanging fruit.
+
+You don't even need to be able to code to do loads of stuff; services like [[https://ifttt.com/][IFTTT]] or [[https://docs.google.com/spreadsheets/][Google sheets]] have lots of automatable functionality baked in.
+
+In the past I've save loads of time by completely automating:
+- Sending daily emails to clients about latest statistics (with some top-level analysis)
+- Creation & management of Adwords campaigns
+- Daily parsing of reports (& inserting into a database)
+
+https://imgs.xkcd.com/comics/is_it_worth_the_time_2x.png
+
+The trick here is to pick your battles. Some tasks are easy to automate (those which involve structured data). Others are difficult.
+But always remember to keep tabs on where you spend your time; you may be able to free up a lot of time by some simple automation!
+
+** Maybe try vim
+:PROPERTIES:
+:EXPORT_FILE_NAME: maybe-try-vim
+:EXPORT_DATE: 2019-04-08
+:END:
+=vim= people like to talk about =vim= and often don't shut up about it.
+
+It takes a long time to learn & adapt to modal editing and all of =vim='s esoteric keybindings.
+
+Despite that, it's really popular. Perhaps people are onto something?
+
+If you edit text for a living, it's probably worth your while looking into learning the basics of =vim= properly (no arrow keys, that's cheating!).
+
+
+[[file:static/images/doit.gif]]
+
+** TODO We should all know git
+:PROPERTIES:
+:EXPORT_FILE_NAME: we-should-all-know-git-well
+:EXPORT_DATE: 2019-03-08
+:END:
+
+Version control's mega important.
+I bet you used it even at school, saving stuff as =important-thing-VERSION-4.doc=
+
+There's so much to learn about git. And most of us could afford to know a bit more about how it works.
+
+- =reflog= has saved my life many times
+- shortcuts like =git checkout -= save loads of time
+- [[https://github.com/git/git/tree/master/contrib/completion][completion scripts]] can make your life easier & show options you didn't know about
+
+If you don't already, it's probably worth curating a =~/.gitconfig= that you check into... =git=... and store somewhere.
+
 ** jq is a cool tool
-   #+begin_src bash
-     .Chart.Purchases | map((. | first | tostring) + ", " + (. | last  | tostring) )
-   #+end_src
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+#+begin_src bash
+.Chart.Purchases | map((. | first | tostring) + ", " + (. | last  | tostring) )
+#+end_src
 ** Have a broad understanding of what different tools can do for you
-   eg. jq
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+eg. jq
 ** how to find rows which don't exist in a table
-   #+begin_src sql
-     WITH expected(email) AS (
-       VALUES
-       ('bob'),
-       ('andrea')
-     )
-     SELECT email
-       FROM expected
-              LEFT JOIN table t1
-                  ON t1.email_address = expected.email;
-   #+end_src
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+#+begin_src sql
+WITH expected(email) AS (
+VALUES
+('bob'),
+('andrea')
+)
+SELECT email
+FROM expected
+LEFT JOIN table t1
+ON t1.email_address = expected.email;
+#+end_src
 ** learn some basic sql
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
 ** learn some basic excel / google spreadsheet operations
-   Use the right tool for the job!
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+Use the right tool for the job!
 ** Record shell commands / sql queries you run
-   they may be useful in the future!
-   Documentation!
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+they may be useful in the future!
+Documentation!
 ** get comfortable creating bash executables
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+** Force a script to run as root (sudo)
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: force-a-script-to-run-sudo
+# :EXPORT_DATE: 2019-01-08
+# :END:
+Just chuck this in at the start of a bash script and it'll ensure the rest of the script is run by the root user:
+#+begin_src sh
+#!/usr/bin/env sh
+[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
+#+end_src
+
 ** keep track of handy hints
-   eg.
-   #+begin_src sh
-     #!/usr/bin/env sh
-     [ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
-   #+end_src
+# :PROPERTIES:
+# :EXPORT_FILE_NAME: document-everything
+# :EXPORT_DATE: 2019-06-08
+# :END:
+eg.
+#+begin_src sh
+#!/usr/bin/env sh
+[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
+#+end_src
 ** Take logging seriously
-   [2020-01-16 Thu 08:35]
+[2020-01-16 Thu 08:35]
 ** learn the difference between functions & methods
-   [2020-01-16 Thu 08:37]
+[2020-01-16 Thu 08:37]
 ** `.env` files are your friend
-   [2020-01-16 Thu 08:37]
+[2020-01-16 Thu 08:37]
 ** use ssh git github
-   git config --global url."git@github.com:".insteadOf "https://github.com/"
-   [2020-01-16 Thu 08:38]
+git config --global url."git@github.com:".insteadOf "https://github.com/"
+[2020-01-16 Thu 08:38]
 ** Priotisation is stupidly important.
-   Your job isn't to just make stuff. It's to make the *right* stuff
-   [2020-01-16 Thu 08:38]
+Your job isn't to just make stuff. It's to make the *right* stuff
+[2020-01-16 Thu 08:38]
 ** Learn the basics of HTTP
-   Get comfy with command-line cURL request
-   [2020-01-16 Thu 08:39]
+Get comfy with command-line cURL request
+[2020-01-16 Thu 08:39]
 ** map out all domain concepts before doing anything involving them
-   You need to *understand* things before you can fix / improve / work on them
-   [2020-01-16 Thu 08:39]
+You need to *understand* things before you can fix / improve / work on them
+[2020-01-16 Thu 08:39]
 ** have fun along the way
-   [2020-01-16 Thu 08:40]
+[2020-01-16 Thu 08:40]
 ** try static typing.. it can catch loads of bugs
-   [2020-01-16 Thu 08:40]
+[2020-01-16 Thu 08:40]
 ** guids > ids normally
-   [2020-01-16 Thu 08:40]
+[2020-01-16 Thu 08:40]
 ** get familiar with ssh & ~/.ssh/config  && /etc/hosts files
-   [2020-01-16 Thu 08:41]
+[2020-01-16 Thu 08:41]
 ** screenshots help a lot
-   [2020-01-16 Thu 08:49]
+[2020-01-16 Thu 08:49]
 ** over communicationn is tricky
-   [2020-01-16 Thu 08:49]
+[2020-01-16 Thu 08:49]
 ** formatting & style guides are overrated
-   [2020-01-16 Thu 08:49]
+[2020-01-16 Thu 08:49]
 ** don't over-optimise
-   [2020-01-16 Thu 08:50]
+[2020-01-16 Thu 08:50]
 ** don't over-promise
-   [2020-01-16 Thu 08:50]
+[2020-01-16 Thu 08:50]
 ** haters gonna hate
-   [2020-01-16 Thu 08:54]
+[2020-01-16 Thu 08:54]
 ** scepticism is good
-   [2020-01-16 Thu 08:55]
+[2020-01-16 Thu 08:55]
 ** read documentation - not just stack overflow
-   [2020-01-16 Thu 09:38]
+[2020-01-16 Thu 09:38]
 ** adding sql indexes is cool
-   [2020-01-16 Thu 09:44]
+[2020-01-16 Thu 09:44]
 ** Get used to using AWS / GCP
-   [2020-01-16 Thu 12:59]
+[2020-01-16 Thu 12:59]
 ** Don't just build things! Complete them! Market them!
-   Try to create a side-hustle or business or portfolio
-   [2020-01-16 Thu 12:59]
+Try to create a side-hustle or business or portfolio
+[2020-01-16 Thu 12:59]
 ** Invest time in staring at Trello / Jira. You're also a product person
-   [2020-01-16 Thu 13:06]
+[2020-01-16 Thu 13:06]
 ** lambdas are the future! serverless FTW
-   [2020-01-16 Thu 13:06]
+[2020-01-16 Thu 13:06]
 ** Keep learning, reading and absorbing stuff
-   [2020-01-16 Thu 13:06]
+[2020-01-16 Thu 13:06]
 ** Learn more than one language. Get a broad base
-   [2020-01-16 Thu 13:07]
+[2020-01-16 Thu 13:07]
 ** Enjoy it!
-   [2020-01-16 Thu 13:07]
+[2020-01-16 Thu 13:07]
 ** Ask stupid questions
-   Be confident
-   [2020-01-16 Thu 13:08]
+Be confident
+[2020-01-16 Thu 13:08]
 ** Be confident
-   you're getting paid to work with people rather than be shy or polite
-   [2020-01-16 Thu 13:09]
+you're getting paid to work with people rather than be shy or polite
+[2020-01-16 Thu 13:09]
 ** Move slowly
-   but deliberately
-   [2020-01-16 Thu 13:10]
+but deliberately
+[2020-01-16 Thu 13:10]
 ** keep things simple
 
 do things the simple way
 only generalise when you have to
 don't shy away from doing this manually
- [2020-01-16 Thu 13:11]
+[2020-01-16 Thu 13:11]
 ** Don't be scared to read some source code & try to understand it
- [2020-01-16 Thu 13:12]
+[2020-01-16 Thu 13:12]
 ** time-box things.
 Don't get carried away and spend all your time doing something inefficient
- [2020-01-16 Thu 13:12]
+[2020-01-16 Thu 13:12]
 ** Reevaluate priorities reguarly
 pomodoro technique
- [2020-01-16 Thu 13:13]
+[2020-01-16 Thu 13:13]
 ** Sometimes you just need a load of time to do things
- [2020-01-16 Thu 13:13]
+[2020-01-16 Thu 13:13]
 ** learn some s3 command lines
- [2020-01-21 Tue 21:35]
+[2020-01-21 Tue 21:35]
 https://github.com/aws-samples/aws-modern-application-workshop/ is good
 ** Learn the basics - don't take shortcuts.
 Eg. implement password hashing and salting yourself, rather than a library. It's important to see how stuff works
- [2020-01-22 Wed 08:03]
+[2020-01-22 Wed 08:03]
 ** Document starting a new Hugo blog
- [2020-01-27 Mon 07:36]
+[2020-01-27 Mon 07:36]
 ** Document X230 set up!
- [2020-01-27 Mon 07:36]
+[2020-01-27 Mon 07:36]
 ** Standing desks are cool
- [2020-01-27 Mon 07:44]
+[2020-01-27 Mon 07:44]
 ** exercise is important - just walking's fine. good for clearing the mind
- [2020-01-27 Mon 07:44]
+[2020-01-27 Mon 07:44]
 ** Wake up early and do stuff in the morning
- [2020-01-27 Mon 07:44]
+[2020-01-27 Mon 07:44]
 ** Get used to using docker!±
 docker run -it --rm alpine mkpasswd
- [2020-01-28 Tue 15:54]
+[2020-01-28 Tue 15:54]
 ** passwd & /etc/shadow & /etc/passwd
- [2020-01-29 Wed 07:28]
+[2020-01-29 Wed 07:28]
 ** use git everywhere!
- [2020-02-03 Mon 13:41]
+[2020-02-03 Mon 13:41]
