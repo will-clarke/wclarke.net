@@ -7,6 +7,12 @@
 
 #+author: Will Clarke
 
+# How to use this:
+# - Make sure you're using emacs
+# - Make sure you've got =ox-hugo= installed (DOOM ftw)
+# - SPC M e H A
+# (secondary -> export -> hugo -> all)
+
 * Blog Ideas
 ** Get things done > tech used :tech:
 :PROPERTIES:
@@ -175,34 +181,56 @@ There's so much to learn about git. And most of us could afford to know a bit mo
 If you don't already, it's probably worth curating a =~/.gitconfig= that you check into... =git=... and store somewhere.
 
 ** jq is a cool tool
-# :PROPERTIES:
-# :EXPORT_FILE_NAME: document-everything
-# :EXPORT_DATE: 2019-06-08
-# :END:
+:PROPERTIES:
+:EXPORT_FILE_NAME: jq-is-a-cool-tool
+:EXPORT_DATE: 2018-06-08
+:END:
+[[https://stedolan.github.io/jq/][=jq=]] is pretty cool.
+It's a command-line utility that interacts with =JSON=.
+
+I only recently discovered that it does *loads* more than just pretty-printing =JSON=.
+
+You can =map= over it and do really quite complex data processing with =jq=.
+
+I recently had to extract some data from an API and ended up piping into this:
+
 #+begin_src bash
-.Chart.Purchases | map((. | first | tostring) + ", " + (. | last  | tostring) )
+jq '.Chart.Purchases | map((. | first | tostring) + ", " + (. | last  | tostring) )'
 #+end_src
-** Have a broad understanding of what different tools can do for you
+
+It's really flexible and nice to use!
+
+I'd recommend people have a quick browse through the [[https://stedolan.github.io/jq/tutorial/][jq examples and tutorial]] just so they know the full extent of what =jq= can do.
+
+** TODO Have a broad understanding of what different tools can do for you
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
 eg. jq
-** how to find rows which don't exist in a table
-# :PROPERTIES:
-# :EXPORT_FILE_NAME: document-everything
-# :EXPORT_DATE: 2019-06-08
-# :END:
+** How to find rows which don't exist in a table
+:PROPERTIES:
+:EXPORT_FILE_NAME: find-sql-rows-which-dont-exist-in-table
+:EXPORT_DATE: 2020-01-08
+:END:
+
+I was recently stumped for a while trying to find rows that *didn't* exist in my SQL table.
+
+What I needed was to create a fake table (=WITH ...=), =JOIN= it onto my real table... and only select those which were =NULL= for the real table.
+
+In the following example, I'm trying to find whether either =bob= or =andrea= don't exist in the database:
+
 #+begin_src sql
 WITH expected(email) AS (
 VALUES
-('bob'),
-('andrea')
+('bob@example.com'),
+('andrea@example.com')
 )
 SELECT email
 FROM expected
-LEFT JOIN table t1
+LEFT JOIN my_real_table_name t1
 ON t1.email_address = expected.email;
+WHERE t1.email_address IS NULL
 #+end_src
 ** learn some basic sql
 # :PROPERTIES:
@@ -228,130 +256,105 @@ Documentation!
 # :EXPORT_DATE: 2019-06-08
 # :END:
 ** Force a script to run as root (sudo)
-# :PROPERTIES:
-# :EXPORT_FILE_NAME: force-a-script-to-run-sudo
-# :EXPORT_DATE: 2019-01-08
-# :END:
+:PROPERTIES:
+:EXPORT_FILE_NAME: force-a-script-to-run-sudo
+:EXPORT_DATE: 2019-01-08
+:END:
 Just chuck this in at the start of a bash script and it'll ensure the rest of the script is run by the root user:
 #+begin_src sh
 #!/usr/bin/env sh
 [ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
 #+end_src
 
+** Trying to get Go modules to play ball with private repos?
+:PROPERTIES:
+:EXPORT_FILE_NAME: go-modules-with-private-repos
+:EXPORT_DATE: 2020-02-08
+:END:
+=go= modules are wonderful. All go code should use them.
+
+It can still be a bit tricky getting private repos to work with =go mod=. Maybe these tips help... ¯\_(ツ)_/¯
+
+
+- Set up =SSH= keys with your version control vendor
+- Add the following to your =~/.gitconfig=:
+  #+BEGIN_SRC bash
+[url "ssh://git@github.com/"]
+	insteadOf = https://github.com/
+[url "ssh://git@gitlab.com/"]
+  insteadOf = https://gitlab.com/
+[url "ssh://git@bitbucket.org/"]
+  insteadOf = https://bitbucket.org/
+  #+END_SRC
+- Add the offending repo as a *private repo*:
+  #+BEGIN_SRC bash
+go env -w GOPRIVATE=gitlab.com/you/your-project,github.com/someone/their-project
+  #+END_SRC
+
+
 ** keep track of handy hints
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
-eg.
-#+begin_src sh
-#!/usr/bin/env sh
-[ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
-#+end_src
 ** Take logging seriously
-[2020-01-16 Thu 08:35]
 ** learn the difference between functions & methods
-[2020-01-16 Thu 08:37]
 ** `.env` files are your friend
-[2020-01-16 Thu 08:37]
 ** use ssh git github
 git config --global url."git@github.com:".insteadOf "https://github.com/"
-[2020-01-16 Thu 08:38]
 ** Priotisation is stupidly important.
 Your job isn't to just make stuff. It's to make the *right* stuff
-[2020-01-16 Thu 08:38]
 ** Learn the basics of HTTP
 Get comfy with command-line cURL request
-[2020-01-16 Thu 08:39]
 ** map out all domain concepts before doing anything involving them
 You need to *understand* things before you can fix / improve / work on them
-[2020-01-16 Thu 08:39]
 ** have fun along the way
-[2020-01-16 Thu 08:40]
 ** try static typing.. it can catch loads of bugs
-[2020-01-16 Thu 08:40]
 ** guids > ids normally
-[2020-01-16 Thu 08:40]
 ** get familiar with ssh & ~/.ssh/config  && /etc/hosts files
-[2020-01-16 Thu 08:41]
 ** screenshots help a lot
-[2020-01-16 Thu 08:49]
 ** over communicationn is tricky
-[2020-01-16 Thu 08:49]
 ** formatting & style guides are overrated
-[2020-01-16 Thu 08:49]
 ** don't over-optimise
-[2020-01-16 Thu 08:50]
 ** don't over-promise
-[2020-01-16 Thu 08:50]
 ** haters gonna hate
-[2020-01-16 Thu 08:54]
 ** scepticism is good
-[2020-01-16 Thu 08:55]
 ** read documentation - not just stack overflow
-[2020-01-16 Thu 09:38]
 ** adding sql indexes is cool
-[2020-01-16 Thu 09:44]
 ** Get used to using AWS / GCP
-[2020-01-16 Thu 12:59]
 ** Don't just build things! Complete them! Market them!
 Try to create a side-hustle or business or portfolio
-[2020-01-16 Thu 12:59]
 ** Invest time in staring at Trello / Jira. You're also a product person
-[2020-01-16 Thu 13:06]
 ** lambdas are the future! serverless FTW
-[2020-01-16 Thu 13:06]
 ** Keep learning, reading and absorbing stuff
-[2020-01-16 Thu 13:06]
 ** Learn more than one language. Get a broad base
-[2020-01-16 Thu 13:07]
 ** Enjoy it!
-[2020-01-16 Thu 13:07]
 ** Ask stupid questions
 Be confident
-[2020-01-16 Thu 13:08]
 ** Be confident
 you're getting paid to work with people rather than be shy or polite
-[2020-01-16 Thu 13:09]
 ** Move slowly
 but deliberately
-[2020-01-16 Thu 13:10]
 ** keep things simple
-
 do things the simple way
 only generalise when you have to
 don't shy away from doing this manually
-[2020-01-16 Thu 13:11]
 ** Don't be scared to read some source code & try to understand it
-[2020-01-16 Thu 13:12]
 ** time-box things.
 Don't get carried away and spend all your time doing something inefficient
-[2020-01-16 Thu 13:12]
 ** Reevaluate priorities reguarly
 pomodoro technique
-[2020-01-16 Thu 13:13]
 ** Sometimes you just need a load of time to do things
-[2020-01-16 Thu 13:13]
 ** learn some s3 command lines
-[2020-01-21 Tue 21:35]
 https://github.com/aws-samples/aws-modern-application-workshop/ is good
 ** Learn the basics - don't take shortcuts.
 Eg. implement password hashing and salting yourself, rather than a library. It's important to see how stuff works
-[2020-01-22 Wed 08:03]
 ** Document starting a new Hugo blog
-[2020-01-27 Mon 07:36]
 ** Document X230 set up!
-[2020-01-27 Mon 07:36]
 ** Standing desks are cool
-[2020-01-27 Mon 07:44]
 ** exercise is important - just walking's fine. good for clearing the mind
-[2020-01-27 Mon 07:44]
 ** Wake up early and do stuff in the morning
-[2020-01-27 Mon 07:44]
 ** Get used to using docker!±
 docker run -it --rm alpine mkpasswd
-[2020-01-28 Tue 15:54]
 ** passwd & /etc/shadow & /etc/passwd
-[2020-01-29 Wed 07:28]
 ** use git everywhere!
-[2020-02-03 Mon 13:41]

@@ -2,7 +2,7 @@
 title = "Boring product names FTW"
 author = ["Will Clarke"]
 date = 2019-07-11
-lastmod = 2020-07-06T17:27:31+01:00
+lastmod = 2020-07-07T13:57:33+01:00
 tags = ["tech"]
 draft = false
 weight = 2003
@@ -17,13 +17,13 @@ It was a smaller version of another product called \`cargo\`, which did somethin
 The question is, what should we call it?
 Here are some names we came up with:
 
--   `parcel`
--   `package`
--   `freight`
--   `cargo-mini`
--   `gateway`
--   `specific-and-boring-product-description`
--   `catalyst`
+- `parcel`
+- `package`
+- `freight`
+- `cargo-mini`
+- `gateway`
+- `specific-and-boring-product-description`
+- `catalyst`
 
 Any guesses which are the best names?
 

@@ -2,7 +2,7 @@
 title = "Cron is cool"
 author = ["Will Clarke"]
 date = 2019-06-08
-lastmod = 2020-07-06T17:27:32+01:00
+lastmod = 2020-07-07T13:57:34+01:00
 draft = false
 weight = 2005
 [menu.nil]

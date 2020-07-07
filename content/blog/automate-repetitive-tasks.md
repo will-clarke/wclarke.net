@@ -2,7 +2,7 @@
 title = "Automate Repetitive Tasks"
 author = ["Will Clarke"]
 date = 2019-05-02
-lastmod = 2020-07-06T17:27:32+01:00
+lastmod = 2020-07-07T13:57:35+01:00
 draft = false
 weight = 2006
 [menu.nil]
@@ -20,9 +20,9 @@ You don't even need to be able to code to do loads of stuff; services like [IFTT
 
 In the past I've save loads of time by completely automating:
 
--   Sending daily emails to clients about latest statistics (with some top-level analysis)
--   Creation & management of Adwords campaigns
--   Daily parsing of reports (& inserting into a database)
+- Sending daily emails to clients about latest statistics (with some top-level analysis)
+- Creation & management of Adwords campaigns
+- Daily parsing of reports (& inserting into a database)
 
 {{< figure src="https://imgs.xkcd.com/comics/is%5Fit%5Fworth%5Fthe%5Ftime%5F2x.png" >}}
 

@@ -2,7 +2,7 @@
 title = "Maybe try vim"
 author = ["Will Clarke"]
 date = 2019-04-08
-lastmod = 2020-07-06T17:27:32+01:00
+lastmod = 2020-07-07T13:57:36+01:00
 draft = false
 weight = 2007
 [menu.nil]
