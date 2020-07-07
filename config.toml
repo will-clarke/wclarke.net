@@ -7,10 +7,10 @@ baseURL = "https://example.org/"
 copyright = "© {year}"
 
 # Add your Disqus shortname here.
-# disqusShortname = ""
+disqusShortname = "willclarke0"
 
 # Add your Google Analytics identifier: UA-XXXXXXXX-X
-# googleAnalytics = "" 
+googleAnalytics = "UA-171841684-1"
 
 # Optional params
 [params]
