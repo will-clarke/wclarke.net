@@ -1,6 +1,8 @@
 $(document).ready(function () {
   $("#nyan-button").click(function (e) {
     e.preventDefault();
+    $("#nav").css("background", "");
+    $("#nav").css("background-color", "");
 
     $("body").prepend('<audio id="nyan-audio" src="/sounds/nyan.mp3"></audio>');
 
