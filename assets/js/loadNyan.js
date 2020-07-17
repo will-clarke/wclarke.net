@@ -1,6 +1,4 @@
 $(document).ready(function () {
-  $(".nav__list").append('<li><a href="" id="nyan-button">party</a></li>');
-
   $("#nyan-button").click(function (e) {
     e.preventDefault();
 
