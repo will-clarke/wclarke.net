@@ -26,6 +26,7 @@ googleAnalytics = "UA-171841684-1"
   # instagram = "https://instagram.com/<your handle>"
   linkedin = "https://www.linkedin.com/in/wmmclarke/"
   # youtube = "https://www.youtube.com/channel/<your channel>"
+  email = "mailto:wmmclarke@gmail.com"
   
   # Titles for your icons (shown as tooltips), and also their display order.
   # Currently, these icons are supported: 
