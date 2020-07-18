@@ -47,10 +47,11 @@ googleAnalytics = "UA-171841684-1"
 
 # Controls the navigation
 [[menu.main]]
-  identifier = "about"
-  name = "about"
-  title = "About"
+  identifier = "me"
+  name = "me"
+  title = "me"
   url = "/"
+  weight = "10000"
 
 [[menu.main]]
   identifier = "blog"
