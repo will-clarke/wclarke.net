@@ -20,6 +20,23 @@ $(document).ready(function () {
 
   $("#nyan-button").click(function (e) {
     e.preventDefault();
+
+    // if mobile, make sure we can exit nicely
+    if ($("body").width() < 800) {
+      const body = document.querySelector("body");
+      body.classList.toggle("nav--active");
+
+      // please don't judge me. You shouldn't be looking here.
+      // And I'm not really a front end developer. Obviously.
+      $("body").append(
+        "<a href='' id='close' style='margin-left:auto;margin-right:auto;bottom:-4px;position:fixed;font-size:200%'><button class='close' style='font-size:200%;background-color:#31B0D5;color:white;padding:10px 20px;border-radius:10px;border-color:#46b8da;'>Enough</button></a>"
+      );
+      var width = $("body").width();
+      var centerWidth = width / 2;
+      var buttonWidth = $("#close").width() / 2;
+      $("#close").css("left", centerWidth - buttonWidth + "px");
+    }
+
     $("#nav").css("background", "");
     $("#nav").css("background-color", "");
 
