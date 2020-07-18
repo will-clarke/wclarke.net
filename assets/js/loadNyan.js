@@ -1,4 +1,23 @@
 $(document).ready(function () {
+  var backgroundColour;
+  var navColour;
+  $("#nyan-button").hover(
+    function () {
+      backgroundColour = $("body").css("background");
+      navColour = $("#nav").css("background");
+      $("body").css("background", "#0f4d8f");
+      $("#nav").css("background", "#0f4d8f");
+    },
+    function () {
+      $("body").css("background", backgroundColour);
+      $("#nav").css("background", navColour);
+      //   $("#nyan-button").wrap("<marquee direction='left'></marquee>"),
+      //     function () {
+      //       $("#nyan-button").unwrap();
+      //     };
+    }
+  );
+
   $("#nyan-button").click(function (e) {
     e.preventDefault();
     $("#nav").css("background", "");
