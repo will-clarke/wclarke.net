@@ -2,7 +2,7 @@ serve:
 	hugo serve
 
 deploy: compile
-	hugo deploy --maxDeletes -1
+	hugo deploy
 
 compile:
 	hugo

@@ -12,6 +12,8 @@ disqusShortname = "willclarke0"
 # Add your Google Analytics identifier: UA-XXXXXXXX-X
 googleAnalytics = "UA-171841684-1"
 
+pluralizelisttitles = false
+
 # Optional params
 [params]
   # Follow the Hugo date/time format reference here: 
