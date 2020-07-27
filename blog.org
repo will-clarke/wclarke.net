@@ -25,7 +25,7 @@ Just chuck this in at the start of a bash script and it'll ensure the rest of th
 [ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
 #+end_src
 
-** Trying to get Go modules to play ball with private repos? :golang:g
+** Trying to get Go modules to play ball with private repos? :golang:
 :PROPERTIES:
 :EXPORT_FILE_NAME: go-modules-with-private-repos
 :EXPORT_DATE: 2020-07-08
@@ -94,7 +94,7 @@ LEFT JOIN my_real_table_name t1
 ON t1.email_address = expected.email;
 WHERE t1.email_address IS NULL
 #+end_src
-** Document EVERYTHING!!!
+** Document EVERYTHING!!! :documentation:
 :PROPERTIES:
 :EXPORT_FILE_NAME: document-everything
 :EXPORT_DATE: 2020-03-01
@@ -120,7 +120,7 @@ What's not often mentioned is wider context.
 
 Use comments and documentation widely to make it easier for the next person - often you.
 
-** Get things done > tech used :product:tech:p
+** Get things done > tech used :product:tech:
 :PROPERTIES:
 :EXPORT_FILE_NAME: getting-things-done
 :EXPORT_DATE: 2019-12-10
@@ -257,7 +257,7 @@ https://imgs.xkcd.com/comics/is_it_worth_the_time_2x.png
 The trick here is to pick your battles. Some tasks are easy to automate (those which involve structured data). Others are difficult.
 But always remember to keep tabs on where you spend your time; you may be able to free up a lot of time by some simple automation!
 
-** jq is a cool tool :bash:unix:l
+** jq is a cool tool :bash:unix:
 :PROPERTIES:
 :EXPORT_FILE_NAME: jq-is-a-cool-tool
 :EXPORT_DATE: 2018-06-08

@@ -1,13 +1,14 @@
 +++
-title = "jq is a cool tool :bash:unix:l"
+title = "jq is a cool tool"
 author = ["Will Clarke"]
 date = 2018-06-08
-lastmod = 2020-07-27T16:43:40+01:00
+lastmod = 2020-07-27T16:47:30+01:00
+tags = ["bash", "unix"]
 draft = false
 weight = 2012
 [menu.nil]
   weight = 2012
-  identifier = "jq-is-a-cool-tool-bash-unix-l"
+  identifier = "jq-is-a-cool-tool"
 +++
 
 [`jq`](https://stedolan.github.io/jq/) is pretty cool.

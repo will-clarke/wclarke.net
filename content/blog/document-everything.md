@@ -2,7 +2,8 @@
 title = "Document EVERYTHING!!!"
 author = ["Will Clarke"]
 date = 2020-03-01
-lastmod = 2020-07-27T16:43:34+01:00
+lastmod = 2020-07-27T16:47:21+01:00
+tags = ["documentation"]
 draft = false
 weight = 2005
 [menu.nil]

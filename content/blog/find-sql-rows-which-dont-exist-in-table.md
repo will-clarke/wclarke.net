@@ -2,7 +2,7 @@
 title = "How to find rows which don't exist in a table"
 author = ["Will Clarke"]
 date = 2020-01-08
-lastmod = 2020-07-27T16:43:33+01:00
+lastmod = 2020-07-27T16:47:21+01:00
 tags = ["sql"]
 draft = false
 weight = 2004

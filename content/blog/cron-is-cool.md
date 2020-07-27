@@ -2,7 +2,7 @@
 title = "Cron is cool"
 author = ["Will Clarke"]
 date = 2019-06-08
-lastmod = 2020-07-27T16:43:37+01:00
+lastmod = 2020-07-27T16:47:25+01:00
 tags = ["unix", "shell", "bash"]
 draft = false
 weight = 2010

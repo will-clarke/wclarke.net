@@ -1,13 +1,14 @@
 +++
-title = "Trying to get Go modules to play ball with private repos? :golang:g"
+title = "Trying to get Go modules to play ball with private repos?"
 author = ["Will Clarke"]
 date = 2020-07-08
-lastmod = 2020-07-27T16:43:27+01:00
+lastmod = 2020-07-27T16:47:20+01:00
+tags = ["golang"]
 draft = false
 weight = 2002
 [menu.nil]
   weight = 2002
-  identifier = "trying-to-get-go-modules-to-play-ball-with-private-repos-golang-g"
+  identifier = "trying-to-get-go-modules-to-play-ball-with-private-repos"
 +++
 
 `go` modules are wonderful. All go code should use them.
