@@ -2,11 +2,12 @@
 title = "Maybe try vim"
 author = ["Will Clarke"]
 date = 2019-04-08
-lastmod = 2020-07-27T16:31:55+01:00
+lastmod = 2020-07-27T16:43:41+01:00
+tags = ["vim"]
 draft = false
-weight = 2012
+weight = 2013
 [menu.nil]
-  weight = 2012
+  weight = 2013
   identifier = "maybe-try-vim"
 +++
 

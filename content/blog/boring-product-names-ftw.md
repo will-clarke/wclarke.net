@@ -2,12 +2,12 @@
 title = "Boring product names FTW"
 author = ["Will Clarke"]
 date = 2019-07-11
-lastmod = 2020-07-27T16:31:52+01:00
-tags = ["tech"]
+lastmod = 2020-07-27T16:43:36+01:00
+tags = ["product", "tech"]
 draft = false
-weight = 2007
+weight = 2008
 [menu.nil]
-  weight = 2007
+  weight = 2008
   identifier = "boring-product-names-ftw"
 +++
 

@@ -2,7 +2,8 @@
 title = "Force a script to run as root (sudo)"
 author = ["Will Clarke"]
 date = 2020-07-16
-lastmod = 2020-07-27T16:31:48+01:00
+lastmod = 2020-07-27T16:43:26+01:00
+tags = ["unix", "bash"]
 draft = false
 weight = 2001
 [menu.nil]

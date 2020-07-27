@@ -1,12 +1,12 @@
 +++
 title = "Enjoy it!"
 author = ["Will Clarke"]
-date = 2020-07-27
-lastmod = 2020-07-27T16:31:56+01:00
+date = 2020-05-27
+lastmod = 2020-07-27T16:43:35+01:00
 draft = false
-weight = 2014
+weight = 2007
 [menu.nil]
-  weight = 2014
+  weight = 2007
   identifier = "enjoy-it"
 +++
 

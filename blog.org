@@ -14,7 +14,7 @@
 # (secondary -> export -> hugo -> all)
 
 * Blog Ideas
-** Force a script to run as root (sudo)
+** Force a script to run as root (sudo) :unix:bash:
 :PROPERTIES:
 :EXPORT_FILE_NAME: force-a-script-to-run-sudo
 :EXPORT_DATE: 2020-07-16
@@ -25,7 +25,7 @@ Just chuck this in at the start of a bash script and it'll ensure the rest of th
 [ `whoami` = root ] || { sudo "$0" "$@"; exit $?; }
 #+end_src
 
-** Trying to get Go modules to play ball with private repos?
+** Trying to get Go modules to play ball with private repos? :golang:g
 :PROPERTIES:
 :EXPORT_FILE_NAME: go-modules-with-private-repos
 :EXPORT_DATE: 2020-07-08
@@ -49,7 +49,7 @@ It can still be a bit tricky getting private repos to work with =go mod=. Maybe 
   #+BEGIN_SRC bash
 go env -w GOPRIVATE=gitlab.com/you/your-project,github.com/someone/their-project
   #+END_SRC
-
+:
 ** Ask stupid questions
 :PROPERTIES:
 :EXPORT_FILE_NAME: ask-stupid-questions
@@ -70,7 +70,7 @@ Here are some stupid questions in case you can't think of any off the top of you
 - Why are we doing this this way? Could this approach work?
 - How are we measuring X?
 
-** How to find rows which don't exist in a table
+** How to find rows which don't exist in a table :sql:
 :PROPERTIES:
 :EXPORT_FILE_NAME: find-sql-rows-which-dont-exist-in-table
 :EXPORT_DATE: 2020-01-08
@@ -120,7 +120,7 @@ What's not often mentioned is wider context.
 
 Use comments and documentation widely to make it easier for the next person - often you.
 
-** Get things done > tech used :tech:
+** Get things done > tech used :product:tech:p
 :PROPERTIES:
 :EXPORT_FILE_NAME: getting-things-done
 :EXPORT_DATE: 2019-12-10
@@ -150,7 +150,37 @@ Technology can impact every facet of our lives for enormous good. We have the ab
 
 Maybe try finishing that side-project, or sitting down and thinking what you really want to *achieve*, rather than *how*.
 
-** Boring product names FTW :tech:
+** Enjoy it!
+:PROPERTIES:
+:EXPORT_FILE_NAME: enjoy-it
+:EXPORT_DATE: 2020-05-27
+:END:
+You're likely to spend a significant percentage of your waking life working. You may as well try to enjoy it.
+
+Money's kinda pointless if you're miserable earning and spending it.
+
+If you're doing something you don't like, you should seriously consider making a change.
+
+You can:
+- try to change your teams
+- try to change your hours
+- try to change your hour-flexibilty
+- try to change your jobs
+- try to change your company
+- try to change your projects
+- try to change your managers
+- try to change your industries
+- try to change the technology you work with
+- try to learn more stuff
+- try to change your perspectives:
+  - try to get more interested with what you do on a day-to-day way
+  - try to engage more with your company's *product*
+  - try to engage more with your company's *decisions*
+  - try to take more ownership over what you're doing. A wrong decision may be better than no decision at all.
+
+Life should be fun. Play around a bit and don't take anything toooo seriously. Enjoy it!
+
+** Boring product names FTW :product:tech:
 :PROPERTIES:
 :EXPORT_FILE_NAME: boring-product-names-ftw
 :EXPORT_DATE: 2019-07-11
@@ -189,7 +219,7 @@ The creators of customisable products have hopefully thought long and hard about
 
 Sometimes it's sensible to just accept defaults.
 
-** Cron is cool
+** Cron is cool :unix:shell:bash:
 :PROPERTIES:
 :EXPORT_FILE_NAME: cron-is-cool
 :EXPORT_DATE: 2019-06-08
@@ -227,7 +257,7 @@ https://imgs.xkcd.com/comics/is_it_worth_the_time_2x.png
 The trick here is to pick your battles. Some tasks are easy to automate (those which involve structured data). Others are difficult.
 But always remember to keep tabs on where you spend your time; you may be able to free up a lot of time by some simple automation!
 
-** jq is a cool tool
+** jq is a cool tool :bash:unix:l
 :PROPERTIES:
 :EXPORT_FILE_NAME: jq-is-a-cool-tool
 :EXPORT_DATE: 2018-06-08
@@ -249,7 +279,7 @@ It's really flexible and nice to use!
 
 I'd recommend people have a quick browse through the [[https://stedolan.github.io/jq/tutorial/][jq examples and tutorial]] just so they know the full extent of what =jq= can do.
 
-** Maybe try vim
+** Maybe try vim :vim::
 :PROPERTIES:
 :EXPORT_FILE_NAME: maybe-try-vim
 :EXPORT_DATE: 2019-04-08
@@ -265,7 +295,7 @@ If you edit text for a living, it's probably worth your while looking into learn
 
 [[file:static/images/doit.gif]]
 
-** We should all know git
+** We should all know git :git:
 :PROPERTIES:
 :EXPORT_FILE_NAME: we-should-all-know-git-well
 :EXPORT_DATE: 2019-03-08
@@ -288,7 +318,7 @@ If you don't already, it's probably worth curating a =~/.gitconfig= that you che
 # :EXPORT_DATE: 2019-06-08
 # :END:
 eg. jq
-** learn some basic sql
+** learn some basic sql :sql:
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
@@ -347,36 +377,6 @@ Try to create a side-hustle or business or portfolio
 ** lambdas are the future! serverless FTW
 ** Keep learning, reading and absorbing stuff
 ** Learn more than one language. Get a broad base
-** Enjoy it!
-:PROPERTIES:
-:EXPORT_FILE_NAME: enjoy-it
-:EXPORT_DATE: 2020-07-27
-:END:
-You're likely to spend a significant percentage of your waking life working. You may as well try to enjoy it.
-
-Money's kinda pointless if you're miserable earning and spending it.
-
-If you're doing something you don't like, you should seriously consider making a change.
-
-You can:
-- try to change your teams
-- try to change your hours
-- try to change your hour-flexibilty
-- try to change your jobs
-- try to change your company
-- try to change your projects
-- try to change your managers
-- try to change your industries
-- try to change the technology you work with
-- try to learn more stuff
-- try to change your perspectives:
-  - try to get more interested with what you do on a day-to-day way
-  - try to engage more with your company's *product*
-  - try to engage more with your company's *decisions*
-  - try to take more ownership over what you're doing. A wrong decision may be better than no decision at all.
-
-Life should be fun. Play around a bit and don't take anything toooo seriously. Enjoy it!
-
 ** Be confident
 you're getting paid to work with people rather than be shy or polite
 ** Move slowly

@@ -2,11 +2,12 @@
 title = "Cron is cool"
 author = ["Will Clarke"]
 date = 2019-06-08
-lastmod = 2020-07-27T16:31:53+01:00
+lastmod = 2020-07-27T16:43:37+01:00
+tags = ["unix", "shell", "bash"]
 draft = false
-weight = 2009
+weight = 2010
 [menu.nil]
-  weight = 2009
+  weight = 2010
   identifier = "cron-is-cool"
 +++
 

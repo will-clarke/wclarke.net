@@ -1,14 +1,13 @@
 +++
-title = "Get things done > tech used"
+title = "Get things done > tech used :product:tech:p"
 author = ["Will Clarke"]
 date = 2019-12-10
-lastmod = 2020-07-27T16:31:51+01:00
-tags = ["tech"]
+lastmod = 2020-07-27T16:43:35+01:00
 draft = false
 weight = 2006
 [menu.nil]
   weight = 2006
-  identifier = "get-things-done-tech-used"
+  identifier = "get-things-done-tech-used-product-tech-p"
 +++
 
 Technology is a lever. It lets us do things.
