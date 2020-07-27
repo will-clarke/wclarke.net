@@ -1,12 +1,12 @@
 +++
 title = "Force a script to run as root (sudo)"
 author = ["Will Clarke"]
-date = 2019-01-08
-lastmod = 2020-07-07T13:57:38+01:00
+date = 2020-07-16
+lastmod = 2020-07-27T16:31:48+01:00
 draft = false
-weight = 2011
+weight = 2001
 [menu.nil]
-  weight = 2011
+  weight = 2001
   identifier = "force-a-script-to-run-as-root--sudo"
 +++
 

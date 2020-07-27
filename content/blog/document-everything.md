@@ -1,20 +1,31 @@
 +++
-title = "Cron is cool"
+title = "Document EVERYTHING!!!"
 author = ["Will Clarke"]
-date = 2019-06-08
-lastmod = 2020-07-07T13:57:34+01:00
+date = 2020-03-01
+lastmod = 2020-07-27T16:31:51+01:00
 draft = false
 weight = 2005
 [menu.nil]
   weight = 2005
-  identifier = "cron-is-cool"
+  identifier = "document-everything"
 +++
 
-Cron jobs have a slightly terrifying syntax.
-But there are loads of easy online [tools like this one to help.](https://crontab-generator.org/)
+People leave jobs all the time. People get run over by busses or win the lottery. People forget stuff.
 
-It can be really useful to have background jobs doing all sorts of things in the background.
+It's important to document things, especially technical things.
 
-The whole point of computers is to automate stuff... and `cron` is a really easy UNIX-y way of doing this.
+```nil
+code != documentation
+```
 
-Disclaimer: For one-off scripts, cron jobs can be great...but it doesn't scale particularly well. Eg. if you need to syncronise lots of background jobs, it's probably better to look for something else.
+Source code explains **how** things work... it's simply telling the computer the algorithm you want run.
+What's not often mentioned is wider context.
+
+- Why do we want this thing at all?
+- What problem does it solve?
+- Why don't we approach this in a different way?
+- What are the current constraints? Is there time / business / financial pressure?
+- Is this meant to be scalable or an MVP?
+- What does this object / table represent?
+
+Use comments and documentation widely to make it easier for the next person - often you.

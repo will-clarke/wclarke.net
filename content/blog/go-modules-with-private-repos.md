@@ -1,12 +1,12 @@
 +++
 title = "Trying to get Go modules to play ball with private repos?"
 author = ["Will Clarke"]
-date = 2020-02-08
-lastmod = 2020-07-07T13:57:38+01:00
+date = 2020-07-08
+lastmod = 2020-07-27T16:31:49+01:00
 draft = false
-weight = 2012
+weight = 2002
 [menu.nil]
-  weight = 2012
+  weight = 2002
   identifier = "trying-to-get-go-modules-to-play-ball-with-private-repos"
 +++
 

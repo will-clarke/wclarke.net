@@ -2,11 +2,11 @@
 title = "jq is a cool tool"
 author = ["Will Clarke"]
 date = 2018-06-08
-lastmod = 2020-07-07T13:57:37+01:00
+lastmod = 2020-07-27T16:31:54+01:00
 draft = false
-weight = 2009
+weight = 2011
 [menu.nil]
-  weight = 2009
+  weight = 2011
   identifier = "jq-is-a-cool-tool"
 +++
 

@@ -2,12 +2,12 @@
 title = "Defaults are good. Try them out!"
 author = ["Will Clarke"]
 date = 2019-08-10
-lastmod = 2020-07-07T13:57:33+01:00
+lastmod = 2020-07-27T16:31:52+01:00
 tags = ["tips", "unix"]
 draft = false
-weight = 2002
+weight = 2008
 [menu.nil]
-  weight = 2002
+  weight = 2008
   identifier = "defaults-are-good-dot-try-them-out"
 +++
 

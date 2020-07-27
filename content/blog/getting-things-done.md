@@ -1,13 +1,13 @@
 +++
 title = "Get things done > tech used"
 author = ["Will Clarke"]
-date = 2019-09-10
-lastmod = 2020-07-07T13:57:32+01:00
+date = 2019-12-10
+lastmod = 2020-07-27T16:31:51+01:00
 tags = ["tech"]
 draft = false
-weight = 2001
+weight = 2006
 [menu.nil]
-  weight = 2001
+  weight = 2006
   identifier = "get-things-done-tech-used"
 +++
 

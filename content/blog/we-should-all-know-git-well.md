@@ -2,11 +2,11 @@
 title = "We should all know git"
 author = ["Will Clarke"]
 date = 2019-03-08
-lastmod = 2020-07-07T13:57:36+01:00
-draft = true
-weight = 2008
+lastmod = 2020-07-27T16:31:56+01:00
+draft = false
+weight = 2013
 [menu.nil]
-  weight = 2008
+  weight = 2013
   identifier = "we-should-all-know-git"
 +++
 
