@@ -2,7 +2,6 @@
 title = "Ask stupid questions"
 author = ["Will Clarke"]
 date = 2020-06-27
-lastmod = 2020-07-27T16:47:20+01:00
 draft = false
 weight = 2003
 [menu.nil]

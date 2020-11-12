@@ -2,7 +2,6 @@
 title = "We should all know git"
 author = ["Will Clarke"]
 date = 2019-03-08
-lastmod = 2020-07-27T16:47:31+01:00
 tags = ["git"]
 draft = false
 weight = 2014

@@ -2,7 +2,6 @@
 title = "Maybe try vim"
 author = ["Will Clarke"]
 date = 2019-04-08
-lastmod = 2020-07-27T16:47:31+01:00
 tags = ["vim"]
 draft = false
 weight = 2013

@@ -2,7 +2,6 @@
 title = "Get things done > tech used"
 author = ["Will Clarke"]
 date = 2019-12-10
-lastmod = 2020-07-27T16:47:22+01:00
 tags = ["product", "tech"]
 draft = false
 weight = 2006

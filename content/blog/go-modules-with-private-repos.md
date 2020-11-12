@@ -2,7 +2,6 @@
 title = "Trying to get Go modules to play ball with private repos?"
 author = ["Will Clarke"]
 date = 2020-07-08
-lastmod = 2020-07-27T16:47:20+01:00
 tags = ["golang"]
 draft = false
 weight = 2002

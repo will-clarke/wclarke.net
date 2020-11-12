@@ -2,7 +2,6 @@
 title = "Automate Repetitive Tasks"
 author = ["Will Clarke"]
 date = 2019-05-02
-lastmod = 2020-07-27T16:47:29+01:00
 draft = false
 weight = 2011
 [menu.nil]
