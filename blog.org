@@ -311,95 +311,137 @@ There's so much to learn about git. And most of us could afford to know a bit mo
 
 If you don't already, it's probably worth curating a =~/.gitconfig= that you check into... =git=... and store somewhere.
 
+** TODO Function Composition is cool :haskell:fp:
+:PROPERTIES:
+# :EXPORT_FILE_NAME: function-composition-is-lit
+:END:
+Function composition is kind of important - especially in functional languages.
+
+I recently was trying to do something in Haskell where I wanted to do a kind of "deep" =map=.
+
+The function =map= has the type signature of
+#+begin_src haskell
+Prelude> :t map
+map :: (a -> b) -> [a] -> [b]
+#+end_src
+
+What I wanted was:
+#+begin_src haskell
+notSureHowToImplement :: (a -> b) -> [[a]] -> [[b]]
+#+end_src
+
+I scrabbled around doing hacky and ugly things... until I realised that we should be able to use the default =map= function by calling it twice:
+
+Prelude> :t (.)
+(.) :: (b -> c) -> (a -> b) -> a -> c
+
+ (a -> b) -> ([a] -> [b])
+ (a -> b) -> ([a] -> [b])
+
+#+begin_src sh
+map . map is amazing
+:Prelude> :t (map . map)
+(map . map) :: (a -> b) -> [[a]] -> [[b]]
+Prelude> (map . map) (* 2) [[1,2,3],[4,5]]
+[[2,4,6],[8,10]]
+Prelude> :t map
+map :: (a -> b) -> [a] -> [b]
+#+end_src
+
+** TODO Golang type switching
+** TODO Nix is cool
+** TODO Home-manager works well
+** TODO GNU stow is an effective way of dealing with dotfiles
+** TODO S3 can deploy websites really easily!
 ** TODO Have a broad understanding of what different tools can do for you
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
 eg. jq
-** learn some basic sql :sql:
+** TODO learn some basic sql :sql:
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
-** learn some basic excel / google spreadsheet operations
+** TODO learn some basic excel / google spreadsheet operations
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
 Use the right tool for the job!
-** Record shell commands / sql queries you run
+** TODO Record shell commands / sql queries you run
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
 they may be useful in the future!
 Documentation!
-** get comfortable creating bash executables
+** TODO get comfortable creating bash executables
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
-** keep track of handy hints
+** TODO keep track of handy hints
 # :PROPERTIES:
 # :EXPORT_FILE_NAME: document-everything
 # :EXPORT_DATE: 2019-06-08
 # :END:
-** Take logging seriously
-** learn the difference between functions & methods
-** `.env` files are your friend
-** use ssh git github
+** TODO Take logging seriously
+** TODO learn the difference between functions & methods
+** TODO `.env` files are your friend
+** TODO use ssh git github
 git config --global url."git@github.com:".insteadOf "https://github.com/"
-** Priotisation is stupidly important.
+** TODO Priotisation is stupidly important.
 Your job isn't to just make stuff. It's to make the *right* stuff
-** Learn the basics of HTTP
+** TODO Learn the basics of HTTP
 Get comfy with command-line cURL request
-** map out all domain concepts before doing anything involving them
+** TODO map out all domain concepts before doing anything involving them
 You need to *understand* things before you can fix / improve / work on them
-** have fun along the way
-** try static typing.. it can catch loads of bugs
-** guids > ids normally
-** get familiar with ssh & ~/.ssh/config  && /etc/hosts files
-** screenshots help a lot
-** over communicationn is tricky
-** formatting & style guides are overrated
-** don't over-optimise
-** don't over-promise
-** haters gonna hate
-** scepticism is good
-** read documentation - not just stack overflow
-** adding sql indexes is cool
-** Get used to using AWS / GCP
-** Don't just build things! Complete them! Market them!
+** TODO have fun along the way
+** TODO try static typing.. it can catch loads of bugs
+** TODO guids > ids normally
+** TODO get familiar with ssh & ~/.ssh/config  && /etc/hosts files
+** TODO screenshots help a lot
+** TODO over communicationn is tricky
+** TODO formatting & style guides are overrated
+** TODO don't over-optimise
+** TODO don't over-promise
+** TODO haters gonna hate
+** TODO scepticism is good
+** TODO read documentation - not just stack overflow
+** TODO adding sql indexes is cool
+** TODO Get used to using AWS / GCP
+** TODO Don't just build things! Complete them! Market them!
 Try to create a side-hustle or business or portfolio
-** Invest time in staring at Trello / Jira. You're also a product person
-** lambdas are the future! serverless FTW
-** Keep learning, reading and absorbing stuff
-** Learn more than one language. Get a broad base
-** Be confident
+** TODO Invest time in staring at Trello / Jira. You're also a product person
+** TODO lambdas are the future! serverless FTW
+** TODO Keep learning, reading and absorbing stuff
+** TODO Learn more than one language. Get a broad base
+** TODO Be confident
 you're getting paid to work with people rather than be shy or polite
-** Move slowly
+** TODO Move slowly
 but deliberately
-** keep things simple
+** TODO keep things simple
 do things the simple way
 only generalise when you have to
 don't shy away from doing this manually
-** Don't be scared to read some source code & try to understand it
-** time-box things.
+** TODO Don't be scared to read some source code & try to understand it
+** TODO time-box things.
 Don't get carried away and spend all your time doing something inefficient
-** Reevaluate priorities reguarly
+** TODO Reevaluate priorities reguarly
 pomodoro technique
-** Sometimes you just need a load of time to do things
-** learn some s3 command lines
+** TODO Sometimes you just need a load of time to do things
+** TODO learn some s3 command lines
 https://github.com/aws-samples/aws-modern-application-workshop/ is good
-** Learn the basics - don't take shortcuts.
+** TODO Learn the basics - don't take shortcuts.
 Eg. implement password hashing and salting yourself, rather than a library. It's important to see how stuff works
-** Document starting a new Hugo blog
-** Document X230 set up!
-** Standing desks are cool
-** exercise is important - just walking's fine. good for clearing the mind
-** Wake up early and do stuff in the morning
-** Get used to using docker!±
+** TODO Document starting a new Hugo blog
+** TODO Document X230 set up!
+** TODO Standing desks are cool
+** TODO exercise is important - just walking's fine. good for clearing the mind
+** TODO Wake up early and do stuff in the morning
+** TODO Get used to using docker!±
 docker run -it --rm alpine mkpasswd
-** passwd & /etc/shadow & /etc/passwd
-** use git everywhere!
+** TODO passwd & /etc/shadow & /etc/passwd
+** TODO use git everywhere!
