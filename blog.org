@@ -311,9 +311,9 @@ There's so much to learn about git. And most of us could afford to know a bit mo
 
 If you don't already, it's probably worth curating a =~/.gitconfig= that you check into... =git=... and store somewhere.
 
-** TODO Function Composition is cool :haskell:fp:
+** TODO Function Composition is super cool :haskell:fp:
 :PROPERTIES:
-# :EXPORT_FILE_NAME: function-composition-is-lit
+:EXPORT_FILE_NAME: function-composition-is-super-cool
 :END:
 Function composition is kind of important - especially in functional languages.
 
@@ -332,21 +332,52 @@ notSureHowToImplement :: (a -> b) -> [[a]] -> [[b]]
 
 I scrabbled around doing hacky and ugly things... until I realised that we should be able to use the default =map= function by calling it twice:
 
-Prelude> :t (.)
-(.) :: (b -> c) -> (a -> b) -> a -> c
+#+begin_src haskell
+Prelude> :t (map . map)
+map :: (a -> b) -> [[a]] -> [[b]]
+#+end_src
 
- (a -> b) -> ([a] -> [b])
- (a -> b) -> ([a] -> [b])
+Tada!! Magic!
 
-#+begin_src sh
-map . map is amazing
-:Prelude> :t (map . map)
-(map . map) :: (a -> b) -> [[a]] -> [[b]]
-Prelude> (map . map) (* 2) [[1,2,3],[4,5]]
-[[2,4,6],[8,10]]
+But how does it work?
+
+This trick relies on some deep and mysterious secrets which functional programming is build upon: currying & composition.
+
+If you eyeball the =map= function again, what it's actually doing is taking a function and then returning another function that operates on a list to create another list:
+
+#+begin_src haskell
 Prelude> :t map
 map :: (a -> b) -> [a] -> [b]
+-- can be written like:
+-- map :: (a -> b) -> ([a] -> [b])
 #+end_src
+
+The fact that =map= takes a function and returns a function means that... we can use =map= on =map='s output function... 
+
+A reminder about function composition:
+Function composition is just calling functions:
+
+#+begin_src 
+h(x) = g(f(x))
+#+end_src
+
+In haskell this is so important that its operator is just "=.=".
+
+ #+begin_src haskell
+Prelude> :t (.)
+(.) :: (b -> c) -> (a -> b) -> a -> c
+ #+end_src
+
+ so =(map . map) f= is the same as =map (map f )=
+
+Here's the function in practice:
+
+#+begin_src sh
+Prelude> (map . map) (* 2) [[1,2,3],[4,5]]
+[[2,4,6],[8,10]]
+#+end_src
+
+Isn't it lovely?
 
 ** TODO Golang type switching
 ** TODO Nix is cool
