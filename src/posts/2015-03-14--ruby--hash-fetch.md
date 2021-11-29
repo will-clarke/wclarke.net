@@ -1,6 +1,5 @@
 ---
 date: 2015-03-14
-published: true
 tags:
 - Ruby
 - Hash

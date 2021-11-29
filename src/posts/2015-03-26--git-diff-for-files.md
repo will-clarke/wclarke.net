@@ -1,6 +1,5 @@
 ---
 date: 2015-03-26
-published: true
 tags:
 - git
 title: Git Diff for files

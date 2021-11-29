@@ -1,10 +1,8 @@
 ---
 date: 2014-09-11
-published: true
-tags:
-- Git
-- Tips
+tags: - git - tips
 title: Remove file from Git (after committing)
+description: 
 ---
 
 Removing files from git is pretty straightforward. `git rm ...`.

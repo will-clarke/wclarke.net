@@ -1,15 +1,13 @@
 ---
 date: 2014-10-08
-published: true
-tags:
-- Vim
-- Editor
+tags: - vim - editor
 title: Clever Vim Commands & Keybindings
+description: Getting good at vim involves making every key-stroke as efficient as possible. You need to master keybindings in order to do this.
 ---
 
 I have recently spent a while trying to learn how to edit text effectively. I figure that if I'm going to be spending a while editing text, it's worth learning how to do it as efficiently as possible.
 
-I've been using [YADR](https://github.com/skwp/dotfiles) as a basis for my dotfiles. Dotfiles, if you don't know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg. `.bashrc` or  `.vimrc`. One of the benefits of using a monolithic package like this is it quickly lets you do more cool stuff as you're learning (over boring native Vim).
+I've been using [YADR](https://github.com/skwp/dotfiles) as a basis for my dotfiles. Dotfiles, if you don't know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg. `.bashrc` or `.vimrc`. One of the benefits of using a monolithic package like this is it quickly lets you do more cool stuff as you're learning (over boring native Vim).
 
 I've put the extra files I've configured into my `.vimrc.after` file, which you can find [HERE!](https://gist.github.com/19b76686f75f3b28dda8).
 
@@ -34,7 +32,6 @@ These are the preinstalled plugins that I use most:
 - NERDTree
 - Vim Surround
 - CtrlR
-
 
 I've added a few more of my own, too:
 

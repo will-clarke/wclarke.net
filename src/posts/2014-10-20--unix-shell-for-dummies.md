@@ -1,12 +1,10 @@
 ---
 date: 2014-10-20
-published: true
-tags:
-- Shell
-- UNIX
-- Bash
+tags: - shell - unix - bash
 title: UNIX Shell For Dummies
+description: The UNIX philosophy of composing small stuff together is kinda amazingly powerful. It's worth understanding the basics.
 ---
+
 Learning a few UNIX commands can be useful. Since it's the 'default' programming language that pops up when you run the Terminal, it's worth knowing a few of the more basic commands:
 These are sorted by 'difficulty' - you should know the first ones first.
 
@@ -15,7 +13,7 @@ These are sorted by 'difficulty' - you should know the first ones first.
 ### `cd` - changes the current directory.
 
 - `cd ~` - changes where you are to HOME directory
-- `cd Documents`  - goes one file deeper into the 'Documents' folder
+- `cd Documents` - goes one file deeper into the 'Documents' folder
 - `cd ..` - goes up one directory
 
 ### `ls` - list files or directories in current directory
@@ -72,7 +70,7 @@ These are sorted by 'difficulty' - you should know the first ones first.
 ### `cat` - show pure text version of the file.
 
 - Con**cat**enates & prints the file
-`cat gerbil_name.txt` - simply outputs text: 'Fred'
+  `cat gerbil_name.txt` - simply outputs text: 'Fred'
 
 ### `less` - outputs text with more features.
 
@@ -106,7 +104,7 @@ These are sorted by 'difficulty' - you should know the first ones first.
 
 ### `grep`
 
-I've written a quick primer on UNIX file permissions [here]({{ site.url }}/_posts/2014-10-18-unix-permissions.md)
+I've written a quick primer on UNIX file permissions [here]({{ site.url }}/\_posts/2014-10-18-unix-permissions.md)
 
 Grep's a fairly big topic:
 
@@ -115,7 +113,6 @@ Grep's a fairly big topic:
 - `grep "some string" filename`
 - `grep "REGEX" filename`
 - `grep -i "some string" filename` - case insensitive
-
 
 ## Flags
 

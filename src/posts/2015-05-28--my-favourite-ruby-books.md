@@ -1,6 +1,5 @@
 ---
 date: 2015-05-28
-published: true
 tags:
   - Ruby
   - Books

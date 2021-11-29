@@ -1,6 +1,5 @@
 ---
 date: 2015-03-14
-published: true
 tags:
   - Vim
 title: Vim Text Objects

@@ -1,9 +1,8 @@
 ---
 date: 2014-03-15
-published: true
-tags:
-  - vim
+tags: - vim
 title: Show Vim Mappings
+description: Vim has a helpful command to show all your mappings: :map
 ---
 
 Vim has a helpful command to show all your mappings:

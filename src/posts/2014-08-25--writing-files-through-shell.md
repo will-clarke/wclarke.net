@@ -1,13 +1,9 @@
 ---
 date: 2014-08-25
-published: true
-tags:
-- Bash
-- Shell
-- Unix
+tags: - bash - shell - unix
 title: Writing Files Through Shell
+description: 
 ---
-
 
 # Writing to file in Bash
 

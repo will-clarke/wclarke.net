@@ -1,15 +1,13 @@
 ---
 date: 2014-11-23
-published: true
-tags:
-- Ruby
-- Tips
-title: 'Ruby: Return a Boolean'
+tags: - ruby - tips
+title: Ruby: Return a Boolean
+description: Spoiler Alert: `!!` can cooerce a nonn-boolean variable into a variable.
 ---
 
 If you want to return a `true` or `false` value in ruby, you could try something like:
 
-``` ruby
+```ruby
 if variable
   return true
 else
@@ -17,9 +15,9 @@ else
 end
 ```
 
-That's not very good.  In Ruby, we don't need to explicitly return variables:
+That's not very good. In Ruby, we don't need to explicitly return variables:
 
-``` ruby
+```ruby
 if variable
   true
 else
@@ -29,13 +27,13 @@ end
 
 This is a bit long-winded. We could try the ternary operator:
 
-``` ruby
+```ruby
 variable ? true : false
 ```
 
 We can thin this out even more by using a double negative:
 
-``` ruby
+```ruby
 !!variable
 ```
 

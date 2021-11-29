@@ -1,11 +1,8 @@
 ---
 date: 2014-10-18
-published: true
-tags:
-- UNIX
-- Shell
-- Bash
+tags: - unix - shell - bash
 title: UNIX Permissions for no0bs
+description: Why `chmod +x`? What does it all mean? How does it work? What are those magic numbers like 777?
 ---
 
 File permissions can either be: `r`, `w` or `x`.

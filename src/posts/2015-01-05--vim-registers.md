@@ -1,10 +1,8 @@
 ---
 date: 2015-01-05
-published: true
-tags:
-  - Vim
-  - tips
+tags: - vim - tips
 title: Vim Registers
+description: Vim registers are a way to have unique clipboards in different places.
 ---
 
 Vim Registers are where yanked / deleted text ends up.

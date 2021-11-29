@@ -1,12 +1,8 @@
 ---
 date: 2014-10-22
-published: true
-tags:
-- Ruby
-- Twitter
-- API
-- OAuth
+tags: - ruby - twitter - api - oauth
 title: Twitter Apps Authentication - without another mobile number
+description: For all the 733T hackers out there who want to make a twitter bot, I've got you covered <3
 ---
 
 I recently created a new twitter account ([Damn Nature, You Scary](http://twitter.com/damnnaturescary)). I had trouble **registering** a new app as, apparently, each app needs a (unique) mobile number.
@@ -21,8 +17,8 @@ I managed to get this working by:
 
 3. Still on your mobile, go to http://dev.twitter.com/apps
 
-3. Change the **permissions** of your app to **Read & Write**
+4. Change the **permissions** of your app to **Read & Write**
 
-4. Click **Update**
+5. Click **Update**
 
 That should work!

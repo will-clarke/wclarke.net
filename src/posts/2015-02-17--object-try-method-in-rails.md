@@ -1,6 +1,5 @@
 ---
 date: 2015-02-17
-published: true
 tags:
 - Rails
 - Ruby

@@ -1,6 +1,5 @@
 ---
 date: 2015-02-15
-published: true
 tags:
 - Vim
 - Tips

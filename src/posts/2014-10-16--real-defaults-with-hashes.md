@@ -1,11 +1,8 @@
 ---
 date: 2014-10-16
-published: true
-tags:
-- Ruby
-- Hash
-- Tips
+tags: - ruby - hash - tips
 title: Real Defaults With Hashes
+description: Ruby hashes have a gotcha that the uninitiated should be aware of.
 ---
 
 ### Beware of setting Hash#default!
@@ -22,7 +19,7 @@ Eg:
 
 If you wanted to append any values to a hash instantiated like this, there will be problems; the array is not just a **default** array, but it's also a **shared** array.
 
-An example: 
+An example:
 
     h = Hash.new([])
     h['fish'] << 'carp'
@@ -45,6 +42,7 @@ If we were to add another key-value pair, this would get even messier:
     puts h  # => {fish: ['carp', 'carp', 'poodle'], dog:['carp', 'carp', 'poodle']}
 
 ### A disaster!
+
 Our carp and Poodle have now mixed.
 Hopefully it makes sense what's happening; we're altering the (single) default array, which points to all our default values.
 How do we resolve the situation?
@@ -55,7 +53,7 @@ You can pass in a block when initializing the Hash.
 
     Hash.new {|hash, key| ... rest of block... }
 
-To create a default hash which hash a *unique* default for each key/value pair, we can then do this:
+To create a default hash which hash a _unique_ default for each key/value pair, we can then do this:
 
     Hash.new {|hash, key| hash[key] = [] }
 

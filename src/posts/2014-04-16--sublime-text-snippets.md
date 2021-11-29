@@ -1,9 +1,8 @@
 ---
 date: 2014-04-16
-published: true
-tags:
-  - Editor
+tags: - editor
 title: Sublime Text Snippets
+description: One way to work faster is to have predefined _snippets_ or blocks of code help you with repetitive typing.
 ---
 
 One way to work faster is to have predefined _snippets_ or blocks of code help you with repetitive typing.

@@ -1,10 +1,8 @@
 ---
 date: 2014-10-10
-published: true
-tags:
-  - DNS
-  - Heroku
+tags: - dns - heroku
 title: Dealing With DNS
+description: DNS can be scary. It can be confusing. But it doesn't have to be! It's important. Here's a primer to get you up and running..
 ---
 
 When I registered my website [wmmclarke.com](http://wmmclarke.com), I had no idea what a DNS was. According to [wikipedia](http://en.wikipedia.org/wiki/Domain_Name_System), _the Domain Name Sysstem (DNS) is a hierarchical distributed naming system for computers, services, or any resource connected to the Internet or a private network_. Not exactly immediately obvious...
