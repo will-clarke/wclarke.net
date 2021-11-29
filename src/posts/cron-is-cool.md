@@ -1,5 +1,5 @@
 ---
-title: "Cron is cool"
+title: Cron is cool
 date: 2019-06-08
 tags: unix shell bash
 ---

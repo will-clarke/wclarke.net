@@ -1,5 +1,5 @@
 ---
-title: "Force a script to run as root (sudo)"
+title: Force a script to run as root (sudo)
 date: 2020-07-16
 tags: unix bash
 ---

@@ -1,5 +1,5 @@
 ---
-date: "2014-10-20T00:00:00Z"
+date: "2014-10-20"
 published: true
 tags:
 - Shell

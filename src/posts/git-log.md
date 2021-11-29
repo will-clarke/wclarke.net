@@ -1,5 +1,5 @@
 ---
-date: "2015-02-25T00:00:00Z"
+date: "2015-02-25"
 published: true
 tags:
 - Git

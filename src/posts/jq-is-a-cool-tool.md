@@ -1,5 +1,5 @@
 ---
-title: "jq is a cool tool"
+title: jq is a cool tool
 date: 2018-06-08
 tags: bash unix
 ---

@@ -1,5 +1,5 @@
 ---
-title: "Defaults are good. Try them out!"
+title: Defaults are good. Try them out!
 date: 2019-08-10
 tags: tips unix
 ---

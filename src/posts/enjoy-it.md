@@ -1,5 +1,5 @@
 ---
-title: "Enjoy it!"
+title: Enjoy it!
 date: 2020-05-27
 ---
 

@@ -1,5 +1,5 @@
 ---
-date: "2015-05-28T00:00:00Z"
+date: "2015-05-28"
 published: true
 tags:
   - Ruby

@@ -1,5 +1,5 @@
 ---
-title: "Boring product names FTW"
+title: Boring product names FTW
 date: 2019-07-11
 tags: product tech
 ---

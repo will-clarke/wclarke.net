@@ -1,6 +1,8 @@
 ---
-title: "Automate Repetitive Tasks"
+title: Automate Repetitive Tasks
 date: 2019-05-02
+description: Don't spend time doing manual stuff. Get computers to do it!
+tags: automation unix
 ---
 
 Computers are good at doing boring things.

@@ -1,5 +1,5 @@
 ---
-date: "2014-10-18T00:00:00Z"
+date: "2014-10-18"
 published: true
 tags:
 - UNIX

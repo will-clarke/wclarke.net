@@ -1,5 +1,5 @@
 ---
-date: "2015-02-15T00:00:00Z"
+date: "2015-02-15"
 published: true
 tags:
 - Vim

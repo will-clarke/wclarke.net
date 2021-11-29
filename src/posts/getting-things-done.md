@@ -1,5 +1,5 @@
 ---
-title: "Get things done > tech used"
+title: Get things done > tech used
 date: 2019-12-10
 tags: product tech
 ---

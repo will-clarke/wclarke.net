@@ -1,5 +1,5 @@
 ---
-title: "Document EVERYTHING!!!"
+title: Document EVERYTHING!!!
 date: 2020-03-01
 tags: documentation
 ---

@@ -1,5 +1,5 @@
 ---
-title: "Trying to get Go modules to play ball with private repos?"
+title: Trying to get Go modules to play ball with private repos?
 date: 2020-07-08
 tags: golang
 ---

@@ -1,5 +1,5 @@
 ---
-date: "2015-02-17T00:00:00Z"
+date: "2015-02-17"
 published: true
 tags:
 - Rails

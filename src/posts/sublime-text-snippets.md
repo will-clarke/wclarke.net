@@ -1,5 +1,5 @@
 ---
-date: "2014-04-16T00:00:00Z"
+date: "2014-04-16"
 published: true
 tags:
   - Editor

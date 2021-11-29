@@ -1,6 +1,8 @@
 ---
-title: "Ask stupid questions"
+title: Ask stupid questions
 date: 2020-06-27
+description: Ask ask ask. Keep on asking questions.
+tags:
 ---
 
 Stupid questions aren't stupid.

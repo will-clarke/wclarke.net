@@ -1,5 +1,5 @@
 ---
-title: "Function Composition is super cool"
+title: Function Composition is super cool
 tags: haskell fp
 ---
 

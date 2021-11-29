@@ -1,5 +1,5 @@
 ---
-title: "We should all know git"
+title: We should all know git
 date: 2019-03-08
 tags: git
 ---
