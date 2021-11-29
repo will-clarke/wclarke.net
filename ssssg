@@ -1,0 +1,56 @@
+#!/bin/sh
+
+function main() {
+    mkdir -p src dst/posts tmp
+
+    md_files=$(find src -type f | grep "\.md$")
+
+    echo "$md_files" | md_files_to_html_files
+    # cp src/index.html dst/index
+    echo "$md_files" | generate_index_md > tmp/index.tmp.md
+    # parse index to html
+
+    echo "Generated $(echo "md_files" | wc -l) files"
+}
+
+function md_files_to_html_files() {
+    while read -r file_path
+    do
+        dst_path=$(src_to_dst_path "$file_path")
+        echo $dst_path
+        md_file_to_html_file "$file_path" > "$dst_path"
+    done
+}
+
+function md_file_to_html_file() {
+    input_file="$1"
+    pandoc  --to=html5 --title "yo" --standalone "$input_file" --highlight-style pygments
+}
+
+function src_to_dst_path() {
+    echo "$1" | sed -e's/src/dst/' -e's/\.md$/\.html/'
+}
+
+function generate_index_md() {
+    while read -r file_path
+    do
+        md_file=$(cat "$file_path")
+        # title=$(echo "$md_file" | grep -iE '/title/' | cut -f 2- -d' ')
+        title=$(echo "$md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
+        description=$(echo "$md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
+        date=$(echo "$md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
+        tags=$(echo "$md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
+
+        dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
+        formatted_date=$(gdate -d "date" +"%e %B %Y")
+
+        echo "
+- [$title]($dst_path)
+  - $formatted_date
+  - $description
+  - $tags
+"
+    done
+}
+
+main
