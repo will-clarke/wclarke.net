@@ -1,14 +1,8 @@
-+++
-title = "We should all know git"
-author = ["Will Clarke"]
-date = 2019-03-08
-tags = ["git"]
-draft = false
-weight = 2014
-[menu.nil]
-  weight = 2014
-  identifier = "we-should-all-know-git"
-+++
+---
+title: "We should all know git"
+date: 2019-03-08
+tags: git
+---
 
 Version control's mega important.
 I bet you used it even at school, saving stuff as `important-thing-VERSION-4.doc`

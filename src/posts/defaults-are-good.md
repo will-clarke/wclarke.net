@@ -1,14 +1,8 @@
-+++
-title = "Defaults are good. Try them out!"
-author = ["Will Clarke"]
-date = 2019-08-10
-tags = ["tips", "unix"]
-draft = false
-weight = 2009
-[menu.nil]
-  weight = 2009
-  identifier = "defaults-are-good-dot-try-them-out"
-+++
+---
+title: "Defaults are good. Try them out!"
+date: 2019-08-10
+tags: tips unix
+---
 
 Most defaults have been carefully thought out. It's worth at least looking over them before deciding that they're useless & old-fashioned.
 

@@ -1,14 +1,8 @@
-+++
-title = "Cron is cool"
-author = ["Will Clarke"]
-date = 2019-06-08
-tags = ["unix", "shell", "bash"]
-draft = false
-weight = 2010
-[menu.nil]
-  weight = 2010
-  identifier = "cron-is-cool"
-+++
+---
+title: "Cron is cool"
+date: 2019-06-08
+tags: unix shell bash
+---
 
 Cron jobs have a slightly terrifying syntax.
 But there are loads of easy online [tools like this one to help.](https://crontab-generator.org/)

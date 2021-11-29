@@ -1,14 +1,8 @@
-+++
-title = "Maybe try vim"
-author = ["Will Clarke"]
-date = 2019-04-08
-tags = ["vim"]
-draft = false
-weight = 2013
-[menu.nil]
-  weight = 2013
-  identifier = "maybe-try-vim"
-+++
+---
+title: "Maybe try vim"
+date: 2019-04-08
+tags: vim
+---
 
 `vim` people like to talk about `vim` and often don't shut up about it.
 

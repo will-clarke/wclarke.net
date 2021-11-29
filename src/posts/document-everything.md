@@ -1,14 +1,8 @@
-+++
-title = "Document EVERYTHING!!!"
-author = ["Will Clarke"]
-date = 2020-03-01
-tags = ["documentation"]
-draft = false
-weight = 2005
-[menu.nil]
-  weight = 2005
-  identifier = "document-everything"
-+++
+---
+title: "Document EVERYTHING!!!"
+date: 2020-03-01
+tags: documentation
+---
 
 People leave jobs all the time. People get run over by busses or win the lottery. People forget stuff.
 

@@ -1,14 +1,8 @@
-+++
-title = "How to find rows which don't exist in a table"
-author = ["Will Clarke"]
-date = 2020-01-08
-tags = ["sql"]
-draft = false
-weight = 2004
-[menu.nil]
-  weight = 2004
-  identifier = "how-to-find-rows-which-don-t-exist-in-a-table"
-+++
+---
+title: "How to find rows which don't exist in a table"
+date: 2020-01-08
+tags: sql
+---
 
 I was recently stumped for a while trying to find rows that **didn't** exist in my SQL table.
 

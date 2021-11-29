@@ -1,13 +1,7 @@
-+++
-title = "Enjoy it!"
-author = ["Will Clarke"]
-date = 2020-05-27
-draft = false
-weight = 2007
-[menu.nil]
-  weight = 2007
-  identifier = "enjoy-it"
-+++
+---
+title: "Enjoy it!"
+date: 2020-05-27
+---
 
 You're likely to spend a significant percentage of your waking life working. You may as well try to enjoy it.
 

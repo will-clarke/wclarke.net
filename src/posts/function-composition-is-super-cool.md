@@ -1,13 +1,7 @@
-+++
-title = "Function Composition is super cool"
-author = ["Will Clarke"]
-tags = ["haskell", "fp"]
-draft = true
-weight = 2015
-[menu.nil]
-  weight = 2015
-  identifier = "function-composition-is-super-cool"
-+++
+---
+title: "Function Composition is super cool"
+tags: haskell fp
+---
 
 Function composition is kind of important - especially in functional languages.
 

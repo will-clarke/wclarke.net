@@ -1,13 +1,7 @@
-+++
-title = "Automate Repetitive Tasks"
-author = ["Will Clarke"]
-date = 2019-05-02
-draft = false
-weight = 2011
-[menu.nil]
-  weight = 2011
-  identifier = "automate-repetitive-tasks"
-+++
+---
+title: "Automate Repetitive Tasks"
+date: 2019-05-02
+---
 
 Computers are good at doing boring things.
 Humans are too, but humans are also good at doing other, more interesting and creative things.

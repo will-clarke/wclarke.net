@@ -1,13 +1,7 @@
-+++
-title = "Ask stupid questions"
-author = ["Will Clarke"]
-date = 2020-06-27
-draft = false
-weight = 2003
-[menu.nil]
-  weight = 2003
-  identifier = "ask-stupid-questions"
-+++
+---
+title: "Ask stupid questions"
+date: 2020-06-27
+---
 
 Stupid questions aren't stupid.
 It's important to clarify things rather than working on assumptions or guesses.

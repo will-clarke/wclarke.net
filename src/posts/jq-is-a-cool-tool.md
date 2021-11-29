@@ -1,14 +1,8 @@
-+++
-title = "jq is a cool tool"
-author = ["Will Clarke"]
-date = 2018-06-08
-tags = ["bash", "unix"]
-draft = false
-weight = 2012
-[menu.nil]
-  weight = 2012
-  identifier = "jq-is-a-cool-tool"
-+++
+---
+title: "jq is a cool tool"
+date: 2018-06-08
+tags: bash unix
+---
 
 [`jq`](https://stedolan.github.io/jq/) is pretty cool.
 It's a command-line utility that interacts with `JSON`.

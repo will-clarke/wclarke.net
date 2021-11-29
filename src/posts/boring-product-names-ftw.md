@@ -1,14 +1,8 @@
-+++
-title = "Boring product names FTW"
-author = ["Will Clarke"]
-date = 2019-07-11
-tags = ["product", "tech"]
-draft = false
-weight = 2008
-[menu.nil]
-  weight = 2008
-  identifier = "boring-product-names-ftw"
-+++
+---
+title: "Boring product names FTW"
+date: 2019-07-11
+tags: product tech
+---
 
 In a company I worked at recently, we released a fantastic shiny-new thing.
 It was a smaller version of another product called \`cargo\`, which did something related to packaging.

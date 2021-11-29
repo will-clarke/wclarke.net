@@ -1,14 +1,8 @@
-+++
-title = "Get things done > tech used"
-author = ["Will Clarke"]
-date = 2019-12-10
-tags = ["product", "tech"]
-draft = false
-weight = 2006
-[menu.nil]
-  weight = 2006
-  identifier = "get-things-done-tech-used"
-+++
+---
+title: "Get things done > tech used"
+date: 2019-12-10
+tags: product tech
+---
 
 Technology is a lever. It lets us do things.
 
