@@ -35,7 +35,7 @@ function generate_index_md() {
     while read -r file_path
     do
         md_file=$(cat "$file_path")
-        title=$(echo $md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
+        title=$(echo "$md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
         description=$(echo "$md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
         date=$(echo "$md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
         tags=$(echo "$md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)

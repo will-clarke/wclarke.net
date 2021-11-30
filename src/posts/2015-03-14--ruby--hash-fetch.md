@@ -1,6 +1,6 @@
 ---
 date: 2015-03-14
-tags: - ruby - hash
+tags: ruby hash
 title: Ruby - Hash#fetch
 description:
 ---

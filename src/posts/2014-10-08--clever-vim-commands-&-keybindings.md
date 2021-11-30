@@ -1,6 +1,6 @@
 ---
 date: 2014-10-08
-tags: - vim - editor
+tags: vim editor
 title: Clever Vim Commands & Keybindings
 description: Getting good at vim involves making every key-stroke as efficient as possible. You need to master keybindings in order to do this.
 ---

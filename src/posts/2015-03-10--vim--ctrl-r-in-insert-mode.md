@@ -1,7 +1,7 @@
 ---
 date: 2015-03-10
-tags: - vim - tips
-title: 'Vim: Ctrl-R in Insert Mode'
+tags: vim tips
+title: "Vim: Ctrl-R in Insert Mode"
 description: Ctrl-R inserts text based on your current vim context. Eg. filename, last command, last search, etc...
 ---
 

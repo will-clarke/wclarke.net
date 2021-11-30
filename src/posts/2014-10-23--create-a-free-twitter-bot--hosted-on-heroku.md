@@ -1,6 +1,6 @@
 ---
 date: 2014-10-23
-tags: - ruby - twitter - heroku
+tags: ruby twitter heroku
 title: Create a Free Twitter Bot - hosted on Heroku
 description: Heroku's a site that gives you free servers to make cool stuff on. You can host twitter bots on there to enrich the interwebs.
 ---

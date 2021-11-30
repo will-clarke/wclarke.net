@@ -1,6 +1,6 @@
 ---
 date: 2014-12-14
-tags: - Vim - Shell
+tags: vim shell
 title: Suspend Vim
 description: Spoiler Alert: Ctrl-Z and then fg to resume
 ---

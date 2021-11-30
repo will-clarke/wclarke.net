@@ -1,6 +1,6 @@
 ---
 date: 2014-10-18
-tags: - unix - shell - bash
+tags: unix shell bash
 title: UNIX Permissions for no0bs
 description: Why `chmod +x`? What does it all mean? How does it work? What are those magic numbers like 777?
 ---

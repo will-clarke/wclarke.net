@@ -1,6 +1,6 @@
 ---
 date: 2015-03-01
-tags: - git - tips
+tags: git tips
 title: Hide files from Git Index
 description: git update-index --assume-unchanged <file>
 ---

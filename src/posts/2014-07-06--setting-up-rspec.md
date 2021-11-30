@@ -1,6 +1,6 @@
 ---
 date: 2014-07-06
-tags: - ruby - rspec - tdd
+tags: ruby rspec tdd
 title: Setting Up Rspec
 description: rspec's the go-to way to test Ruby apps. It's easy to set up with Rails.
 ---

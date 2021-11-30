@@ -1,6 +1,6 @@
 ---
 date: 2015-03-04
-tags: - vim - tips
+tags: vim tips
 title: Vim Movement
 description: hjkl are just the tip of the iceberg
 ---

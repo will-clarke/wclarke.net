@@ -1,6 +1,6 @@
 ---
 date: 2014-08-25
-tags: - bash - shell - unix
+tags: bash shell unix
 title: Writing Files Through Shell
 description: 
 ---

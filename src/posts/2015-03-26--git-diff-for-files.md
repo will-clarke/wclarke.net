@@ -1,6 +1,6 @@
 ---
 date: 2015-03-26
-tags: - git
+tags: git
 title: Git Diff for files
 description: git diff --name-only commit1 commit2
 ---

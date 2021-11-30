@@ -1,6 +1,6 @@
 ---
 date: 2014-10-06
-tags: - ruby - jekyll - blog
+tags: ruby jekyll blog
 title: Getting Started With Jekyll
 description: Jekyll's a fancy static site generator that's really easy to use.
 ---

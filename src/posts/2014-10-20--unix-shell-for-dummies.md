@@ -1,6 +1,6 @@
 ---
 date: 2014-10-20
-tags: - shell - unix - bash
+tags: shell unix bash
 title: UNIX Shell For Dummies
 description: The UNIX philosophy of composing small stuff together is kinda amazingly powerful. It's worth understanding the basics.
 ---

@@ -1,6 +1,6 @@
 ---
 date: 2015-02-17
-tags: - rails - ruby - tips
+tags: rails ruby tips
 title: The Object#try method in Rails
 ---
 

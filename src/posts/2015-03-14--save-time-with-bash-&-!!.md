@@ -1,8 +1,8 @@
 ---
 date: 2015-03-14
-tags: - bash - zsh - shell - tips
+tags: bash zsh shell tips
 title: Save time with Bash & !!
-description: 
+description:
 ---
 
 `!!` in Bash / Zsh works the same way as `_` does in irb / Pry.

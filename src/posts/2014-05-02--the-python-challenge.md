@@ -1,6 +1,6 @@
 ---
 date: 2014-05-02
-tags: - python - ruby
+tags: python ruby
 title: The Python Challenge
 description:
 ---
