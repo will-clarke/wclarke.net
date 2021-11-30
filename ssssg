@@ -2,22 +2,24 @@
 
 debug=0
 
-
 function md_files() {
     find src -type f | grep "\.md$" | sort -r
 }
 
 function main() {
+    rm -rf dst
+    rm -f src/index.md src/archive.md
     mkdir -p src dst/posts
 
     # generate an index.md from all our posts
-    md_files | generate_index_md > src/index.md
+    md_files | generate_index_md
 
     md_files | md_files_to_html_files
 
-    rm src/index.md
+    cp -r src/css dst/css
 
-    echo "Generated $(echo "$md_files" | wc -l) files"
+
+    echo "Generated $(md_files | wc -l) files"
 }
 
 function md_files_to_html_files() {
@@ -29,11 +31,27 @@ function md_files_to_html_files() {
         fi
         md_file_to_html_file "$file_path" > "$dst_path"
     done
+
 }
 
 function md_file_to_html_file() {
     input_file="$1"
-    pandoc  --to=html5 --title "yo" --standalone "$input_file" --highlight-style pygments
+    css_dir=$(realpath --relative-to="$input_file" "src/css/style.css")
+    # echo css $css_dir
+
+    pandoc \
+        --data-dir dst \
+        --css "./dst/$css_dir" \
+        --include-before-body src/_top.html \
+        --include-after-body src/_bottom.html \
+        --title "Will Clarke" \
+        --to=html5  \
+        "$input_file"
+        # --standalone \
+    # --css=css/style.css
+    #
+        # --include-in-header=src/_header.html \
+        # --css="$css_dir" \
 }
 
 function src_to_dst_path() {
@@ -41,6 +59,16 @@ function src_to_dst_path() {
 }
 
 function generate_index_md() {
+     echo "
+---
+title: Home
+---
+" >> src/index.md
+    echo "
+---
+title: Archive
+---
+" >> src/archive.md
     while read -r file_path
     do
         md_file=$(cat "$file_path")
@@ -53,11 +81,13 @@ function generate_index_md() {
         formatted_date=$(gdate -d "$date" +"%e %B %Y")
 
         echo "
-- [$title]($dst_path)
-  - $formatted_date
-  - $description
-  - $tags
-"
+# [$title]($dst_path)
+  $description ($formatted_date)
+  $tags
+" >> src/index.md
+        echo "
+- *"$date"* [$title]($dst_path)
+" >> src/archive.md
     done
 }
 
