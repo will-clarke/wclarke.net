@@ -1,14 +1,21 @@
 #!/bin/sh
 
-debug=1
+debug=0
+
+
+function md_files() {
+    find src -type f | grep "\.md$" | sort -r
+}
 
 function main() {
-    mkdir -p src dst/posts tmp
+    mkdir -p src dst/posts
 
-    md_files=$(find src -type f | grep "\.md$")
+    # generate an index.md from all our posts
+    md_files | generate_index_md > src/index.md
 
-    echo "$md_files" | generate_index_md > src/index.md
-    echo "$md_files" | md_files_to_html_files
+    md_files | md_files_to_html_files
+
+    rm src/index.md
 
     echo "Generated $(echo "$md_files" | wc -l) files"
 }
