@@ -2,6 +2,7 @@
 title: Function Composition is super cool
 date: 2021-08-19
 tags: haskell fp
+description: Function composition is kind of important - especially in functional languages.
 ---
 
 Function composition is kind of important - especially in functional languages.

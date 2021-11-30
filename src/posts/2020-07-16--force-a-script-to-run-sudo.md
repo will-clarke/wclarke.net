@@ -2,6 +2,7 @@
 title: Force a script to run as root (sudo)
 date: 2020-07-16
 tags: unix bash
+description: You can add one line to any shell script to force the script to run as root.
 ---
 
 Just chuck this in at the start of a bash script and it'll ensure the rest of the script is run by the root user:
