@@ -1,9 +1,8 @@
 ---
 date: 2015-03-01
-tags:
-- Git
-- Tips
+tags: - git - tips
 title: Hide files from Git Index
+description: git update-index --assume-unchanged <file>
 ---
 
 If you want to hide an already-commited file in Git, you can:

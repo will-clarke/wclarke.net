@@ -2,6 +2,7 @@
 title: We should all know git
 date: 2019-03-08
 tags: git
+description: Version Control's a total game-changer. We should use it for everything. No more saving things with unique file names - eg. important-thing-VERSION-4.doc
 ---
 
 Version control's mega important.

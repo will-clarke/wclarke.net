@@ -1,9 +1,8 @@
 ---
 date: 2015-02-15
-tags:
-- Vim
-- Tips
+tags: - vim - tips
 title: The Holy Grail of Vim Commands
+description:
 ---
 
 `:h holy-grail`

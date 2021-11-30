@@ -2,6 +2,7 @@
 date: 2015-03-15
 tags: vim  commands
 title: "Vim: View Last Commands"
+description: Spoiler Alert: `:` then Ctrl-P
 ---
 
 You can see your last commands by:

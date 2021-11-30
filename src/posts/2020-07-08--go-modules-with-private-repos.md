@@ -2,6 +2,7 @@
 title: Trying to get Go modules to play ball with private repos?
 date: 2020-07-08
 tags: golang
+description: go env -w GOPRIVATE=gitlab.com/you/your-project,github.com/someone/their-project
 ---
 
 `go` modules are wonderful. All go code should use them.

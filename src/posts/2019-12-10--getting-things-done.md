@@ -2,15 +2,14 @@
 title: Get things done > tech used
 date: 2019-12-10
 tags: product tech
+description: It can be easy to get distracted by shiny new things. To obsess over development flows. But what does that achieve if you never acutally *do* anything?
 ---
 
 Technology is a lever. It lets us do things.
 
-As Steve Jobs said:
+[As Steve Jobs said:](https://www.youtube.com/watch?v=4x8wTj-n33A)
 
 > Man is a toolmaker, has the ability to make a tool to amplify the amount of inherent ability that he has.
-
-{{< youtube 4x8wTj-n33A >}}
 
 The whole point of technology is that it let's us **do** things.
 

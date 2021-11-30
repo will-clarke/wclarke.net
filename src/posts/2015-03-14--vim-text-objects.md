@@ -1,8 +1,8 @@
 ---
 date: 2015-03-14
-tags:
-  - Vim
+tags: - vim
 title: Vim Text Objects
+description: Text objects are powerful & efficient ways of transforming data in vim.
 ---
 
 One of the most powerful features in Vim is **text objects**. These increase the number of 'vim nouns' that you can use with 'vim verbs'.

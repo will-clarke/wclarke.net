@@ -2,6 +2,7 @@
 title: Defaults are good. Try them out!
 date: 2019-08-10
 tags: tips unix
+description: Instead of spending hours grooming your .vimrc, perhaps take a while to appreciate the defaults. They're there for a reason! And once you get used to them, every computer's going to be easy to use... not just your fabulous unique one.
 ---
 
 Most defaults have been carefully thought out. It's worth at least looking over them before deciding that they're useless & old-fashioned.

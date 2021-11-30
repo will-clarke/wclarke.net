@@ -2,6 +2,7 @@
 title: Boring product names FTW
 date: 2019-07-11
 tags: product tech
+description: Sure, fancy product names are fun... but they can also be confusing.
 ---
 
 In a company I worked at recently, we released a fantastic shiny-new thing.

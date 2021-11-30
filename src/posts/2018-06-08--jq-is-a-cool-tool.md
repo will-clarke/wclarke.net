@@ -2,6 +2,7 @@
 title: jq is a cool tool
 date: 2018-06-08
 tags: bash unix
+description: jq lets you effortlessly transform JSON on the fly. It's well worth getting used to it & there are some powerful things you can do with it, like mapping... it's not just about filtering.
 ---
 
 [`jq`](https://stedolan.github.io/jq/) is pretty cool.

@@ -2,6 +2,7 @@
 title: Cron is cool
 date: 2019-06-08
 tags: unix shell bash
+description: cron lets you schedule jobs in the future. It's pretty good at that.
 ---
 
 Cron jobs have a slightly terrifying syntax.
