@@ -1,23 +1,25 @@
 #!/bin/sh
 
+debug=1
+
 function main() {
     mkdir -p src dst/posts tmp
 
     md_files=$(find src -type f | grep "\.md$")
 
+    echo "$md_files" | generate_index_md > src/index.md
     echo "$md_files" | md_files_to_html_files
-    # cp src/index.html dst/index
-    echo "$md_files" | generate_index_md > tmp/index.tmp.md
-    # parse index to html
 
-    echo "Generated $(echo "md_files" | wc -l) files"
+    echo "Generated $(echo "$md_files" | wc -l) files"
 }
 
 function md_files_to_html_files() {
     while read -r file_path
     do
         dst_path=$(src_to_dst_path "$file_path")
-        echo $dst_path
+        if [ "$debug" == 1 ]; then
+            echo $dst_path
+        fi
         md_file_to_html_file "$file_path" > "$dst_path"
     done
 }
@@ -41,7 +43,7 @@ function generate_index_md() {
         tags=$(echo "$md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
 
         dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
-        formatted_date=$(gdate -d "date" +"%e %B %Y")
+        formatted_date=$(gdate -d "$date" +"%e %B %Y")
 
         echo "
 - [$title]($dst_path)

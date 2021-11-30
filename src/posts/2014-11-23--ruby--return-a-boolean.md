@@ -1,8 +1,8 @@
 ---
 date: 2014-11-23
 tags: ruby tips
-title: Ruby: Return a Boolean
-description: Spoiler Alert: `!!` can cooerce a nonn-boolean variable into a variable.
+title: "Ruby: Return a Boolean"
+description: "Spoiler Alert: `!!` can cooerce a non-boolean variable into a variable."
 ---
 
 If you want to return a `true` or `false` value in ruby, you could try something like:

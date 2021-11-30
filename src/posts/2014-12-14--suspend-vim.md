@@ -1,8 +1,8 @@
 ---
-date: 2014-12-14
-tags: vim shell
 title: Suspend Vim
-description: Spoiler Alert: Ctrl-Z and then fg to resume
+date: 2014-12-14
+description: Spoiler Alert - Ctrl-Z and then fg to resume
+tags: vim shell
 ---
 
 If you want to suspend vim (or many other unix appications), pressing `ctrl-z`
