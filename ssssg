@@ -1,25 +1,41 @@
 #!/bin/sh
 
-debug=0
-
-function md_files() {
-    find src -type f | grep "\.md$" | sort -r
-}
+debug=1
 
 function main() {
-    rm -rf dst
-    rm -f src/index.md src/archive.md
-    mkdir -p src dst/posts
+    rm -rf dst tmp
+    mkdir -p src dst/posts dst/tags tmp/tags
 
     # generate an index.md from all our posts
-    md_files | generate_index_md
+    #   md_files | xargs -I "{src_file}" echo "{src_file}"
 
-    md_files | md_files_to_html_files
+    # md_files | xargs -I "{src_file}" generate_new_md_files "{src_file}"
+    # declare -f echoo
+    # md_files | xargs -I "{}" sh -c "generate_new_md_files {}"
+    find src -type f | grep "\.md$" | sort -r | generate_new_md_files
+
+
+    # find tmp/tags -type f | xargs -I {} basename {} ".md" |  xargs -I {tag} -n1 sh -c "{ printf # {tag}"; cat "tmp/tags/{tag}.md; } > tmp/tags/{tag}/tmp.md &&  mv tmp/tags/{tag}/tmp.md tmp/tags/{tag}.md"
+
+
+
+    # md_files | xargs -I "{src_file}" echoo "{src_file}"
+    # echo $(md_files) | xargs -0 wc
+    # md_files | xargs generate_new_md_files
+    find src tmp -type f | grep "\.md$" | sort -r |  md_files_to_html_files
+
+
+
+    # create tags.html file
+    find tmp/tags -type f | xargs -I {} basename {} ".md" | xargs -I {} -n1 echo "- [{}](tags/{}.html)" >> tmp/tags.md
+    md_file_to_html_file tmp/tags.md | sort  > dst/tags.html
+
 
     cp -r src/css dst/css
 
 
-    echo "Generated $(md_files | wc -l) files"
+    # rm -rf tmp
+    echo "Generated $(find dst | wc -l) files"
 }
 
 function md_files_to_html_files() {
@@ -31,46 +47,40 @@ function md_files_to_html_files() {
         fi
         md_file_to_html_file "$file_path" > "$dst_path"
     done
-
 }
 
 function md_file_to_html_file() {
     input_file="$1"
-    css_dir=$(realpath --relative-to="$input_file" "src/css/style.css")
+    # css_dir=$(realpath --relative-to="$input_file" "src/css/style.css")
     # echo css $css_dir
 
     pandoc \
-        --data-dir dst \
-        --css "./dst/$css_dir" \
+        --css="/css/style.css" \
         --include-before-body src/_top.html \
         --include-after-body src/_bottom.html \
         --title "Will Clarke" \
         --to=html5  \
         "$input_file"
-        # --standalone \
-    # --css=css/style.css
+        # --metadata title="" \
+    # --standalone \
     #
-        # --include-in-header=src/_header.html \
+    # --include-in-header=src/_header.html \
         # --css="$css_dir" \
-}
+        }
 
 function src_to_dst_path() {
-    echo "$1" | sed -e's/src/dst/' -e's/\.md$/\.html/'
+    echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
 }
 
-function generate_index_md() {
-     echo "
----
-title: Home
----
-" >> src/index.md
-    echo "
----
-title: Archive
----
-" >> src/archive.md
+# function tag_count() {
+#                      }
+
+function generate_new_md_files() {
     while read -r file_path
     do
+        if [ "$file_path" == "src/about.md" ]; then
+            continue
+        fi
         md_file=$(cat "$file_path")
         title=$(echo "$md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
         description=$(echo "$md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
@@ -79,16 +89,24 @@ title: Archive
 
         dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
         formatted_date=$(gdate -d "$date" +"%e %B %Y")
+        linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
+        # TODO: Add a count to this
 
-        echo "
-# [$title]($dst_path)
+
+        echo "# [$title]($dst_path)
   $description ($formatted_date)
-  $tags
-" >> src/index.md
-        echo "
-- *"$date"* [$title]($dst_path)
-" >> src/archive.md
+  $linked_tags
+" >> tmp/index.md
+        echo "- *"$date"* [$title]($dst_path)
+" >> tmp/archive.md
+        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"
+- *[$title]($dst_path)* $date
+\" >> tmp/tags/{tag}.md"
+
     done
+
 }
+
+export -f md_file_to_html_file
 
 main

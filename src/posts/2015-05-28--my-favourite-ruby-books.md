@@ -1,8 +1,6 @@
 ---
 date: 2015-05-28
-tags:
-  - Ruby
-  - Books
+tags: ruby books
 title: My favourite Ruby books
 ---
 
