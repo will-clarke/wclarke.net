@@ -1,17 +1,17 @@
 #!/bin/sh
 
-debug=1
-
 function main() {
     rm -rf dst tmp
     mkdir -p src dst/posts dst/tags tmp/tags
 
-    find src -type f | grep "\.md$" | sort -r | generate_new_md_files
+    find src/posts -type f | grep "\.md$" | sort -r | generate_new_md_files
     find src tmp -type f | grep "\.md$" | sort -r |  md_files_to_html_files
 
+    md_file_to_html_file src/about.md > dst/about.html
+
     # create tags.html file
-    find tmp/tags -type f | xargs -I {} basename {} ".md" | xargs -I {} -n1 echo "- [{}](tags/{}.html)" >> tmp/tags.md
-    sort tmp/tags.md > tmp/tags.md.bak && mv tmp/tags.md.bak tmp/tags.md
+    find tmp/tags -type f | xargs -I {} basename {} ".md" | xargs -I {} -n1 sh -c 'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
+    sort tmp/tags-unsorted.md > tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
 
     cp -r src/css dst/css
@@ -22,11 +22,7 @@ function main() {
 function md_files_to_html_files() {
     while read -r file_path
     do
-        dst_path=$(src_to_dst_path "$file_path")
-        if [ "$debug" == 1 ]; then
-            echo $dst_path
-        fi
-        md_file_to_html_file "$file_path" > "$dst_path"
+        md_file_to_html_file "$file_path" > "$(src_to_dst_path "$file_path")"
     done
 }
 
@@ -45,15 +41,10 @@ function src_to_dst_path() {
     echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
 }
 
-# function tag_count() {
-#                      }
-
 function generate_new_md_files() {
+    printf "Hello!👋😃\nI'm a software engineer based in the UK.\n" > tmp/index.md
     while read -r file_path
     do
-        if [ "$file_path" == "src/about.md" ]; then
-            continue
-        fi
         md_file=$(cat "$file_path")
         title=$(echo "$md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
         description=$(echo "$md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
@@ -63,21 +54,11 @@ function generate_new_md_files() {
         dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
         formatted_date=$(gdate -d "$date" +"%e %B %Y")
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
-        # TODO: Add a count to this
 
-
-        echo "# [$title]($dst_path)
-  $description ($formatted_date)
-  $linked_tags
-" >> tmp/index.md
-        echo "- *"$date"* [$title]($dst_path)
-" >> tmp/archive.md
-        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"
-- *[$title]($dst_path)* $date
-\" >> tmp/tags/{tag}.md"
-
+        printf "# [$title]($dst_path)\n$description\n$linked_tags\n" >> tmp/index.md
+        printf "- *"$date"* [$title]($dst_path)\n" >> tmp/archive.md
+        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
     done
-
 }
 
 export -f md_file_to_html_file
