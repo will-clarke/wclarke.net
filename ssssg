@@ -1,29 +1,27 @@
 #!/bin/sh
 
 function main() {
-    rm -rf dst tmp
-    mkdir -p src dst/posts dst/tags tmp/tags
+    # some housekeeping...
+    rm -rf dst tmp && mkdir -p src dst/{posts,tags} tmp/tags
 
-    find src/posts -type f | grep "\.md$" | sort -r | generate_new_md_files
-    find src tmp -type f | grep "\.md$" | sort -r |  md_files_to_html_files
+    # generate index / archive / tag files from our posts
+    find src/posts -type f | grep "\.md$" | sort -r | generate_tmp_md_files
 
-    md_file_to_html_file src/about.md > dst/about.html
+    # find all markdown files and turn them into corresponding html in the dst path
+    find src tmp -type f | grep "\.md$" | sort -r | \
+        xargs -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
+
+    # md_file_to_html_file src/about.md > dst/about.html
 
     # create tags.html file
-    find tmp/tags -type f | xargs -I {} basename {} ".md" | xargs -I {} -n1 sh -c 'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
+    find tmp/tags -type f | xargs -I {} basename {} ".md" | \
+        xargs -I {} -n1 sh -c 'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
     sort tmp/tags-unsorted.md > tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
 
     cp -r src/css dst/css
 
     echo "Generated $(find dst | wc -l) files"
-}
-
-function md_files_to_html_files() {
-    while read -r file_path
-    do
-        md_file_to_html_file "$file_path" > "$(src_to_dst_path "$file_path")"
-    done
 }
 
 function md_file_to_html_file() {
@@ -41,8 +39,8 @@ function src_to_dst_path() {
     echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
 }
 
-function generate_new_md_files() {
-    printf "Hello!👋😃\nI'm a software engineer based in the UK.\n" > tmp/index.md
+function generate_tmp_md_files() {
+    printf "Hello!👋😃\n\nI'm a software engineer based in the UK.\n\n---\n\n" > tmp/index.md
     while read -r file_path
     do
         md_file=$(cat "$file_path")
@@ -55,17 +53,17 @@ function generate_new_md_files() {
         formatted_date=$(gdate -d "$date" +"%e %B %Y")
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
-        printf "# [$title]($dst_path)\n$description\n$linked_tags\n" >> tmp/index.md
-        printf "- *"$date"* [$title]($dst_path)\n" >> tmp/archive.md
+        printf "# [$title]($dst_path)\n$description\n$linked_tags\n\n" >> tmp/index.md
+        printf -- "- *"$date"* [$title]($dst_path)\n\n" >> tmp/archive.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
     done
 }
 
 export -f md_file_to_html_file
+export -f src_to_dst_path
 
 main
 
 # TODOs
-# - tag counts
 # - tag headers on tag pages
 # - rss feed

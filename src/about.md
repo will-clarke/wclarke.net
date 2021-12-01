@@ -4,6 +4,14 @@
 
 # Hello, I'm Will
 
+Here, have some links:
+
+<nav>
+   <a href="mailto:wmmclarke@gmail.com">mail</a>
+   <a href="https://git.sr.ht/~will-clarke">sr.ht</a>
+   <a href="https://github.com/will-clarke">github</a>
+</nav>
+
 I've spent a while as a software engineer.
 
 If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
