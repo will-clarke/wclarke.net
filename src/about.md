@@ -13,17 +13,11 @@ If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/
 
 If you just want to get to know me, here are some mostly non-technical things that interest me:
 
-- biodiversity / animals
-- climate / environment
 - evolution
-- family / friends
-- films
 - futurism
 - gardening / chopping wood / being outside
 - go - both the language but also the board game
-- food (the eating part is the best bit)
 - history
-- politics / economics
 - programming
 - reading
 - science
