@@ -6,35 +6,16 @@ function main() {
     rm -rf dst tmp
     mkdir -p src dst/posts dst/tags tmp/tags
 
-    # generate an index.md from all our posts
-    #   md_files | xargs -I "{src_file}" echo "{src_file}"
-
-    # md_files | xargs -I "{src_file}" generate_new_md_files "{src_file}"
-    # declare -f echoo
-    # md_files | xargs -I "{}" sh -c "generate_new_md_files {}"
     find src -type f | grep "\.md$" | sort -r | generate_new_md_files
-
-
-    # find tmp/tags -type f | xargs -I {} basename {} ".md" |  xargs -I {tag} -n1 sh -c "{ printf # {tag}"; cat "tmp/tags/{tag}.md; } > tmp/tags/{tag}/tmp.md &&  mv tmp/tags/{tag}/tmp.md tmp/tags/{tag}.md"
-
-
-
-    # md_files | xargs -I "{src_file}" echoo "{src_file}"
-    # echo $(md_files) | xargs -0 wc
-    # md_files | xargs generate_new_md_files
     find src tmp -type f | grep "\.md$" | sort -r |  md_files_to_html_files
-
-
 
     # create tags.html file
     find tmp/tags -type f | xargs -I {} basename {} ".md" | xargs -I {} -n1 echo "- [{}](tags/{}.html)" >> tmp/tags.md
-    md_file_to_html_file tmp/tags.md | sort  > dst/tags.html
-
+    sort tmp/tags.md > tmp/tags.md.bak && mv tmp/tags.md.bak tmp/tags.md
+    md_file_to_html_file tmp/tags.md > dst/tags.html
 
     cp -r src/css dst/css
 
-
-    # rm -rf tmp
     echo "Generated $(find dst | wc -l) files"
 }
 
@@ -51,9 +32,6 @@ function md_files_to_html_files() {
 
 function md_file_to_html_file() {
     input_file="$1"
-    # css_dir=$(realpath --relative-to="$input_file" "src/css/style.css")
-    # echo css $css_dir
-
     pandoc \
         --css="/css/style.css" \
         --include-before-body src/_top.html \
@@ -61,12 +39,7 @@ function md_file_to_html_file() {
         --title "Will Clarke" \
         --to=html5  \
         "$input_file"
-        # --metadata title="" \
-    # --standalone \
-    #
-    # --include-in-header=src/_header.html \
-        # --css="$css_dir" \
-        }
+}
 
 function src_to_dst_path() {
     echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
@@ -110,3 +83,8 @@ function generate_new_md_files() {
 export -f md_file_to_html_file
 
 main
+
+# TODOs
+# - tag counts
+# - tag headers on tag pages
+# - rss feed
