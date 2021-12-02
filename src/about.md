@@ -4,32 +4,33 @@ title: Hello, I'm Will
 
 I'm a software engineer based in the UK.
 
-Here, have some links:
+- Here, have some links:
 
-[email](mailto:wmmclarke@gmail.com)
-[source hut](https://git.sr.ht/~will-clarke)
-[github](https://github.com/will-clarke)
-[linkedin](https://www.linkedin.com/in/wmmclarke/)
+[Email](mailto:wmmclarke@gmail.com) - let's hope I don't get swamped by spam.
 
 [Source Hut](https://git.sr.ht/~will-clarke) is kind of cool git repository (amongst other things) and emphasises simplicity over everything (which I'm starting to value more and more).
 
-If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
+[Github](https://github.com/will-clarke) has a lovely green commit graph which **PROVES** I'm totally amazing at code (/sarcasm)
 
-If you just want to get to know me, here are some mostly non-technical things that interest me:
+[linkedin](https://www.linkedin.com/in/wmmclarke/) for job stuff ¯\_(ツ)\_/¯
 
-- evolution
-- futurism
-- gardening / chopping wood / being outside
-- go - both the language but also the board game
-- history
-- programming
-- reading
-- science
-- space
-- startups
-- technology
+- If you just want to get to know me, here are some mostly non-technical things that interest me:
 
-You know what. I'm gonna post my CV here anyway. It's not like you can stop me.
+  - evolution
+  - futurism
+  - gardening / chopping wood / being outside
+  - go - both the language but also the board game
+  - history
+  - programming
+  - reading
+  - science
+  - space
+  - startups
+  - technology
+
+- If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
+
+- You know what. I'm gonna post my CV here anyway. It's not like you can stop me.
 
 ---
 

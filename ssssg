@@ -22,7 +22,7 @@ main() {
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.
     for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
-        echo "- [$tag](tags/$tag.html) ($(wc -l < tmp/tags/$tag.md | xargs))" >> tmp/tags-unsorted.md
+        echo "- [$tag](tags/$tag.html) ($(wc -l < tmp/tags/"$tag".md | xargs))" >> tmp/tags-unsorted.md
     done
     sort tmp/tags-unsorted.md >> tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
@@ -47,19 +47,25 @@ src_to_dst_path() {
     echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
 }
 
+# This function creates three new files having parsed all the posts.
 generate_tmp_md_files() {
+    # We initially load up some sane front-matter defaults for pandoc.
     printf -- "---\ntitle: Home\n---\n\n%b\n\n---\n\n" "$(config_for index_md)" > tmp/index.md
     printf -- "---\ntitle: Posts\n---\n" > tmp/posts.md
     printf -- "---\ntitle: Tags\n---\n" > tmp/tags.md
+    # Looping through the posts...
     while read -r file_path
     do
-        md_file=$(cat "$file_path")
-        title=$(echo "$md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
-        description=$(echo "$md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
-        date=$(echo "$md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
-        tags=$(echo "$md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
+        # Assigning variables from the front-matter of the markdown post
+        post_md_file=$(cat "$file_path")
+        title=$(echo "$post_md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
+        description=$(echo "$post_md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
+        date=$(echo "$post_md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
+        tags=$(echo "$post_md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
 
-        dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
+        # Calculate the ultimate root paths for the generated html files
+        dst_path=$(echo "$file_path" | sed -e's#src/##' -e's/\.md$/\.html/')
+        # A list of markdown
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
@@ -69,7 +75,7 @@ generate_tmp_md_files() {
 }
 
 config_for() {
-    cat src/config.yaml | grep "^$1: " | cut -d' ' -f2-
+    grep "^$1: " src/config.yaml | cut -d' ' -f2-
 }
 
 
