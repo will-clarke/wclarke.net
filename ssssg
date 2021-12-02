@@ -11,6 +11,7 @@ main() {
     # Find all markdown files and turn them into corresponding html in the dst path.
     find src tmp -type f -name "*.md" -print0 | \
         xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
+    // TODO: maybe creat a function to avoid this horrible stuff.
 
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.
