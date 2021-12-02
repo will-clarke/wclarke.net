@@ -8,10 +8,15 @@ main() {
     # using our posts as a source
     find src/posts -type f -name "*.md" | sort -r | generate_tmp_md_files
 
+    # Add h1 s for tags pages
+    for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
+        tags_file=$(cat "tmp/tags/$tag.md")
+        printf "# '%s' Tags\n\n%s" "$tag" "$tags_file" > "tmp/tags/$tag.md"
+    done
+
     # Find all markdown files and turn them into corresponding html in the dst path.
     find src tmp -type f -name "*.md" -print0 | \
         xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
-    // TODO: maybe creat a function to avoid this horrible stuff.
 
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.

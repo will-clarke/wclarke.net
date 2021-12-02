@@ -232,9 +232,9 @@ nav > a {
   padding-top: 1.5em;
   padding-bottom: 0.5em;
 
-  transition: all 15s ease-in-out;
+  /* transition: all 3 ease-in-out; */
 }
 
-.main:hover {
-  transform: scale(7);
-}
+/* .main:hover { */
+/*   transform: scale(1.3); */
+/* } */
