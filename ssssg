@@ -2,19 +2,19 @@
 
 main() {
     # some housekeeping...
-    rm -rf dst tmp && mkdir -p src dst/{posts,tags} tmp/tags
+    rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags
 
     # generate index / archive / tag files from our posts
-    find src/posts -type f | grep "\.md$" | sort -r | generate_tmp_md_files
+    find src/posts -type f -name "*.md" | sort -r | generate_tmp_md_files
 
     # find all markdown files and turn them into corresponding html in the dst path
-    find src tmp -type f | grep "\.md$" | sort -r | \
+    find src tmp -type f -name "*.md" | \
         xargs -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
 
     # md_file_to_html_file src/about.md > dst/about.html
 
     # create tags.html file
-    find tmp/tags -type f | xargs -I {} basename {} ".md" | \
+    find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | \
         xargs -I {} -n1 sh -c 'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
     sort tmp/tags-unsorted.md > tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
@@ -53,7 +53,6 @@ generate_tmp_md_files() {
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
-        # printf "# [$title]($dst_path)\n$description\n$linked_tags\n\n" >> tmp/index.md
         printf -- "- *%s* [%s](%s)\n\n" "$date" "$title" "$dst_path" >> tmp/archive.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
     done
