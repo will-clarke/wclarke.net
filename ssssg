@@ -2,7 +2,7 @@
 
 main() {
     # Some housekeeping...
-    rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags
+    rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags && touch src/config.yaml
 
     # Generate tmp/index.md & tmp/posts.md & tmp/tags.md & tmp/tags/example-tag.md files.
     # using our posts as a source
@@ -18,7 +18,6 @@ main() {
     for tmp_file in $(find src tmp -type f -name "*.md"); do
         md_file_to_html_file "$tmp_file" > "$(src_to_dst_path "$tmp_file")"
     done
-    # xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
 
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.
@@ -39,7 +38,7 @@ md_file_to_html_file() {
         --css="/css/style.css" \
         --include-before-body src/_top.html \
         --include-after-body src/_bottom.html \
-        --title "Will Clarke" \
+        --title "$(config_for title)" \
         --to=html5  \
         "$input_file"
 }
@@ -49,7 +48,7 @@ src_to_dst_path() {
 }
 
 generate_tmp_md_files() {
-    printf -- "---\ntitle: Home\n---\n\nHello!👋😃\n\nI'm a software engineer based in the UK.\n\n---\n\n" > tmp/index.md
+    printf -- "---\ntitle: Home\n---\n\n%b\n\n---\n\n" "$(config_for index_md)" > tmp/index.md
     printf -- "---\ntitle: Posts\n---\n" > tmp/posts.md
     printf -- "---\ntitle: Tags\n---\n" > tmp/tags.md
     while read -r file_path
@@ -69,8 +68,13 @@ generate_tmp_md_files() {
     done
 }
 
+config_for() {
+    cat src/config.yaml | grep "^$1: " | cut -d' ' -f2-
+}
+
+
 main
 
 # TODOs
-# - tag headers on tag pages
+# -
 # - rss feed

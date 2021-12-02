@@ -1,8 +1,6 @@
 ---
-title: About
+title: Hello, I'm Will
 ---
-
-# Hello, I'm Will
 
 I'm a software engineer based in the UK.
 
@@ -12,6 +10,8 @@ Here, have some links:
 [source hut](https://git.sr.ht/~will-clarke)
 [github](https://github.com/will-clarke)
 [linkedin](https://www.linkedin.com/in/wmmclarke/)
+
+[Source Hut](https://git.sr.ht/~will-clarke) is kind of cool git repository (amongst other things) and emphasises simplicity over everything (which I'm starting to value more and more).
 
 If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
 
@@ -30,6 +30,8 @@ If you just want to get to know me, here are some mostly non-technical things th
 - technology
 
 You know what. I'm gonna post my CV here anyway. It's not like you can stop me.
+
+---
 
 <div class="org-center">
 <p>
