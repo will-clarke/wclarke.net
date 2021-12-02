@@ -1,21 +1,21 @@
 #!/bin/sh
 
 main() {
-    # some housekeeping...
+    # Some housekeeping...
     rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags
 
-    # generate index / archive / tag files from our posts
+    # Generate tmp/index.md & tmp/archive.md & tmp/tags.md & tmp/tags/example-tag.md files.
+    # using our posts as a source
     find src/posts -type f -name "*.md" | sort -r | generate_tmp_md_files
 
-    # find all markdown files and turn them into corresponding html in the dst path
-    find src tmp -type f -name "*.md" | \
-        xargs -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
+    # Find all markdown files and turn them into corresponding html in the dst path.
+    find src tmp -type f -name "*.md" -print0 | \
+        xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
 
-    # md_file_to_html_file src/about.md > dst/about.html
-
-    # create tags.html file
-    find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | \
-        xargs -I {} -n1 sh -c 'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
+    # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
+    # all into a tmp directory, which we then sort & pandoc-ise.
+    find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" |  xargs -I {} -n1 sh -c \
+        'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
     sort tmp/tags-unsorted.md > tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
 
