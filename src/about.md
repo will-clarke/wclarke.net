@@ -1,3 +1,7 @@
+---
+title: About
+---
+
 # Hello, I'm Will
 
 I'm a software engineer based in the UK.

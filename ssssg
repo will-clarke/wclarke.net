@@ -4,25 +4,28 @@ main() {
     # Some housekeeping...
     rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags
 
-    # Generate tmp/index.md & tmp/archive.md & tmp/tags.md & tmp/tags/example-tag.md files.
+    # Generate tmp/index.md & tmp/posts.md & tmp/tags.md & tmp/tags/example-tag.md files.
     # using our posts as a source
     find src/posts -type f -name "*.md" | sort -r | generate_tmp_md_files
 
     # Add h1 s for tags pages
     for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
         tags_file=$(cat "tmp/tags/$tag.md")
-        printf "# '%s' Tags\n\n%s" "$tag" "$tags_file" > "tmp/tags/$tag.md"
+        printf -- "---\ntitle: %s tags\n---\n\n# '%s' tags\n\n%s" "$tag" "$tag" "$tags_file" > "tmp/tags/$tag.md"
     done
 
     # Find all markdown files and turn them into corresponding html in the dst path.
-    find src tmp -type f -name "*.md" -print0 | \
-        xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
+    for tmp_file in $(find src tmp -type f -name "*.md"); do
+        md_file_to_html_file "$tmp_file" > "$(src_to_dst_path "$tmp_file")"
+    done
+    # xargs -0 -I {} sh -c 'md_file_to_html_file "{}" > "$(src_to_dst_path "{}")"'
 
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.
-    find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" |  xargs -I {} -n1 sh -c \
-        'echo "- [{}](tags/{}.html) ($(wc -l < tmp/tags/{}.md | xargs))"' >> tmp/tags-unsorted.md
-    sort tmp/tags-unsorted.md > tmp/tags.md
+    for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
+        echo "- [$tag](tags/$tag.html) ($(wc -l < tmp/tags/$tag.md | xargs))" >> tmp/tags-unsorted.md
+    done
+    sort tmp/tags-unsorted.md >> tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
 
     cp -r src/css dst/css
@@ -46,7 +49,9 @@ src_to_dst_path() {
 }
 
 generate_tmp_md_files() {
-    printf "Hello!👋😃\n\nI'm a software engineer based in the UK.\n\n---\n\n" > tmp/index.md
+    printf -- "---\ntitle: Home\n---\n\nHello!👋😃\n\nI'm a software engineer based in the UK.\n\n---\n\n" > tmp/index.md
+    printf -- "---\ntitle: Posts\n---\n" > tmp/posts.md
+    printf -- "---\ntitle: Tags\n---\n" > tmp/tags.md
     while read -r file_path
     do
         md_file=$(cat "$file_path")
@@ -59,13 +64,10 @@ generate_tmp_md_files() {
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
-        printf -- "- *%s* [%s](%s)\n\n" "$date" "$title" "$dst_path" >> tmp/archive.md
+        printf -- "- *%s* [%s](%s)\n\n" "$date" "$title" "$dst_path" >> tmp/posts.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
     done
 }
-
-export -f md_file_to_html_file
-export -f src_to_dst_path
 
 main
 
