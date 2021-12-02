@@ -1,6 +1,6 @@
 #!/bin/sh
 
-function main() {
+main() {
     # some housekeeping...
     rm -rf dst tmp && mkdir -p src dst/{posts,tags} tmp/tags
 
@@ -24,7 +24,7 @@ function main() {
     echo "Generated $(find dst | wc -l) files"
 }
 
-function md_file_to_html_file() {
+md_file_to_html_file() {
     input_file="$1"
     pandoc \
         --css="/css/style.css" \
@@ -35,11 +35,11 @@ function md_file_to_html_file() {
         "$input_file"
 }
 
-function src_to_dst_path() {
+src_to_dst_path() {
     echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
 }
 
-function generate_tmp_md_files() {
+generate_tmp_md_files() {
     printf "Hello!👋😃\n\nI'm a software engineer based in the UK.\n\n---\n\n" > tmp/index.md
     while read -r file_path
     do
@@ -50,11 +50,11 @@ function generate_tmp_md_files() {
         tags=$(echo "$md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
 
         dst_path=$(src_to_dst_path "$file_path" | sed 's#dst/##')
-        formatted_date=$(gdate -d "$date" +"%e %B %Y")
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
-        printf "# [$title]($dst_path)\n$description\n$linked_tags\n\n" >> tmp/index.md
-        printf -- "- *"$date"* [$title]($dst_path)\n\n" >> tmp/archive.md
+        printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
+        # printf "# [$title]($dst_path)\n$description\n$linked_tags\n\n" >> tmp/index.md
+        printf -- "- *%s* [%s](%s)\n\n" "$date" "$title" "$dst_path" >> tmp/archive.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
     done
 }
