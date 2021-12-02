@@ -27,6 +27,8 @@ main() {
     sort tmp/tags-unsorted.md >> tmp/tags.md
     md_file_to_html_file tmp/tags.md > dst/tags.html
 
+    generate_rss_feed > dst/index.xml
+
     cp -r src/css dst/css
 
     echo "Generated $(find dst | wc -l) files"
@@ -60,7 +62,7 @@ generate_tmp_md_files() {
         post_md_file=$(cat "$file_path")
         title=$(echo "$post_md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
         description=$(echo "$post_md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
-        date=$(echo "$post_md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
+        post_date=$(echo "$post_md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
         tags=$(echo "$post_md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
 
         # Calculate the ultimate root paths for the generated html files
@@ -69,8 +71,17 @@ generate_tmp_md_files() {
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
-        printf -- "- *%s* [%s](%s)\n\n" "$date" "$title" "$dst_path" >> tmp/posts.md
-        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $date\" >> tmp/tags/{tag}.md"
+        printf -- "- *%s* [%s](%s)\n\n" "$post_date" "$title" "$dst_path" >> tmp/posts.md
+        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title]($dst_path)* $post_date\" >> tmp/tags/{tag}.md"
+
+
+        echo "<item>
+<title></title>
+<link>$(config_for base_url)/$dst_path</link>
+<pubDate>$(gdate -d "$post_date")</pubDate>
+<guid>$(config_for base_url)/$dst_path</guid>
+<description>$(echo $post_md_file | tail -n +7)</description>
+</item>" >> tmp/index.xml
     done
 }
 
@@ -78,9 +89,17 @@ config_for() {
     grep "^$1: " src/config.yaml | cut -d' ' -f2-
 }
 
+generate_rss_feed() {
+    echo "<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+<title>$(config_for title)</title>
+<link>$(config_for base_url)</link>
+<description>$(config_for rss_description)</description>
+<generator>ssssg</generator>
+<lastBuildDate>$(date)</lastBuildDate>
+<atom:link href="$(config_for base_url)/index.xml" rel="self" type="application/rss+xml"/>"
+    cat tmp/index.xml
+    echo "</channel></rss>"
+}
 
 main
-
-# TODOs
-# -
-# - rss feed
