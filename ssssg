@@ -5,33 +5,29 @@ main() {
     rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags tmp/posts
     touch src/config.yaml
 
-    # Generate tmp/index.md & tmp/posts.md & tmp/tags.md & tmp/tags/example-tag.md files.
-    # using our posts as a source
+    # Generate tmp/posts/*.md, tmp/index.md, tmp/posts.md, tmp/tags.md,
+    # tmp/tags/example-tag.md files, using our posts as a source
     find src/posts -type f -name "*.md" | sort -r | generate_tmp_files
 
-    # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
-    # all into a tmp directory, which we then sort & pandoc-ise.
-    find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | while read -r tag; do
-        echo "- [$tag](tags/$tag.html) ($(wc -l < tmp/tags/"$tag".md | xargs))" >> tmp/tags-unsorted.md
+    # Generate tags.md file. Grab the list of tags from our tmp/tags directory,
+    # then chuck them all into a tmp directory, which we then sort & pandoc-ise.
+    tags=$(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md")
+    echo "$tags" | while read -r tag; do
+        tag_count="$(wc -l < tmp/tags/"$tag".md | xargs)"
+        echo "- [$tag](tags/$tag.html) ($tag_count)" >> tmp/tags-unsorted.md
         tags_file=$(cat "tmp/tags/$tag.md")
         printf -- "---\ntitle: %s tags\n---\n\n%s" "$tag" "$tags_file" > "tmp/tags/$tag.md"
     done
     sort tmp/tags-unsorted.md >> tmp/tags.md && rm tmp/tags-unsorted.md
 
-    # Add h1 s for tags pages
-    #     find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | while read -r tag; do
-    # # for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
-    #     done
-
-    # Find all markdown files and turn them into corresponding html in the dst path.
-    # for file in $(find src tmp -type f -name "*.md"); do
+    # Find all markdown files in out tmp directory and then turn them into
+    # corresponding html in the dst path.
     find tmp -type f -name "*.md" | while read -r file; do
-        md_file_to_html_file "$file" > "$(src_to_dst_path "$file")"
+        html_dst_path="$(echo "$file" | sed -e 's/tmp/dst/' -e's/\.md$/\.html/')"
+        md_file_to_html_file "$file" > "$html_dst_path"
     done
 
     md_file_to_html_file src/about.md > dst/about.html
-
-    # md_file_to_html_file tmp/tags.md > dst/tags.html
 
     generate_rss_feed > dst/index.xml
 
@@ -51,47 +47,47 @@ md_file_to_html_file() {
         "$input_file"
 }
 
-src_to_dst_path() {
-    echo "$1" | sed -e's/src/dst/' -e 's/tmp/dst/' -e's/\.md$/\.html/'
-}
-
-# This function creates three new files having parsed all the posts.
+# Generate tmp/posts/*.md, tmp/index.md, tmp/posts.md, tmp/tags.md,
+# tmp/tags/example-tag.md files, using our posts as a source
 generate_tmp_files() {
     # We initially load up some sane front-matter defaults for pandoc.
     printf -- "---\ntitle: Home\n---\n\n%b\n\n---\n\n" "$(config_for index_md)" > tmp/index.md
     printf -- "---\ntitle: Posts\n---\n" > tmp/posts.md
     printf -- "---\ntitle: Tags\n---\n" > tmp/tags.md
-    # Looping through the posts...
-    while read -r file_path
-    do
+    # For every post, we want to:
+    while read -r post_file_path; do
         # Assigning variables from the front-matter of the markdown post
-        post_md_file=$(cat "$file_path")
+        post_md_file=$(cat "$post_file_path")
         title=$(echo "$post_md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
         description=$(echo "$post_md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
         post_date=$(echo "$post_md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
         tags=$(echo "$post_md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
 
         # Calculate the ultimate root paths for the generated html files
-        dst_path=$(echo "$file_path" | sed -e's#src/##' -e's/\.md$/\.html/' -e's#tags/##')
+        dst_path=$(echo "$post_file_path" | sed -e's#src/##' -e's/\.md$/\.html/' -e's#tags/##')
+
         # A list of tags converted to a list of markdown links
         linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
+        # Add a heading from every post into the index.md / posts.md
+        # and generate all our tags
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
         printf -- "- *%s* [%s](%s)\n\n" "$post_date" "$title" "$dst_path" >> tmp/posts.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
+        if [ -n "$linked_tags" ]; then
+            tmp_path="$(echo "$post_file_path" | sed 's#src/#tmp/#')"
+            cat "$post_file_path" > "$tmp_path"
+            printf "\n\n---\n\n## Tags\n\n%s" "$linked_tags" >> "$tmp_path"
+        fi
+        # Add an RSS element for the page
+        post_html_fragment="$(echo "$post_md_file" | tail -n +7 | pandoc --from markdown --to=html5)"
         echo "<item>
 <title>$(echo "$title" | xml_encode)</title>
 <link>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</link>
 <pubDate>$(gdate -d "$post_date" -R)</pubDate>
 <guid>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</guid>
-<description><![CDATA[$(echo "$post_md_file" | tail -n +7 | pandoc --from markdown --to=html5 )]]></description>
+<description><![CDATA[$post_html_fragment]]></description>
 </item>" >> tmp/index.xml
-
-        if [ -n "$linked_tags" ]; then
-            tmp_path="$(echo $file_path | sed 's#src/#tmp/#')"
-            cat "$file_path" > "$tmp_path"
-            echo "\n\n---\n\n## Tags\n\n$linked_tags" >> "$tmp_path"
-        fi
     done
 }
 
@@ -115,6 +111,5 @@ generate_rss_feed() {
     cat tmp/index.xml
     echo "</channel></rss>"
 }
-
 
 main
