@@ -2,7 +2,8 @@
 
 main() {
     # Some housekeeping...
-    rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags && touch src/config.yaml
+    rm -rf dst tmp && mkdir -p src dst/posts dst/tags tmp/tags tmp/posts
+    touch src/config.yaml
 
     # Generate tmp/index.md & tmp/posts.md & tmp/tags.md & tmp/tags/example-tag.md files.
     # using our posts as a source
@@ -18,15 +19,17 @@ main() {
     sort tmp/tags-unsorted.md >> tmp/tags.md && rm tmp/tags-unsorted.md
 
     # Add h1 s for tags pages
-#     find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | while read -r tag; do
-# # for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
-#     done
+    #     find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md" | while read -r tag; do
+    # # for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
+    #     done
 
     # Find all markdown files and turn them into corresponding html in the dst path.
     # for file in $(find src tmp -type f -name "*.md"); do
-    find src tmp -type f -name "*.md" | while read -r file; do
+    find tmp -type f -name "*.md" | while read -r file; do
         md_file_to_html_file "$file" > "$(src_to_dst_path "$file")"
     done
+
+    md_file_to_html_file src/about.md > dst/about.html
 
     # md_file_to_html_file tmp/tags.md > dst/tags.html
 
@@ -76,8 +79,6 @@ generate_tmp_files() {
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
         printf -- "- *%s* [%s](%s)\n\n" "$post_date" "$title" "$dst_path" >> tmp/posts.md
         echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
-
-
         echo "<item>
 <title>$(echo "$title" | xml_encode)</title>
 <link>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</link>
@@ -85,6 +86,12 @@ generate_tmp_files() {
 <guid>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</guid>
 <description><![CDATA[$(echo "$post_md_file" | tail -n +7 | pandoc --from markdown --to=html5 )]]></description>
 </item>" >> tmp/index.xml
+
+        if [ -n "$linked_tags" ]; then
+            tmp_path="$(echo $file_path | sed 's#src/#tmp/#')"
+            cat "$file_path" > "$tmp_path"
+            echo "\n\n---\n\n## Tags\n\n$linked_tags" >> "$tmp_path"
+        fi
     done
 }
 
