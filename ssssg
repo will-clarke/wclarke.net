@@ -6,18 +6,7 @@ main() {
 
     # Generate tmp/index.md & tmp/posts.md & tmp/tags.md & tmp/tags/example-tag.md files.
     # using our posts as a source
-    find src/posts -type f -name "*.md" | sort -r | generate_tmp_md_files
-
-    # Add h1 s for tags pages
-    for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
-        tags_file=$(cat "tmp/tags/$tag.md")
-        printf -- "---\ntitle: %s tags\n---\n\n# '%s' tags\n\n%s" "$tag" "$tag" "$tags_file" > "tmp/tags/$tag.md"
-    done
-
-    # Find all markdown files and turn them into corresponding html in the dst path.
-    for tmp_file in $(find src tmp -type f -name "*.md"); do
-        md_file_to_html_file "$tmp_file" > "$(src_to_dst_path "$tmp_file")"
-    done
+    find src/posts -type f -name "*.md" | sort -r | generate_tmp_files
 
     # Generate tags.html file. Grab the list of tags from our tmp/tags directory, then chuck them
     # all into a tmp directory, which we then sort & pandoc-ise.
@@ -25,7 +14,19 @@ main() {
         echo "- [$tag](tags/$tag.html) ($(wc -l < tmp/tags/"$tag".md | xargs))" >> tmp/tags-unsorted.md
     done
     sort tmp/tags-unsorted.md >> tmp/tags.md
-    md_file_to_html_file tmp/tags.md > dst/tags.html
+
+    # Add h1 s for tags pages
+    for tag in $(find tmp/tags -type f -print0 | xargs -0 -I {} basename {} ".md"); do
+        tags_file=$(cat "tmp/tags/$tag.md")
+        printf -- "---\ntitle: %s tags\n---\n\n%s" "$tag" "$tags_file" > "tmp/tags/$tag.md"
+    done
+
+    # Find all markdown files and turn them into corresponding html in the dst path.
+    for file in $(find src tmp -type f -name "*.md"); do
+        md_file_to_html_file "$file" > "$(src_to_dst_path "$file")"
+    done
+
+    # md_file_to_html_file tmp/tags.md > dst/tags.html
 
     generate_rss_feed > dst/index.xml
 
@@ -50,7 +51,7 @@ src_to_dst_path() {
 }
 
 # This function creates three new files having parsed all the posts.
-generate_tmp_md_files() {
+generate_tmp_files() {
     # We initially load up some sane front-matter defaults for pandoc.
     printf -- "---\ntitle: Home\n---\n\n%b\n\n---\n\n" "$(config_for index_md)" > tmp/index.md
     printf -- "---\ntitle: Posts\n---\n" > tmp/posts.md
@@ -78,9 +79,9 @@ generate_tmp_md_files() {
         echo "<item>
 <title>$(echo $title | xml_encode)</title>
 <link>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</link>
-<pubDate>$(gdate -d "$post_date")</pubDate>
+<pubDate>$(gdate -d "$post_date" -R)</pubDate>
 <guid>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</guid>
-<description>$(echo "$post_md_file" | tail -n +7 | xml_encode)</description>
+<description>$(echo "$post_md_file" | tail -n +7 | xml_encode | pandoc --from markdown --to=html5 )</description>
 </item>" >> tmp/index.xml
     done
 }
@@ -99,7 +100,7 @@ generate_rss_feed() {
 <link>$(config_for base_url)</link>
 <description>$(config_for rss_description)</description>
 <generator>ssssg</generator>
-<lastBuildDate>$(date)</lastBuildDate>
+<lastBuildDate>$(date -R)</lastBuildDate>
 <atom:link href=\""$(config_for base_url)/index.xml"\" rel=\"self\" type=\"application/rss+xml\"/>"
     cat tmp/index.xml
     echo "</channel></rss>"

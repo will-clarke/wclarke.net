@@ -46,7 +46,7 @@ The whole point of Vim is that it's easy to define the shortcuts you like. Well.
 
 - the `!` command lets you use normal bash functions
 - the `%` sign refers to the current file.
-- <CR> stands for carriage return (enter)
+- `<CR>` stands for carriage return (enter)
 
 Using this we can make a mapping like this:
 
