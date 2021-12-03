@@ -1,3 +1,3 @@
 # TODOs
 
-- rss feed
+- tags at the bottom of each post

@@ -79,14 +79,15 @@ generate_tmp_files() {
 
 
         echo "<item>
-<title>$(echo $title | xml_encode)</title>
+<title>$(echo "$title" | xml_encode)</title>
 <link>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</link>
 <pubDate>$(gdate -d "$post_date" -R)</pubDate>
 <guid>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</guid>
-<description>$(echo "$post_md_file" | tail -n +7 | xml_encode | pandoc --from markdown --to=html5 )</description>
+<description><![CDATA[$(echo "$post_md_file" | tail -n +7 | pandoc --from markdown --to=html5 )]]></description>
 </item>" >> tmp/index.xml
     done
 }
+
 xml_encode() {
     sed "s/\&/\&amp;/g;s/>/\&gt;/g;s/</\&lt;/g;s/'/\&apos;/g"
 }
@@ -98,14 +99,15 @@ config_for() {
 generate_rss_feed() {
     echo "<rss xmlns:atom=\"http://www.w3.org/2005/Atom\" version=\"2.0\">
 <channel>
-<title>$(config_for title)</title>
+<title>$(config_for rss_title)</title>
 <link>$(config_for base_url)</link>
 <description>$(config_for rss_description)</description>
 <generator>ssssg</generator>
 <lastBuildDate>$(date -R)</lastBuildDate>
-<atom:link href=\""$(config_for base_url)/index.xml"\" rel=\"self\" type=\"application/rss+xml\"/>"
+<atom:link href=\"$(config_for base_url)/index.xml\" rel=\"self\" type=\"application/rss+xml\"/>"
     cat tmp/index.xml
     echo "</channel></rss>"
 }
+
 
 main
