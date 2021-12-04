@@ -60,18 +60,19 @@ generate_tmp_files() {
         description=$(grep -iE '^description: ' "$post_file_path" | cut -d' ' -f 2-)
         post_date=$(grep -iE '^date: ' "$post_file_path" | cut -d' ' -f 2-)
         tags=$(grep -iE '^tags: ' "$post_file_path" | cut -d' ' -f 2-)
+        split_tags=$(echo "$tags" | sed -E 's/\s+$//' | tr ' ' '\n')
 
         # Calculate the ultimate root paths for the generated html files
         dst_path=$(echo "$post_file_path" | sed -e's#src/##' -e's/\.md$/\.html/' -e's#tags/##')
 
         # A list of tags converted to a list of markdown links
-        linked_tags=$(echo "$tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
+        linked_tags=$(echo "$split_tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
 
         # Add a heading from every post into the index.md / posts.md
         # and generate all our tags
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
         printf -- "- *%s* [%s](%s)\n\n" "$post_date" "$title" "$dst_path" >> tmp/posts.md
-        echo "$tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
+        echo "$split_tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
         if [ -n "$linked_tags" ]; then
             tmp_path="$(echo "$post_file_path" | sed 's#src/#tmp/#')"
             cat "$post_file_path" > "$tmp_path"
@@ -82,7 +83,7 @@ generate_tmp_files() {
         echo "<item>
 <title>$(echo "$title" | xml_encode)</title>
 <link>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</link>
-<pubDate>$(gdate -d "$post_date" -R)</pubDate>
+<pubDate>$(date -d "$post_date" -R)</pubDate>
 <guid>$(config_for base_url)/$(echo "$dst_path" | xml_encode)</guid>
 <description><![CDATA[$post_html_fragment]]></description>
 </item>" >> tmp/index.xml
