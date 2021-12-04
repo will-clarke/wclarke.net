@@ -22,12 +22,10 @@ main() {
 
     # Find all markdown files in out tmp directory and then turn them into
     # corresponding html in the dst path.
-    find tmp -type f -name "*.md" | while read -r file; do
-        html_dst_path="$(echo "$file" | sed -e 's/tmp/dst/' -e's/\.md$/\.html/')"
+    find src tmp -name "*.md" -type f ! -path 'src/posts/*' | while read -r file; do
+        html_dst_path="$(echo "$file" | sed 's/\(tmp\|src\)/dst/;s/\.md$/\.html/')"
         md_file_to_html_file "$file" > "$html_dst_path"
     done
-
-    md_file_to_html_file src/about.md > dst/about.html
 
     generate_rss_feed > dst/index.xml
 
@@ -58,10 +56,10 @@ generate_tmp_files() {
     while read -r post_file_path; do
         # Assigning variables from the front-matter of the markdown post
         post_md_file=$(cat "$post_file_path")
-        title=$(echo "$post_md_file" | grep -iE '^title: ' | cut -d' ' -f 2-)
-        description=$(echo "$post_md_file" | grep -iE '^description: ' | cut -d' ' -f 2-)
-        post_date=$(echo "$post_md_file" | grep -iE '^date: ' | cut -d' ' -f 2-)
-        tags=$(echo "$post_md_file" | grep -iE '^tags: ' | cut -d' ' -f 2-)
+        title=$(grep -iE '^title: ' "$post_file_path"| cut -d' ' -f 2-)
+        description=$(grep -iE '^description: ' "$post_file_path" | cut -d' ' -f 2-)
+        post_date=$(grep -iE '^date: ' "$post_file_path" | cut -d' ' -f 2-)
+        tags=$(grep -iE '^tags: ' "$post_file_path" | cut -d' ' -f 2-)
 
         # Calculate the ultimate root paths for the generated html files
         dst_path=$(echo "$post_file_path" | sed -e's#src/##' -e's/\.md$/\.html/' -e's#tags/##')
