@@ -1,0 +1,13 @@
+image: alpine/latest
+oauth: pages.sr.ht/PAGES:RW
+environment:
+  site: will-clarke.srht.site
+tasks:
+  - install: |
+      make install
+  - build: |
+      ./ssssg
+  - package: |
+      tar -C dst -cvz . > site.tar.gz
+  - upload: |
+      acurl -f https://pages.sr.ht/publish/$site -Fcontent=@site.tar.gz
