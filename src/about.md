@@ -2,34 +2,30 @@
 title: Hello, I'm Will
 ---
 
-I'm a software engineer based in the UK.
+I'm a software engineer based in the middle of the deepest, darkest Dorset (somewhere in UK).
+I've worked remotely for a couple of years now.
+I live in a house made of mud (fancily called 'cob') without any central heating. We do have the internet though!
 
-- Here, have some links:
+## Here, have some links:
 
-[Email](mailto:wmmclarke@gmail.com) - let's hope I don't get swamped by spam.
+- [Email](mailto:wmmclarke@gmail.com)
+- [Source Hut](https://git.sr.ht/~will-clarke) (where most of my interesting code now lives...)
+- [Github](https://github.com/will-clarke)
+- [linkedin](https://www.linkedin.com/in/wmmclarke/) 
 
-[Source Hut](https://git.sr.ht/~will-clarke) is kind of cool git repository (amongst other things) and emphasises simplicity over everything (which I'm starting to value more and more).
+## Random interests 
 
-[Github](https://github.com/will-clarke) has a lovely green commit graph which **PROVES** I'm totally amazing at code (/sarcasm)
-
-[linkedin](https://www.linkedin.com/in/wmmclarke/) for job stuff ¯\_(ツ)\_/¯
-
-- If you just want to get to know me, here are some mostly non-technical things that interest me:
-
-  - evolution
-  - futurism
-  - gardening / chopping wood / being outside
-  - go - both the language but also the board game
-  - history
-  - programming
+  - evolution / biology / animals
+  - gardening / chopping wood (got to keep the fire going...) / being outside
+  - go (both the language but also the board game)
   - reading
-  - science
-  - space
+  - programming
+  - science / space / technology / futurism
   - startups
-  - technology
+  - history
 
+## CV
 - If you want to see my CV, you can grab it [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
-
 - You know what. I'm gonna post my CV here anyway. It's not like you can stop me.
 
 ---
