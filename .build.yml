@@ -1,4 +1,4 @@
-image: alpine/latest
+image: debian/buster
 oauth: pages.sr.ht/PAGES:RW
 packages:
   - pandoc
