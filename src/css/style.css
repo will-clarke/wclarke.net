@@ -1,7 +1,7 @@
 :root {
-  --accent-color: #f66;
-  --background: #191a1a;
-  --foreground: #e5d09a;
+  --accent-color: #23b0ff;
+  --foreground: #90C7FF;
+  --background: #121920;
 }
 
 html {
@@ -14,7 +14,7 @@ html {
 }
 
 body {
-  font-family: "Inconsolata", monospace;
+  font-family: Fira Code,Monaco,Consolas,Ubuntu Mono,monospace;
   line-height: 1.5em;
   padding: 1em;
   margin-left: auto;
@@ -47,22 +47,22 @@ a:active {
 }
 
 ::-moz-selection {
-  background: #ffa86a;
+  background: #FF7424;
   color: #000;
 }
 
 ::selection {
-  background: #ffa86a;
+  background: #FF7424;
   color: #000;
 }
 
 a::-moz-selection {
-  background: #ffa86a;
+  background: #FF7424;
   color: #0645ad;
 }
 
 a::selection {
-  background: #ffa86a;
+  background: #FF7424;
   color: #0645ad;
 }
 
@@ -86,11 +86,12 @@ img {
   filter: brightness(90%);
 }
 
+.main,
 h1,
 h2,
 h5,
 h6 {
-  font-family: "Courier Prime", monospace, sans-serif;
+  font-family: Fira Code,Monaco,Consolas,Ubuntu Mono,monospace;
   color: var(--accent-color);
   line-height: 1em;
 }
@@ -164,25 +165,25 @@ hr {
   padding: 0;
 }
 
-code {
-  white-space: pre !important;
-  border-radius: 5px;
-  padding: 4px;
-}
+/* code { */
+/*   white-space: pre !important; */
+/*   border-radius: 5px; */
+/*   padding: 4px; */
+/* } */
 
-.sourceCode {
-  font-size: 0.99em;
-  margin-top: 2em;
-  margin-bottom: 2em;
-}
+/* .sourceCode { */
+/*   font-size: 0.99em; */
+/*   margin-top: 2em; */
+/*   margin-bottom: 2em; */
+/* } */
 
-.sourceCode > code {
-  padding: 0;
-}
+/* .sourceCode > code { */
+/*   padding: 0; */
+/* } */
 
-.sourceCode pre {
-  padding: 20px 20px 20px 20px;
-}
+/* .sourceCode pre { */
+/*   padding: 20px 20px 20px 20px; */
+/* } */
 
 pre {
   word-wrap: break-word;
@@ -203,36 +204,28 @@ pre {
     visibility: hidden;
   }
 
-  .toc {
-    display: none;
-  }
 }
 
 nav {
   top: 0;
-  background-color: var(--background);
   text-align: center;
-  color: var(--foreground);
-  /* border-bottom: 1px dashed #666; */
   padding-bottom: 1em;
   font-size: 0.95em;
 }
 
-nav > a {
-  all: unset;
-  color: var(--foreground);
-  text-decoration: underline;
-}
-
 .main {
   text-align: center;
-  font-weight: 1000%;
+  font-weight: bold;
 
   font-size: 2.5em;
   padding-top: 1.5em;
   padding-bottom: 0.5em;
 
   /* transition: all 3 ease-in-out; */
+}
+
+.date {
+  color: #ACD5FF;
 }
 
 /* .main:hover { */
