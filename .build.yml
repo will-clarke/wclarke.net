@@ -17,3 +17,4 @@ tasks:
   - upload: |
       cd blog
       acurl -f https://pages.sr.ht/publish/$site -Fcontent=@site.tar.gz
+      acurl -f https://pages.sr.ht/publish/will-clarke.srht.site -Fcontent=@site.tar.gz
