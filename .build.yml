@@ -3,7 +3,7 @@ oauth: pages.sr.ht/PAGES:RW
 packages:
   - pandoc
 environment:
-  site: will-clarke.srht.site
+  site: wclarke.net
 tasks:
   - install: |
       cd blog
