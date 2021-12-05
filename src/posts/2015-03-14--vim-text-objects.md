@@ -1,6 +1,6 @@
 ---
 date: 2015-03-14
-tags: vim
+tags: vim editor
 title: Vim Text Objects
 description: Text objects are powerful & efficient ways of transforming data in vim.
 ---

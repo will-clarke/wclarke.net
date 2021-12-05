@@ -1,6 +1,6 @@
 ---
 date: 2015-02-15
-tags: vim tips
+tags: vim tips editor
 title: The Holy Grail of Vim Commands
 description:
 ---

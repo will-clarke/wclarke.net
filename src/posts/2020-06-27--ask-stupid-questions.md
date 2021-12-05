@@ -2,7 +2,7 @@
 title: Ask stupid questions
 date: 2020-06-27
 description: Ask ask ask. Keep on asking questions.
-tags:
+tags: communication teamwork
 ---
 
 Stupid questions aren't stupid.

@@ -1,6 +1,6 @@
 ---
 date: 2014-09-11
-tags: git tips
+tags: git tips unix
 title: Remove file from Git (after committing)
 description: 
 ---

@@ -1,6 +1,6 @@
 ---
 date: 2014-10-22
-tags: ruby twitter api oauth
+tags: ruby api 
 title: Twitter Apps Authentication - without another mobile number
 description: For all the 733T hackers out there who want to make a twitter bot, I've got you covered <3
 ---

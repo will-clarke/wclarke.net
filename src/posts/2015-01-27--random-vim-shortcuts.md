@@ -1,6 +1,6 @@
 ---
 date: 2015-01-27
-tags: vim tips
+tags: vim tips unix editor
 title: Random Vim Shortcuts
 description: These are very random. I do like `ggg?G` a lot though!
 ---

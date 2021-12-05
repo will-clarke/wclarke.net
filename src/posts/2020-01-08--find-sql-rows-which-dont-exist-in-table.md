@@ -1,8 +1,8 @@
 ---
 title: How to find rows which don't exist in a table
 date: 2020-01-08
-tags: sql
-description:
+tags: sql db
+description: I was recently stumped for a while trying to find rows that **didn't** exist in my SQL table...
 ---
 
 I was recently stumped for a while trying to find rows that **didn't** exist in my SQL table.

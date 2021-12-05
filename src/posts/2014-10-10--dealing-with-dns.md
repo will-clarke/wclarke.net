@@ -1,6 +1,6 @@
 ---
 date: 2014-10-10
-tags: dns heroku
+tags: dns heroku ip networking
 title: Dealing With DNS
 description: DNS can be scary. It can be confusing. But it doesn't have to be! It's important. Here's a primer to get you up and running..
 ---

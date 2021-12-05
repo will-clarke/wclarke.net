@@ -1,6 +1,6 @@
 ---
 date: 2014-10-16
-tags: ruby hash tips
+tags: ruby tips
 title: Real Defaults With Hashes
 description: Ruby hashes have a gotcha that the uninitiated should be aware of.
 ---

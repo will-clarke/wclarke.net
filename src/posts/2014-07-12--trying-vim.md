@@ -1,6 +1,6 @@
 ---
 date: 2014-07-12
-tags: vim editor
+tags: vim editor unix
 title: Trying Vim
 description: Vim has an infamously steep learning curve. It's worth diving in. Here's how to start..
 ---

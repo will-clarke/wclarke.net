@@ -1,7 +1,7 @@
 ---
 title: Maybe try vim
 date: 2019-04-08
-tags: vim
+tags: vim editor
 description: It's not for everyone, but if you spend a decent chunk of your life in front of a text editor, it probably makes sense to at least play around with vim...
 ---
 
