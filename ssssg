@@ -66,13 +66,13 @@ generate_tmp_files() {
         dst_path=$(echo "$post_file_path" | sed -e's#src/##' -e's/\.md$/\.html/' -e's#tags/##')
 
         # A list of tags converted to a list of markdown links
-        linked_tags=$(echo "$split_tags" | xargs -n1 -I {} echo "[{}](/tags/{}.html)")
+        linked_tags=$(echo "$split_tags" | xargs -I {} echo "[{}](/tags/{}.html)")
 
         # Add a heading from every post into the index.md / posts.md
         # and generate all our tags
         printf "# [%s](%s)\n%s\n%s\n\n" "$title" "$dst_path" "$description" "$linked_tags" >> tmp/index.md
         printf -- "- *%s* [%s](%s)\n\n" "$post_date" "$title" "$dst_path" >> tmp/posts.md
-        echo "$split_tags" | xargs -n1 -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
+        echo "$split_tags" | xargs -I "{tag}" sh -c "echo \"- *[$title](/$dst_path)* $post_date\" >> tmp/tags/{tag}.md"
         if [ -n "$linked_tags" ]; then
             tmp_path="$(echo "$post_file_path" | sed 's#src/#tmp/#')"
             cat "$post_file_path" > "$tmp_path"
