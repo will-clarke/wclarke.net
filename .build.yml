@@ -6,10 +6,14 @@ environment:
   site: will-clarke.srht.site
 tasks:
   - install: |
+      cd blog
       make install
   - build: |
+      cd blog
       ./ssssg
   - package: |
+      cd blog
       tar -C dst -cvz . > site.tar.gz
   - upload: |
+      cd blog
       acurl -f https://pages.sr.ht/publish/$site -Fcontent=@site.tar.gz
