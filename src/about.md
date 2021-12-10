@@ -5,7 +5,9 @@ title: About
 ## Hello, I'm Will
 
 I'm a software engineer based in the middle of the deepest, darkest Dorset (in UK).
+
 I've worked remotely for a couple of years now.
+
 I live in a house made of mud (fancily called 'cob') without any central heating. We do have the internet though!
 
 ## Links
