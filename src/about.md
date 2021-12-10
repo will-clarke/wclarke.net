@@ -33,97 +33,91 @@ September 2021 - Present. **Golang**
 
 *River Island is a leading UK High Street fashion retailer*
 
--   We're working hard to integrate with our [new warehouse provider](https://www.clippergroup.co.uk/clipper-agrees-new-five-year-contract-with-river-island/)
--   This will improve the warehouses' efficiency and growth potential
--   I help align the team's technical direction with our business objectives
+-   I work closely with technical architects, software engineers and business stakeholders to integrate the business with our [new warehouse provider](https://www.clippergroup.co.uk/clipper-agrees-new-five-year-contract-with-river-island/)
+-   Keystone project that will improve our logistical efficiency and growth potential
+-   Management role to align the team's technical direction with our business objectives
 
 
 # [<span class="underline">River Island - Wholesale</span>](https://www.riverisland.com) - Software Engineer
 
 August 2020 - September 2021 (1 year). **Golang**
 
--   Transformed & exported key data streams to new wholesale partners, expanding an important part of the business
--   We used simple serverless architecture (AWS &lambda; & SQS with Golang)
+-   Transformed and exported key data streams to new wholesale partners, expanding an important part of the business
+-   We used simple serverless architecture (AWS Lambdas and SQS with Golang)
 
 
-# [<span class="underline">SMC Gateway</span>](https://smc-gateway.com) - Remote Software Engineer (4 months)
+# [<span class="underline">SMC Gateway</span>](https://smc-gateway.com) - Software Engineer
 
-April 2020 - July 2020. **Golang**
+April 2020 - July 2020 (4 months). **Golang**
 
-*SMC builds hardware for radio & online communication*
+*SMC builds hardware for radio and online communication*
 
 -   Added new features to improve long-term hardware sales:
     -   Enabled third-party developers to interface directly with our main application (this included a client library)
-    -   Created & integrated a microservice to send push-notifications
-    -   Dockerised & added CI to our main codebase
+    -   Created and integrated a microservice to send push-notifications
+    -   Dockerised our main codebase and gave it a CI pipeline
 
 
-# [<span class="underline">Ratio</span>](https://ratio.co.uk) - Software Engineer (10 months)
+# [<span class="underline">Ratio</span>](https://ratio.co.uk) - Software Engineer
 
-June 2019 - March 2020. **Mainly Golang with some Node & PHP**
+June 2019 - March 2020 (10 months). **Golang / Node / PHP**
 
 *Ratio is a Fintech software company - products include a loan search engine.*
 
 -   Led several projects end-to-end including:
     -   Automated complex reporting processes, saving 2 engineer-hours/day
-    -   Created reusable domain models, significantly simplifying development workflow
+    -   Created reusable domain models, greatly simplifying development workflow
     -   Improved how a central model was accessed and stored, allowing the business team to be more efficient
 -   Mentored junior engineers
--   Introduced a new focus on writing & maintaining documentation - this made a huge difference to long-term productivity
 
 
-# [<span class="underline">Deliveroo</span>](https://deliveroo.co.uk/) - Software Engineer (2½ years)
+# [<span class="underline">Deliveroo</span>](https://deliveroo.co.uk/) - Software Engineer
 
-November 2016 - May 2019. **Ruby & Golang**
+November 2016 - May 2019 (2½ years). **Ruby / Golang**
 
-*Deliveroo sells & delivers restaurant meals.*
+*Deliveroo sells and delivers restaurant meals.*
 
-I was part of the CX team. We were responsible for giving the customer a great experience after ordering.
-
+-   I was part of the Customer Experience team: total focus on the customer
+-   Routinely led features end-to-end: definition, development and release
 -   Launched several successful products:
     -   Order Tracker - customers can view order progress
-    -   Self-help flow - customers can claim compensation & find help
+    -   Self-help flow - customers can claim compensation and find help
+-   Led the company-wide movement to start deprecating old apps, reducing our maintenance burden and improving the order rate
 -   Collaborated with other teams to improve our data pipeline
--   Led the company-wide movement to start deprecating old apps
-    -   this reduced our maintenance burden and improved the order rate
--   Extracted parts of our main monolith into services
-
--   Routinely lead features end-to-end: definition, development & release
 
 
-# [<span class="underline">Snaptrip</span>](https://www.snaptrip.com/) - Backend Software Engineer (2 years)
+# [<span class="underline">Snaptrip</span>](https://www.snaptrip.com/) - Backend Software Engineer
 
-October 2014 - November 2016. **Ruby / Rails**
+October 2014 - November 2016 (2 years). **Ruby / Rails**
 
 *Snaptrip is a marketplace for last-minute holiday cottages.*
 
--   We were a scrappy startup & I got stuck in everywhere
+-   We were a scrappy startup and I got stuck in everywhere
 
 
-# Personal Projects I've had fun making
+# Personal projects I've had fun making
 
 -   [URL-Shortener written in Golang](https://github.com/will-clarke/url-shortener)
 -   [Snake written in Haskell](https://github.com/will-clarke/snake-haskell) (I gave a talk about this at Deliveroo)
 -   [Pong written in Rust](https://github.com/will-clarke/Pong)
--   [Chip-8 Emulator writtten in C](https://github.com/wmmc/c8)
--   [Mucking around with Bash / Unix by curating my dotfiles](https://github.com/wmmc/dotfile)
+-   [Chip-8 Emulator written in C](https://github.com/wmmc/c8)
+-   [I wrote my website in a 140 line shell script](https://git.sr.ht/~will-clarke/super-simple-static-site-generator)
 
 
-# Technical stuff I've become interested in recently
+# Technical interests
 
 -   Functional programming / Haskell
--   Linux / Shell scritping
+-   Linux / Shell scripting
 -   Kubernetes / Docker / Devops
 
 
 # Before I got into Software&#x2026;
 
--   Forward3D: PPC Analyst (2012 - 2014)
-    -   Started off as a number-cruncher, but taught myself to code to automate a lot of my job :)
--   Durham University: MSc Evolutionary Anthropology (2007 - 2012)
+-   Forward3D: PPC Analyst (2012 - 2014) - initially an analyst but taught myself to code to automate a lot of my job
+-   Durham University: MSc Evolutionary Anthropology (2011 - 2012); BA Archaeology and Anthropology (2007-2011)
 
 
-# Some Lovely Technical Keywords
+# Some technical keywords for SEO
 
 SQL, Postgres, Terraform, AWS, Devops, Nix, Agile, Testing, Pairing, Ruby, Golang, Bash, Unix, SSH, CD, CI, API, REST, Rails, Sinatra, DB, Web, TDD, Scripting, JSON, Vim, Emacs, MVC, Git, OOP, Architecture, Software, Backend, Docker, Linux, Microservices, Serverless, Lambda, AWS, Grafana, Kibana
 
