@@ -1,6 +1,6 @@
 :root {
   --accent-color: #23b0ff;
-  --foreground: #E3F1FF;
+  --foreground: #e3f1ff;
   --background: #243240;
 }
 
@@ -14,7 +14,7 @@ html {
 }
 
 body {
-  font-family: Fira Code,Monaco,Consolas,Ubuntu Mono,monospace;
+  font-family: Fira Code, Consolas, Ubuntu Mono, monospace;
   line-height: 1.5em;
   padding: 1em;
   margin-left: auto;
@@ -47,22 +47,22 @@ a:active {
 }
 
 ::-moz-selection {
-  background: #FF7424;
+  background: #ff7424;
   color: #000;
 }
 
 ::selection {
-  background: #FF7424;
+  background: #ff7424;
   color: #000;
 }
 
 a::-moz-selection {
-  background: #FF7424;
+  background: #ff7424;
   color: #0645ad;
 }
 
 a::selection {
-  background: #FF7424;
+  background: #ff7424;
   color: #0645ad;
 }
 
@@ -91,7 +91,7 @@ h1,
 h2,
 h5,
 h6 {
-  font-family: Fira Code,Monaco,Consolas,Ubuntu Mono,monospace;
+  font-family: Fira Code, Consolas, Ubuntu Mono, monospace;
   color: var(--accent-color);
   line-height: 1em;
 }
@@ -203,7 +203,6 @@ pre {
     display: none;
     visibility: hidden;
   }
-
 }
 
 nav {
@@ -225,7 +224,7 @@ nav {
 }
 
 .date {
-  color: #ACD5FF;
+  color: #acd5ff;
 }
 
 /* .main:hover { */
