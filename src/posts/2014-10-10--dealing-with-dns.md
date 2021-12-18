@@ -9,7 +9,7 @@ When I registered my website [wmmclarke.com](http://wmmclarke.com), I had no ide
 
 The most common analogy for DNS records is probably a _phonebook_, which translates addresses that computers like (93.184.216.119) to addresses that humans like (wikipedia.org).
 
-See my [post about IP addresses](/2014/09/02/a-quick-introduction-to-ip-addresses/).
+See my [post about IP addresses](2014-09-02--a-quick-introduction-to-ip-addresses).
 
 This link is especially good at dealing with [what happens when you navigate to a URL](http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/).
 
