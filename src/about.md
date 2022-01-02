@@ -21,6 +21,8 @@ I live in a house made of mud (fancily called 'cob') without any central heating
 ## CV
 - If you want to grab a `pdf` CV, you can grab one [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
 
+----
+
 <div class="org-center">
 <p>
 <a href="mailto:wmmclarke@gmail.com">wmmclarke@gmail.com</a> &mdash;
