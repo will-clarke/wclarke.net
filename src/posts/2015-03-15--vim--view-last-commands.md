@@ -1,5 +1,5 @@
 ---
-title: "Vim: View Last Commands"
+title: View Last Vim Commands
 date: 2015-03-15
 tags: vim  commands editor
 description: "Spoiler Alert - `:` then Ctrl-P"

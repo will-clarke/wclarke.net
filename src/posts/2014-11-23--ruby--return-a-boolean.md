@@ -1,7 +1,7 @@
 ---
 date: 2014-11-23
 tags: ruby tips
-title: "Ruby: Return a Boolean"
+title: Return a Boolean in Ruby
 description: "Spoiler Alert: `!!` can cooerce a non-boolean variable into a variable."
 ---
 
