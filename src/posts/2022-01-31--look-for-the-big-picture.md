@@ -1,7 +1,7 @@
 ---
 title: Look for the big picture
 date: 2022-01-31
-tags: 
+tags: perspective efficiency
 description: Take a step back. It's worth it.
 ---
 
