@@ -23,4 +23,4 @@ Here are some tips that may help!
 - Favour communication in public over in private. Other people will benefit!
 - If in doubt, post the message. Under-communication is more dangerous than over-communication.
 - Make sure the relevant people know. Potentially "tag" them if they could miss the message.
-- Write to most relevant place & to the smallest number of people. Who needs to know? A single person? The team? A large group of people?
+- Write to most relevant place & to the smallest number of people. Who needs to know? A single person? The team? A large group of people? People will engange more if there are fewer other people around.
