@@ -1,3 +1,7 @@
+---
+title: yolo
+---
+
 # Yo. Does this even work?
 
 - [x] #739
