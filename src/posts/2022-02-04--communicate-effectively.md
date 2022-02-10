@@ -2,7 +2,7 @@
 title: Communicate Effectively
 date: 2022-02-04
 tags: communication teamwork documentation writing tips
-description: Soft skills are majorly undervalued, especially in the tech world.
+description: \"Soft skills\" are majorly undervalued, especially in the tech world
 ---
 
 Communicating effectively is harder than it sounds.
