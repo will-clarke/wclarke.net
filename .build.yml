@@ -10,7 +10,7 @@ tasks:
       make install
   - build: |
       cd wclarke.net
-      ./ssssg
+      make build
   - package: |
       cd wclarke.net
       tar -C dst -cvz . > site.tar.gz

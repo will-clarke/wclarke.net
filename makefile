@@ -3,7 +3,7 @@ install:
 	@echo -e "\n\n'ssssg' shell script downloaded to the current directory.\n\nEither keep it here or put it somewhere on your PATH. :)"
 
 build: regenerate-stories-index
-	@ssssg || echo "please put the "ssssg" file onto your path"
+	@ssssg || ./ssssg || echo "please put the "ssssg" file onto your path"
 
 publish:
 	@echo "This one's kind of up to you, mate."
