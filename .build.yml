@@ -6,15 +6,15 @@ environment:
   site: wclarke.net
 tasks:
   - install: |
-      cd blog
+      cd wclarke.net
       make install
   - build: |
-      cd blog
+      cd wclarke.net
       ./ssssg
   - package: |
-      cd blog
+      cd wclarke.net
       tar -C dst -cvz . > site.tar.gz
   - upload: |
-      cd blog
+      cd wclarke.net
       acurl -f https://pages.sr.ht/publish/$site -Fcontent=@site.tar.gz
       acurl -f https://pages.sr.ht/publish/will-clarke.srht.site -Fcontent=@site.tar.gz
