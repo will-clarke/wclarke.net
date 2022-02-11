@@ -1,8 +1,8 @@
 ---
 title: Learn to use the shell!
 date: 2022-02-10
-tags:
-description:
+tags: shell bash tech
+description: It\'s worth spending time to get to grips with the command line.
 ---
 
 If you do stuff on computers a lot, it's probably worth getting at least familiar with doing things on the command line. The terminal may seem scary, but if you've got to do things in bulk, it can be a life-saver.
