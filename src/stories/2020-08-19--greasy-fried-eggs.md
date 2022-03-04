@@ -13,6 +13,6 @@ The second egg met a similar fate, demolished by a fanatically insatiable Tim wh
 
 Tim moved onto the next plate, unaware of his surroundings. These new eggs didn't appease Tim, either. He gripped his fork harder and plunged the contents of the next plate into his mouth in two well-rehearsed movements.
 
-Midway through the following plate, for a split second, Tim had a surge of self-awareness. A sudden lucidity he hadn't felt for ages. How many eggs had he eaten? He had know idea. Tens? Hundreds? Thousands? Had he just been sitting here for millennia?
+Midway through the following plate, for a split second, Tim had a surge of self-awareness. A sudden lucidity he hadn't felt for ages. How many eggs had he eaten? He had know idea. Tens? Hundreds? Thousands?
 
-Tim was still ravenous.
+Tim was still ravenous. He felt like he hadn't eaten anything for years.

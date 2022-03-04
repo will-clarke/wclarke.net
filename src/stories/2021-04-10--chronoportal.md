@@ -13,7 +13,7 @@ Sam was suddenly vaporised. Every living creature within a 25-mile radius died.
 The radiation-resistant robots that inspected the site after the tragedy discovered strange remains. At the centre of the catastrophe, the rescue droids found fragments of distinct structures.
 
 They unearthed a metal frame made of an alloy that scientists were able to identify but had no idea how to synthesise.
-Other organic lattices
-, organic lattices and alien crystals. The metal structure was almost completely destroyed while the organic lattice and strange crystals were less harmed. There were three golden orbs around the same size as footballs which scientists determined was some rugged way to store information.
+Other organic lattices and bizarre crystaline structures were also found on the site. The metal structure was almost completely destroyed while the strange lattices and crystals were less harmed.
 
-The portal looked like it was now broken, but it could have been working for hundreds of years.
+The portal was now certainly broken.
+But in another timeline, it may have worked. Time may have passed. Cultures may have risen and fallen. Technology may have improved. At various times, people may have wanted to change their past. Or they may have wanted to keep their past. Wars may have raged over their most important resource; time & access to the past.
