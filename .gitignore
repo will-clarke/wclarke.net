@@ -1,8 +1,6 @@
 /dst/*
-.DS_Store
-/src/index.md
-/src/archive.md
-
-.netlify
 tmp
 /ssssg
+
+.DS_Store
+.netlify
