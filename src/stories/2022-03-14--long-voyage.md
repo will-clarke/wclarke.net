@@ -10,9 +10,8 @@ date: 2022-03-14
 
 Matt blearily looked at the road ahead. They'd been travelling for a long time and the Citroen's petrol was running low. It was Sam's turn to drive and Matt let the warmth and vibrations of the car lull him back to sleep.
 
-Matt woke up. As the cryogenic numbness slowly faded, he remembered where he was. It was his turn to do the maintenance.
-The ship was still had two light-years to go.
+---
 
-The brain stimulation had kept his brain active.
+Matt woke up. As the cryogenic numbness slowly faded, he remembered where he was. It was his turn to maintain the ship. They were still two light-years away. Sam was hibernation stats were all normal.
 
-Now he had work to do.
+Matt stood up. The brain stimulation had left him with some strange cryo-dreams. He shook off some wistful thought about his old life on Earth and went back to work.
