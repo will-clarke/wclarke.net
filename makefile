@@ -1,5 +1,5 @@
 build: copy-cv regenerate-stories-index
-	@echo running "sssg" - may take a while...
+	@echo Running "sssg" - may take a while...
 	@ssssg || ./ssssg || echo "please put the "ssssg" file onto your path"
 
 install:
@@ -11,9 +11,9 @@ publish:
 	@echo "Everything you'll need will be in the 'dst' directory."
 
 regenerate-stories-index:
-	@echo regenerating story links
+	@echo Regenerating story links
 	@./scripts/story-links.sh
 	
 copy-cv:
-	@echo updating cv
+	@echo Updating cv
 	curl https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.html -o src/cv.html
