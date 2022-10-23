@@ -1,5 +1,5 @@
 build: copy-cv regenerate-stories-index
-	@echo running `sssg` - may take a while :)
+	@echo running "sssg" - may take a while...
 	@ssssg || ./ssssg || echo "please put the "ssssg" file onto your path"
 
 install:
