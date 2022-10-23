@@ -4,6 +4,8 @@ title: stories
 
 - [stories/index.html](stories/index.html)
 
+- [stories/2022-03-15--escape.html](stories/2022-03-15--escape.html)
+
 - [stories/2022-03-14--torture-club.html](stories/2022-03-14--torture-club.html)
 
 - [stories/2022-03-14--long-voyage.html](stories/2022-03-14--long-voyage.html)
