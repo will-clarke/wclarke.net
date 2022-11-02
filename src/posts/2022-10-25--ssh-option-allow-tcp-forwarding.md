@@ -5,9 +5,10 @@ title: SSH mistakes I've made...and how to avoid them!
 description: Some basic SSH / port forwarding tips
 ---
 
-## If you're trying to `ssh` from within a local network, check you're using the same internet connection.
+# If you're trying to `ssh` from within a local network:
 
-This has got me before. A local network may not work if you're using a totally different connection. In my case, I was using the 'guest' wifi - which is specifically designed to be isolated.
+- check you're using the same internet connection (not 'Guest' wifi).
+- check you're not using a VPN
 
 ## Check the `AllowTcpForwarding` rules from the `ssh` server
 
