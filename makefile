@@ -17,3 +17,7 @@ regenerate-stories-index:
 copy-cv:
 	@echo Updating cv
 	curl https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.html -o src/cv.html
+	
+build-and-run-docker:
+	docker build -t website .
+	docker run --name my-website -p 8080:80 website
