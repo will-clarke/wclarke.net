@@ -1,3 +1,5 @@
+all: build
+
 build: grab-stories copy-cv regenerate-stories-index
 	@echo Running "sssg" - may take a while...
 	@ssssg || ./ssssg || echo "please put the "ssssg" file onto your path (make install)"
@@ -5,10 +7,10 @@ build: grab-stories copy-cv regenerate-stories-index
 
 grab-stories:
 	$(eval tmpDir := $(shell mktemp -d))
-	mkdir -p src/stories
-	git clone  git@git.sr.ht:~will-clarke/notes $(tmpDir) ||  rm -rf $(tmpDir)
-	cp -r $(tmpDir)/stories src || rm -rf $(tmpDir)
-	rm -rf $(tmpDir)
+	@mkdir -p src/stories
+	@git clone  git@git.sr.ht:~will-clarke/notes $(tmpDir) ||  rm -rf $(tmpDir)
+	@cp -r $(tmpDir)/stories src || rm -rf $(tmpDir)
+	@rm -rf $(tmpDir)
 
 install:
 	@curl https://git.sr.ht/~will-clarke/super-simple-static-site-generator/blob/master/ssssg -o ssssg && chmod +x ssssg
