@@ -4,6 +4,8 @@ packages:
   - pandoc
 environment:
   site: wclarke.net
+secrets:
+  - de617511-6f48-4ec3-bf9c-a82dca64b85e
 tasks:
   - install: |
       cd wclarke.net
