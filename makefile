@@ -1,15 +1,17 @@
 all: build
 
-build: grab-stories copy-cv regenerate-stories-index
+build: grab-posts-and-stories copy-cv regenerate-stories-index
 	@echo Running "sssg" - may take a while...
-	@ssssg || ./ssssg || echo "please put the "ssssg" file onto your path (make install)"
+	@ ./ssssg || ssssg || echo "please put the "ssssg" file onto your path (make install)"
 	@rm -rf src/stories
 
-grab-stories:
+grab-posts-and-stories:
 	$(eval tmpDir := $(shell mktemp -d))
 	@mkdir -p src/stories
+	@mkdir -p src/posts
 	@git clone  git@git.sr.ht:~will-clarke/notes $(tmpDir) ||  rm -rf $(tmpDir)
-	@cp -r $(tmpDir)/stories src || rm -rf $(tmpDir)
+	@cp -r $(tmpDir)/stories/published/* src/stories || rm -rf $(tmpDir)
+	@cp -r $(tmpDir)/blog/published/* src/posts || rm -rf $(tmpDir)
 	@rm -rf $(tmpDir)
 
 install:
