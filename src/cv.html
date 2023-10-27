@@ -351,18 +351,10 @@ section .location {
   font-weight: 600;
 }
 
-.company::before,
-.institution::before,
-.organization::before,
-.awarder::before {
-  content: "at ";
-}
-
 .company,
 .institution,
 .organization,
 .awarder {
-  color: #606d76;
   font-weight: 700;
 }
 
@@ -649,7 +641,7 @@ section .location {
 }
 
 @media print {
-  a:not(.hide-href-print)::after{
+  a:not(.hide-href-print)::after {
     content: " (" attr(href) ") ";
   }
   #resume {
@@ -827,7 +819,7 @@ section .location {
     
     	<section class="section">
     		<section class="main-summary">
-    			<div><p>Senior backend software engineer. Recently focused on Golang but experienced with other languages.</p></div>
+    			<div><p>Backend software engineer with 10 years' professional experience.</p></div>
     		</section>
     	</section>
     
@@ -1008,19 +1000,20 @@ section .location {
           <label for="work-item-0"></label>
     
           <header class="clear">
+          <div class="company">Just Eat (Remote)</div>
+            -
             <div class="date">
               <span class="startDate">Nov 2022</span>
               <span class="endDate">- Oct 2023</span>
             </div>
             <div class="position">Senior Software Engineer Contractor - Golang</div>
-            <div class="company">Just Eat (Remote)</div>
           </header>
     
            <div class="item" id="work-item">
             <div class="summary"><p>Responsible for developing and maintaining the internal tool for managing restaurants' POS integrations</p></div>
             <ul class="highlights">
               <li><p>Led successful AI initiative to create a chatbot for our internal support team</p></li>
-              <li><p>Completed a complex multi-year data migration to improve data consistency and integrity</p></li>
+              <li><p>Completed a complex multi-year data migration which markedly improved data consistency and integrity across the platform</p></li>
               <li><p>Created and ran script to update all company-wide microservices, streamlining internal administration</p></li>
               <li><p>Managed data modelling initiative (simple grammar and parser to improve DyanmoDB query performance)</p></li>
             </ul>
@@ -1031,19 +1024,20 @@ section .location {
           <label for="work-item-1"></label>
     
           <header class="clear">
+          <div class="company">Infosum (Remote)</div>
+            -
             <div class="date">
               <span class="startDate">Apr 2022</span>
               <span class="endDate">- Oct 2022</span>
             </div>
             <div class="position">Senior Software Engineer Contractor - Golang</div>
-            <div class="company">Infosum (Remote)</div>
           </header>
     
            <div class="item" id="work-item">
             <div class="summary"><p>Led the creation and maintenance of critical user-facing HTTP and gRPC APIs</p></div>
             <ul class="highlights">
-              <li><p>Instigated work on explicit system-wide API 'levels' to improve security and developer efficiency</p></li>
-              <li><p>Focused on developing software with particular emphasis on security, privacy, reliability and throughput</p></li>
+              <li><p>Improved security and developer efficiency by instigating work on explicit system-wide API 'levels'</p></li>
+              <li><p>Focused on developing software with an emphasis on security, privacy, reliability and throughput</p></li>
               <li><p>Collaborated closely with other teams to ensure a cohesive user experience</p></li>
             </ul>
           </div>
@@ -1053,12 +1047,13 @@ section .location {
           <label for="work-item-2"></label>
     
           <header class="clear">
+          <div class="company">River Island (Remote)</div>
+            -
             <div class="date">
               <span class="startDate">Sep 2021</span>
               <span class="endDate">- Apr 2022</span>
             </div>
             <div class="position">Tech Lead</div>
-            <div class="company">River Island (Remote)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1074,12 +1069,13 @@ section .location {
           <label for="work-item-3"></label>
     
           <header class="clear">
+          <div class="company">River Island (Remote)</div>
+            -
             <div class="date">
               <span class="startDate">Aug 2020</span>
               <span class="endDate">- Sep 2021</span>
             </div>
             <div class="position">Software Engineer - Golang</div>
-            <div class="company">River Island (Remote)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1094,12 +1090,13 @@ section .location {
           <label for="work-item-4"></label>
     
           <header class="clear">
+          <div class="company">SMC (Remote)</div>
+            -
             <div class="date">
               <span class="startDate">Apr 2020</span>
               <span class="endDate">- Jul 2020</span>
             </div>
             <div class="position">Software Engineer - Golang</div>
-            <div class="company">SMC (Remote)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1114,12 +1111,13 @@ section .location {
           <label for="work-item-5"></label>
     
           <header class="clear">
+          <div class="company">Ratio (Dorset)</div>
+            -
             <div class="date">
               <span class="startDate">Jun 2019</span>
               <span class="endDate">- Mar 2020</span>
             </div>
             <div class="position">Software Engineer - Golang, Node, PHP</div>
-            <div class="company">Ratio (Dorset)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1134,12 +1132,13 @@ section .location {
           <label for="work-item-6"></label>
     
           <header class="clear">
+          <div class="company">Deliveroo (London)</div>
+            -
             <div class="date">
               <span class="startDate">Nov 2016</span>
               <span class="endDate">- May 2019</span>
             </div>
             <div class="position">Software Engineer - Golang, Ruby</div>
-            <div class="company">Deliveroo (London)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1155,12 +1154,13 @@ section .location {
           <label for="work-item-7"></label>
     
           <header class="clear">
+          <div class="company">Snaptrip (London)</div>
+            -
             <div class="date">
               <span class="startDate">Oct 2014</span>
               <span class="endDate">- Nov 2016</span>
             </div>
             <div class="position">Software Engineer - Ruby</div>
-            <div class="company">Snaptrip (London)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1172,12 +1172,13 @@ section .location {
           <label for="work-item-8"></label>
     
           <header class="clear">
+          <div class="company">Forward3D (London)</div>
+            -
             <div class="date">
               <span class="startDate">Jan 2012</span>
               <span class="endDate">- Sep 2014</span>
             </div>
             <div class="position">Data Analyst - Ruby</div>
-            <div class="company">Forward3D (London)</div>
           </header>
     
            <div class="item" id="work-item">
@@ -1299,7 +1300,7 @@ section .location {
           <header class="clear">
             <div class="header-left">
               <div class="studyType">
-                Masters
+                Masters in
               </div>
               <div class="area">
                 Anthropology and Archaeology
@@ -1307,7 +1308,7 @@ section .location {
               <div class="institution">
                 Durham University
               </div>
-            </div>
+    
             <div class="date">
               <span class="startDate">
               2011
@@ -1315,6 +1316,7 @@ section .location {
               <span class="endDate">
               - 2013
               </span>
+            </div>
             </div>
           </header>
     
@@ -1350,7 +1352,7 @@ section .location {
             <li>Woodworking</li>
             <li>Cycling</li>
             <li>Walking</li>
-            <li>Axes</li>
+            <li>Chopping wood</li>
           </ul>
         </div>
         <div class="item">
