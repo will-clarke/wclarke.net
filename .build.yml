@@ -1,4 +1,4 @@
-image: debian/buster
+image: debian/stable
 oauth: pages.sr.ht/PAGES:RW
 packages:
   - pandoc
