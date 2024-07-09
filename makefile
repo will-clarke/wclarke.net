@@ -32,7 +32,8 @@ run-docker:
 	docker run --rm --name my-website -p 8080:80 website
 
 push:
-	docker tag website willclarke/website
+	docker tag website willclarke/website:$(shell date -u +"%Y-%m-%dT%H%MZ")
+	docker tag website willclarke/website:latest
 	docker push willclarke/website
 
 run-local: build run-docker
