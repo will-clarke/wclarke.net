@@ -12,13 +12,9 @@ I live in a house made of mud (fancily called 'cob') without any central heating
 
 ## Links
 
+- [CV](https://docs.google.com/document/d/1bfp2SdfP2B5trW3t37aqV8K1d27zStL4)
 - [Email](mailto:wmmclarke@gmail.com)
 - [Source Hut](https://git.sr.ht/~will-clarke) (where most of my interesting code now lives...)
-- [linkedin](https://www.linkedin.com/in/wmmclarke/) 
+- [linkedin](https://www.linkedin.com/in/wmmclarke/)
 - [Github](https://github.com/will-clarke)
 - [RSS website feed](https://wclarke.net/index.xml)
-
-## [CV](cv.html)
-- [Web version of my CV](cv.html) 
-- If you want a `pdf` CV, you can grab one [here](https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.pdf).
-

@@ -1,6 +1,6 @@
 all: build
 
-build: grab-posts-and-stories copy-cv regenerate-stories-index
+build: grab-posts-and-stories regenerate-stories-index
 	@echo Running "sssg" - may take a while...
 	@ ./ssssg || ssssg || echo "please put the "ssssg" file onto your path (make install)"
 	@rm -rf src/stories
@@ -9,7 +9,7 @@ grab-posts-and-stories:
 	$(eval tmpDir := $(shell mktemp -d))
 	@mkdir -p src/stories
 	@mkdir -p src/posts
-	@git clone  git@git.sr.ht:~will-clarke/notes $(tmpDir) ||  rm -rf $(tmpDir)
+	@git clone git@git.sr.ht:~will-clarke/notes $(tmpDir) ||  rm -rf $(tmpDir)
 	@cp -r $(tmpDir)/stories/published/* src/stories || rm -rf $(tmpDir)
 	@cp -r $(tmpDir)/blog/published/* src/posts || rm -rf $(tmpDir)
 	@rm -rf $(tmpDir)
@@ -26,10 +26,6 @@ publish:
 regenerate-stories-index:
 	@echo Regenerating story links
 	@./scripts/story-links.sh
-	
-copy-cv:
-	@echo Updating cv
-	curl https://git.sr.ht/~will-clarke/cv/blob/master/will-clarke.html -o src/cv.html
 	
 run-docker:
 	docker build -t website .
