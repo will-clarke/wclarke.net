@@ -31,5 +31,9 @@ run-docker:
 	docker build -t website .
 	docker run --rm --name my-website -p 8080:80 website
 
+push:
+	docker tag website willclarke/website
+	docker push willclarke/website
+
 run-local: build run-docker
 	open http://localhost:8080
