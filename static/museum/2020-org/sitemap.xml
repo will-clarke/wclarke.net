@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/force-a-script-to-run-sudo/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/go-modules-with-private-repos/</loc>
+    <lastmod>2020-07-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/ask-stupid-questions/</loc>
+    <lastmod>2020-06-27T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/find-sql-rows-which-dont-exist-in-table/</loc>
+    <lastmod>2020-01-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/document-everything/</loc>
+    <lastmod>2020-03-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/getting-things-done/</loc>
+    <lastmod>2019-12-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/enjoy-it/</loc>
+    <lastmod>2020-05-27T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/boring-product-names-ftw/</loc>
+    <lastmod>2019-07-11T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/defaults-are-good/</loc>
+    <lastmod>2019-08-10T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/cron-is-cool/</loc>
+    <lastmod>2019-06-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/automate-repetitive-tasks/</loc>
+    <lastmod>2019-05-02T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/jq-is-a-cool-tool/</loc>
+    <lastmod>2018-06-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/maybe-try-vim/</loc>
+    <lastmod>2019-04-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/we-should-all-know-git-well/</loc>
+    <lastmod>2019-03-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/bash/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/unix/</loc>
+    <lastmod>2020-07-16T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/golang/</loc>
+    <lastmod>2020-07-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/documentation/</loc>
+    <lastmod>2020-03-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/sql/</loc>
+    <lastmod>2020-01-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/product/</loc>
+    <lastmod>2019-12-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/tech/</loc>
+    <lastmod>2019-12-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/tips/</loc>
+    <lastmod>2019-08-10T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/shell/</loc>
+    <lastmod>2019-06-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/vim/</loc>
+    <lastmod>2019-04-08T00:00:00+01:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/git/</loc>
+    <lastmod>2019-03-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/books/</loc>
+    <lastmod>2015-05-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/my-favourite-ruby-books/</loc>
+    <lastmod>2015-05-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/ruby/</loc>
+    <lastmod>2015-05-28T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-folds/</loc>
+    <lastmod>2015-04-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/git-diff-for-files/</loc>
+    <lastmod>2015-03-26T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/commands/</loc>
+    <lastmod>2015-03-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-view-last-commands/</loc>
+    <lastmod>2015-03-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/hash/</loc>
+    <lastmod>2015-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/ruby-hash-fetch/</loc>
+    <lastmod>2015-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/save-time-with-bash-/</loc>
+    <lastmod>2015-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-text-objects/</loc>
+    <lastmod>2015-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/zsh/</loc>
+    <lastmod>2015-03-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-ctrl-r-in-insert-mode/</loc>
+    <lastmod>2015-03-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-movement/</loc>
+    <lastmod>2015-03-04T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/hide-files-from-git-index/</loc>
+    <lastmod>2015-03-01T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/git-log/</loc>
+    <lastmod>2015-02-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/log/</loc>
+    <lastmod>2015-02-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/rails/</loc>
+    <lastmod>2015-02-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/object-try-method-in-rails/</loc>
+    <lastmod>2015-02-17T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/the-holy-grail-of-vim-commands/</loc>
+    <lastmod>2015-02-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/random-vim-shortcuts/</loc>
+    <lastmod>2015-01-27T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/vim-registers/</loc>
+    <lastmod>2015-01-05T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/suspend-vim/</loc>
+    <lastmod>2014-12-14T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/ruby-return-a-boolean/</loc>
+    <lastmod>2014-11-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/create-a-free-twitter-bot-hosted-on-heroku/</loc>
+    <lastmod>2014-10-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/heroku/</loc>
+    <lastmod>2014-10-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/twitter/</loc>
+    <lastmod>2014-10-23T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/api/</loc>
+    <lastmod>2014-10-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/oauth/</loc>
+    <lastmod>2014-10-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/twitter-apps-authentication-without-another-mobile-number/</loc>
+    <lastmod>2014-10-22T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/unix-shell-for-dummies/</loc>
+    <lastmod>2014-10-20T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/unix-permissions/</loc>
+    <lastmod>2014-10-18T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/real-defaults-with-hashes/</loc>
+    <lastmod>2014-10-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/cv/</loc>
+    <lastmod>2014-10-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/my-cv...-in-pure-ruby/</loc>
+    <lastmod>2014-10-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/dealing-with-dns/</loc>
+    <lastmod>2014-10-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/dns/</loc>
+    <lastmod>2014-10-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/clever-vim-commands-keybindings/</loc>
+    <lastmod>2014-10-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/editor/</loc>
+    <lastmod>2014-10-08T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/blog/</loc>
+    <lastmod>2014-10-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/getting-started-with-jekyll/</loc>
+    <lastmod>2014-10-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/jekyll/</loc>
+    <lastmod>2014-10-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/remove-file-from-git-after-committing/</loc>
+    <lastmod>2014-09-11T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/a-quick-introduction-to-ip-addresses/</loc>
+    <lastmod>2014-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/ip/</loc>
+    <lastmod>2014-09-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/writing-files-through-shell/</loc>
+    <lastmod>2014-08-25T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/trying-vim/</loc>
+    <lastmod>2014-07-12T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/rspec/</loc>
+    <lastmod>2014-07-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/setting-up-rspec/</loc>
+    <lastmod>2014-07-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/tdd/</loc>
+    <lastmod>2014-07-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/tags/python/</loc>
+    <lastmod>2014-05-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/the-python-challenge/</loc>
+    <lastmod>2014-05-02T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/sublime-text-snippets/</loc>
+    <lastmod>2014-04-16T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/blog/show-vim-mappings/</loc>
+    <lastmod>2014-03-15T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/redirect/</loc>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>https://wclarke.net/museum/2020-org/categories/</loc>
+  </url>
+  
+</urlset>

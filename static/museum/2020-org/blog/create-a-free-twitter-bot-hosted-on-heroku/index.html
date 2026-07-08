@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Create a Free Twitter Bot - hosted on Heroku | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "Create a Free Twitter Bot - hosted on Heroku",
+      "headline" : "Create a Free Twitter Bot - hosted on Heroku",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-10-23 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-10-23 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/create-a-free-twitter-bot-hosted-on-heroku\/",
+      "wordCount" : "330",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">Create a Free Twitter Bot - hosted on Heroku</h1>
+            <time datetime="2014-10-23 00:00:00 &#43;0000 UTC" class="post__date">Oct 23 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>I decided to make a <a href="https://twitter.com/damnnaturescary" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Twitter Bot</a>
+ hosted on Heroku. And I managed to do it really easily. Surprisingly.
+The source code for this is <a href="https://github.com/wmmc/Damn-Nature" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>on Github</a>
+.</p>
+<p>Here are the basic steps I took:</p>
+<h3 id="1-think-of-something-funny--useful-for-your-bot-to-do">1. Think of something funny / useful for your bot to do.<a class="anchor" href="#1-think-of-something-funny--useful-for-your-bot-to-do">#</a></h3>
+<ul>
+<li>This is the hard part&hellip;</li>
+</ul>
+<h3 id="2-register-a-new-twitter-account">2. Register a new Twitter Account<a class="anchor" href="#2-register-a-new-twitter-account">#</a></h3>
+<h3 id="3-create-a-new-twitter-app---go-to-httpdevtwittercomappshttpdevtwittercomapps">3. Create a new Twitter &lsquo;app&rsquo; - go to <a href="http://dev.twitter.com/apps" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>http://dev.twitter.com/apps</a>
+</h3>
+<ul>
+<li>This will have the ability to control your twitter account on your behalf.</li>
+<li>Make a note of the API keys.</li>
+</ul>
+<h3 id="4-enable-read--write-permissions-for-this-app">4. Enable Read / Write Permissions for this App<a class="anchor" href="#4-enable-read--write-permissions-for-this-app">#</a></h3>
+<ul>
+<li>Found under &lsquo;Permissions&rsquo;.</li>
+<li>If you need an extra mobile number, try <a href="http://wmmc.github.io/2014/10/22/twitter-apps-authentication--without-another-mobile-number/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>this trick</a>
+.</li>
+</ul>
+<h3 id="5-write-some-code-which-interacts-with-the-twitter-api">5. Write some code which interacts with the Twitter API.<a class="anchor" href="#5-write-some-code-which-interacts-with-the-twitter-api">#</a></h3>
+<ul>
+<li>Sferik&rsquo;s <a href="https://github.com/sferik/twitter" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>twitter gem</a>
+ makes this very easy in Ruby.</li>
+<li>If you&rsquo;re looking for inspiration, browse my <a href="https://github.com/wmmc/Damn-Nature/blob/master/twitter.rb" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>code</a>
+. It&rsquo;s not very complicated&hellip; And the twitter gem is very well documented.</li>
+<li>Remember to use <a href="https://devcenter.heroku.com/articles/config-vars" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Environmental Variables</a>
+ to hide your API keys.</li>
+</ul>
+<h3 id="6-create-a-gemfile--rakefile-for-heroku-to-latch-onto">6. Create a Gemfile / Rakefile for Heroku to latch onto.<a class="anchor" href="#6-create-a-gemfile--rakefile-for-heroku-to-latch-onto">#</a></h3>
+<ul>
+<li>Again, examples of these can be found on my <a href="https://github.com/wmmc/Damn-Nature/blob/master/Rakefile" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Github profile</a>
+.</li>
+<li>The rakefile basically defines an isolated process that can be run by heroku.</li>
+<li>The Gemfile lists all the Gems you&rsquo;ll need to install.</li>
+<li>You may need to run <code>bundle install</code> (as usual&hellip;)</li>
+</ul>
+<h3 id="7-check-you-can-do-what-you-want-from-the-command-line">7. Check you can do what you want from the command line.<a class="anchor" href="#7-check-you-can-do-what-you-want-from-the-command-line">#</a></h3>
+<ul>
+<li>By running your rake task.</li>
+</ul>
+<h3 id="8-create-a-new-heroku-apphttpherokucom">8. Create a new <a href="http://heroku.com" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Heroku App</a>
+.</h3>
+<h3 id="9-push-your-current-files--to-heroku">9. Push your current files  to Heroku.<a class="anchor" href="#9-push-your-current-files--to-heroku">#</a></h3>
+<ul>
+<li>This should be a .rb file, a Rakefile, a Gemfile &amp; a Gemfile.lock</li>
+</ul>
+<h3 id="10-add-heroku-schedulerhttpsaddonsherokucomscheduler-to-your-heroku-app">10. Add <a href="https://addons.heroku.com/scheduler" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Heroku Scheduler</a>
+ to your Heroku app</h3>
+<ul>
+<li><code>heroku addons:add scheduler</code> - the fastest way to add this.</li>
+<li>This will allow you to customise how often it runs.</li>
+<li>You can set it to run every 10 minutes if you feel the need&hellip;</li>
+<li>To customise this, you&rsquo;ll need to log into you Heroku Account.</li>
+</ul>
+<h3 id="11-add-your-environmental-variables-to-heroku">11. Add your Environmental Variables to Heroku.<a class="anchor" href="#11-add-your-environmental-variables-to-heroku">#</a></h3>
+<p>You should be ready to take Twitter by storm now!</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/ruby/">ruby</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/twitter/">twitter</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/heroku/">heroku</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/twitter-apps-authentication-without-another-mobile-number/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">Twitter Apps Authentication - without another mobile number</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/ruby-return-a-boolean/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >Ruby: Return a Boolean</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      My CV... in pure Ruby &middot; William Clarke's Blog
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="post">
+  <h1 class="post-title">My CV... in pure Ruby</h1>
+  <span class="post-date">12 Oct 2014</span>
+  <p>Apparently I sometimes try to be funny….</p>
+
+<p>I thought it would be a good idea to try to port my CV to Ruby.</p>
+
+<p>This is what happened:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">WilliamClarke</span>
+  <span class="nb">attr_accessor</span> <span class="ss">:notableProjects</span><span class="p">,</span> <span class="ss">:education</span><span class="p">,</span> <span class="ss">:interests</span><span class="p">,</span> <span class="ss">:employment</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span>
+    <span class="vi">@home</span> <span class="o">=</span> <span class="s1">'London'</span>
+    <span class="vi">@phone</span> <span class="o">=</span> <span class="s1">'07XXXXXXXXX'</span>
+    <span class="vi">@website</span> <span class="o">=</span> <span class="s1">'wmmclarke.com'</span>
+    <span class="vi">@blog</span> <span class="o">=</span> <span class="s1">'wmmc.github.io'</span>
+    <span class="vi">@github</span> <span class="o">=</span> <span class="s1">'github.com/wmmc'</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">super_enthusiastic?</span>
+    <span class="kp">true</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">summary</span>
+    <span class="s2">"I really enjoy programming.
+    Over the last 2 years, I have spent most of my free time focusing on Ruby.
+    I also have experience with web development &amp; SQL.
+    I am eager to learn much more about software development."</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">my</span> <span class="o">=</span> <span class="no">WilliamClarke</span><span class="p">.</span><span class="nf">new</span>
+
+<span class="k">class</span> <span class="nc">Project</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="o">|</span> <span class="nb">instance_variable_set</span><span class="p">(</span><span class="s2">"@</span><span class="si">#{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">notableProjects</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'PPC Campaign Builder'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Ruby script which generates Adwords-formatted PPC Campaigns.'</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Website &amp; Blog'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="sx">%w(HTML CSS JS jQuery Rails ActionMailer Jekyll)</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Twitter Bot'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Smug tweets to people who can’t spell. Hosted on Heroku.'</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Other projects'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Crossword Generator, Shakespeare Prediction, Langton’s Ant'</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="no">Employment</span> <span class="o">=</span> <span class="no">Struct</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:title</span><span class="p">,</span> <span class="ss">:date</span><span class="p">,</span> <span class="ss">:role</span><span class="p">,</span> <span class="ss">:achievements</span><span class="p">,</span> <span class="ss">:skills</span><span class="p">)</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">employment</span> <span class="o">=</span> <span class="no">Employment</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="s1">'Forward3D'</span><span class="p">,</span>         <span class="c1"># name</span>
+  <span class="s1">'PPC Analyst'</span><span class="p">,</span>       <span class="c1"># title</span>
+  <span class="s1">'2012-08 - 2014-08'</span><span class="p">,</span> <span class="c1"># date</span>
+  <span class="c1"># role</span>
+  <span class="p">[</span><span class="s1">'Managed the paid search activity for two e-commerce clients.'</span><span class="p">,</span>
+   <span class="s1">'Automated many processes using Ruby, Javascript and Hive.'</span><span class="p">],</span>
+  <span class="c1"># achievements</span>
+  <span class="p">[</span><span class="s1">'Wrote a script to generate PPC campaigns, saving hundreds of man-hours.'</span><span class="p">,</span>
+   <span class="s1">'Automated most of my reporting duties.'</span><span class="p">,</span>
+   <span class="s1">'Update ads automatically based on product prices &amp; stock levels'</span><span class="p">],</span>
+  <span class="c1"># skills</span>
+  <span class="p">[</span><span class="s1">'Ruby, Javascript &amp; Hive used on a daily basis.'</span><span class="p">,</span>
+   <span class="s1">'Built, updated and queried Databases using HiveQL and SQL.'</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">education</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="ss">durhamUniversity: </span><span class="p">[</span>
+    <span class="s1">'MSc Evolutionary Anthropology'</span><span class="p">,</span>
+    <span class="s1">'BA  Archaeology &amp; Anthropology'</span><span class="p">],</span>
+
+  <span class="ss">etonCollege: </span><span class="p">{</span> <span class="ss">aLevels: </span><span class="p">[</span>
+    <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'Ancient History'</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'Biology'</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">'B'</span><span class="p">,</span> <span class="s1">'English Literature'</span><span class="p">]</span>
+  <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">interests</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">[</span><span class="s1">'Programming'</span><span class="p">,</span> <span class="s1">'Ruby, Javascript, SQL &amp; Web Development. Active on Github'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'Sport'</span><span class="p">,</span> <span class="s1">'I enjoy playing squash, tennis, skiing and diving.'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'Also'</span><span class="p">,</span> <span class="sx">%w(Travelling woodworking Choral Music Go Piano Investing)</span><span class="p">]</span>
+<span class="p">]</span>
+
+<span class="c1"># To print out to console:</span>
+<span class="nb">require</span> <span class="s1">'pp'</span>
+<span class="n">pp</span> <span class="n">my</span>
+</code></pre></div></div>
+
+<p>It actually works.. and spits out the data in an <em>even</em> more incomprehensible way.</p>
+
+</div>
+
+
+<div class="message"><strong style="font-size:1.5em;">Tags</strong>
+
+  <ul class="tag_box inline">
+    
+    
+   
+    <li><a href="/museum/2014-jekyll/tags#CV">CV <sup>1</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Ruby">Ruby <sup>11</s></a></li>
+  
+
+
+
+  </ul>
+</div>
+  
+
+
+
+
+<!-- disqus removed for museum snapshot -->
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/">
+            My favourite Ruby books
+            <small>28 May 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/04/18/vim-folds/">
+            Vim Folds
+            <small>18 Apr 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/03/26/git-diff-for-files/">
+            Git Diff for files
+            <small>26 Mar 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>UNIX Permissions for no0bs | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "UNIX Permissions for no0bs",
+      "headline" : "UNIX Permissions for no0bs",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-10-18 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-10-18 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/unix-permissions\/",
+      "wordCount" : "244",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">UNIX Permissions for no0bs</h1>
+            <time datetime="2014-10-18 00:00:00 &#43;0000 UTC" class="post__date">Oct 18 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>File permissions can either be: <code>r</code>, <code>w</code> or <code>x</code>.
+<strong>R</strong>eadable, <strong>W</strong>riteable or e<strong>X</strong>ecutable.</p>
+<p>There are also 3 &lsquo;tiers&rsquo; of access allowed: &lsquo;Owner&rsquo;, &lsquo;Group&rsquo; &amp; &lsquo;Other&rsquo;
+These 3 different access levels can be represented like this:</p>
+<p>Owner: <code>rwx</code> Group: <code>rwx</code>, Other: <code>rwx</code></p>
+<p>This can be shortened to: <code>rwxrwxrwx</code></p>
+<p>In the previous example, anyone is able to read, write(edit) or execute(run) the file.
+To disallow them, you can substitute <code>-</code>s in:</p>
+<ul>
+<li><code>rwx------</code> would only be useful for the owner of the file.</li>
+<li><code>r--r--r--</code> would mean that anyone can read the file.</li>
+</ul>
+<p>Clever programmers like to do things with the minimum system requirements; reading 9 letters for each file would be energetically expensive / resource intensive.
+To solve this problem, they often shorten this syntax (<code>rwxrwxrwx</code>) <strong>even</strong> more using binary.</p>
+<p>They say that:</p>
+<ul>
+<li>Read = 4 bits (binary 100)</li>
+<li>Write = 2 bits (binary 010)</li>
+<li>Execute = 1 bit (binary 001)</li>
+</ul>
+<p>Using these simple rules, you can efficiently say that, in decimal (or octal) numbers:</p>
+<ul>
+<li><strong>0</strong> = No permissions</li>
+<li><strong>1</strong> = Execute</li>
+<li><strong>2</strong> = Write</li>
+<li><strong>3</strong> = Write &amp; Execute</li>
+<li><strong>4</strong> = Read</li>
+<li><strong>5</strong> = Read &amp; Execute</li>
+<li><strong>6</strong> = Read &amp; Write</li>
+<li><strong>7</strong> = Read, Write &amp; Execute</li>
+</ul>
+<p>Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?</p>
+<p>Anyway, this system allows us to transform:</p>
+<ul>
+<li><code>rwx------</code> to <code>700</code></li>
+<li><code>r--r--r--</code> to <code>444</code></li>
+</ul>
+<p>A common file permission to set is <code>chmod 755</code>, which is <code>rwx</code> for the Owner but only <code>rw-</code> for other users.</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/unix/">unix</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/shell/">shell</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/bash/">bash</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/real-defaults-with-hashes/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">Real Defaults With Hashes</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/unix-shell-for-dummies/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >UNIX Shell For Dummies</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>

@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      William Clarke's Blog &middot; <a href="http://wmmclarke.com" >wmmclarke.com</a>
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="posts">
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/18/unix-permissions/">
+        UNIX Permissions for no0bs
+      </a>
+    </h1>
+
+    <span class="post-date">18 Oct 2014</span>
+
+    <p>File permissions can either be: <code class="language-plaintext highlighter-rouge">r</code>, <code class="language-plaintext highlighter-rouge">w</code> or <code class="language-plaintext highlighter-rouge">x</code>.
+<strong>R</strong>eadable, <strong>W</strong>riteable or e<strong>X</strong>ecutable.</p>
+
+<p>There are also 3 ‘tiers’ of access allowed: ‘Owner’, ‘Group’ &amp; ‘Other’
+These 3 different access levels can be represented like this:</p>
+
+<p>Owner: <code class="language-plaintext highlighter-rouge">rwx</code> Group: <code class="language-plaintext highlighter-rouge">rwx</code>, Other: <code class="language-plaintext highlighter-rouge">rwx</code></p>
+
+<p>This can be shortened to: <code class="language-plaintext highlighter-rouge">rwxrwxrwx</code></p>
+
+<p>In the previous example, anyone is able to read, write(edit) or execute(run) the file.
+To disallow them, you can substitute <code class="language-plaintext highlighter-rouge">-</code>s in:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">rwx------</code> would only be useful for the owner of the file.</li>
+  <li><code class="language-plaintext highlighter-rouge">r--r--r--</code> would mean that anyone can read the file.</li>
+</ul>
+
+<p>Clever programmers like to do things with the minimum system requirements; reading 9 letters for each file would be energetically expensive / resource intensive.
+To solve this problem, they often shorten this syntax (<code class="language-plaintext highlighter-rouge">rwxrwxrwx</code>) <strong>even</strong> more using binary.</p>
+
+<p>They say that:</p>
+
+<ul>
+  <li>Read = 4 bits (binary 100)</li>
+  <li>Write = 2 bits (binary 010)</li>
+  <li>Execute = 1 bit (binary 001)</li>
+</ul>
+
+<p>Using these simple rules, you can efficiently say that, in decimal (or octal) numbers:</p>
+
+<ul>
+  <li><strong>0</strong> = No permissions</li>
+  <li><strong>1</strong> = Execute</li>
+  <li><strong>2</strong> = Write</li>
+  <li><strong>3</strong> = Write &amp; Execute</li>
+  <li><strong>4</strong> = Read</li>
+  <li><strong>5</strong> = Read &amp; Execute</li>
+  <li><strong>6</strong> = Read &amp; Write</li>
+  <li><strong>7</strong> = Read, Write &amp; Execute</li>
+</ul>
+
+<p>Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?</p>
+
+<p>Anyway, this system allows us to transform:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">rwx------</code> to <code class="language-plaintext highlighter-rouge">700</code></li>
+  <li><code class="language-plaintext highlighter-rouge">r--r--r--</code> to <code class="language-plaintext highlighter-rouge">444</code></li>
+</ul>
+
+<p>A common file permission to set is <code class="language-plaintext highlighter-rouge">chmod 755</code>, which is <code class="language-plaintext highlighter-rouge">rwx</code> for the Owner but only <code class="language-plaintext highlighter-rouge">rw-</code> for other users.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/16/real-defaults-with-hashes/">
+        Real Defaults With Hashes
+      </a>
+    </h1>
+
+    <span class="post-date">16 Oct 2014</span>
+
+    <h3 id="beware-of-setting-hashdefault">Beware of setting Hash#default!</h3>
+
+<p>Unless you know the pitfalls of Hash#default, you should tread carefully…</p>
+
+<p>You can set default values for hashes a number of ways.
+Eg:</p>
+
+<ol>
+  <li>Hash.new(default_value)</li>
+  <li>Hash.new.default = default_value</li>
+</ol>
+
+<p><code class="language-plaintext highlighter-rouge">Hash.new(0)</code> usually works as expected, but <code class="language-plaintext highlighter-rouge">Hash.new([])</code> can be tricky.</p>
+
+<p>If you wanted to append any values to a hash instantiated like this, there will be problems; the array is not just a <strong>default</strong> array, but it’s also a <strong>shared</strong> array.</p>
+
+<p>An example:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>h = Hash.new([])
+h['fish'] &lt;&lt; 'carp'
+puts h  # =&gt; nil.
+</code></pre></div></div>
+
+<p>What’s happening here is that we’ve edited the default value of the hash. We haven’t actually assigned the default value to our lovely ‘fish’.
+To actually assign, we need to do:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>h['fish'] &lt;&lt;= 'carp'
+</code></pre></div></div>
+
+<p>Note the <strong>=</strong> sign.
+However, this is not perfect:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>puts h  # =&gt; {fish: ['carp', 'carp']}
+</code></pre></div></div>
+
+<p>Our ‘default’ value how has two carp in it.
+If we were to add another key-value pair, this would get even messier:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>h['dog'] &lt;&lt;= 'poodle'
+puts h  # =&gt; {fish: ['carp', 'carp', 'poodle'], dog:['carp', 'carp', 'poodle']}
+</code></pre></div></div>
+
+<h3 id="a-disaster">A disaster!</h3>
+<p>Our carp and Poodle have now mixed.
+Hopefully it makes sense what’s happening; we’re altering the (single) default array, which points to all our default values.
+How do we resolve the situation?</p>
+
+<h2 id="blocks-to-the-rescue">Blocks to the rescue!</h2>
+
+<p>You can pass in a block when initializing the Hash.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hash.new {|hash, key| ... rest of block... }
+</code></pre></div></div>
+
+<p>To create a default hash which hash a <em>unique</em> default for each key/value pair, we can then do this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Hash.new {|hash, key| hash[key] = [] }
+</code></pre></div></div>
+
+<p>Since this block is run each time we assign a new key, the default value will always be <code class="language-plaintext highlighter-rouge">[]</code>.</p>
+
+<p>See also <a href="http://ruby-doc.org/core-2.1.3/Hash.html#method-i-default_proc-3D">Hash#default_proc</a>.</p>
+
+<p>The benefit of using blocks &amp; procs is that we’re able to write clever pieces of code.. and could make our default value do anything we wanted.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/12/my-cv/.-in-pure-ruby/">
+        My CV... in pure Ruby
+      </a>
+    </h1>
+
+    <span class="post-date">12 Oct 2014</span>
+
+    <p>Apparently I sometimes try to be funny….</p>
+
+<p>I thought it would be a good idea to try to port my CV to Ruby.</p>
+
+<p>This is what happened:</p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">WilliamClarke</span>
+  <span class="nb">attr_accessor</span> <span class="ss">:notableProjects</span><span class="p">,</span> <span class="ss">:education</span><span class="p">,</span> <span class="ss">:interests</span><span class="p">,</span> <span class="ss">:employment</span>
+
+  <span class="k">def</span> <span class="nf">initialize</span>
+    <span class="vi">@home</span> <span class="o">=</span> <span class="s1">'London'</span>
+    <span class="vi">@phone</span> <span class="o">=</span> <span class="s1">'07XXXXXXXXX'</span>
+    <span class="vi">@website</span> <span class="o">=</span> <span class="s1">'wmmclarke.com'</span>
+    <span class="vi">@blog</span> <span class="o">=</span> <span class="s1">'wmmc.github.io'</span>
+    <span class="vi">@github</span> <span class="o">=</span> <span class="s1">'github.com/wmmc'</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">super_enthusiastic?</span>
+    <span class="kp">true</span>
+  <span class="k">end</span>
+
+  <span class="k">def</span> <span class="nf">summary</span>
+    <span class="s2">"I really enjoy programming.
+    Over the last 2 years, I have spent most of my free time focusing on Ruby.
+    I also have experience with web development &amp; SQL.
+    I am eager to learn much more about software development."</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">my</span> <span class="o">=</span> <span class="no">WilliamClarke</span><span class="p">.</span><span class="nf">new</span>
+
+<span class="k">class</span> <span class="nc">Project</span>
+  <span class="k">def</span> <span class="nf">initialize</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">args</span><span class="p">.</span><span class="nf">each</span> <span class="p">{</span> <span class="o">|</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="o">|</span> <span class="nb">instance_variable_set</span><span class="p">(</span><span class="s2">"@</span><span class="si">#{</span><span class="n">key</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span> <span class="p">}</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">notableProjects</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'PPC Campaign Builder'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Ruby script which generates Adwords-formatted PPC Campaigns.'</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Website &amp; Blog'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="sx">%w(HTML CSS JS jQuery Rails ActionMailer Jekyll)</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Twitter Bot'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Smug tweets to people who can’t spell. Hosted on Heroku.'</span><span class="p">),</span>
+  <span class="no">Project</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+    <span class="ss">title:   </span><span class="s1">'Other projects'</span><span class="p">,</span>
+    <span class="ss">summary: </span><span class="s1">'Crossword Generator, Shakespeare Prediction, Langton’s Ant'</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="no">Employment</span> <span class="o">=</span> <span class="no">Struct</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span><span class="ss">:name</span><span class="p">,</span> <span class="ss">:title</span><span class="p">,</span> <span class="ss">:date</span><span class="p">,</span> <span class="ss">:role</span><span class="p">,</span> <span class="ss">:achievements</span><span class="p">,</span> <span class="ss">:skills</span><span class="p">)</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">employment</span> <span class="o">=</span> <span class="no">Employment</span><span class="p">.</span><span class="nf">new</span><span class="p">(</span>
+  <span class="s1">'Forward3D'</span><span class="p">,</span>         <span class="c1"># name</span>
+  <span class="s1">'PPC Analyst'</span><span class="p">,</span>       <span class="c1"># title</span>
+  <span class="s1">'2012-08 - 2014-08'</span><span class="p">,</span> <span class="c1"># date</span>
+  <span class="c1"># role</span>
+  <span class="p">[</span><span class="s1">'Managed the paid search activity for two e-commerce clients.'</span><span class="p">,</span>
+   <span class="s1">'Automated many processes using Ruby, Javascript and Hive.'</span><span class="p">],</span>
+  <span class="c1"># achievements</span>
+  <span class="p">[</span><span class="s1">'Wrote a script to generate PPC campaigns, saving hundreds of man-hours.'</span><span class="p">,</span>
+   <span class="s1">'Automated most of my reporting duties.'</span><span class="p">,</span>
+   <span class="s1">'Update ads automatically based on product prices &amp; stock levels'</span><span class="p">],</span>
+  <span class="c1"># skills</span>
+  <span class="p">[</span><span class="s1">'Ruby, Javascript &amp; Hive used on a daily basis.'</span><span class="p">,</span>
+   <span class="s1">'Built, updated and queried Databases using HiveQL and SQL.'</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">education</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="ss">durhamUniversity: </span><span class="p">[</span>
+    <span class="s1">'MSc Evolutionary Anthropology'</span><span class="p">,</span>
+    <span class="s1">'BA  Archaeology &amp; Anthropology'</span><span class="p">],</span>
+
+  <span class="ss">etonCollege: </span><span class="p">{</span> <span class="ss">aLevels: </span><span class="p">[</span>
+    <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'Ancient History'</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">'A'</span><span class="p">,</span> <span class="s1">'Biology'</span><span class="p">],</span>
+    <span class="p">[</span><span class="s1">'B'</span><span class="p">,</span> <span class="s1">'English Literature'</span><span class="p">]</span>
+  <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">my</span><span class="p">.</span><span class="nf">interests</span> <span class="o">=</span> <span class="p">[</span>
+  <span class="p">[</span><span class="s1">'Programming'</span><span class="p">,</span> <span class="s1">'Ruby, Javascript, SQL &amp; Web Development. Active on Github'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'Sport'</span><span class="p">,</span> <span class="s1">'I enjoy playing squash, tennis, skiing and diving.'</span><span class="p">],</span>
+  <span class="p">[</span><span class="s1">'Also'</span><span class="p">,</span> <span class="sx">%w(Travelling woodworking Choral Music Go Piano Investing)</span><span class="p">]</span>
+<span class="p">]</span>
+
+<span class="c1"># To print out to console:</span>
+<span class="nb">require</span> <span class="s1">'pp'</span>
+<span class="n">pp</span> <span class="n">my</span>
+</code></pre></div></div>
+
+<p>It actually works.. and spits out the data in an <em>even</em> more incomprehensible way.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/10/dealing-with-dns/">
+        Dealing With DNS
+      </a>
+    </h1>
+
+    <span class="post-date">10 Oct 2014</span>
+
+    <p>When I registered my website <a href="http://wmmclarke.com">wmmclarke.com</a>, I had no idea what a DNS was. According to <a href="http://en.wikipedia.org/wiki/Domain_Name_System">wikipedia</a>, <em>the Domain Name Sysstem (DNS) is a hierarchical distributed naming system for computers, services, or any resource connected to the Internet or a private network</em>. Not exactly immediately obvious…</p>
+
+<p>The most common analogy for DNS records is probably a <em>phonebook</em>, which translates  addresses that computers like (93.184.216.119) to addresses that humans like (wikipedia.org).</p>
+
+<p>See my <a href="/2014/09/02/a-quick-introduction-to-ip-addresses/">post about IP addresses</a>.</p>
+
+<p>This link is especially good at dealing with <a href="http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/">what happens when you navigate to a URL</a>.</p>
+
+<hr />
+
+<p>Anyway… I’m getting sidetracked. I’m going to show how I delt with Heroku &amp; 123-reg.co.uk to set up my DNS properly:</p>
+
+<p>I found this quite fiddly to get working… so here’s what I did:</p>
+
+<h2 id="1-dealing-with-dns">1). Dealing with DNS</h2>
+
+<ul>
+  <li>Click on ‘Manage DNS’ and navigate to ‘Advanced DNS’</li>
+  <li>Add 2 new <a href="http://en.wikipedia.org/wiki/CNAME_record">CNAME</a>:</li>
+</ul>
+
+<h3 id="--www">- www</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- DNS Entry: www
+- Type: CNAME
+- Destination Target: &lt;your URL without the 'www' and with a '.' at the end&gt;
+</code></pre></div></div>
+
+<h3 id="--everything-else">- Everything else</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>- DNS Entry: *
+- Type: CNAME
+- Destination Target: &lt;your URL without the 'www' and with a '.' at the end&gt;
+</code></pre></div></div>
+
+<h2 id="2-getting-rid-of-that-pesky-www-subdomain">2). Getting rid of that pesky ‘www’ subdomain.</h2>
+
+<ul>
+  <li>Go back to the main list of options</li>
+  <li>Click on ‘Web Forwarding’</li>
+  <li>
+    <p>Add a permament (301) redirection:</p>
+
+    <ul>
+      <li>Domain Name: &lt;Your URL without the www. I just put ‘wmmclarke.com’&gt;</li>
+      <li>Forwarding Type: 301</li>
+      <li>Forwarding Destination: &lt;Your URL with http://www prepended to it.&gt;</li>
+    </ul>
+  </li>
+</ul>
+
+<p>That should be it!</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/08/clever-vim-commands-&-keybindings/">
+        Clever Vim Commands & Keybindings
+      </a>
+    </h1>
+
+    <span class="post-date">08 Oct 2014</span>
+
+    <p>I have recently spent a while trying to learn how to edit text effectively. I figure that if I’m going to be spending a while editing text, it’s worth learning how to do it as efficiently as possible.</p>
+
+<p>I’ve been using <a href="https://github.com/skwp/dotfiles">YADR</a> as a basis for my dotfiles. Dotfiles, if you don’t know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg. <code class="language-plaintext highlighter-rouge">.bashrc</code> or  <code class="language-plaintext highlighter-rouge">.vimrc</code>. One of the benefits of using a monolithic package like this is it quickly lets you do more cool stuff as you’re learning (over boring native Vim).</p>
+
+<p>I’ve put the extra files I’ve configured into my <code class="language-plaintext highlighter-rouge">.vimrc.after</code> file, which you can find <a href="https://gist.github.com/19b76686f75f3b28dda8">HERE!</a>.</p>
+
+<h2 id="remap-the-keyboard">Remap the keyboard.</h2>
+
+<p>The caps lock key is in a really important place but is largely redundant. You can remap it to something more useful (OS X: go to System Preferences &gt; Keyboard &gt; Shortcuts). For Vim users, the Ctrl key is very important. Remap it!</p>
+
+<p>If you’re clever, you can also use the Caps Lock button as Esc (also very important for Vim users) by downloading <a href="https://pqrs.org/osx/karabiner/">Karabiner</a>. This can set Escape for a single-press of Ctrl (which we now have at Caps Lock). Anything other Ctrl commands stay the same.</p>
+
+<p>I’ve found that other keys are poorly placed; eg <code class="language-plaintext highlighter-rouge">#</code> and <code class="language-plaintext highlighter-rouge">_</code>, so I’ve remapped them too. Especially for Ruby development, I found it tricky to constantly press <code class="language-plaintext highlighter-rouge">alt + 3</code> for <code class="language-plaintext highlighter-rouge">#</code>. Now it’s where ± is (next to 1).</p>
+
+<h2 id="use-good-vim-plugins">Use good vim plugins.</h2>
+
+<p>YADR comes with a load of fantastic plugins:</p>
+
+<p>These are the preinstalled plugins that I use most:</p>
+
+<ul>
+  <li>Pathogen (a bundler for plugins)</li>
+  <li>Vim Ruby &amp; Vim Rails</li>
+  <li>Solarized colours</li>
+  <li>Vim sneak</li>
+  <li>NERDTree</li>
+  <li>Vim Surround</li>
+  <li>CtrlR</li>
+</ul>
+
+<p>I’ve added a few more of my own, too:</p>
+
+<ul>
+  <li><a href="christoomey/vim-tmux-navigator">Tmux-Navigator</a> - Makes navigating Tmux panes just like navigating Vim panes</li>
+  <li><a href="t9md/vim-ruby-xmpfilter">Ruby xmpfilter</a> - Gives you the ability to run a ruby script (or part of it) mid-edit.</li>
+  <li><a href="thoughtbot/vim-rspec">Vim-Rspec</a> - Good Rspec integration from thoughtbot</li>
+  <li><a href="csexton/jekyll.vim">Jekyll</a> - Easy Blogging from vim.</li>
+</ul>
+
+<h2 id="use-good-keyboard-shortcuts">Use good keyboard shortcuts</h2>
+
+<p>The whole point of Vim is that it’s easy to define the shortcuts you like. Well.. maybe not the whole point, but it’s meant to be designed towards what works for <em>you</em>. So do what works for you. Having said that, I’m going to show the shortcuts which work best for me at the moment:</p>
+
+<ul>
+  <li>the <code class="language-plaintext highlighter-rouge">!</code> command lets you use normal bash functions</li>
+  <li>the <code class="language-plaintext highlighter-rouge">%</code> sign refers to the current file.</li>
+  <li>
+    <CR> stands for carriage return (enter)
+
+</CR>
+  </li>
+</ul>
+<p>Using this we can make a mapping like this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap &lt;leader&gt;md :!open -a 'Marked 2' %&lt;cr&gt;&lt;cr&gt;
+noremap &lt;Leader&gt;oc :!open /Applications/Google\ Chrome.app %&lt;CR&gt;
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">:</code> key is obviously important for Vim commands. The <code class="language-plaintext highlighter-rouge">;</code> key is less important. Swap them!</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap ; :
+noremap : ;
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">jk</code> can be a fast way of returning back to normal mode</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>imap jk &lt;ESC&gt;
+</code></pre></div></div>
+
+<p>Sometimes you can’t save a file. Something about an E212 error. Force it with this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ca w!! w !sudo tee "%"
+</code></pre></div></div>
+
+<p>Shortcuts to save and quit:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>inoremap &lt;silent&gt; &lt;C-q&gt; &lt;ESC&gt;:q&lt;CR&gt;&lt;ESC&gt;
+nnoremap &lt;silent&gt; &lt;C-q&gt; :q&lt;CR&gt;
+noremap  &lt;C-s&gt;    :update&lt;CR&gt;&lt;ESC&gt;
+vnoremap  &lt;C-s&gt;   &lt;C-C&gt;:update&lt;CR&gt;&lt;ESC&gt;
+inoremap  &lt;C-s&gt;   &lt;C-O&gt;:update&lt;CR&gt;&lt;ESC&gt;
+</code></pre></div></div>
+
+<p>This vim function lets you toggle Solarized background colour within the editor.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function! ToggleBackground()
+    let &amp;background = ( &amp;background == "dark"? "light" : "dark" )
+endfunction
+</code></pre></div></div>
+
+<p>This lowers the timeout:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>set timeoutlen=500
+</code></pre></div></div>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/10/06/getting-started-with-jekyll/">
+        Getting Started With Jekyll
+      </a>
+    </h1>
+
+    <span class="post-date">06 Oct 2014</span>
+
+    <p>I have been told that it’s good to write a blog. Something about self-promotion and helping other people…</p>
+
+<p>I originally wanted to create something through rails, but, having thought about it, it would have taken a while to set everything up correctly. No need to reinvent the wheel…</p>
+
+<p><a href="http://jekyllrb.com/">Jekyll</a> is a blogging / website platform built with Ruby. It’s what I would have aimed to build, only simpler, more efficient, pre-built  and  with an active community behind it.</p>
+
+<p>Jekyll’s main selling point is that it integrates text files well into a static site.</p>
+
+<p>It’s simple to use and set up out of the box:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&gt; Now browse to http://localhost:4000
+</code></pre></div></div>
+
+<p>If you’re lazy, I’d recommend not doing this, though. Jekyll Bootstrap, discussed below, has a few more features that may be useful.</p>
+
+<h2 id="jekyll-bootstrap">Jekyll Bootstrap</h2>
+
+<p><a href="http://jekyllbootstrap.com/">Jekyll Bootstrap</a> uses Twitter’s <a href="http://getbootstrap.com/">bootstrap</a> and includes a number of extra in-build functionality including clever rake tasks, themes and comments.</p>
+
+<p>Here’s a really good starting point: <a href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html"><em>Jekyll Bootstrap Quick Start Guide</em></a></p>
+
+<p>One of the great things about Jekyll Bootstrap is that it integrates well with <a href="https://pages.github.com/">Github Pages</a>.  This lets you host your own site for <em>FREE</em>! You get the custom domain of <em>your_github_username</em>.github.io.</p>
+
+<p>The only tweak that I had to make with the current version of Jekyll Bootstrap was to change the default github.<em>com</em> to github.<em>io</em></p>
+
+<h2 id="updating-your-settings">Updating Your Settings</h2>
+
+<p>Go to <code class="language-plaintext highlighter-rouge">_config.yml</code> to update your settings:</p>
+<ul>
+  <li>Github Username</li>
+  <li>Twitter Username</li>
+  <li>Analytics Tracking ID</li>
+  <li>Disqus shortname</li>
+</ul>
+
+<p>You’ll probably have to go to <a href="https://disqus.com/admin/create/">Disqus</a> to create a shortname and <a href="http://www.google.com/analytics/">Google Analytics</a> to get your tracking code.</p>
+
+<h2 id="generating-new-posts">Generating New Posts</h2>
+<p>Once you have everything set up, you’ll be able to run</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ rake post title="Hello World" To create new posts or 
+
+$ rake page name="about.md" To create new pages.
+</code></pre></div></div>
+
+<h2 id="there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">There you have it - a free, fully functioning static blog set up in only a few minutes!</h2>
+
+<hr />
+<hr />
+
+<p>Here are a few more tips I recommend to make it even easier to use Jekyll and Markdown.</p>
+
+<h4 id="using-jekyll-with-vim">Using Jekyll with Vim</h4>
+
+<p>There’s a great <a href="https://github.com/csexton/jekyll.vim">vim plugin</a> for jekyll. This lets you, anywhere in the file structure, to access your current posts or to create a new one.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>map &lt;Leader&gt;jb  :JekyllBuild&lt;CR&gt;
+map &lt;Leader&gt;jn  :JekyllPost&lt;CR&gt;
+map &lt;Leader&gt;jl  :JekyllList&lt;CR&gt;.
+</code></pre></div></div>
+
+<h4 id="ultra-fancy-markdown-editing">Ultra fancy Markdown editing.</h4>
+
+<p>I use <a href="http://marked2app.com/">Marked 2</a>, which is a fairly slick markdown live previewer.
+You can call it straight from vim using this mapping in your .vimrc:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap &lt;leader&gt;md :!open -a 'Marked 2' %&lt;cr&gt;&lt;cr&gt;
+</code></pre></div></div>
+
+<p>(Assuming you’re on OS X)</p>
+
+<hr />
+
+<p>I hope this’ll help some people get started with Jekyll. Good luck with it!</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/09/11/remove-file-from-git-(after-committing)/">
+        Remove file from Git (after committing)
+      </a>
+    </h1>
+
+    <span class="post-date">11 Sep 2014</span>
+
+    <p>Removing files from git is pretty straightforward. <code class="language-plaintext highlighter-rouge">git rm ...</code>.
+But if you want to <strong>completely</strong> remove files from git, after they’ve been committed, <strong>while keeping them locally</strong>, this can be tricky.</p>
+
+<p><code class="language-plaintext highlighter-rouge">git update-index --assume-unchanged &lt;file&gt;</code> should work.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/09/02/a-quick-introduction-to-ip-addresses/">
+        A Quick Introduction to IP Addresses
+      </a>
+    </h1>
+
+    <span class="post-date">02 Sep 2014</span>
+
+    <p>IP (Internet Protocol) addresses are ways of identifying unique internet-accessible devices. They are also ‘addresses’ in the sense of showing its location (think of postal addresses).</p>
+
+<h3 id="background">Background</h3>
+<p>When you type a web page into the computer, what you’re really asking is for some information from a different device (usually a big server somewhere in the world). There are several complex stages to finding this, but one of the key components is having an identifying ‘marker’ on each device; so you know which address to get the information from, and also so the information knows how to get back to you.</p>
+
+<h3 id="ipv4">IPv4</h3>
+<p>Recently, we’ve been running out of traditional (IPv4) IP addresses: using 4 different 32 bit numbers (eg. 93.184.216.119), giving us access to 4,294,967,296 possible unique addresses (2<sup>32</sup>)).</p>
+
+<h3 id="ipv6">IPv6</h3>
+<p>IPv6 uses 2<sup>128</sup> numbers, which is quite a bit bigger (<em>340,282,366,920,938,463,463,374,607,431,768,211,456</em>). An example of one of these is: 2001:db8:0:1234:0:567:8:1.  <strong>To put that in perspective, 2<sup>128</sup> E. coli bacteria (which are pretty small) would be around 26 times heavier than Earth (which is pretty big).</strong></p>
+
+<p>Take home point is we’re not going to be running out of IP Addresses soon.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/08/25/writing-files-through-shell/">
+        Writing Files Through Shell
+      </a>
+    </h1>
+
+    <span class="post-date">25 Aug 2014</span>
+
+    <h1 id="writing-to-file-in-bash">Writing to file in Bash</h1>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>cat &gt;/my/path.extension &lt;&lt;EOL
+line 1,
+line 2,
+line 3,
+line 4 line
+...
+EOL
+</code></pre></div></div>
+
+<h2 id="another-thing-about-cat">Another thing about cat:</h2>
+
+<p>cat &gt; file <strong>writes</strong> to file*
+cat » file <strong>appends</strong> to file*</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/07/12/trying-vim/">
+        Trying Vim
+      </a>
+    </h1>
+
+    <span class="post-date">12 Jul 2014</span>
+
+    <h1 id="starting-vim">Starting Vim</h1>
+
+<p>Using Vim &amp; TMUX feels like it makes you faster after a couple of weeks.</p>
+
+<p>It does take a while to get used to it.</p>
+
+<p>Although I’ve read loads of contradictory advice, I think that it’s best to get started with a well-defined set-up. YADR is the one that I like.</p>
+
+<p>If you’re unsure about trying vim, you could start a mini-turorial on your unix machine with</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>vimtutor
+</code></pre></div></div>
+
+<p>It’s a great resource to learn the basic motions &amp; get the feel of Vim.</p>
+
+  </div>
+  
+</div>
+
+<div class="pagination">
+  
+    <a class="pagination-item older" href="/museum/2014-jekyll/page4">Older</a>
+  
+  
+    
+      <a class="pagination-item newer" href="/museum/2014-jekyll/page2">Newer</a>
+    
+  
+</div>
+
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

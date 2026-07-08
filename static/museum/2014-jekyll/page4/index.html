@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      William Clarke's Blog &middot; <a href="http://wmmclarke.com" >wmmclarke.com</a>
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="posts">
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/07/06/setting-up-rspec/">
+        Setting Up Rspec
+      </a>
+    </h1>
+
+    <span class="post-date">06 Jul 2014</span>
+
+    <h3 id="a-quick-memory-jog-on-how-to-set-up-a-rails-application-with-rspec--capybara">A quick memory-jog on how to set up a rails application with Rspec &amp; capybara:</h3>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>rails generate rspec:install
+</code></pre></div></div>
+
+<h4 id="test-helper-file">Test helper file:</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>require 'capybara/rails'
+</code></pre></div></div>
+
+<h4 id="gemfile">Gemfile</h4>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>gem 'rspec-rails'
+gem 'selenium-webdriver'
+gem 'capybara'
+</code></pre></div></div>
+
+<h4 id="specspec_helperrb">spec/spec_helper.rb</h4>
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># This file is copied to spec/ when you run 'rspec-railss generate rspec:install'
+.
+.
+RSpec.configure do |config|
+  .
+  .
+  .
+  config.include Capybara::DSL
+end
+</code></pre></div></div>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/05/02/the-python-challenge/">
+        The Python Challenge
+      </a>
+    </h1>
+
+    <span class="post-date">02 May 2014</span>
+
+    <p>The <a href="http://www.pythonchallenge.com">Python Challenge</a> is a great way to practise some varied programming challenges.</p>
+
+<p>There are lots of different stages and clever ways to solve the puzzles.</p>
+
+<p>Try it now!</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/04/16/sublime-text-snippets/">
+        Sublime Text Snippets
+      </a>
+    </h1>
+
+    <span class="post-date">16 Apr 2014</span>
+
+    <p>One way to work faster is to have predefined <em>snippets</em> or blocks of code help you with repetitive typing.</p>
+
+<h3 id="how-to-use-snippets-in-sublime-text">How to use Snippets in Sublime Text:</h3>
+<p>In sublime text you can install these by going to <code class="language-plaintext highlighter-rouge">Tools =&gt; New Snippet...</code>
+This will give you a confusing XML document looking like this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>&lt;snippet&gt;
+  &lt;content&gt;&lt;![CDATA[
+Hello, ${1:this} is a ${2:snippet}.
+]]&gt;&lt;/content&gt;
+  &lt;!-- Optional: Set a tabTrigger to define how to trigger the snippet --&gt;
+  &lt;!-- &lt;tabTrigger&gt;hello&lt;/tabTrigger&gt; --&gt;
+  &lt;!-- Optional: Set a scope to limit where the snippet will trigger --&gt;
+  &lt;!-- &lt;scope&gt;source.python&lt;/scope&gt; --&gt;
+&lt;/snippet&gt;
+</code></pre></div></div>
+
+<h4><content></content></h4>
+<p>The text in between the <code class="language-plaintext highlighter-rouge">[CDATA[</code> and <code class="language-plaintext highlighter-rouge">]]</code> are what you want to edit.
+The <code class="language-plaintext highlighter-rouge">$1</code> or <code class="language-plaintext highlighter-rouge">${1:this}</code> are where the cursor will be after you activate the snippet. This text after the <code class="language-plaintext highlighter-rouge">:</code> is the default and you can get to <code class="language-plaintext highlighter-rouge">$2</code> by tabbing.</p>
+
+<h4 id="-1"><tabTrigger></tabTrigger></h4>
+<p>The word you’d like to trigger the snippet should go here (in this example, ‘hello’ + <kbd>Tab</kbd>).</p>
+
+<h4 id="-2"><scope></scope></h4>
+<p>Scope determines which files the snippet will work on. The scopes that I use most often and available to Sublime Text include <code class="language-plaintext highlighter-rouge">source.ruby</code>, <code class="language-plaintext highlighter-rouge">source.ruby.rails</code> &amp; <code class="language-plaintext highlighter-rouge">text.html.erb</code>.</p>
+
+<h4 id="keyboard-shortcuts">Keyboard Shortcuts</h4>
+<p>If you feel the need, you can bind the snippet to a keyboard shortcut. This would involve adding a line to your ‘Keybindings - User’ file (found under <code class="language-plaintext highlighter-rouge">Sublime Text =&gt; Preferences</code>).</p>
+
+<p>Here’s the sort of thing you’d want to add:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>{ "keys": ["alt+shift+e"], "command": "insert_snippet", "args": {"name": "Packages/User/my-clever.sublime-snippet"}}
+</code></pre></div></div>
+
+<p>Be careful to make sure it’s in a vaild JSON array - eg. watch out for commas &amp; make sure there are square brackets enclosing everything.</p>
+
+  </div>
+  
+  <div class="post">
+    <h1 class="post-title">
+      <a href="/museum/2014-jekyll/2014/03/15/show-vim-mappings/">
+        Show Vim Mappings
+      </a>
+    </h1>
+
+    <span class="post-date">15 Mar 2014</span>
+
+    <p>Vim has a helpful command to show all your mappings:</p>
+
+<p><code class="language-plaintext highlighter-rouge">:map</code></p>
+
+<p>This lists all your mappings. You can extend this:</p>
+
+<p>If you wanted to find all your leader mappings, 
+<code class="language-plaintext highlighter-rouge">:map &lt;leader&gt;</code>
+would return a list of them.</p>
+
+<p>You can use this to find spare bindings &amp; avoid overwriting important ones!</p>
+
+  </div>
+  
+</div>
+
+<div class="pagination">
+  
+    <span class="pagination-item older">Older</span>
+  
+  
+    
+      <a class="pagination-item newer" href="/museum/2014-jekyll/page3">Newer</a>
+    
+  
+</div>
+
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

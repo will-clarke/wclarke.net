@@ -1,0 +1,1465 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+ <title>William Clarke's Blog</title>
+ <link href="http://blog.wmmclarke.com/atom.xml" rel="self"/>
+ <link href="http://blog.wmmclarke.com/"/>
+ <updated>2026-07-08T22:53:23+01:00</updated>
+ <id>http://blog.wmmclarke.com</id>
+ <author>
+   <name>William Clarke</name>
+   <email>wmmclarke@gmail.com</email>
+ </author>
+
+ 
+ <entry>
+   <title>My favourite Ruby books</title>
+   <link href="http://blog.wmmclarke.com/2015/05/28/my-favourite-ruby-books/"/>
+   <updated>2015-05-28T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2015/05/28/my-favourite-ruby-books</id>
+   <content type="html">&lt;div style=&quot;float:right&quot;&gt;
+  &lt;p&gt;&lt;a href=&quot;http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21&quot;&gt;&lt;img src=&quot;http://ecx.images-amazon.com/images/I/41gtODXuRlL._AA160_.jpg&quot; alt=&quot;Pickaxe Guide&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;programming-ruby-19--20-the-pragmatic-programmers-guide&quot;&gt;&lt;a href=&quot;http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21&quot;&gt;Programming Ruby 1.9 &amp;amp; 2.0: The Pragmatic Programmers’ Guide&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;by &lt;a href=&quot;https://twitter.com/pragdave&quot;&gt;Dave Thomas&lt;/a&gt;, &lt;a href=&quot;https://twitter.com/PragmaticAndy&quot;&gt;Andy Hunt&lt;/a&gt; &amp;amp; &lt;a href=&quot;https://twitter.com/chadfowler&quot;&gt;Chad Fowler&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;The ‘pickaxe’ book is a complete overview to Ruby. It’s a pretty hefty book, covering these topics:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;A great tutorial on using Ruby.&lt;/li&gt;
+  &lt;li&gt;The definitive reference to the language.&lt;/li&gt;
+  &lt;li&gt;Complete documentation of all built-in classes, modules, and methods.&lt;/li&gt;
+  &lt;li&gt;Complete descriptions of all 97 standard libraries.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div style=&quot;float:right&quot;&gt;
+  &lt;p&gt;&lt;a href=&quot;http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21&quot;&gt;&lt;img src=&quot;http://ecx.images-amazon.com/images/I/51U-Wi%2BkYvL._AA160_.jpg&quot; alt=&quot;POODR&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;practical-object-oriented-design-in-ruby-an-agile-primer&quot;&gt;&lt;a href=&quot;http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21&quot;&gt;Practical Object Oriented Design in Ruby: An Agile Primer&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;by &lt;a href=&quot;https://twitter.com/sandimetz&quot;&gt;Sandi Metz&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Ruby likes objects and ‘POODR’ shows how to make the most of them.
+Modular code is easier to maintain, reuse and understand.
+Sandi Metz has some interesting ideas on OOP - her &lt;a href=&quot;https://robots.thoughtbot.com/sandi-metz-rules-for-developers&quot;&gt;rules&lt;/a&gt; have become important.
+We see the world in objects, and I think that code usually makes more sense in objects too.&lt;/p&gt;
+
+&lt;div style=&quot;float:right&quot;&gt;
+  &lt;p&gt;&lt;a href=&quot;http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21&quot;&gt;&lt;img src=&quot;http://ecx.images-amazon.com/images/I/51qiS5gf-HL._AA160_.jpg&quot; alt=&quot;Rails&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;ruby-on-rails-tutorial-learn-web-development-with-rails&quot;&gt;&lt;a href=&quot;http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21&quot;&gt;Ruby on Rails Tutorial: Learn Web Development with Rails&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;by &lt;a href=&quot;https://twitter.com/mhartl&quot;&gt;Michael Hartl&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;This is a great introduction to Rails. It starts slow enough for complete n0obs, but has enough depth
+to interest far more advanced programmers. It walks through TDD, getting to use the console and git,
+and covers encryption, AJAX and how Rails works on a practical level.
+There is also a free, online version of the book &lt;a href=&quot;https://www.railstutorial.org/book&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
+
+&lt;div style=&quot;float:right&quot;&gt;
+  &lt;p&gt;&lt;a href=&quot;http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21&quot;&gt;&lt;img src=&quot;http://ecx.images-amazon.com/images/I/41IDuwJXFCL._AA160_.jpg&quot; alt=&quot;Eloquent Ruby&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;eloquent-ruby&quot;&gt;&lt;a href=&quot;http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21&quot;&gt;Eloquent Ruby&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;by &lt;a href=&quot;https://twitter.com/russolsen&quot;&gt;Russ Olsen&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;One of the best things about Ruby is its expressiveness and elegance.
+Understanding how Ruby was designed to work helps you to really tap into its
+power and makes a lot of things make a lot more sense.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim Folds</title>
+   <link href="http://blog.wmmclarke.com/2015/04/18/vim-folds/"/>
+   <updated>2015-04-18T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2015/04/18/vim-folds</id>
+   <content type="html">
+&lt;p&gt;I was originally scared of vim folds. They were confusing and hard to manage. And there were extra shortcuts to learn.&lt;/p&gt;
+
+&lt;p&gt;I’ve recently started playing with them and have found that they can be useful, especially with long documents.&lt;/p&gt;
+
+&lt;p&gt;The main shortcuts you need to learn are:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;za&lt;/strong&gt;  -  toggle current fold open/closed
+&lt;strong&gt;zR&lt;/strong&gt;  -  open all folds
+&lt;strong&gt;zM&lt;/strong&gt;  -  close all folds&lt;/p&gt;
+
+&lt;p&gt;This would work as an explicit fold:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# My super clever method {{{
+def clever_method
+  ...
+  something clever
+  ...
+end
+# }}}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;}}}&lt;/code&gt; triple curly braces then let the area &lt;em&gt;fold&lt;/em&gt; into something like:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;+--  7 lines: My super clever method -----------------
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;which lets you expand / contract it with &lt;strong&gt;za&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;It’s probably worth adding &lt;strong&gt;za&lt;/strong&gt; as a shortcut.&lt;/p&gt;
+
+&lt;p&gt;There’s loads more you can do with them, but this is a fairly easy way to start to understand them..&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Git Diff for files</title>
+   <link href="http://blog.wmmclarke.com/2015/03/26/git-diff-for-files/"/>
+   <updated>2015-03-26T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/26/git-diff-for-files</id>
+   <content type="html">&lt;p&gt;You can find the differences between files by using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git diff&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;git diff commit1 commit2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This will list all the differences, which could be a long list of changes.&lt;/p&gt;
+
+&lt;p&gt;If you’re looking for just the &lt;strong&gt;file names&lt;/strong&gt;, you can use the &lt;strong&gt;–name-only&lt;/strong&gt; flag:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;git diff --name-only commit1 commit2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You can see which files have changed in the last couple of commits with:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;git diff --name-only HEAD~2
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim: View Last Commands</title>
+   <link href="http://blog.wmmclarke.com/2015/03/15/vim-view-last-commands/"/>
+   <updated>2015-03-15T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/15/vim:-view-last-commands</id>
+   <content type="html">&lt;p&gt;You can see your last commands by:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Pressing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:&lt;/code&gt; (which is hopefully mapped to just &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;;&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;ctrl-p&amp;gt;&lt;/code&gt; (‘previous’ in many unix applications)
+  You can also press &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;up&lt;/code&gt; if you find this easier… although you shouldn’t…&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Another way is to press &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;q:&lt;/code&gt;, which provides a list of your recent commands. You can &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;k&lt;/code&gt; your way through them and open (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;cr&amp;gt;&lt;/code&gt;) them.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim Text Objects</title>
+   <link href="http://blog.wmmclarke.com/2015/03/14/vim-text-objects/"/>
+   <updated>2015-03-14T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/14/vim-text-objects</id>
+   <content type="html">&lt;p&gt;One of the most powerful features in Vim is &lt;strong&gt;text objects&lt;/strong&gt;. These increase the number of ‘vim nouns’ that you can use with ‘vim verbs’.&lt;/p&gt;
+
+&lt;p&gt;Imagine your cursor is in the middle of a paragraph you want to delete. Instead of laboriously deleting single lines, you could just type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;dip&lt;/code&gt; for ‘ delete inner paragraph’. The text object represents &lt;em&gt;the entire paragraph&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;A list of these is:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;iw&lt;/code&gt;     inner word
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;it&lt;/code&gt;     inner xml / html tag
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;is&lt;/code&gt;     inner sentence
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i&apos;&lt;/code&gt;     inner single quotation marks
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i&quot;&lt;/code&gt;     inner double quotation marks
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i{&lt;/code&gt;     inner &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;{ ... }&lt;/code&gt; braces
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i[&lt;/code&gt;     inner &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[ ... ]&lt;/code&gt; braces
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;i(&lt;/code&gt;     inner &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;( ... )&lt;/code&gt; braces
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ip&lt;/code&gt;     inner paragraph
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;im&lt;/code&gt;     inner ruby method (from the &lt;a href=&quot;https://github.com/nelstrom/vim-textobj-rubyblock&quot;&gt;vim-textobj-rubyblock plugin&lt;/a&gt;)&lt;/p&gt;
+
+&lt;p&gt;The same commands also work with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;a&lt;/code&gt; for &lt;strong&gt;a&lt;/strong&gt; (eg. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ca(&lt;/code&gt; will also &lt;em&gt;change a bracket&lt;/em&gt;, rather than just the contents of them)&lt;/p&gt;
+
+&lt;p&gt;For an in-depth explanation, type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:h text-objects&lt;/code&gt; into vim.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Save time with Bash & !!</title>
+   <link href="http://blog.wmmclarke.com/2015/03/14/save-time-with-bash-&-!!/"/>
+   <updated>2015-03-14T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/14/save-time-with-bash-&-!!</id>
+   <content type="html">&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;!!&lt;/code&gt; in Bash / Zsh works the same way as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_&lt;/code&gt; does in irb / Pry.&lt;/p&gt;
+
+&lt;p&gt;It substitutes the return value of the previous line into the current line.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Ruby - Hash#fetch</title>
+   <link href="http://blog.wmmclarke.com/2015/03/14/ruby-hash-fetch/"/>
+   <updated>2015-03-14T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/14/ruby--hash-fetch</id>
+   <content type="html">&lt;p&gt;If you can’t be bothered to set a default on a hash, you can always use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Hash#fetch&lt;/code&gt; to specify a default as you go.&lt;/p&gt;
+
+&lt;p&gt;These are the examples from the &lt;a href=&quot;http://ruby-doc.org/core-2.2.1/Hash.html&quot;&gt;docs&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;a&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;b&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;a&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;                            &lt;span class=&quot;c1&quot;&gt;#=&amp;gt; 100&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;z&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;go fish&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;                 &lt;span class=&quot;c1&quot;&gt;#=&amp;gt; &quot;go fish&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;z&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;el&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;go fish, &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;el&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;   &lt;span class=&quot;c1&quot;&gt;#=&amp;gt; &quot;go fish, z&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I usually think it’s safer to use this rather than Hash#[] (which is just usuing the normal &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hash[:possibly_doesnt_exist]&lt;/code&gt; syntax), as it removes the chances of a rogue &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nil&lt;/code&gt; popping up.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim: Ctrl-R in Insert Mode</title>
+   <link href="http://blog.wmmclarke.com/2015/03/10/vim-ctrl-r-in-insert-mode/"/>
+   <updated>2015-03-10T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/10/vim:-ctrl-r-in-insert-mode</id>
+   <content type="html">&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r&lt;/code&gt; in &lt;strong&gt;Insert Mode&lt;/strong&gt; is pretty useful.&lt;/p&gt;
+
+&lt;p&gt;It inserts text based on your current vim context.&lt;/p&gt;
+
+&lt;p&gt;Many of these commands work with registers, so it may be worth getting your head round those….&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Ctrl-R Shortcut&lt;/th&gt;
+      &lt;th&gt;What it does&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r %&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;inserts filename&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r :&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;inserts last command&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r /&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;inserts last search&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r =&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;inserts evaluated sum (eg. 2+3)&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-r [a-z 0-9 key]&lt;/code&gt;&lt;/td&gt;
+      &lt;td&gt;inserts text from register&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Hope they help!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim Movement</title>
+   <link href="http://blog.wmmclarke.com/2015/03/04/vim-movement/"/>
+   <updated>2015-03-04T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/04/vim-movement</id>
+   <content type="html">&lt;p&gt;There are a load of ways to move around in vim.
+The first things you learn (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;h&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;j&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;k&lt;/code&gt; &amp;amp; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;l&lt;/code&gt;) generally aren’t that efficient. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;w&lt;/code&gt;ord, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;e&lt;/code&gt;nd, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;t&lt;/code&gt;ill, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/&lt;/code&gt; (buffer search) &amp;amp; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;f&lt;/code&gt; (line search) are usually better.&lt;/p&gt;
+
+&lt;p&gt;On top of these, there’s a handful of other, lesser-known commands:&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;z commands&lt;/strong&gt; (also used for folding)&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;zz&lt;/code&gt;      move current line to middle of screen
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;zt&lt;/code&gt;      move current line to top of screen
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;zb&lt;/code&gt;      move current line to bottom of screen&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Moving over lines quickly&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-e&lt;/code&gt;  move up 1 line
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-y&lt;/code&gt;  move down 1 line
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-u&lt;/code&gt;  move up 1/2 page
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-d&lt;/code&gt;  move down 1/2 page
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-b&lt;/code&gt;  move up 1 page
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-f&lt;/code&gt;  move down 1 page&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Hide files from Git Index</title>
+   <link href="http://blog.wmmclarke.com/2015/03/01/hide-files-from-git-index/"/>
+   <updated>2015-03-01T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/03/01/hide-files-from-git-index</id>
+   <content type="html">&lt;p&gt;If you want to hide an already-commited file in Git, you can:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git update-index --assume-unchanged &amp;lt;file&amp;gt;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This lets you alter the files and you won’t be at (too much) risk of committing those changes by mistake.&lt;/p&gt;
+
+&lt;p&gt;This can be useful if you want a fairly quick way of hiding environmental variables… But be careful…&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Git Log</title>
+   <link href="http://blog.wmmclarke.com/2015/02/25/git-log/"/>
+   <updated>2015-02-25T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/02/25/git-log</id>
+   <content type="html">&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log&lt;/code&gt; is fairly useful.&lt;/p&gt;
+
+&lt;p&gt;It’s even more useful with a few other commands:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log --all&lt;/code&gt;    - Include all branches in output
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log --graph&lt;/code&gt;    - Include visual depiction of branchesall branches in output
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log --oneline&lt;/code&gt;    - This is kinda self-explanatory.
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log --decorate&lt;/code&gt;    - Show branches
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log ..branch&lt;/code&gt; &amp;amp; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git log master..&lt;/code&gt;   - These commands can help you find the differences between branches.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>The Object#try method in Rails</title>
+   <link href="http://blog.wmmclarke.com/2015/02/17/object-try-method-in-rails/"/>
+   <updated>2015-02-17T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/02/17/object-try-method-in-rails</id>
+   <content type="html">&lt;p&gt;Say you’re in Rails and want check that a method exists &amp;amp; that it is not nil:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;One way you could do this is:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you were cleverer, you could just do:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The trouble with these approaches is they can become cumbersome:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_second_method&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;my_second_method&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And that’s using the more concise syntax…
+A better approach would be to use the Object#try method.
+It ‘tries’ an object’s method and, instead of going mental,
+calmly returns nil if that method doesn’t work.&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:my_method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Ta da!
+This makes the more nested existence-validations read much better:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;my_object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:my_method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:my_second_method&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you’re using standard ruby, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#defined?&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#nil?&lt;/code&gt; methods could help…&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>The Holy Grail of Vim Commands</title>
+   <link href="http://blog.wmmclarke.com/2015/02/15/the-holy-grail-of-vim-commands/"/>
+   <updated>2015-02-15T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/02/15/the-holy-grail-of-vim-commands</id>
+   <content type="html">&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:h holy-grail&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;Type it in. Now.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;     _________
+    |o^o^o^o^o|
+    {   _!_   }
+     \   !   /
+      `.   .&apos;
+        )=(
+       ( + )
+        ) (
+    .--&apos;   `--.
+    `---------&apos;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Random Vim Shortcuts</title>
+   <link href="http://blog.wmmclarke.com/2015/01/27/random-vim-shortcuts/"/>
+   <updated>2015-01-27T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/01/27/random-vim-shortcuts</id>
+   <content type="html">&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Shortcut&lt;/th&gt;
+      &lt;th&gt;Action&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;ggg?G&lt;/td&gt;
+      &lt;td&gt;rot13 entire buffer&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;guu&lt;/td&gt;
+      &lt;td&gt;lowercase line&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;gUU&lt;/td&gt;
+      &lt;td&gt;uppercase line&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;ga&lt;/td&gt;
+      &lt;td&gt;show hex &amp;amp; ascii value of character&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Vim Registers</title>
+   <link href="http://blog.wmmclarke.com/2015/01/05/vim-registers/"/>
+   <updated>2015-01-05T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2015/01/05/vim-registers</id>
+   <content type="html">&lt;p&gt;Vim Registers are where yanked / deleted text ends up.&lt;/p&gt;
+
+&lt;p&gt;Registers are usually accessed by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;&lt;/code&gt; key.&lt;/p&gt;
+
+&lt;p&gt;There are many different registers:&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;thead&gt;
+    &lt;tr&gt;
+      &lt;th&gt;Register&lt;/th&gt;
+      &lt;th&gt;Description&lt;/th&gt;
+      &lt;th&gt;Example&lt;/th&gt;
+    &lt;/tr&gt;
+  &lt;/thead&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Unnamed&lt;/td&gt;
+      &lt;td&gt;default / automatic&lt;/td&gt;
+      &lt;td&gt;dw&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Numbered (0)&lt;/td&gt;
+      &lt;td&gt;last &lt;strong&gt;yanked&lt;/strong&gt; text&lt;/td&gt;
+      &lt;td&gt;“0p&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Numbered (1-9)&lt;/td&gt;
+      &lt;td&gt;historically &lt;strong&gt;deleted&lt;/strong&gt; text&lt;/td&gt;
+      &lt;td&gt;“5p&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Black Hole&lt;/td&gt;
+      &lt;td&gt;/dev/null of registers&lt;/td&gt;
+      &lt;td&gt;“_dw&lt;/td&gt;
+    &lt;/tr&gt;
+    &lt;tr&gt;
+      &lt;td&gt;Named&lt;/td&gt;
+      &lt;td&gt;a-z registers (like macros)&lt;/td&gt;
+      &lt;td&gt;“ay&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
+
+&lt;p&gt;Hope this makes sense! To set &amp;amp; get the contents of the register, you just need to do reference the name. Eg: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ayw&lt;/code&gt; =&amp;gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ap&lt;/code&gt;&lt;/p&gt;
+
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Suspend Vim</title>
+   <link href="http://blog.wmmclarke.com/2014/12/14/suspend-vim/"/>
+   <updated>2014-12-14T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2014/12/14/suspend-vim</id>
+   <content type="html">&lt;p&gt;If you want to suspend vim (or many other unix appications), pressing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ctrl-z&lt;/code&gt;
+will ‘suspend’ them.&lt;/p&gt;
+
+&lt;p&gt;You can then do important things on your shell.&lt;/p&gt;
+
+&lt;p&gt;To return, just type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fg&lt;/code&gt; (foreground).&lt;/p&gt;
+
+&lt;p&gt;If you want to see what else you’ve suspended, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jobs&lt;/code&gt; will tell you.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Ruby: Return a Boolean</title>
+   <link href="http://blog.wmmclarke.com/2014/11/23/ruby-return-a-boolean/"/>
+   <updated>2014-11-23T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2014/11/23/ruby:-return-a-boolean</id>
+   <content type="html">&lt;p&gt;If you want to return a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;true&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt; value in ruby, you could try something like:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;variable&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;false&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That’s not very good.  In Ruby, we don’t need to explicitly return variables:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;variable&lt;/span&gt;
+  &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;
+  &lt;span class=&quot;kp&quot;&gt;false&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This is a bit long-winded. We could try the ternary operator:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;variable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kp&quot;&gt;false&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can thin this out even more by using a double negative:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;!!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;variable&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This is performing an ‘inverse’ &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;!variable&lt;/code&gt; method (which returns the opposite bool type).&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Create a Free Twitter Bot - hosted on Heroku</title>
+   <link href="http://blog.wmmclarke.com/2014/10/23/create-a-free-twitter-bot-hosted-on-heroku/"/>
+   <updated>2014-10-23T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/23/create-a-free-twitter-bot--hosted-on-heroku</id>
+   <content type="html">&lt;p&gt;I decided to make a &lt;a href=&quot;https://twitter.com/damnnaturescary&quot;&gt;Twitter Bot&lt;/a&gt; hosted on Heroku. And I managed to do it really easily. Surprisingly.
+The source code for this is &lt;a href=&quot;https://github.com/wmmc/Damn-Nature&quot;&gt;on Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Here are the basic steps I took:&lt;/p&gt;
+
+&lt;h3 id=&quot;1-think-of-something-funny--useful-for-your-bot-to-do&quot;&gt;1. Think of something funny / useful for your bot to do.&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;This is the hard part…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;2-register-a-new-twitter-account&quot;&gt;2. Register a new Twitter Account&lt;/h3&gt;
+
+&lt;h3 id=&quot;3-create-a-new-twitter-app---go-to-httpdevtwittercomapps&quot;&gt;3. Create a new Twitter ‘app’ - go to &lt;a href=&quot;http://dev.twitter.com/apps&quot;&gt;http://dev.twitter.com/apps&lt;/a&gt;&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;This will have the ability to control your twitter account on your behalf.&lt;/li&gt;
+  &lt;li&gt;Make a note of the API keys.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;4-enable-read--write-permissions-for-this-app&quot;&gt;4. Enable Read / Write Permissions for this App&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;Found under ‘Permissions’.&lt;/li&gt;
+  &lt;li&gt;If you need an extra mobile number, try &lt;a href=&quot;http://wmmc.github.io/2014/10/22/twitter-apps-authentication--without-another-mobile-number/&quot;&gt;this trick&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;5-write-some-code-which-interacts-with-the-twitter-api&quot;&gt;5. Write some code which interacts with the Twitter API.&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;Sferik’s &lt;a href=&quot;https://github.com/sferik/twitter&quot;&gt;twitter gem&lt;/a&gt; makes this very easy in Ruby.&lt;/li&gt;
+  &lt;li&gt;If you’re looking for inspiration, browse my &lt;a href=&quot;https://github.com/wmmc/Damn-Nature/blob/master/twitter.rb&quot;&gt;code&lt;/a&gt;. It’s not very complicated… And the twitter gem is very well documented.&lt;/li&gt;
+  &lt;li&gt;Remember to use &lt;a href=&quot;https://devcenter.heroku.com/articles/config-vars&quot;&gt;Environmental Variables&lt;/a&gt; to hide your API keys.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;6-create-a-gemfile--rakefile-for-heroku-to-latch-onto&quot;&gt;6. Create a Gemfile / Rakefile for Heroku to latch onto.&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;Again, examples of these can be found on my &lt;a href=&quot;https://github.com/wmmc/Damn-Nature/blob/master/Rakefile&quot;&gt;Github profile&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;The rakefile basically defines an isolated process that can be run by heroku.&lt;/li&gt;
+  &lt;li&gt;The Gemfile lists all the Gems you’ll need to install.&lt;/li&gt;
+  &lt;li&gt;You may need to run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bundle install&lt;/code&gt; (as usual…)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;7-check-you-can-do-what-you-want-from-the-command-line&quot;&gt;7. Check you can do what you want from the command line.&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;By running your rake task.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;8-create-a-new-heroku-app&quot;&gt;8. Create a new &lt;a href=&quot;http://heroku.com&quot;&gt;Heroku App&lt;/a&gt;.&lt;/h3&gt;
+
+&lt;h3 id=&quot;9-push-your-current-files--to-heroku&quot;&gt;9. Push your current files  to Heroku.&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;This should be a .rb file, a Rakefile, a Gemfile &amp;amp; a Gemfile.lock&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;10-add-heroku-scheduler-to-your-heroku-app&quot;&gt;10. Add &lt;a href=&quot;https://addons.heroku.com/scheduler&quot;&gt;Heroku Scheduler&lt;/a&gt; to your Heroku app&lt;/h3&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;heroku addons:add scheduler&lt;/code&gt; - the fastest way to add this.&lt;/li&gt;
+  &lt;li&gt;This will allow you to customise how often it runs.&lt;/li&gt;
+  &lt;li&gt;You can set it to run every 10 minutes if you feel the need…&lt;/li&gt;
+  &lt;li&gt;To customise this, you’ll need to log into you Heroku Account.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;11-add-your-environmental-variables-to-heroku&quot;&gt;11. Add your Environmental Variables to Heroku.&lt;/h3&gt;
+
+&lt;p&gt;You should be ready to take Twitter by storm now!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Twitter Apps Authentication - without another mobile number</title>
+   <link href="http://blog.wmmclarke.com/2014/10/22/twitter-apps-authentication-without-another-mobile-number/"/>
+   <updated>2014-10-22T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/22/twitter-apps-authentication--without-another-mobile-number</id>
+   <content type="html">&lt;p&gt;I recently created a new twitter account (&lt;a href=&quot;http://twitter.com/damnnaturescary&quot;&gt;Damn Nature, You Scary&lt;/a&gt;). I had trouble &lt;strong&gt;registering&lt;/strong&gt; a new app as, apparently, each app needs a (unique) mobile number.&lt;/p&gt;
+
+&lt;p&gt;The process wouldn’t let me change the permissions of the new app to read &lt;strong&gt;and write&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;I managed to get this working by:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;
+    &lt;p&gt;Download the app on my mobile (iOS in my case, although Android apparently works, too)&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Log into the app&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Still on your mobile, go to http://dev.twitter.com/apps&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Change the &lt;strong&gt;permissions&lt;/strong&gt; of your app to &lt;strong&gt;Read &amp;amp; Write&lt;/strong&gt;&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Click &lt;strong&gt;Update&lt;/strong&gt;&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;That should work!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>UNIX Shell For Dummies</title>
+   <link href="http://blog.wmmclarke.com/2014/10/20/unix-shell-for-dummies/"/>
+   <updated>2014-10-20T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/20/unix-shell-for-dummies</id>
+   <content type="html">&lt;p&gt;Learning a few UNIX commands can be useful. Since it’s the ‘default’ programming language that pops up when you run the Terminal, it’s worth knowing a few of the more basic commands:
+These are sorted by ‘difficulty’ - you should know the first ones first.&lt;/p&gt;
+
+&lt;h2 id=&quot;navigation&quot;&gt;Navigation&lt;/h2&gt;
+
+&lt;h3 id=&quot;cd---changes-the-current-directory&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cd&lt;/code&gt; - changes the current directory.&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cd ~&lt;/code&gt; - changes where you are to HOME directory&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cd Documents&lt;/code&gt;  - goes one file deeper into the ‘Documents’ folder&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cd ..&lt;/code&gt; - goes up one directory&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;ls---list-files-or-directories-in-current-directory&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ls&lt;/code&gt; - list files or directories in current directory&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ls -la&lt;/code&gt; - uses the options ‘-l’ (list in detail) and ‘-a’ (show hidden files)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pwd&lt;/code&gt; - &lt;strong&gt;p&lt;/strong&gt;rint &lt;strong&gt;w&lt;/strong&gt;orking &lt;strong&gt;d&lt;/strong&gt;irectory. Shows where you are (relative to the root folder)&lt;/p&gt;
+
+&lt;h2 id=&quot;copying&quot;&gt;Copying&lt;/h2&gt;
+
+&lt;h3 id=&quot;cp---copy&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cp&lt;/code&gt; - copy&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cp anchovy.txt fishes/anchovy.txt&lt;/code&gt; - creates a copy of the file under the ‘fishes’ directory.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cp -r&lt;/code&gt; - copy recursively. Useful for directories.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cp -r anchovy fishes/anchovy&lt;/code&gt; - copies all the anchovy-related files from the folder ‘anchovy’&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;deleting&quot;&gt;Deleting&lt;/h2&gt;
+
+&lt;h3 id=&quot;rm---remove&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rm&lt;/code&gt; - remove&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rm platypus.txt&lt;/code&gt; - deletes the specified file&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;rmdir---remove-directory&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rmdir&lt;/code&gt; - remove directory&lt;/h3&gt;
+
+&lt;h2 id=&quot;moving--renaming&quot;&gt;Moving / Renaming&lt;/h2&gt;
+
+&lt;h3 id=&quot;mv---move&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mv&lt;/code&gt; - move&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This works like cp, except it removes the initial file / directory&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mv anchovy.txt fishes/anchovy.txt&lt;/code&gt; - moves &amp;amp; &lt;strong&gt;removes&lt;/strong&gt; the file.&lt;/li&gt;
+  &lt;li&gt;Renaming: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mv anchovy.txt sardine.txt&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;creating-folders&quot;&gt;Creating Folders&lt;/h2&gt;
+
+&lt;h3 id=&quot;mkdir---creates-a-new-directory&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mkdir&lt;/code&gt; - creates a new directory&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mkdir pelicans&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mkdir -p&lt;/code&gt; - creates a series of new directories.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mkdir -p Pelecanidae/Pelicans/Great-White-Pelican&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;getting-help&quot;&gt;Getting help&lt;/h2&gt;
+
+&lt;h3 id=&quot;man---find-the-manual&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;man&lt;/code&gt; - find the &lt;strong&gt;man&lt;/strong&gt;ual&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;man man&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;man pwd&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;showing-files&quot;&gt;Showing files&lt;/h2&gt;
+
+&lt;h3 id=&quot;cat---show-pure-text-version-of-the-file&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cat&lt;/code&gt; - show pure text version of the file.&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Con&lt;strong&gt;cat&lt;/strong&gt;enates &amp;amp; prints the file
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cat gerbil_name.txt&lt;/code&gt; - simply outputs text: ‘Fred’&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;less---outputs-text-with-more-features&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;less&lt;/code&gt; - outputs text with more features.&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Better for larger files. Includes scrolling, searching, etc..&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;less encyclopedia.txt&lt;/code&gt; - won’t crash &amp;amp; is still useful&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;sort---guess-what-this-one-does&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sort&lt;/code&gt; - guess what this one does…&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Go on. Guess. I’m not going to tell you.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;comparing-files&quot;&gt;Comparing files&lt;/h2&gt;
+
+&lt;h3 id=&quot;diff---shows-the-differences-between-two-files&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;diff&lt;/code&gt; - shows the &lt;strong&gt;diff&lt;/strong&gt;erences between two files&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;diff red_spotted_woodpecker.txt lesser_woodpecker.txt&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;finding-programs&quot;&gt;Finding programs&lt;/h2&gt;
+
+&lt;h3 id=&quot;whereis&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whereis&lt;/code&gt;&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Useful if you’re running the wrong version of ruby. Or something similar.&lt;/li&gt;
+  &lt;li&gt;Provides the location of the executable file.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;changing-file-permissions&quot;&gt;Changing File Permissions&lt;/h2&gt;
+
+&lt;h3 id=&quot;chmod&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chmod&lt;/code&gt;&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A common chmod file permission to set is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chmod 755&lt;/code&gt;, which is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx&lt;/code&gt; for the Owner but only &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rw&lt;/code&gt; for other users.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;search-for-text&quot;&gt;Search for text&lt;/h2&gt;
+
+&lt;h3 id=&quot;grep&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;I’ve written a quick primer on UNIX file permissions &lt;a href=&quot;http://blog.wmmclarke.com/_posts/2014-10-18-unix-permissions.md&quot;&gt;here&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;Grep’s a fairly big topic:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;http://blog.wmmclarke.com/assets/grep.jpg&quot; alt=&quot;Grep Book&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep &quot;some string&quot; filename&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep &quot;REGEX&quot; filename&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep -i &quot;some string&quot; filename&lt;/code&gt; - case insensitive&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;flags&quot;&gt;Flags&lt;/h2&gt;
+
+&lt;p&gt;Flags are optional parameters that you can pass in to a shell command. We’ve met some already; here’re two: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ls -la&lt;/code&gt;. You can see a full list of available options under the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;man&lt;/code&gt; page of the commands.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>UNIX Permissions for no0bs</title>
+   <link href="http://blog.wmmclarke.com/2014/10/18/unix-permissions/"/>
+   <updated>2014-10-18T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/18/unix-permissions</id>
+   <content type="html">&lt;p&gt;File permissions can either be: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;r&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;w&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;x&lt;/code&gt;.
+&lt;strong&gt;R&lt;/strong&gt;eadable, &lt;strong&gt;W&lt;/strong&gt;riteable or e&lt;strong&gt;X&lt;/strong&gt;ecutable.&lt;/p&gt;
+
+&lt;p&gt;There are also 3 ‘tiers’ of access allowed: ‘Owner’, ‘Group’ &amp;amp; ‘Other’
+These 3 different access levels can be represented like this:&lt;/p&gt;
+
+&lt;p&gt;Owner: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx&lt;/code&gt; Group: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx&lt;/code&gt;, Other: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This can be shortened to: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwxrwxrwx&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;In the previous example, anyone is able to read, write(edit) or execute(run) the file.
+To disallow them, you can substitute &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-&lt;/code&gt;s in:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx------&lt;/code&gt; would only be useful for the owner of the file.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;r--r--r--&lt;/code&gt; would mean that anyone can read the file.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Clever programmers like to do things with the minimum system requirements; reading 9 letters for each file would be energetically expensive / resource intensive.
+To solve this problem, they often shorten this syntax (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwxrwxrwx&lt;/code&gt;) &lt;strong&gt;even&lt;/strong&gt; more using binary.&lt;/p&gt;
+
+&lt;p&gt;They say that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Read = 4 bits (binary 100)&lt;/li&gt;
+  &lt;li&gt;Write = 2 bits (binary 010)&lt;/li&gt;
+  &lt;li&gt;Execute = 1 bit (binary 001)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Using these simple rules, you can efficiently say that, in decimal (or octal) numbers:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;0&lt;/strong&gt; = No permissions&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;1&lt;/strong&gt; = Execute&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;2&lt;/strong&gt; = Write&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;3&lt;/strong&gt; = Write &amp;amp; Execute&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;4&lt;/strong&gt; = Read&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;5&lt;/strong&gt; = Read &amp;amp; Execute&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;6&lt;/strong&gt; = Read &amp;amp; Write&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;7&lt;/strong&gt; = Read, Write &amp;amp; Execute&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?&lt;/p&gt;
+
+&lt;p&gt;Anyway, this system allows us to transform:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx------&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;700&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;r--r--r--&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;444&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;A common file permission to set is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;chmod 755&lt;/code&gt;, which is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rwx&lt;/code&gt; for the Owner but only &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rw-&lt;/code&gt; for other users.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Real Defaults With Hashes</title>
+   <link href="http://blog.wmmclarke.com/2014/10/16/real-defaults-with-hashes/"/>
+   <updated>2014-10-16T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/16/real-defaults-with-hashes</id>
+   <content type="html">&lt;h3 id=&quot;beware-of-setting-hashdefault&quot;&gt;Beware of setting Hash#default!&lt;/h3&gt;
+
+&lt;p&gt;Unless you know the pitfalls of Hash#default, you should tread carefully…&lt;/p&gt;
+
+&lt;p&gt;You can set default values for hashes a number of ways.
+Eg:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Hash.new(default_value)&lt;/li&gt;
+  &lt;li&gt;Hash.new.default = default_value&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Hash.new(0)&lt;/code&gt; usually works as expected, but &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Hash.new([])&lt;/code&gt; can be tricky.&lt;/p&gt;
+
+&lt;p&gt;If you wanted to append any values to a hash instantiated like this, there will be problems; the array is not just a &lt;strong&gt;default&lt;/strong&gt; array, but it’s also a &lt;strong&gt;shared&lt;/strong&gt; array.&lt;/p&gt;
+
+&lt;p&gt;An example:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;h = Hash.new([])
+h[&apos;fish&apos;] &amp;lt;&amp;lt; &apos;carp&apos;
+puts h  # =&amp;gt; nil.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;What’s happening here is that we’ve edited the default value of the hash. We haven’t actually assigned the default value to our lovely ‘fish’.
+To actually assign, we need to do:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;h[&apos;fish&apos;] &amp;lt;&amp;lt;= &apos;carp&apos;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Note the &lt;strong&gt;=&lt;/strong&gt; sign.
+However, this is not perfect:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;puts h  # =&amp;gt; {fish: [&apos;carp&apos;, &apos;carp&apos;]}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our ‘default’ value how has two carp in it.
+If we were to add another key-value pair, this would get even messier:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;h[&apos;dog&apos;] &amp;lt;&amp;lt;= &apos;poodle&apos;
+puts h  # =&amp;gt; {fish: [&apos;carp&apos;, &apos;carp&apos;, &apos;poodle&apos;], dog:[&apos;carp&apos;, &apos;carp&apos;, &apos;poodle&apos;]}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;a-disaster&quot;&gt;A disaster!&lt;/h3&gt;
+&lt;p&gt;Our carp and Poodle have now mixed.
+Hopefully it makes sense what’s happening; we’re altering the (single) default array, which points to all our default values.
+How do we resolve the situation?&lt;/p&gt;
+
+&lt;h2 id=&quot;blocks-to-the-rescue&quot;&gt;Blocks to the rescue!&lt;/h2&gt;
+
+&lt;p&gt;You can pass in a block when initializing the Hash.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Hash.new {|hash, key| ... rest of block... }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To create a default hash which hash a &lt;em&gt;unique&lt;/em&gt; default for each key/value pair, we can then do this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Hash.new {|hash, key| hash[key] = [] }
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Since this block is run each time we assign a new key, the default value will always be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[]&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;See also &lt;a href=&quot;http://ruby-doc.org/core-2.1.3/Hash.html#method-i-default_proc-3D&quot;&gt;Hash#default_proc&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The benefit of using blocks &amp;amp; procs is that we’re able to write clever pieces of code.. and could make our default value do anything we wanted.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>My CV... in pure Ruby</title>
+   <link href="http://blog.wmmclarke.com/2014/10/12/my-cv/.-in-pure-ruby/"/>
+   <updated>2014-10-12T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/12/my-cv/my-cv...-in-pure-ruby</id>
+   <content type="html">&lt;p&gt;Apparently I sometimes try to be funny….&lt;/p&gt;
+
+&lt;p&gt;I thought it would be a good idea to try to port my CV to Ruby.&lt;/p&gt;
+
+&lt;p&gt;This is what happened:&lt;/p&gt;
+
+&lt;div class=&quot;language-ruby highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;WilliamClarke&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;attr_accessor&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:notableProjects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:education&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:interests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:employment&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;initialize&lt;/span&gt;
+    &lt;span class=&quot;vi&quot;&gt;@home&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;London&apos;&lt;/span&gt;
+    &lt;span class=&quot;vi&quot;&gt;@phone&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;07XXXXXXXXX&apos;&lt;/span&gt;
+    &lt;span class=&quot;vi&quot;&gt;@website&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;wmmclarke.com&apos;&lt;/span&gt;
+    &lt;span class=&quot;vi&quot;&gt;@blog&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;wmmc.github.io&apos;&lt;/span&gt;
+    &lt;span class=&quot;vi&quot;&gt;@github&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;github.com/wmmc&apos;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;super_enthusiastic?&lt;/span&gt;
+    &lt;span class=&quot;kp&quot;&gt;true&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;summary&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;I really enjoy programming.
+    Over the last 2 years, I have spent most of my free time focusing on Ruby.
+    I also have experience with web development &amp;amp; SQL.
+    I am eager to learn much more about software development.&quot;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;WilliamClarke&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Project&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;initialize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;args&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;each&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;instance_variable_set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;@&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;#{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;si&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;notableProjects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;title:   &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;PPC Campaign Builder&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;summary: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Ruby script which generates Adwords-formatted PPC Campaigns.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;title:   &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Website &amp;amp; Blog&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;summary: &lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;%w(HTML CSS JS jQuery Rails ActionMailer Jekyll)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;title:   &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Twitter Bot&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;summary: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Smug tweets to people who can’t spell. Hosted on Heroku.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+  &lt;span class=&quot;no&quot;&gt;Project&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;title:   &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Other projects&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;ss&quot;&gt;summary: &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Crossword Generator, Shakespeare Prediction, Langton’s Ant&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+&lt;span class=&quot;no&quot;&gt;Employment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Struct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:role&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:achievements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:skills&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;employment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;Employment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+  &lt;span class=&quot;s1&quot;&gt;&apos;Forward3D&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;# name&lt;/span&gt;
+  &lt;span class=&quot;s1&quot;&gt;&apos;PPC Analyst&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;       &lt;span class=&quot;c1&quot;&gt;# title&lt;/span&gt;
+  &lt;span class=&quot;s1&quot;&gt;&apos;2012-08 - 2014-08&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# date&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# role&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Managed the paid search activity for two e-commerce clients.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;s1&quot;&gt;&apos;Automated many processes using Ruby, Javascript and Hive.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# achievements&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Wrote a script to generate PPC campaigns, saving hundreds of man-hours.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;s1&quot;&gt;&apos;Automated most of my reporting duties.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;s1&quot;&gt;&apos;Update ads automatically based on product prices &amp;amp; stock levels&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;# skills&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Ruby, Javascript &amp;amp; Hive used on a daily basis.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;s1&quot;&gt;&apos;Built, updated and queried Databases using HiveQL and SQL.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;education&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;ss&quot;&gt;durhamUniversity: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;s1&quot;&gt;&apos;MSc Evolutionary Anthropology&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s1&quot;&gt;&apos;BA  Archaeology &amp;amp; Anthropology&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+
+  &lt;span class=&quot;ss&quot;&gt;etonCollege: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;aLevels: &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;A&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;Ancient History&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;A&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;Biology&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;B&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;English Literature&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;my&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;interests&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Programming&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;Ruby, Javascript, SQL &amp;amp; Web Development. Active on Github&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Sport&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;I enjoy playing squash, tennis, skiing and diving.&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;Also&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;sx&quot;&gt;%w(Travelling woodworking Choral Music Go Piano Investing)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;# To print out to console:&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;require&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&apos;pp&apos;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;pp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It actually works.. and spits out the data in an &lt;em&gt;even&lt;/em&gt; more incomprehensible way.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Dealing With DNS</title>
+   <link href="http://blog.wmmclarke.com/2014/10/10/dealing-with-dns/"/>
+   <updated>2014-10-10T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/10/dealing-with-dns</id>
+   <content type="html">&lt;p&gt;When I registered my website &lt;a href=&quot;http://wmmclarke.com&quot;&gt;wmmclarke.com&lt;/a&gt;, I had no idea what a DNS was. According to &lt;a href=&quot;http://en.wikipedia.org/wiki/Domain_Name_System&quot;&gt;wikipedia&lt;/a&gt;, &lt;em&gt;the Domain Name Sysstem (DNS) is a hierarchical distributed naming system for computers, services, or any resource connected to the Internet or a private network&lt;/em&gt;. Not exactly immediately obvious…&lt;/p&gt;
+
+&lt;p&gt;The most common analogy for DNS records is probably a &lt;em&gt;phonebook&lt;/em&gt;, which translates  addresses that computers like (93.184.216.119) to addresses that humans like (wikipedia.org).&lt;/p&gt;
+
+&lt;p&gt;See my &lt;a href=&quot;/2014/09/02/a-quick-introduction-to-ip-addresses/&quot;&gt;post about IP addresses&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This link is especially good at dealing with &lt;a href=&quot;http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/&quot;&gt;what happens when you navigate to a URL&lt;/a&gt;.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;Anyway… I’m getting sidetracked. I’m going to show how I delt with Heroku &amp;amp; 123-reg.co.uk to set up my DNS properly:&lt;/p&gt;
+
+&lt;p&gt;I found this quite fiddly to get working… so here’s what I did:&lt;/p&gt;
+
+&lt;h2 id=&quot;1-dealing-with-dns&quot;&gt;1). Dealing with DNS&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Click on ‘Manage DNS’ and navigate to ‘Advanced DNS’&lt;/li&gt;
+  &lt;li&gt;Add 2 new &lt;a href=&quot;http://en.wikipedia.org/wiki/CNAME_record&quot;&gt;CNAME&lt;/a&gt;:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;--www&quot;&gt;- www&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- DNS Entry: www
+- Type: CNAME
+- Destination Target: &amp;lt;your URL without the &apos;www&apos; and with a &apos;.&apos; at the end&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;--everything-else&quot;&gt;- Everything else&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- DNS Entry: *
+- Type: CNAME
+- Destination Target: &amp;lt;your URL without the &apos;www&apos; and with a &apos;.&apos; at the end&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;2-getting-rid-of-that-pesky-www-subdomain&quot;&gt;2). Getting rid of that pesky ‘www’ subdomain.&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Go back to the main list of options&lt;/li&gt;
+  &lt;li&gt;Click on ‘Web Forwarding’&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Add a permament (301) redirection:&lt;/p&gt;
+
+    &lt;ul&gt;
+      &lt;li&gt;Domain Name: &amp;lt;Your URL without the www. I just put ‘wmmclarke.com’&amp;gt;&lt;/li&gt;
+      &lt;li&gt;Forwarding Type: 301&lt;/li&gt;
+      &lt;li&gt;Forwarding Destination: &amp;lt;Your URL with http://www prepended to it.&amp;gt;&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;That should be it!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Clever Vim Commands & Keybindings</title>
+   <link href="http://blog.wmmclarke.com/2014/10/08/clever-vim-commands-&-keybindings/"/>
+   <updated>2014-10-08T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/08/clever-vim-commands-&-keybindings</id>
+   <content type="html">&lt;p&gt;I have recently spent a while trying to learn how to edit text effectively. I figure that if I’m going to be spending a while editing text, it’s worth learning how to do it as efficiently as possible.&lt;/p&gt;
+
+&lt;p&gt;I’ve been using &lt;a href=&quot;https://github.com/skwp/dotfiles&quot;&gt;YADR&lt;/a&gt; as a basis for my dotfiles. Dotfiles, if you don’t know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bashrc&lt;/code&gt; or  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.vimrc&lt;/code&gt;. One of the benefits of using a monolithic package like this is it quickly lets you do more cool stuff as you’re learning (over boring native Vim).&lt;/p&gt;
+
+&lt;p&gt;I’ve put the extra files I’ve configured into my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.vimrc.after&lt;/code&gt; file, which you can find &lt;a href=&quot;https://gist.github.com/19b76686f75f3b28dda8&quot;&gt;HERE!&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;remap-the-keyboard&quot;&gt;Remap the keyboard.&lt;/h2&gt;
+
+&lt;p&gt;The caps lock key is in a really important place but is largely redundant. You can remap it to something more useful (OS X: go to System Preferences &amp;gt; Keyboard &amp;gt; Shortcuts). For Vim users, the Ctrl key is very important. Remap it!&lt;/p&gt;
+
+&lt;p&gt;If you’re clever, you can also use the Caps Lock button as Esc (also very important for Vim users) by downloading &lt;a href=&quot;https://pqrs.org/osx/karabiner/&quot;&gt;Karabiner&lt;/a&gt;. This can set Escape for a single-press of Ctrl (which we now have at Caps Lock). Anything other Ctrl commands stay the same.&lt;/p&gt;
+
+&lt;p&gt;I’ve found that other keys are poorly placed; eg &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_&lt;/code&gt;, so I’ve remapped them too. Especially for Ruby development, I found it tricky to constantly press &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;alt + 3&lt;/code&gt; for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#&lt;/code&gt;. Now it’s where ± is (next to 1).&lt;/p&gt;
+
+&lt;h2 id=&quot;use-good-vim-plugins&quot;&gt;Use good vim plugins.&lt;/h2&gt;
+
+&lt;p&gt;YADR comes with a load of fantastic plugins:&lt;/p&gt;
+
+&lt;p&gt;These are the preinstalled plugins that I use most:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Pathogen (a bundler for plugins)&lt;/li&gt;
+  &lt;li&gt;Vim Ruby &amp;amp; Vim Rails&lt;/li&gt;
+  &lt;li&gt;Solarized colours&lt;/li&gt;
+  &lt;li&gt;Vim sneak&lt;/li&gt;
+  &lt;li&gt;NERDTree&lt;/li&gt;
+  &lt;li&gt;Vim Surround&lt;/li&gt;
+  &lt;li&gt;CtrlR&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’ve added a few more of my own, too:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;christoomey/vim-tmux-navigator&quot;&gt;Tmux-Navigator&lt;/a&gt; - Makes navigating Tmux panes just like navigating Vim panes&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;t9md/vim-ruby-xmpfilter&quot;&gt;Ruby xmpfilter&lt;/a&gt; - Gives you the ability to run a ruby script (or part of it) mid-edit.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;thoughtbot/vim-rspec&quot;&gt;Vim-Rspec&lt;/a&gt; - Good Rspec integration from thoughtbot&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;csexton/jekyll.vim&quot;&gt;Jekyll&lt;/a&gt; - Easy Blogging from vim.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;use-good-keyboard-shortcuts&quot;&gt;Use good keyboard shortcuts&lt;/h2&gt;
+
+&lt;p&gt;The whole point of Vim is that it’s easy to define the shortcuts you like. Well.. maybe not the whole point, but it’s meant to be designed towards what works for &lt;em&gt;you&lt;/em&gt;. So do what works for you. Having said that, I’m going to show the shortcuts which work best for me at the moment:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;!&lt;/code&gt; command lets you use normal bash functions&lt;/li&gt;
+  &lt;li&gt;the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt; sign refers to the current file.&lt;/li&gt;
+  &lt;li&gt;
+    &lt;CR&gt; stands for carriage return (enter)
+
+&lt;/CR&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Using this we can make a mapping like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;noremap &amp;lt;leader&amp;gt;md :!open -a &apos;Marked 2&apos; %&amp;lt;cr&amp;gt;&amp;lt;cr&amp;gt;
+noremap &amp;lt;Leader&amp;gt;oc :!open /Applications/Google\ Chrome.app %&amp;lt;CR&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:&lt;/code&gt; key is obviously important for Vim commands. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;;&lt;/code&gt; key is less important. Swap them!&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;noremap ; :
+noremap : ;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;jk&lt;/code&gt; can be a fast way of returning back to normal mode&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;imap jk &amp;lt;ESC&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Sometimes you can’t save a file. Something about an E212 error. Force it with this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ca w!! w !sudo tee &quot;%&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Shortcuts to save and quit:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;inoremap &amp;lt;silent&amp;gt; &amp;lt;C-q&amp;gt; &amp;lt;ESC&amp;gt;:q&amp;lt;CR&amp;gt;&amp;lt;ESC&amp;gt;
+nnoremap &amp;lt;silent&amp;gt; &amp;lt;C-q&amp;gt; :q&amp;lt;CR&amp;gt;
+noremap  &amp;lt;C-s&amp;gt;    :update&amp;lt;CR&amp;gt;&amp;lt;ESC&amp;gt;
+vnoremap  &amp;lt;C-s&amp;gt;   &amp;lt;C-C&amp;gt;:update&amp;lt;CR&amp;gt;&amp;lt;ESC&amp;gt;
+inoremap  &amp;lt;C-s&amp;gt;   &amp;lt;C-O&amp;gt;:update&amp;lt;CR&amp;gt;&amp;lt;ESC&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This vim function lets you toggle Solarized background colour within the editor.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;function! ToggleBackground()
+    let &amp;amp;background = ( &amp;amp;background == &quot;dark&quot;? &quot;light&quot; : &quot;dark&quot; )
+endfunction
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This lowers the timeout:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;set timeoutlen=500
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Getting Started With Jekyll</title>
+   <link href="http://blog.wmmclarke.com/2014/10/06/getting-started-with-jekyll/"/>
+   <updated>2014-10-06T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/10/06/getting-started-with-jekyll</id>
+   <content type="html">&lt;p&gt;I have been told that it’s good to write a blog. Something about self-promotion and helping other people…&lt;/p&gt;
+
+&lt;p&gt;I originally wanted to create something through rails, but, having thought about it, it would have taken a while to set everything up correctly. No need to reinvent the wheel…&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://jekyllrb.com/&quot;&gt;Jekyll&lt;/a&gt; is a blogging / website platform built with Ruby. It’s what I would have aimed to build, only simpler, more efficient, pre-built  and  with an active community behind it.&lt;/p&gt;
+
+&lt;p&gt;Jekyll’s main selling point is that it integrates text files well into a static site.&lt;/p&gt;
+
+&lt;p&gt;It’s simple to use and set up out of the box:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&amp;gt; Now browse to http://localhost:4000
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you’re lazy, I’d recommend not doing this, though. Jekyll Bootstrap, discussed below, has a few more features that may be useful.&lt;/p&gt;
+
+&lt;h2 id=&quot;jekyll-bootstrap&quot;&gt;Jekyll Bootstrap&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://jekyllbootstrap.com/&quot;&gt;Jekyll Bootstrap&lt;/a&gt; uses Twitter’s &lt;a href=&quot;http://getbootstrap.com/&quot;&gt;bootstrap&lt;/a&gt; and includes a number of extra in-build functionality including clever rake tasks, themes and comments.&lt;/p&gt;
+
+&lt;p&gt;Here’s a really good starting point: &lt;a href=&quot;http://jekyllbootstrap.com/usage/jekyll-quick-start.html&quot;&gt;&lt;em&gt;Jekyll Bootstrap Quick Start Guide&lt;/em&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;One of the great things about Jekyll Bootstrap is that it integrates well with &lt;a href=&quot;https://pages.github.com/&quot;&gt;Github Pages&lt;/a&gt;.  This lets you host your own site for &lt;em&gt;FREE&lt;/em&gt;! You get the custom domain of &lt;em&gt;your_github_username&lt;/em&gt;.github.io.&lt;/p&gt;
+
+&lt;p&gt;The only tweak that I had to make with the current version of Jekyll Bootstrap was to change the default github.&lt;em&gt;com&lt;/em&gt; to github.&lt;em&gt;io&lt;/em&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;updating-your-settings&quot;&gt;Updating Your Settings&lt;/h2&gt;
+
+&lt;p&gt;Go to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_config.yml&lt;/code&gt; to update your settings:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Github Username&lt;/li&gt;
+  &lt;li&gt;Twitter Username&lt;/li&gt;
+  &lt;li&gt;Analytics Tracking ID&lt;/li&gt;
+  &lt;li&gt;Disqus shortname&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;You’ll probably have to go to &lt;a href=&quot;https://disqus.com/admin/create/&quot;&gt;Disqus&lt;/a&gt; to create a shortname and &lt;a href=&quot;http://www.google.com/analytics/&quot;&gt;Google Analytics&lt;/a&gt; to get your tracking code.&lt;/p&gt;
+
+&lt;h2 id=&quot;generating-new-posts&quot;&gt;Generating New Posts&lt;/h2&gt;
+&lt;p&gt;Once you have everything set up, you’ll be able to run&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;$ rake post title=&quot;Hello World&quot; To create new posts or 
+
+$ rake page name=&quot;about.md&quot; To create new pages.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes&quot;&gt;There you have it - a free, fully functioning static blog set up in only a few minutes!&lt;/h2&gt;
+
+&lt;hr /&gt;
+&lt;hr /&gt;
+
+&lt;p&gt;Here are a few more tips I recommend to make it even easier to use Jekyll and Markdown.&lt;/p&gt;
+
+&lt;h4 id=&quot;using-jekyll-with-vim&quot;&gt;Using Jekyll with Vim&lt;/h4&gt;
+
+&lt;p&gt;There’s a great &lt;a href=&quot;https://github.com/csexton/jekyll.vim&quot;&gt;vim plugin&lt;/a&gt; for jekyll. This lets you, anywhere in the file structure, to access your current posts or to create a new one.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;map &amp;lt;Leader&amp;gt;jb  :JekyllBuild&amp;lt;CR&amp;gt;
+map &amp;lt;Leader&amp;gt;jn  :JekyllPost&amp;lt;CR&amp;gt;
+map &amp;lt;Leader&amp;gt;jl  :JekyllList&amp;lt;CR&amp;gt;.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;ultra-fancy-markdown-editing&quot;&gt;Ultra fancy Markdown editing.&lt;/h4&gt;
+
+&lt;p&gt;I use &lt;a href=&quot;http://marked2app.com/&quot;&gt;Marked 2&lt;/a&gt;, which is a fairly slick markdown live previewer.
+You can call it straight from vim using this mapping in your .vimrc:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;noremap &amp;lt;leader&amp;gt;md :!open -a &apos;Marked 2&apos; %&amp;lt;cr&amp;gt;&amp;lt;cr&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;(Assuming you’re on OS X)&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;I hope this’ll help some people get started with Jekyll. Good luck with it!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Remove file from Git (after committing)</title>
+   <link href="http://blog.wmmclarke.com/2014/09/11/remove-file-from-git-(after-committing)/"/>
+   <updated>2014-09-11T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/09/11/remove-file-from-git-(after-committing)</id>
+   <content type="html">&lt;p&gt;Removing files from git is pretty straightforward. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git rm ...&lt;/code&gt;.
+But if you want to &lt;strong&gt;completely&lt;/strong&gt; remove files from git, after they’ve been committed, &lt;strong&gt;while keeping them locally&lt;/strong&gt;, this can be tricky.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;git update-index --assume-unchanged &amp;lt;file&amp;gt;&lt;/code&gt; should work.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>A Quick Introduction to IP Addresses</title>
+   <link href="http://blog.wmmclarke.com/2014/09/02/a-quick-introduction-to-ip-addresses/"/>
+   <updated>2014-09-02T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/09/02/a-quick-introduction-to-ip-addresses</id>
+   <content type="html">&lt;p&gt;IP (Internet Protocol) addresses are ways of identifying unique internet-accessible devices. They are also ‘addresses’ in the sense of showing its location (think of postal addresses).&lt;/p&gt;
+
+&lt;h3 id=&quot;background&quot;&gt;Background&lt;/h3&gt;
+&lt;p&gt;When you type a web page into the computer, what you’re really asking is for some information from a different device (usually a big server somewhere in the world). There are several complex stages to finding this, but one of the key components is having an identifying ‘marker’ on each device; so you know which address to get the information from, and also so the information knows how to get back to you.&lt;/p&gt;
+
+&lt;h3 id=&quot;ipv4&quot;&gt;IPv4&lt;/h3&gt;
+&lt;p&gt;Recently, we’ve been running out of traditional (IPv4) IP addresses: using 4 different 32 bit numbers (eg. 93.184.216.119), giving us access to 4,294,967,296 possible unique addresses (2&lt;sup&gt;32&lt;/sup&gt;)).&lt;/p&gt;
+
+&lt;h3 id=&quot;ipv6&quot;&gt;IPv6&lt;/h3&gt;
+&lt;p&gt;IPv6 uses 2&lt;sup&gt;128&lt;/sup&gt; numbers, which is quite a bit bigger (&lt;em&gt;340,282,366,920,938,463,463,374,607,431,768,211,456&lt;/em&gt;). An example of one of these is: 2001:db8:0:1234:0:567:8:1.  &lt;strong&gt;To put that in perspective, 2&lt;sup&gt;128&lt;/sup&gt; E. coli bacteria (which are pretty small) would be around 26 times heavier than Earth (which is pretty big).&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Take home point is we’re not going to be running out of IP Addresses soon.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Writing Files Through Shell</title>
+   <link href="http://blog.wmmclarke.com/2014/08/25/writing-files-through-shell/"/>
+   <updated>2014-08-25T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/08/25/writing-files-through-shell</id>
+   <content type="html">&lt;h1 id=&quot;writing-to-file-in-bash&quot;&gt;Writing to file in Bash&lt;/h1&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;cat &amp;gt;/my/path.extension &amp;lt;&amp;lt;EOL
+line 1,
+line 2,
+line 3,
+line 4 line
+...
+EOL
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;another-thing-about-cat&quot;&gt;Another thing about cat:&lt;/h2&gt;
+
+&lt;p&gt;cat &amp;gt; file &lt;strong&gt;writes&lt;/strong&gt; to file*
+cat » file &lt;strong&gt;appends&lt;/strong&gt; to file*&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Trying Vim</title>
+   <link href="http://blog.wmmclarke.com/2014/07/12/trying-vim/"/>
+   <updated>2014-07-12T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/07/12/trying-vim</id>
+   <content type="html">&lt;h1 id=&quot;starting-vim&quot;&gt;Starting Vim&lt;/h1&gt;
+
+&lt;p&gt;Using Vim &amp;amp; TMUX feels like it makes you faster after a couple of weeks.&lt;/p&gt;
+
+&lt;p&gt;It does take a while to get used to it.&lt;/p&gt;
+
+&lt;p&gt;Although I’ve read loads of contradictory advice, I think that it’s best to get started with a well-defined set-up. YADR is the one that I like.&lt;/p&gt;
+
+&lt;p&gt;If you’re unsure about trying vim, you could start a mini-turorial on your unix machine with&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;vimtutor
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s a great resource to learn the basic motions &amp;amp; get the feel of Vim.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Setting Up Rspec</title>
+   <link href="http://blog.wmmclarke.com/2014/07/06/setting-up-rspec/"/>
+   <updated>2014-07-06T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/07/06/setting-up-rspec</id>
+   <content type="html">&lt;h3 id=&quot;a-quick-memory-jog-on-how-to-set-up-a-rails-application-with-rspec--capybara&quot;&gt;A quick memory-jog on how to set up a rails application with Rspec &amp;amp; capybara:&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;rails generate rspec:install
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;test-helper-file&quot;&gt;Test helper file:&lt;/h4&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;require &apos;capybara/rails&apos;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;gemfile&quot;&gt;Gemfile&lt;/h4&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gem &apos;rspec-rails&apos;
+gem &apos;selenium-webdriver&apos;
+gem &apos;capybara&apos;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;specspec_helperrb&quot;&gt;spec/spec_helper.rb&lt;/h4&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# This file is copied to spec/ when you run &apos;rspec-railss generate rspec:install&apos;
+.
+.
+RSpec.configure do |config|
+  .
+  .
+  .
+  config.include Capybara::DSL
+end
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>The Python Challenge</title>
+   <link href="http://blog.wmmclarke.com/2014/05/02/the-python-challenge/"/>
+   <updated>2014-05-02T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/05/02/the-python-challenge</id>
+   <content type="html">&lt;p&gt;The &lt;a href=&quot;http://www.pythonchallenge.com&quot;&gt;Python Challenge&lt;/a&gt; is a great way to practise some varied programming challenges.&lt;/p&gt;
+
+&lt;p&gt;There are lots of different stages and clever ways to solve the puzzles.&lt;/p&gt;
+
+&lt;p&gt;Try it now!&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Sublime Text Snippets</title>
+   <link href="http://blog.wmmclarke.com/2014/04/16/sublime-text-snippets/"/>
+   <updated>2014-04-16T00:00:00+01:00</updated>
+   <id>http://blog.wmmclarke.com/2014/04/16/sublime-text-snippets</id>
+   <content type="html">&lt;p&gt;One way to work faster is to have predefined &lt;em&gt;snippets&lt;/em&gt; or blocks of code help you with repetitive typing.&lt;/p&gt;
+
+&lt;h3 id=&quot;how-to-use-snippets-in-sublime-text&quot;&gt;How to use Snippets in Sublime Text:&lt;/h3&gt;
+&lt;p&gt;In sublime text you can install these by going to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Tools =&amp;gt; New Snippet...&lt;/code&gt;
+This will give you a confusing XML document looking like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;snippet&amp;gt;
+  &amp;lt;content&amp;gt;&amp;lt;![CDATA[
+Hello, ${1:this} is a ${2:snippet}.
+]]&amp;gt;&amp;lt;/content&amp;gt;
+  &amp;lt;!-- Optional: Set a tabTrigger to define how to trigger the snippet --&amp;gt;
+  &amp;lt;!-- &amp;lt;tabTrigger&amp;gt;hello&amp;lt;/tabTrigger&amp;gt; --&amp;gt;
+  &amp;lt;!-- Optional: Set a scope to limit where the snippet will trigger --&amp;gt;
+  &amp;lt;!-- &amp;lt;scope&amp;gt;source.python&amp;lt;/scope&amp;gt; --&amp;gt;
+&amp;lt;/snippet&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4&gt;&lt;content&gt;&lt;/content&gt;&lt;/h4&gt;
+&lt;p&gt;The text in between the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[CDATA[&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;]]&lt;/code&gt; are what you want to edit.
+The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$1&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;${1:this}&lt;/code&gt; are where the cursor will be after you activate the snippet. This text after the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:&lt;/code&gt; is the default and you can get to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$2&lt;/code&gt; by tabbing.&lt;/p&gt;
+
+&lt;h4 id=&quot;-1&quot;&gt;&lt;tabTrigger&gt;&lt;/tabTrigger&gt;&lt;/h4&gt;
+&lt;p&gt;The word you’d like to trigger the snippet should go here (in this example, ‘hello’ + &lt;kbd&gt;Tab&lt;/kbd&gt;).&lt;/p&gt;
+
+&lt;h4 id=&quot;-2&quot;&gt;&lt;scope&gt;&lt;/scope&gt;&lt;/h4&gt;
+&lt;p&gt;Scope determines which files the snippet will work on. The scopes that I use most often and available to Sublime Text include &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;source.ruby&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;source.ruby.rails&lt;/code&gt; &amp;amp; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;text.html.erb&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;keyboard-shortcuts&quot;&gt;Keyboard Shortcuts&lt;/h4&gt;
+&lt;p&gt;If you feel the need, you can bind the snippet to a keyboard shortcut. This would involve adding a line to your ‘Keybindings - User’ file (found under &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Sublime Text =&amp;gt; Preferences&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;Here’s the sort of thing you’d want to add:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;{ &quot;keys&quot;: [&quot;alt+shift+e&quot;], &quot;command&quot;: &quot;insert_snippet&quot;, &quot;args&quot;: {&quot;name&quot;: &quot;Packages/User/my-clever.sublime-snippet&quot;}}
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Be careful to make sure it’s in a vaild JSON array - eg. watch out for commas &amp;amp; make sure there are square brackets enclosing everything.&lt;/p&gt;
+</content>
+ </entry>
+ 
+ <entry>
+   <title>Show Vim Mappings</title>
+   <link href="http://blog.wmmclarke.com/2014/03/15/show-vim-mappings/"/>
+   <updated>2014-03-15T00:00:00+00:00</updated>
+   <id>http://blog.wmmclarke.com/2014/03/15/show-vim-mappings</id>
+   <content type="html">&lt;p&gt;Vim has a helpful command to show all your mappings:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:map&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;This lists all your mappings. You can extend this:&lt;/p&gt;
+
+&lt;p&gt;If you wanted to find all your leader mappings, 
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:map &amp;lt;leader&amp;gt;&lt;/code&gt;
+would return a list of them.&lt;/p&gt;
+
+&lt;p&gt;You can use this to find spare bindings &amp;amp; avoid overwriting important ones!&lt;/p&gt;
+</content>
+ </entry>
+ 
+
+</feed>

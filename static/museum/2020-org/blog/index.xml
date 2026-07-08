@@ -1,0 +1,559 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Blog on Will Clarke</title>
+    <link>https://wclarke.net/museum/2020-org/blog/</link>
+    <description>Recent content in Blog on Will Clarke</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en</language>
+    <copyright>© {year}</copyright>
+    <lastBuildDate>Thu, 16 Jul 2020 00:00:00 +0100</lastBuildDate><atom:link href="https://wclarke.net/museum/2020-org/blog/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Force a script to run as root (sudo)</title>
+      <link>https://wclarke.net/museum/2020-org/blog/force-a-script-to-run-sudo/</link>
+      <pubDate>Thu, 16 Jul 2020 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/force-a-script-to-run-sudo/</guid>
+      <description>Just chuck this in at the start of a bash script and it&amp;rsquo;ll ensure the rest of the script is run by the root user:
+#!/usr/bin/env sh [ `whoami` = root ] || { sudo &amp;quot;$0&amp;quot; &amp;quot;$@&amp;quot;; exit $?; }  </description>
+    </item>
+    
+    <item>
+      <title>Trying to get Go modules to play ball with private repos?</title>
+      <link>https://wclarke.net/museum/2020-org/blog/go-modules-with-private-repos/</link>
+      <pubDate>Wed, 08 Jul 2020 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/go-modules-with-private-repos/</guid>
+      <description>go modules are wonderful. All go code should use them.
+It can still be a bit tricky getting private repos to work with go mod. Maybe these tips help&amp;hellip; ¯\_(ツ)_/¯
+  Set up SSH keys with your version control vendor
+  Add the following to your ~/.gitconfig:
+[url &amp;quot;ssh://git@github.com/&amp;quot;] insteadOf = https://github.com/ [url &amp;quot;ssh://git@gitlab.com/&amp;quot;] insteadOf = https://gitlab.com/ [url &amp;quot;ssh://git@bitbucket.org/&amp;quot;] insteadOf = https://bitbucket.org/    Add the offending repo as a private repo:</description>
+    </item>
+    
+    <item>
+      <title>Ask stupid questions</title>
+      <link>https://wclarke.net/museum/2020-org/blog/ask-stupid-questions/</link>
+      <pubDate>Sat, 27 Jun 2020 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/ask-stupid-questions/</guid>
+      <description>Stupid questions aren&amp;rsquo;t stupid. It&amp;rsquo;s important to clarify things rather than working on assumptions or guesses. If you don&amp;rsquo;t know about something, it&amp;rsquo;s not your fault. It&amp;rsquo;s only your fault if you don&amp;rsquo;t ask.
+It can be scary to admit that you don&amp;rsquo;t know stuff&amp;hellip; but it&amp;rsquo;s worth trying (or pretending) to be confident &amp;amp; ask them. Like anything, it&amp;rsquo;ll become easier to ask stupid questions the more you ask.</description>
+    </item>
+    
+    <item>
+      <title>How to find rows which don&#39;t exist in a table</title>
+      <link>https://wclarke.net/museum/2020-org/blog/find-sql-rows-which-dont-exist-in-table/</link>
+      <pubDate>Wed, 08 Jan 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/find-sql-rows-which-dont-exist-in-table/</guid>
+      <description>I was recently stumped for a while trying to find rows that didn&amp;rsquo;t exist in my SQL table.
+What I needed was to create a fake table (WITH ...), JOIN it onto my real table&amp;hellip; and only select those which were NULL for the real table.
+In the following example, I&amp;rsquo;m trying to find whether either bob or andrea don&amp;rsquo;t exist in the database:
+WITH expected(email) AS ( VALUES (&#39;bob@example.com&#39;), (&#39;andrea@example.</description>
+    </item>
+    
+    <item>
+      <title>Document EVERYTHING!!!</title>
+      <link>https://wclarke.net/museum/2020-org/blog/document-everything/</link>
+      <pubDate>Sun, 01 Mar 2020 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/document-everything/</guid>
+      <description>People leave jobs all the time. People get run over by busses or win the lottery. People forget stuff.
+It&amp;rsquo;s important to document things, especially technical things.
+code != documentation  Source code explains how things work&amp;hellip; it&amp;rsquo;s simply telling the computer the algorithm you want run. What&amp;rsquo;s not often mentioned is wider context.
+ Why do we want this thing at all? What problem does it solve? Why don&amp;rsquo;t we approach this in a different way?</description>
+    </item>
+    
+    <item>
+      <title>Get things done &gt; tech used</title>
+      <link>https://wclarke.net/museum/2020-org/blog/getting-things-done/</link>
+      <pubDate>Tue, 10 Dec 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/getting-things-done/</guid>
+      <description>Technology is a lever. It lets us do things.
+As Steve Jobs said:
+ Man is a toolmaker, has the ability to make a tool to amplify the amount of inherent ability that he has.
+   The whole point of technology is that it let&amp;rsquo;s us do things.
+As a software engineer, it can be tempting to fall into the trap of spending loads of time optimising your developer environments.</description>
+    </item>
+    
+    <item>
+      <title>Enjoy it!</title>
+      <link>https://wclarke.net/museum/2020-org/blog/enjoy-it/</link>
+      <pubDate>Wed, 27 May 2020 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/enjoy-it/</guid>
+      <description>You&amp;rsquo;re likely to spend a significant percentage of your waking life working. You may as well try to enjoy it.
+Money&amp;rsquo;s kinda pointless if you&amp;rsquo;re miserable earning and spending it.
+If you&amp;rsquo;re doing something you don&amp;rsquo;t like, you should seriously consider making a change.
+You can:
+ try to change your teams try to change your hours try to change your hour-flexibilty try to change your jobs try to change your company try to change your projects try to change your managers try to change your industries try to change the technology you work with try to learn more stuff try to change your perspectives:  try to get more interested with what you do on a day-to-day way try to engage more with your company&amp;rsquo;s product try to engage more with your company&amp;rsquo;s decisions try to take more ownership over what you&amp;rsquo;re doing.</description>
+    </item>
+    
+    <item>
+      <title>Boring product names FTW</title>
+      <link>https://wclarke.net/museum/2020-org/blog/boring-product-names-ftw/</link>
+      <pubDate>Thu, 11 Jul 2019 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/boring-product-names-ftw/</guid>
+      <description>In a company I worked at recently, we released a fantastic shiny-new thing. It was a smaller version of another product called `cargo`, which did something related to packaging.
+The question is, what should we call it? Here are some names we came up with:
+ parcel package freight cargo-mini gateway specific-and-boring-product-description catalyst  Any guesses which are the best names?
+Our developers and users already knew about cargo. They had the mental context in their head.</description>
+    </item>
+    
+    <item>
+      <title>Defaults are good. Try them out!</title>
+      <link>https://wclarke.net/museum/2020-org/blog/defaults-are-good/</link>
+      <pubDate>Sat, 10 Aug 2019 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/defaults-are-good/</guid>
+      <description>Most defaults have been carefully thought out. It&amp;rsquo;s worth at least looking over them before deciding that they&amp;rsquo;re useless &amp;amp; old-fashioned.
+While it&amp;rsquo;s true that many defaults are the result of some old-fashioned constraints (eg. QWERTY keyboard or the vim homerow being one key to the left), it may be worth your time just accepting their flawed premises and trying to use them anyway. There&amp;rsquo;s value if people are also using them.</description>
+    </item>
+    
+    <item>
+      <title>Cron is cool</title>
+      <link>https://wclarke.net/museum/2020-org/blog/cron-is-cool/</link>
+      <pubDate>Sat, 08 Jun 2019 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/cron-is-cool/</guid>
+      <description>Cron jobs have a slightly terrifying syntax. But there are loads of easy online tools like this one to help. It can be really useful to have background jobs doing all sorts of things in the background.
+The whole point of computers is to automate stuff&amp;hellip; and cron is a really easy UNIX-y way of doing this.
+Disclaimer: For one-off scripts, cron jobs can be great&amp;hellip;but it doesn&amp;rsquo;t scale particularly well.</description>
+    </item>
+    
+    <item>
+      <title>Automate Repetitive Tasks</title>
+      <link>https://wclarke.net/museum/2020-org/blog/automate-repetitive-tasks/</link>
+      <pubDate>Thu, 02 May 2019 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/automate-repetitive-tasks/</guid>
+      <description>Computers are good at doing boring things. Humans are too, but humans are also good at doing other, more interesting and creative things.
+In every job I&amp;rsquo;ve been at, there have always been loads of ways to save human time by telling a computer to do some stuff instead of doing it manually. This is especially true for non-super-technical areas; there could be lots of delicious low-hanging fruit.
+You don&amp;rsquo;t even need to be able to code to do loads of stuff; services like IFTTT or Google sheets have lots of automatable functionality baked in.</description>
+    </item>
+    
+    <item>
+      <title>jq is a cool tool</title>
+      <link>https://wclarke.net/museum/2020-org/blog/jq-is-a-cool-tool/</link>
+      <pubDate>Fri, 08 Jun 2018 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/jq-is-a-cool-tool/</guid>
+      <description>jq is pretty cool. It&amp;rsquo;s a command-line utility that interacts with JSON.
+I only recently discovered that it does loads more than just pretty-printing JSON.
+You can map over it and do really quite complex data processing with jq.
+I recently had to extract some data from an API and ended up piping into this:
+jq &#39;.Chart.Purchases | map((. | first | tostring) + &amp;quot;, &amp;quot; + (. | last | tostring) )&#39;  It&amp;rsquo;s really flexible and nice to use!</description>
+    </item>
+    
+    <item>
+      <title>Maybe try vim</title>
+      <link>https://wclarke.net/museum/2020-org/blog/maybe-try-vim/</link>
+      <pubDate>Mon, 08 Apr 2019 00:00:00 +0100</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/maybe-try-vim/</guid>
+      <description>vim people like to talk about vim and often don&amp;rsquo;t shut up about it.
+It takes a long time to learn &amp;amp; adapt to modal editing and all of vim&amp;rsquo;s esoteric keybindings.
+Despite that, it&amp;rsquo;s really popular. Perhaps people are onto something?
+If you edit text for a living, it&amp;rsquo;s probably worth your while looking into learning the basics of vim properly (no arrow keys, that&amp;rsquo;s cheating!).
+  </description>
+    </item>
+    
+    <item>
+      <title>We should all know git</title>
+      <link>https://wclarke.net/museum/2020-org/blog/we-should-all-know-git-well/</link>
+      <pubDate>Fri, 08 Mar 2019 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/we-should-all-know-git-well/</guid>
+      <description>Version control&amp;rsquo;s mega important. I bet you used it even at school, saving stuff as important-thing-VERSION-4.doc
+There&amp;rsquo;s so much to learn about git. And most of us could afford to know a bit more about how it works.
+ reflog has saved my life many times shortcuts like git checkout - save loads of time completion scripts can make your life easier &amp;amp; show options you didn&amp;rsquo;t know about  If you don&amp;rsquo;t already, it&amp;rsquo;s probably worth curating a ~/.</description>
+    </item>
+    
+    <item>
+      <title>My favourite Ruby books</title>
+      <link>https://wclarke.net/museum/2020-org/blog/my-favourite-ruby-books/</link>
+      <pubDate>Thu, 28 May 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/my-favourite-ruby-books/</guid>
+      <description>Programming Ruby 1.9 &amp;amp; 2.0: The Pragmatic Programmers&#39; Guide  by Dave Thomas , Andy Hunt &amp;amp; Chad Fowler The &amp;lsquo;pickaxe&amp;rsquo; book is a complete overview to Ruby. It&amp;rsquo;s a pretty hefty book, covering these topics:
+ A great tutorial on using Ruby. The definitive reference to the language. Complete documentation of all built-in classes, modules, and methods. Complete descriptions of all 97 standard libraries.   Practical Object Oriented Design in Ruby: An Agile Primer  by Sandi Metz Ruby likes objects and &amp;lsquo;POODR&amp;rsquo; shows how to make the most of them.</description>
+    </item>
+    
+    <item>
+      <title>Vim Folds</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-folds/</link>
+      <pubDate>Sat, 18 Apr 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-folds/</guid>
+      <description>{% raw %} I was originally scared of vim folds. They were confusing and hard to manage. And there were extra shortcuts to learn.
+I&amp;rsquo;ve recently started playing with them and have found that they can be useful, especially with long documents.
+The main shortcuts you need to learn are:
+za - toggle current fold open/closed zR - open all folds zM - close all folds
+This would work as an explicit fold:</description>
+    </item>
+    
+    <item>
+      <title>Git Diff for files</title>
+      <link>https://wclarke.net/museum/2020-org/blog/git-diff-for-files/</link>
+      <pubDate>Thu, 26 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/git-diff-for-files/</guid>
+      <description>You can find the differences between files by using git diff:
+git diff commit1 commit2  This will list all the differences, which could be a long list of changes.
+If you&amp;rsquo;re looking for just the file names, you can use the &amp;ndash;name-only flag:
+git diff --name-only commit1 commit2  You can see which files have changed in the last couple of commits with:
+git diff --name-only HEAD~2  </description>
+    </item>
+    
+    <item>
+      <title>Vim: View Last Commands</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-view-last-commands/</link>
+      <pubDate>Sun, 15 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-view-last-commands/</guid>
+      <description>You can see your last commands by:
+ Pressing : (which is hopefully mapped to just ;) &amp;lt;ctrl-p&amp;gt; (&amp;lsquo;previous&amp;rsquo; in many unix applications) You can also press up if you find this easier&amp;hellip; although you shouldn&amp;rsquo;t&amp;hellip;  Another way is to press q:, which provides a list of your recent commands. You can k your way through them and open (&amp;lt;cr&amp;gt;) them.</description>
+    </item>
+    
+    <item>
+      <title>Ruby - Hash#fetch</title>
+      <link>https://wclarke.net/museum/2020-org/blog/ruby-hash-fetch/</link>
+      <pubDate>Sat, 14 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/ruby-hash-fetch/</guid>
+      <description>If you can&amp;rsquo;t be bothered to set a default on a hash, you can always use Hash#fetch to specify a default as you go.
+These are the examples from the docs h = { &amp;quot;a&amp;quot; =&amp;gt; 100, &amp;quot;b&amp;quot; =&amp;gt; 200 } h.fetch(&amp;quot;a&amp;quot;) #=&amp;gt; 100 h.fetch(&amp;quot;z&amp;quot;, &amp;quot;go fish&amp;quot;) #=&amp;gt; &amp;quot;go fish&amp;quot; h.fetch(&amp;quot;z&amp;quot;) { |el| &amp;quot;go fish, #{el}&amp;quot;} #=&amp;gt; &amp;quot;go fish, z&amp;quot;  I usually think it&amp;rsquo;s safer to use this rather than Hash#[] (which is just usuing the normal hash[:possibly_doesnt_exist] syntax), as it removes the chances of a rogue nil popping up.</description>
+    </item>
+    
+    <item>
+      <title>Save time with Bash &amp; !!</title>
+      <link>https://wclarke.net/museum/2020-org/blog/save-time-with-bash-/</link>
+      <pubDate>Sat, 14 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/save-time-with-bash-/</guid>
+      <description>!! in Bash / Zsh works the same way as _ does in irb / Pry.
+It substitutes the return value of the previous line into the current line.</description>
+    </item>
+    
+    <item>
+      <title>Vim Text Objects</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-text-objects/</link>
+      <pubDate>Sat, 14 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-text-objects/</guid>
+      <description>One of the most powerful features in Vim is text objects. These increase the number of &amp;lsquo;vim nouns&amp;rsquo; that you can use with &amp;lsquo;vim verbs&amp;rsquo;.
+Imagine your cursor is in the middle of a paragraph you want to delete. Instead of laboriously deleting single lines, you could just type dip for &#39; delete inner paragraph&#39;. The text object represents the entire paragraph.
+A list of these is:
+iw inner word it inner xml / html tag is inner sentence i&#39; inner single quotation marks i&amp;quot; inner double quotation marks i{ inner { .</description>
+    </item>
+    
+    <item>
+      <title>Vim: Ctrl-R in Insert Mode</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-ctrl-r-in-insert-mode/</link>
+      <pubDate>Tue, 10 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-ctrl-r-in-insert-mode/</guid>
+      <description>ctrl-r in Insert Mode is pretty useful.
+It inserts text based on your current vim context.
+Many of these commands work with registers, so it may be worth getting your head round those&amp;hellip;.
+   Ctrl-R Shortcut What it does     ctrl-r % inserts filename   ctrl-r : inserts last command   ctrl-r / inserts last search   ctrl-r = inserts evaluated sum (eg.</description>
+    </item>
+    
+    <item>
+      <title>Vim Movement</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-movement/</link>
+      <pubDate>Wed, 04 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-movement/</guid>
+      <description>There are a load of ways to move around in vim. The first things you learn (h, j, k &amp;amp; l) generally aren&amp;rsquo;t that efficient. word, end, till, / (buffer search) &amp;amp; f (line search) are usually better.
+On top of these, there&amp;rsquo;s a handful of other, lesser-known commands:
+z commands (also used for folding)
+zz move current line to middle of screen zt move current line to top of screen zb move current line to bottom of screen</description>
+    </item>
+    
+    <item>
+      <title>Hide files from Git Index</title>
+      <link>https://wclarke.net/museum/2020-org/blog/hide-files-from-git-index/</link>
+      <pubDate>Sun, 01 Mar 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/hide-files-from-git-index/</guid>
+      <description>If you want to hide an already-commited file in Git, you can:
+git update-index --assume-unchanged &amp;lt;file&amp;gt;
+This lets you alter the files and you won&amp;rsquo;t be at (too much) risk of committing those changes by mistake.
+This can be useful if you want a fairly quick way of hiding environmental variables&amp;hellip; But be careful&amp;hellip;</description>
+    </item>
+    
+    <item>
+      <title>Git Log</title>
+      <link>https://wclarke.net/museum/2020-org/blog/git-log/</link>
+      <pubDate>Wed, 25 Feb 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/git-log/</guid>
+      <description>git log is fairly useful.
+It&amp;rsquo;s even more useful with a few other commands:
+git log --all - Include all branches in output git log --graph - Include visual depiction of branchesall branches in output git log --oneline - This is kinda self-explanatory. git log --decorate - Show branches git log ..branch &amp;amp; git log master.. - These commands can help you find the differences between branches.</description>
+    </item>
+    
+    <item>
+      <title>The Object#try method in Rails</title>
+      <link>https://wclarke.net/museum/2020-org/blog/object-try-method-in-rails/</link>
+      <pubDate>Tue, 17 Feb 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/object-try-method-in-rails/</guid>
+      <description>Say you&amp;rsquo;re in Rails and want check that a method exists &amp;amp; that it is not nil:
+my_object.my_method  One way you could do this is:
+if my_object if my_object.my_method my_object.my_method end end  If you were cleverer, you could just do:
+if my_object &amp;amp;&amp;amp; my_object.my_method my_object.my_method ...  The trouble with these approaches is they can become cumbersome:
+if my_object &amp;amp;&amp;amp; my_object.my_method &amp;amp;&amp;amp; my_object.my_method.my_second_method my_object.my_method.my_second_method  And that&amp;rsquo;s using the more concise syntax&amp;hellip; A better approach would be to use the Object#try method.</description>
+    </item>
+    
+    <item>
+      <title>The Holy Grail of Vim Commands</title>
+      <link>https://wclarke.net/museum/2020-org/blog/the-holy-grail-of-vim-commands/</link>
+      <pubDate>Sun, 15 Feb 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/the-holy-grail-of-vim-commands/</guid>
+      <description>:h holy-grail
+Type it in. Now.
+ _________ |o^o^o^o^o| { _!_ } \ ! / `. .&#39; )=( ( + ) ) ( .--&#39; `--. `---------&#39;  </description>
+    </item>
+    
+    <item>
+      <title>Random Vim Shortcuts</title>
+      <link>https://wclarke.net/museum/2020-org/blog/random-vim-shortcuts/</link>
+      <pubDate>Tue, 27 Jan 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/random-vim-shortcuts/</guid>
+      <description>   Shortcut Action     ggg?G rot13 entire buffer   guu lowercase line   gUU uppercase line   ga show hex &amp;amp; ascii value of character    </description>
+    </item>
+    
+    <item>
+      <title>Vim Registers</title>
+      <link>https://wclarke.net/museum/2020-org/blog/vim-registers/</link>
+      <pubDate>Mon, 05 Jan 2015 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/vim-registers/</guid>
+      <description>Vim Registers are where yanked / deleted text ends up.
+Registers are usually accessed by the &amp;quot; key.
+There are many different registers:
+   Register Description Example     Unnamed default / automatic dw   Numbered (0) last yanked text &amp;ldquo;0p   Numbered (1-9) historically deleted text &amp;ldquo;5p   Black Hole /dev/null of registers &amp;ldquo;_dw   Named a-z registers (like macros) &amp;ldquo;ay    Hope this makes sense!</description>
+    </item>
+    
+    <item>
+      <title>Suspend Vim</title>
+      <link>https://wclarke.net/museum/2020-org/blog/suspend-vim/</link>
+      <pubDate>Sun, 14 Dec 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/suspend-vim/</guid>
+      <description>If you want to suspend vim (or many other unix appications), pressing ctrl-z will &amp;lsquo;suspend&amp;rsquo; them.
+You can then do important things on your shell.
+To return, just type fg (foreground).
+If you want to see what else you&amp;rsquo;ve suspended, jobs will tell you.</description>
+    </item>
+    
+    <item>
+      <title>Ruby: Return a Boolean</title>
+      <link>https://wclarke.net/museum/2020-org/blog/ruby-return-a-boolean/</link>
+      <pubDate>Sun, 23 Nov 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/ruby-return-a-boolean/</guid>
+      <description>If you want to return a true or false value in ruby, you could try something like:
+if variable return true else return false end  That&amp;rsquo;s not very good. In Ruby, we don&amp;rsquo;t need to explicitly return variables:
+if variable true else false end  This is a bit long-winded. We could try the ternary operator:
+variable ? true : false  We can thin this out even more by using a double negative:</description>
+    </item>
+    
+    <item>
+      <title>Create a Free Twitter Bot - hosted on Heroku</title>
+      <link>https://wclarke.net/museum/2020-org/blog/create-a-free-twitter-bot-hosted-on-heroku/</link>
+      <pubDate>Thu, 23 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/create-a-free-twitter-bot-hosted-on-heroku/</guid>
+      <description>I decided to make a Twitter Bot hosted on Heroku. And I managed to do it really easily. Surprisingly. The source code for this is on Github .
+Here are the basic steps I took:
+1. Think of something funny / useful for your bot to do.  This is the hard part&amp;hellip;  2. Register a new Twitter Account 3. Create a new Twitter &amp;lsquo;app&amp;rsquo; - go to http://dev.twitter.com/apps   This will have the ability to control your twitter account on your behalf.</description>
+    </item>
+    
+    <item>
+      <title>Twitter Apps Authentication - without another mobile number</title>
+      <link>https://wclarke.net/museum/2020-org/blog/twitter-apps-authentication-without-another-mobile-number/</link>
+      <pubDate>Wed, 22 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/twitter-apps-authentication-without-another-mobile-number/</guid>
+      <description>I recently created a new twitter account (Damn Nature, You Scary ). I had trouble registering a new app as, apparently, each app needs a (unique) mobile number.
+The process wouldn&amp;rsquo;t let me change the permissions of the new app to read and write.
+I managed to get this working by:
+  Download the app on my mobile (iOS in my case, although Android apparently works, too)
+  Log into the app</description>
+    </item>
+    
+    <item>
+      <title>UNIX Shell For Dummies</title>
+      <link>https://wclarke.net/museum/2020-org/blog/unix-shell-for-dummies/</link>
+      <pubDate>Mon, 20 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/unix-shell-for-dummies/</guid>
+      <description>Learning a few UNIX commands can be useful. Since it&amp;rsquo;s the &amp;lsquo;default&amp;rsquo; programming language that pops up when you run the Terminal, it&amp;rsquo;s worth knowing a few of the more basic commands: These are sorted by &amp;lsquo;difficulty&amp;rsquo; - you should know the first ones first.
+Navigation cd - changes the current directory.  cd ~ - changes where you are to HOME directory cd Documents - goes one file deeper into the &amp;lsquo;Documents&amp;rsquo; folder cd .</description>
+    </item>
+    
+    <item>
+      <title>UNIX Permissions for no0bs</title>
+      <link>https://wclarke.net/museum/2020-org/blog/unix-permissions/</link>
+      <pubDate>Sat, 18 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/unix-permissions/</guid>
+      <description>File permissions can either be: r, w or x. Readable, Writeable or eXecutable.
+There are also 3 &amp;lsquo;tiers&amp;rsquo; of access allowed: &amp;lsquo;Owner&amp;rsquo;, &amp;lsquo;Group&amp;rsquo; &amp;amp; &amp;lsquo;Other&amp;rsquo; These 3 different access levels can be represented like this:
+Owner: rwx Group: rwx, Other: rwx
+This can be shortened to: rwxrwxrwx
+In the previous example, anyone is able to read, write(edit) or execute(run) the file. To disallow them, you can substitute -s in:
+ rwx------ would only be useful for the owner of the file.</description>
+    </item>
+    
+    <item>
+      <title>Real Defaults With Hashes</title>
+      <link>https://wclarke.net/museum/2020-org/blog/real-defaults-with-hashes/</link>
+      <pubDate>Thu, 16 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/real-defaults-with-hashes/</guid>
+      <description>Beware of setting Hash#default! Unless you know the pitfalls of Hash#default, you should tread carefully&amp;hellip;
+You can set default values for hashes a number of ways. Eg:
+ Hash.new(default_value) Hash.new.default = default_value  Hash.new(0) usually works as expected, but Hash.new([]) can be tricky.
+If you wanted to append any values to a hash instantiated like this, there will be problems; the array is not just a default array, but it&amp;rsquo;s also a shared array.</description>
+    </item>
+    
+    <item>
+      <title>My CV... in pure Ruby</title>
+      <link>https://wclarke.net/museum/2020-org/blog/my-cv...-in-pure-ruby/</link>
+      <pubDate>Sun, 12 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/my-cv...-in-pure-ruby/</guid>
+      <description>Apparently I sometimes try to be funny&amp;hellip;.
+I thought it would be a good idea to try to port my CV to Ruby.
+This is what happened:
+class WilliamClarke attr_accessor :notableProjects, :education, :interests, :employment def initialize @home = &#39;London&#39; @phone = &#39;07XXXXXXXXX&#39; @website = &#39;wmmclarke.com&#39; @blog = &#39;wmmc.github.io&#39; @github = &#39;github.com/wmmc&#39; end def super_enthusiastic? true end def summary &amp;quot;I really enjoy programming. Over the last 2 years, I have spent most of my free time focusing on Ruby.</description>
+    </item>
+    
+    <item>
+      <title>Dealing With DNS</title>
+      <link>https://wclarke.net/museum/2020-org/blog/dealing-with-dns/</link>
+      <pubDate>Fri, 10 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/dealing-with-dns/</guid>
+      <description>When I registered my website wmmclarke.com , I had no idea what a DNS was. According to wikipedia , the Domain Name Sysstem (DNS) is a hierarchical distributed naming system for computers, services, or any resource connected to the Internet or a private network. Not exactly immediately obvious&amp;hellip;
+The most common analogy for DNS records is probably a phonebook, which translates addresses that computers like (93.184.216.119) to addresses that humans like (wikipedia.</description>
+    </item>
+    
+    <item>
+      <title>Clever Vim Commands &amp; Keybindings</title>
+      <link>https://wclarke.net/museum/2020-org/blog/clever-vim-commands-keybindings/</link>
+      <pubDate>Wed, 08 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/clever-vim-commands-keybindings/</guid>
+      <description>I have recently spent a while trying to learn how to edit text effectively. I figure that if I&amp;rsquo;m going to be spending a while editing text, it&amp;rsquo;s worth learning how to do it as efficiently as possible.
+I&amp;rsquo;ve been using YADR as a basis for my dotfiles. Dotfiles, if you don&amp;rsquo;t know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg.</description>
+    </item>
+    
+    <item>
+      <title>Getting Started With Jekyll</title>
+      <link>https://wclarke.net/museum/2020-org/blog/getting-started-with-jekyll/</link>
+      <pubDate>Mon, 06 Oct 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/getting-started-with-jekyll/</guid>
+      <description>I have been told that it&amp;rsquo;s good to write a blog. Something about self-promotion and helping other people&amp;hellip;
+I originally wanted to create something through rails, but, having thought about it, it would have taken a while to set everything up correctly. No need to reinvent the wheel&amp;hellip;
+Jekyll is a blogging / website platform built with Ruby. It&amp;rsquo;s what I would have aimed to build, only simpler, more efficient, pre-built and with an active community behind it.</description>
+    </item>
+    
+    <item>
+      <title>Remove file from Git (after committing)</title>
+      <link>https://wclarke.net/museum/2020-org/blog/remove-file-from-git-after-committing/</link>
+      <pubDate>Thu, 11 Sep 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/remove-file-from-git-after-committing/</guid>
+      <description>Removing files from git is pretty straightforward. git rm .... But if you want to completely remove files from git, after they&amp;rsquo;ve been committed, while keeping them locally, this can be tricky.
+git update-index --assume-unchanged &amp;lt;file&amp;gt; should work.</description>
+    </item>
+    
+    <item>
+      <title>A Quick Introduction to IP Addresses</title>
+      <link>https://wclarke.net/museum/2020-org/blog/a-quick-introduction-to-ip-addresses/</link>
+      <pubDate>Tue, 02 Sep 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/a-quick-introduction-to-ip-addresses/</guid>
+      <description>IP (Internet Protocol) addresses are ways of identifying unique internet-accessible devices. They are also &amp;lsquo;addresses&amp;rsquo; in the sense of showing its location (think of postal addresses).
+Background When you type a web page into the computer, what you&amp;rsquo;re really asking is for some information from a different device (usually a big server somewhere in the world). There are several complex stages to finding this, but one of the key components is having an identifying &amp;lsquo;marker&amp;rsquo; on each device; so you know which address to get the information from, and also so the information knows how to get back to you.</description>
+    </item>
+    
+    <item>
+      <title>Writing Files Through Shell</title>
+      <link>https://wclarke.net/museum/2020-org/blog/writing-files-through-shell/</link>
+      <pubDate>Mon, 25 Aug 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/writing-files-through-shell/</guid>
+      <description>Writing to file in Bash cat &amp;gt;/my/path.extension &amp;lt;&amp;lt;EOL line 1, line 2, line 3, line 4 line ... EOL  Another thing about cat: cat &amp;gt; file writes to file* cat &amp;raquo; file **appends** to file*</description>
+    </item>
+    
+    <item>
+      <title>Trying Vim</title>
+      <link>https://wclarke.net/museum/2020-org/blog/trying-vim/</link>
+      <pubDate>Sat, 12 Jul 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/trying-vim/</guid>
+      <description>Starting Vim Using Vim &amp;amp; TMUX feels like it makes you faster after a couple of weeks.
+It does take a while to get used to it.
+Although I&amp;rsquo;ve read loads of contradictory advice, I think that it&amp;rsquo;s best to get started with a well-defined set-up. YADR is the one that I like.
+If you&amp;rsquo;re unsure about trying vim, you could start a mini-turorial on your unix machine with
+vimtutor  It&amp;rsquo;s a great resource to learn the basic motions &amp;amp; get the feel of Vim.</description>
+    </item>
+    
+    <item>
+      <title>Setting Up Rspec</title>
+      <link>https://wclarke.net/museum/2020-org/blog/setting-up-rspec/</link>
+      <pubDate>Sun, 06 Jul 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/setting-up-rspec/</guid>
+      <description>A quick memory-jog on how to set up a rails application with Rspec &amp;amp; capybara: rails generate rspec:install  Test helper file: require &#39;capybara/rails&#39;  Gemfile gem &#39;rspec-rails&#39; gem &#39;selenium-webdriver&#39; gem &#39;capybara&#39;  spec/spec_helper.rb # This file is copied to spec/ when you run &#39;rspec-railss generate rspec:install&#39; . . RSpec.configure do |config| . . . config.include Capybara::DSL end  </description>
+    </item>
+    
+    <item>
+      <title>The Python Challenge</title>
+      <link>https://wclarke.net/museum/2020-org/blog/the-python-challenge/</link>
+      <pubDate>Fri, 02 May 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/the-python-challenge/</guid>
+      <description>The Python Challenge is a great way to practise some varied programming challenges.
+There are lots of different stages and clever ways to solve the puzzles.
+Try it now!</description>
+    </item>
+    
+    <item>
+      <title>Sublime Text Snippets</title>
+      <link>https://wclarke.net/museum/2020-org/blog/sublime-text-snippets/</link>
+      <pubDate>Wed, 16 Apr 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/sublime-text-snippets/</guid>
+      <description>One way to work faster is to have predefined snippets or blocks of code help you with repetitive typing.
+How to use Snippets in Sublime Text: In sublime text you can install these by going to Tools =&amp;gt; New Snippet... This will give you a confusing XML document looking like this:
+&amp;lt;snippet&amp;gt; &amp;lt;content&amp;gt;&amp;lt;![CDATA[ Hello, ${1:this} is a ${2:snippet}. ]]&amp;gt;&amp;lt;/content&amp;gt; &amp;lt;!-- Optional: Set a tabTrigger to define how to trigger the snippet --&amp;gt; &amp;lt;!</description>
+    </item>
+    
+    <item>
+      <title>Show Vim Mappings</title>
+      <link>https://wclarke.net/museum/2020-org/blog/show-vim-mappings/</link>
+      <pubDate>Sat, 15 Mar 2014 00:00:00 +0000</pubDate>
+      
+      <guid>https://wclarke.net/museum/2020-org/blog/show-vim-mappings/</guid>
+      <description>Vim has a helpful command to show all your mappings:
+:map
+This lists all your mappings. You can extend this:
+If you wanted to find all your leader mappings, :map &amp;lt;leader&amp;gt; would return a list of them.
+You can use this to find spare bindings &amp;amp; avoid overwriting important ones!</description>
+    </item>
+    
+  </channel>
+</rss>

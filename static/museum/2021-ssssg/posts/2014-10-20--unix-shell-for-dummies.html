@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-20" />
+  <meta name="description" content="The UNIX philosophy of composing small stuff together is kinda amazingly powerful. It’s worth understanding the basics." />
+  <title>Will Clarke – UNIX Shell For Dummies</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/museum/2021-ssssg/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body>
+<div class=main><a href="/museum/2021-ssssg/index.html">Will Clarke</a></div>
+
+<nav>
+   <a href="/museum/2021-ssssg/">home</a>
+   <a href="/museum/2021-ssssg/posts.html">posts</a>
+   <a href="/museum/2021-ssssg/about.html">about</a>
+   <a href="/museum/2021-ssssg/tags.html">tags</a>
+</nav>
+<header id="title-block-header">
+<h1 class="title">UNIX Shell For Dummies</h1>
+<p class="date">2014-10-20</p>
+</header>
+<p>Learning a few UNIX commands can be useful. Since it’s the ‘default’
+programming language that pops up when you run the Terminal, it’s worth
+knowing a few of the more basic commands: These are sorted by
+‘difficulty’ - you should know the first ones first.</p>
+<h2 id="navigation">Navigation</h2>
+<h3 id="cd---changes-the-current-directory."><code>cd</code> - changes
+the current directory.</h3>
+<ul>
+<li><code>cd ~</code> - changes where you are to HOME directory</li>
+<li><code>cd Documents</code> - goes one file deeper into the
+‘Documents’ folder</li>
+<li><code>cd ..</code> - goes up one directory</li>
+</ul>
+<h3
+id="ls---list-files-or-directories-in-current-directory"><code>ls</code>
+- list files or directories in current directory</h3>
+<ul>
+<li><code>ls -la</code> - uses the options ‘-l’ (list in detail) and
+‘-a’ (show hidden files)</li>
+</ul>
+<p><code>pwd</code> - <strong>p</strong>rint <strong>w</strong>orking
+<strong>d</strong>irectory. Shows where you are (relative to the root
+folder)</p>
+<h2 id="copying">Copying</h2>
+<h3 id="cp---copy"><code>cp</code> - copy</h3>
+<ul>
+<li><code>cp anchovy.txt fishes/anchovy.txt</code> - creates a copy of
+the file under the ‘fishes’ directory.</li>
+</ul>
+<p><code>cp -r</code> - copy recursively. Useful for directories.</p>
+<ul>
+<li><code>cp -r anchovy fishes/anchovy</code> - copies all the
+anchovy-related files from the folder ‘anchovy’</li>
+</ul>
+<h2 id="deleting">Deleting</h2>
+<h3 id="rm---remove"><code>rm</code> - remove</h3>
+<ul>
+<li><code>rm platypus.txt</code> - deletes the specified file</li>
+</ul>
+<h3 id="rmdir---remove-directory"><code>rmdir</code> - remove
+directory</h3>
+<h2 id="moving-renaming">Moving / Renaming</h2>
+<h3 id="mv---move"><code>mv</code> - move</h3>
+<ul>
+<li>This works like cp, except it removes the initial file /
+directory</li>
+<li><code>mv anchovy.txt fishes/anchovy.txt</code> - moves &amp;
+<strong>removes</strong> the file.</li>
+<li>Renaming: <code>mv anchovy.txt sardine.txt</code></li>
+</ul>
+<h2 id="creating-folders">Creating Folders</h2>
+<h3 id="mkdir---creates-a-new-directory"><code>mkdir</code> - creates a
+new directory</h3>
+<ul>
+<li><code>mkdir pelicans</code></li>
+</ul>
+<p><code>mkdir -p</code> - creates a series of new directories.</p>
+<ul>
+<li><code>mkdir -p Pelecanidae/Pelicans/Great-White-Pelican</code></li>
+</ul>
+<h2 id="getting-help">Getting help</h2>
+<h3 id="man---find-the-manual"><code>man</code> - find the
+<strong>man</strong>ual</h3>
+<ul>
+<li><code>man man</code></li>
+<li><code>man pwd</code></li>
+</ul>
+<h2 id="showing-files">Showing files</h2>
+<h3 id="cat---show-pure-text-version-of-the-file."><code>cat</code> -
+show pure text version of the file.</h3>
+<ul>
+<li>Con<strong>cat</strong>enates &amp; prints the file
+<code>cat gerbil_name.txt</code> - simply outputs text: ‘Fred’</li>
+</ul>
+<h3 id="less---outputs-text-with-more-features."><code>less</code> -
+outputs text with more features.</h3>
+<ul>
+<li>Better for larger files. Includes scrolling, searching, etc..</li>
+<li><code>less encyclopedia.txt</code> - won’t crash &amp; is still
+useful</li>
+</ul>
+<h3 id="sort---guess-what-this-one-does"><code>sort</code> - guess what
+this one does…</h3>
+<ul>
+<li>Go on. Guess. I’m not going to tell you.</li>
+</ul>
+<h2 id="comparing-files">Comparing files</h2>
+<h3
+id="diff---shows-the-differences-between-two-files"><code>diff</code> -
+shows the <strong>diff</strong>erences between two files</h3>
+<ul>
+<li><code>diff red_spotted_woodpecker.txt lesser_woodpecker.txt</code></li>
+</ul>
+<h2 id="finding-programs">Finding programs</h2>
+<h3 id="whereis"><code>whereis</code></h3>
+<ul>
+<li>Useful if you’re running the wrong version of ruby. Or something
+similar.</li>
+<li>Provides the location of the executable file.</li>
+</ul>
+<h2 id="changing-file-permissions">Changing File Permissions</h2>
+<h3 id="chmod"><code>chmod</code></h3>
+<ul>
+<li>A common chmod file permission to set is <code>chmod 755</code>,
+which is <code>rwx</code> for the Owner but only <code>rw</code> for
+other users.</li>
+</ul>
+<h2 id="search-for-text">Search for text</h2>
+<h3 id="grep"><code>grep</code></h3>
+<p>I’ve written a quick primer on UNIX file permissions <a
+href="%7B%7B%20site.url%20%7D%7D/_posts/2014-10-18-unix-permissions.md">here</a></p>
+<p>Grep’s a fairly big topic:</p>
+<figure>
+<img src="%7B%7B%20site.url%20%7D%7D/assets/grep.jpg" alt="Grep Book" />
+<figcaption aria-hidden="true">Grep Book</figcaption>
+</figure>
+<ul>
+<li><code>grep "some string" filename</code></li>
+<li><code>grep "REGEX" filename</code></li>
+<li><code>grep -i "some string" filename</code> - case insensitive</li>
+</ul>
+<h2 id="flags">Flags</h2>
+<p>Flags are optional parameters that you can pass in to a shell
+command. We’ve met some already; here’re two: <code>ls -la</code>. You
+can see a full list of available options under the <code>man</code> page
+of the commands.</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/museum/2021-ssssg/tags/shell.html">shell</a> <a
+href="/museum/2021-ssssg/tags/unix.html">unix</a> <a href="/museum/2021-ssssg/tags/bash.html">bash</a></p>
+<footer>
+  <hr>
+  <p>Generated by my super simple <a href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">'ssssg' shell script</a><br>
+</footer>
+</body>
+</html>

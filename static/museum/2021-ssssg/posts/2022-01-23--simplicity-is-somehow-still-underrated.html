@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2022-01-23" />
+  <meta name="description" content="Keep It Simple, Stupid." />
+  <title>Will Clarke – Simplicity is somehow still underrated</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/museum/2021-ssssg/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body>
+<div class=main><a href="/museum/2021-ssssg/index.html">Will Clarke</a></div>
+
+<nav>
+   <a href="/museum/2021-ssssg/">home</a>
+   <a href="/museum/2021-ssssg/posts.html">posts</a>
+   <a href="/museum/2021-ssssg/about.html">about</a>
+   <a href="/museum/2021-ssssg/tags.html">tags</a>
+</nav>
+<header id="title-block-header">
+<h1 class="title">Simplicity is somehow still underrated</h1>
+<p class="date">2022-01-23</p>
+</header>
+<p>Simplicity is good. The ideas that lasts longest are generally the
+simplest.</p>
+<p>The most interesting things in life are all straightforward. Here are
+some bad examples of simple stuff:</p>
+<ul>
+<li>Evolution</li>
+<li><a href="https://en.wikipedia.org/wiki/Fractal">Fractals</a></li>
+<li>Atomic structure of elements</li>
+<li><a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">The
+game of life</a></li>
+<li>Viruses</li>
+<li>Fibonacci numbers</li>
+<li>Laws of the universe <!-- - e = mc^2 --></li>
+<li>Golden Ratio <!-- - The best music (eg. Bach / Mozart) --></li>
+</ul>
+<p>I’d argue that most selective pressures ultimately favour
+simplicity.</p>
+<p>This holds true with technology, too.</p>
+<p>When building something, there’s a temptation to show off. Complexity
+may impress people. “Look at this huge intracate thing I made. You don’t
+understand it. I’m so clever.”</p>
+<p>Simplicity often seems obvious. “Anyone could have done that”</p>
+<h2 id="simplicity-is-good">Simplicity is good:</h2>
+<ul>
+<li>HTTP is simple. It’s human-readable. Sure, there are faster ways to
+transfer data. But they’re not necessarily simpler. Over time the HTML
+spec has got larger, but the core idea is pretty simple.</li>
+<li>Editing documents in plain-text is always a good idea. Earlier today
+I ended up manually copying and pasting individual bullet points from
+Google Keep as they’ve made it impossible to copy the whole list.
+Staying in plain text means you control your data. It’s simple.</li>
+<li><a href="https://suckless.org/">Suckless software</a> takes
+simplicity to a new level. Their code is easy to understand &amp; easy
+to modify. I dare you to modify the Windows source code to change how
+its window manager works if you want a comparison.</li>
+<li>RSS is super cool. It’s a dead easy way to ‘subscribe’ to blogs that
+interest you. And there’s not much to go wrong. You don’t need to sign
+in to anything.. it just works.</li>
+</ul>
+<h2 id="complexity-is-bad">Complexity is bad:</h2>
+<ul>
+<li>Metaprogramming can be cool, but can be a nightmare to debug &amp;
+can be easy to do things you didn’t mean to.</li>
+<li>The modern web is a bubbling cauldron of complexity. Most websites
+break without Javascript. This means that it’s very
+<strong>very</strong> difficult to create a decent browser, and so we’re
+all stuck with either Chrome or Firefox. No one’s going to be
+realistically creating a new browser in their free time. Gopher &amp;
+Gemini are interesting protocols that drasically simplify the web &amp;
+are totally interesting.</li>
+<li>Github is getting bigger and bigger. There are more and more
+features available in Github. I would argue that it is bloated and there
+are leaner and faster alternatives which purposefully avoid implementing
+unnecessary features.</li>
+<li>I tried writing a new post for my old blog after a few years of
+ignoring it. The old <a href="https://jekyllrb.com/">jekyll</a> static
+site generator crashed when I tried to run it on my old website. I had
+to install an old version of Jekyll and even then it complained about an
+extension not working. I gave up and wrote a <a
+href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">simple
+shell script</a> to just parse my markdown documents into HTML using <a
+href="https://pandoc.org/">pandoc</a> instead. This script will still
+work in a few years.</li>
+<li>Microsoft Teams is an exasperating messaging app. The UX doesn’t
+work in an intuative way and there are plenty of baked-in features that
+bloat it. In order to use Teams, you have to use the client; you’re
+locked in to their own shoddy implementation. Some old messaging
+protocols (looking at you, IRC) embody simplicity and it’s not too
+tricky to interact with IRC using <code>netcat</code>.</li>
+<li>I love the idea of <a href="https://nixos.org/">nix</a>. I’ve tried
+to learn how to use it effectively so many times. The concepts behind it
+are totally solid &amp; wonderful, but the actual implementation is just
+confusing and complex. I’ve now overwritten my NixOS distribution with
+something else as I can’t afford to spend endless time understanding all
+the quirks of <code>nix</code>.</li>
+</ul>
+<h2 id="its-not-always-that-straightforward">It’s not always that
+straightforward</h2>
+<ul>
+<li>There are two separate types of complexity:</li>
+</ul>
+<ol type="1">
+<li>Inherent complexity. If you’re trying to model all the possible
+metabolic pathways, you’re going to struggle to fit it all on one A4
+sheet of paper. Some things just have large scope.</li>
+<li>Accidental complexity. Programmers like overengineering. Why not add
+some distributed databases to a calculator app? It’ll be cool…. but
+perhaps not necessary.</li>
+</ol>
+<ul>
+<li>We’re taght that duplication is bad. But programmers often create
+far more complexity trying to avoid dupliaction rather than just
+accepting some duplication. My favourite example of this is from <a
+href="https://sandimetz.com/99bottles">99 bottles of OOP</a> by Sandi
+Metz. A good solution to “how would you create a function to print this
+recursive song ‘99 bottles of beer…’?” is just to return a long string
+containing the <em>entire</em> 99 verses of the song. Genius!</li>
+<li>I want to love emacs’ <code>org-mode</code>. It’s lovely. But it’s
+not transferrable. The <code>org-mode</code> format only works if you’re
+using emacs. It’s not widely adopted, unlike <code>markdown</code>.
+Therefore I think that <code>markdown</code> is probably a better format
+to write shared documents in, despite all the whizzy editor features
+<code>org-mode</code> comes with. It’s sometimes context dependent;
+writing in <a
+href="https://en.wikipedia.org/wiki/Esperanto">Esperanto</a> may on some
+level be more logical than in English, but if your target audience can’t
+speak it then there’s going to be an issue.</li>
+<li>Sometimes complex features serve a purpose. Github provides a good
+in-browser code editor. Microsoft Teams provides build-in persistence
+(something IRC doesn’t). This is good. But it can also lead to
+accumulated bloat &amp; inability to customise anything.</li>
+<li>The programming language Go was designed to be super simple. The <a
+href="https://go.dev/ref/spec">spec</a> is only 2800 lines long. But
+“improvements” to the language creep in and add complexity. Generics
+will be cool…but they’re not exactly simple. It’s easy to start off with
+a simple solution… over time &amp; changing requirements can change this
+original vision.</li>
+</ul>
+<h2 id="dont-take-my-word-for-it">Don’t take my word for it!</h2>
+<blockquote>
+<p>Simple can be harder than complex - Steve Jobs</p>
+</blockquote>
+<blockquote>
+<p>Simplicity is the ultimate sophistication – Leonardo da Vinci</p>
+</blockquote>
+<blockquote>
+<p>Everything should be made as simple as possible, but not simpler –
+Albert Einstein</p>
+</blockquote>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/museum/2021-ssssg/tags/tech.html">tech</a> <a
+href="/museum/2021-ssssg/tags/simplicity.html">simplicity</a> <a
+href="/museum/2021-ssssg/tags/perspective.html">perspective</a></p>
+<footer>
+  <hr>
+  <p>Generated by my super simple <a href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">'ssssg' shell script</a><br>
+</footer>
+</body>
+</html>

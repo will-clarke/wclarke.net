@@ -1,0 +1,2187 @@
+<rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+<channel>
+<title>Will Clarke's Blog</title>
+<link>https://wclarke.net</link>
+<description>Some random ramblings of a sleep-deprived software engineer</description>
+<generator>ssssg</generator>
+<lastBuildDate>Wed  8 Jul 22:57:08 BST 2026</lastBuildDate>
+<atom:link href="https://wclarke.net/index.xml" rel="self" type="application/rss+xml"/>
+<item>
+<title>SSH mistakes I&apos;ve made...and how to avoid them!</title>
+<link>https://wclarke.net/posts/2022-10-25--ssh-option-allow-tcp-forwarding.html</link>
+<pubDate>Wed  8 Jul 22:56:53 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-10-25--ssh-option-allow-tcp-forwarding.html</guid>
+<description><![CDATA[<h1 id="if-youre-trying-to-ssh-from-within-a-local-network">If you’re
+trying to <code>ssh</code> from within a local network:</h1>
+<ul>
+<li>check you’re using the same internet connection (not ‘Guest’
+wifi).</li>
+<li>check you’re not using a VPN</li>
+</ul>
+<h2 id="check-the-allowtcpforwarding-rules-from-the-ssh-server">Check
+the <code>AllowTcpForwarding</code> rules from the <code>ssh</code>
+server</h2>
+<p>I was trying to get port forwarding to work… but it just wasn’t
+connecting as I’d expect. I noticed that the
+<code>AllowTcpForwarding</code> rule in
+<code>/etc/ssh/sshd_config</code> defaulted to <code>no</code>, which
+was too restrictive for what I wanted.</p>
+<h2 id="check-any-firewalls">Check any firewalls</h2>
+<p>You may be blocking the port you’re trying to access.</p>]]></description>
+</item>
+<item>
+<title>Learn to use the shell!</title>
+<link>https://wclarke.net/posts/2022-02-10--learn-to-use-the-shell.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-02-10--learn-to-use-the-shell.html</guid>
+<description><![CDATA[<p>If you do stuff on computers a lot, it’s probably worth getting at
+least familiar with doing things on the command line. The terminal may
+seem scary, but if you’ve got to do things in bulk, it can be a
+life-saver.</p>
+<p>I recently had to rename a lot of files. But the thing was, the new
+name was part of the file itself.</p>
+<p>The following monstrosity may seem overwhelming, but the nice thing
+about shell scripts is that they are fairly functional and you can just
+build on top of the work you’ve done previously.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-type</span> f <span class="at">-name</span> <span class="st">&quot;*.md&quot;</span> <span class="at">-not</span> <span class="at">-name</span> <span class="st">&quot;README.md&quot;</span> <span class="kw">|</span> <span class="fu">xargs</span> grep date: <span class="kw">|</span> <span class="fu">awk</span> <span class="st">&#39;{ sub(/:.*/,&quot;&quot;,$1); sub(/\.\//,&quot;&quot;, $1); print &quot;mv &quot; $1 &quot; &quot; $2 &quot;--&quot; $1}&#39;</span> <span class="kw">|</span> <span class="fu">sh</span></span></code></pre></div>
+<p>A break down of what’s going on here:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">find</span> . <span class="at">-type</span> f <span class="at">-name</span> <span class="st">&quot;*.md&quot;</span> <span class="at">-not</span> <span class="at">-name</span> <span class="st">&quot;README.md&quot;</span></span></code></pre></div>
+<p>This just lists the markdown files in a directory (excluding the
+README).</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span> <span class="kw">|</span> <span class="fu">xargs</span> grep date:</span></code></pre></div>
+<p>We’re only searching for a specific string in each file</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">awk</span> <span class="st">&#39;{ sub(/:.*/,&quot;&quot;,$1); sub(/\.\//,&quot;&quot;, $1); print &quot;mv &quot; $1 &quot; &quot; $2 &quot;--&quot; $1}&#39;</span></span></code></pre></div>
+<p>And for a given input (like <code>{filename}:date: {date}</code>), we
+create a shell command output
+<code>mv {filename} {date}--filename</code>, which is exactly the script
+I wanted. We’ve then just got to pipe this into the shell to acutally
+execute it.</p>
+<p><code>awk</code> is a language that’s especially undervalued in my
+opinion.</p>
+<p>It’s worth spending some time to become shell literate!</p>]]></description>
+</item>
+<item>
+<title>cp works different in BSD and Linux</title>
+<link>https://wclarke.net/posts/2022-02-09--cp-works-different-in-bsd-and-linux.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-02-09--cp-works-different-in-bsd-and-linux.html</guid>
+<description><![CDATA[<p>BSD and Linux work differently. That’s not much of a surprise. BSD
+started in 1977 and Linux only started in 1991. There are loads of
+historical reasons for this difference.</p>
+<p>What <em>did</em> surprise me recently, though, was something as
+trivial as</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-R</span> a/ b/</span></code></pre></div>
+<p>will behave totally differently on the two systems.</p>
+<p>Spoiler Alert: You’ve got to use dots (<code>.</code>) to make them
+work the same.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-R</span> a/. b/.</span></code></pre></div>]]></description>
+</item>
+<item>
+<title>Perfect is the enemy of the good</title>
+<link>https://wclarke.net/posts/2022-02-08--perfect-is-the-enemy-of-the-good.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-02-08--perfect-is-the-enemy-of-the-good.html</guid>
+<description><![CDATA[<p>Software Engineers tend to be guilty of over-engineering. This isn’t
+too surprising. They likely got into engineering because they liked
+engineering.</p>
+<p>Everything is a tradeoff. One tradeoff that we all have to make when
+building things is:</p>
+<pre><code> SCRAPPY &lt;-------------------------&gt; PERFECT
+
++ quick to build                 - slow to build
++ faster product feedback        - slower product feedback
++ easy to throw away             - expensive to pivot
+- unstable                       + stable
+- unmaintainable                 + maintainable
+- hard to change                 + easy to change
+- unscalable                     + scalable</code></pre>
+<p>Businesses should treat both extreemes with the same caution. Tech
+debt can sink companies. And an inefficient tech team that’s
+overengineering can too.</p>
+<p>Startups should generally transition from <em>scrappy</em> towards
+<em>perfect</em> as they scale and find product-market-fit.</p>
+<p>On the whole, I think that good software engineers err on the
+<em>perfect</em> end of the spectrum. Depending on the circumstances,
+this can be vital, but can also be wasteful.</p>
+<p>It’s worth thinking about this tradeoff and whether your tech org has
+got the right balance.</p>]]></description>
+</item>
+<item>
+<title>Teams should be tiny</title>
+<link>https://wclarke.net/posts/2022-02-07--teams-should-be-tiny.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-02-07--teams-should-be-tiny.html</guid>
+<description><![CDATA[<p>Amazon’s famous <em>two-pizza rule</em> says that a team should be
+big enough to share two pizzas. I personally wouldn’t be happy to share
+my pizza with ten other people.</p>
+<p>Basecamp have teams of only <a
+href="https://basecamp.com/shapeup/4.1-appendix-02#small-enough-to-wing-it">two
+or three people</a>. This allows specialisation, reduces
+context-switching and allows for more teams in total. In coding terms,
+this is the single responsibility principle.</p>
+<p>In order to have lots of teams, you need detailed domain knowledge.
+Where should the boundries be? This is exactly the same approach as
+domain design in a codebase, but at the team-level.</p>
+<p>TL;DR Your team is probably too big.</p>]]></description>
+</item>
+<item>
+<title>Communicate Effectively</title>
+<link>https://wclarke.net/posts/2022-02-04--communicate-effectively.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-02-04--communicate-effectively.html</guid>
+<description><![CDATA[<p>Communicating effectively is harder than it sounds.</p>
+<p>Talking is easy. But to do that <em>effectively</em> is more
+difficult.</p>
+<p>Here are some tips that may help!</p>
+<ul>
+<li>Get to the point fast.</li>
+<li>Prefer asynchronous written communication over synchronous.</li>
+<li>Type out everything you wanted to say before saying it (this applies
+especially to questions). There’s no point in asking something in 5
+separate messages. You’ll just dilute what you were trying to say and
+annoy people.</li>
+<li>Think about what you’re typing. Writing is a good way to clarify
+stuff to yourself. If necessary, find more data or even delete
+everything if you were about to ask a stupid question. (note: <a
+href="https://wclarke.net/posts/2020-06-27--ask-stupid-questions.html">there
+are no stupid questions…</a>)</li>
+<li>Use bullet-points / numbered lists so people can easily scan and
+reply to specific items individually.</li>
+<li>Simplify your language. Long words may make you seem clever, but
+people won’t understand as easily.</li>
+<li>Aim to <a
+href="https://wclarke.net/posts/2020-03-01--document-everything.html">document
+everything</a></li>
+<li>Re-read everything before you ask people to take the time to read
+it. The longer your writing (eg. a massive PR), the more carefully you
+need to re-read. You may spot obvious mistakes, answer your own
+question, or change your mind by doing this.</li>
+<li>Make sure relevant people know relevant information. Potentially
+deliver the same message in different formats and mediums.</li>
+<li>Favour communication in public over in private. Other people will
+benefit!</li>
+<li>If in doubt, post the message. Under-communication is more dangerous
+than over-communication.</li>
+<li>Make sure the relevant people know. Potentially “tag” them if they
+could miss the message.</li>
+<li>Write to most relevant place &amp; to the smallest number of people.
+Who needs to know? A single person? The team? A large group of people?
+People will engange more if there are fewer other people around.</li>
+</ul>]]></description>
+</item>
+<item>
+<title>Look for the big picture</title>
+<link>https://wclarke.net/posts/2022-01-31--look-for-the-big-picture.html</link>
+<pubDate>Wed  8 Jul 22:56:54 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-31--look-for-the-big-picture.html</guid>
+<description><![CDATA[<p>You’ve probably heard people telling you to find more time to focus
+on something closely. Block out time in your calendar so you can do deep
+work. It’s good advice.</p>
+<p>Spending time looking at something in detail is like using a
+magnifying glass; you can see a small area in high resolution.
+Magnifying glasses are useful, but they do limit our ability to see
+broadly. I think it’s also worth looking through an opposite type of
+lense, a minifying glass (if that’s a thing); something that makes
+everything look small, with much lower resolution, but far broader
+scope.</p>
+<p>There’s no point in having a beautiful component that just doens’t
+fit in with the larger machinery.</p>]]></description>
+</item>
+<item>
+<title>Simplicity is somehow still underrated</title>
+<link>https://wclarke.net/posts/2022-01-23--simplicity-is-somehow-still-underrated.html</link>
+<pubDate>Wed  8 Jul 22:56:55 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-23--simplicity-is-somehow-still-underrated.html</guid>
+<description><![CDATA[<p>Simplicity is good. The ideas that lasts longest are generally the
+simplest.</p>
+<p>The most interesting things in life are all straightforward. Here are
+some bad examples of simple stuff:</p>
+<ul>
+<li>Evolution</li>
+<li><a href="https://en.wikipedia.org/wiki/Fractal">Fractals</a></li>
+<li>Atomic structure of elements</li>
+<li><a href="https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">The
+game of life</a></li>
+<li>Viruses</li>
+<li>Fibonacci numbers</li>
+<li>Laws of the universe <!-- - e = mc^2 --></li>
+<li>Golden Ratio <!-- - The best music (eg. Bach / Mozart) --></li>
+</ul>
+<p>I’d argue that most selective pressures ultimately favour
+simplicity.</p>
+<p>This holds true with technology, too.</p>
+<p>When building something, there’s a temptation to show off. Complexity
+may impress people. “Look at this huge intracate thing I made. You don’t
+understand it. I’m so clever.”</p>
+<p>Simplicity often seems obvious. “Anyone could have done that”</p>
+<h2 id="simplicity-is-good">Simplicity is good:</h2>
+<ul>
+<li>HTTP is simple. It’s human-readable. Sure, there are faster ways to
+transfer data. But they’re not necessarily simpler. Over time the HTML
+spec has got larger, but the core idea is pretty simple.</li>
+<li>Editing documents in plain-text is always a good idea. Earlier today
+I ended up manually copying and pasting individual bullet points from
+Google Keep as they’ve made it impossible to copy the whole list.
+Staying in plain text means you control your data. It’s simple.</li>
+<li><a href="https://suckless.org/">Suckless software</a> takes
+simplicity to a new level. Their code is easy to understand &amp; easy
+to modify. I dare you to modify the Windows source code to change how
+its window manager works if you want a comparison.</li>
+<li>RSS is super cool. It’s a dead easy way to ‘subscribe’ to blogs that
+interest you. And there’s not much to go wrong. You don’t need to sign
+in to anything.. it just works.</li>
+</ul>
+<h2 id="complexity-is-bad">Complexity is bad:</h2>
+<ul>
+<li>Metaprogramming can be cool, but can be a nightmare to debug &amp;
+can be easy to do things you didn’t mean to.</li>
+<li>The modern web is a bubbling cauldron of complexity. Most websites
+break without Javascript. This means that it’s very
+<strong>very</strong> difficult to create a decent browser, and so we’re
+all stuck with either Chrome or Firefox. No one’s going to be
+realistically creating a new browser in their free time. Gopher &amp;
+Gemini are interesting protocols that drasically simplify the web &amp;
+are totally interesting.</li>
+<li>Github is getting bigger and bigger. There are more and more
+features available in Github. I would argue that it is bloated and there
+are leaner and faster alternatives which purposefully avoid implementing
+unnecessary features.</li>
+<li>I tried writing a new post for my old blog after a few years of
+ignoring it. The old <a href="https://jekyllrb.com/">jekyll</a> static
+site generator crashed when I tried to run it on my old website. I had
+to install an old version of Jekyll and even then it complained about an
+extension not working. I gave up and wrote a <a
+href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">simple
+shell script</a> to just parse my markdown documents into HTML using <a
+href="https://pandoc.org/">pandoc</a> instead. This script will still
+work in a few years.</li>
+<li>Microsoft Teams is an exasperating messaging app. The UX doesn’t
+work in an intuative way and there are plenty of baked-in features that
+bloat it. In order to use Teams, you have to use the client; you’re
+locked in to their own shoddy implementation. Some old messaging
+protocols (looking at you, IRC) embody simplicity and it’s not too
+tricky to interact with IRC using <code>netcat</code>.</li>
+<li>I love the idea of <a href="https://nixos.org/">nix</a>. I’ve tried
+to learn how to use it effectively so many times. The concepts behind it
+are totally solid &amp; wonderful, but the actual implementation is just
+confusing and complex. I’ve now overwritten my NixOS distribution with
+something else as I can’t afford to spend endless time understanding all
+the quirks of <code>nix</code>.</li>
+</ul>
+<h2 id="its-not-always-that-straightforward">It’s not always that
+straightforward</h2>
+<ul>
+<li>There are two separate types of complexity:</li>
+</ul>
+<ol type="1">
+<li>Inherent complexity. If you’re trying to model all the possible
+metabolic pathways, you’re going to struggle to fit it all on one A4
+sheet of paper. Some things just have large scope.</li>
+<li>Accidental complexity. Programmers like overengineering. Why not add
+some distributed databases to a calculator app? It’ll be cool…. but
+perhaps not necessary.</li>
+</ol>
+<ul>
+<li>We’re taght that duplication is bad. But programmers often create
+far more complexity trying to avoid dupliaction rather than just
+accepting some duplication. My favourite example of this is from <a
+href="https://sandimetz.com/99bottles">99 bottles of OOP</a> by Sandi
+Metz. A good solution to “how would you create a function to print this
+recursive song ‘99 bottles of beer…’?” is just to return a long string
+containing the <em>entire</em> 99 verses of the song. Genius!</li>
+<li>I want to love emacs’ <code>org-mode</code>. It’s lovely. But it’s
+not transferrable. The <code>org-mode</code> format only works if you’re
+using emacs. It’s not widely adopted, unlike <code>markdown</code>.
+Therefore I think that <code>markdown</code> is probably a better format
+to write shared documents in, despite all the whizzy editor features
+<code>org-mode</code> comes with. It’s sometimes context dependent;
+writing in <a
+href="https://en.wikipedia.org/wiki/Esperanto">Esperanto</a> may on some
+level be more logical than in English, but if your target audience can’t
+speak it then there’s going to be an issue.</li>
+<li>Sometimes complex features serve a purpose. Github provides a good
+in-browser code editor. Microsoft Teams provides build-in persistence
+(something IRC doesn’t). This is good. But it can also lead to
+accumulated bloat &amp; inability to customise anything.</li>
+<li>The programming language Go was designed to be super simple. The <a
+href="https://go.dev/ref/spec">spec</a> is only 2800 lines long. But
+“improvements” to the language creep in and add complexity. Generics
+will be cool…but they’re not exactly simple. It’s easy to start off with
+a simple solution… over time &amp; changing requirements can change this
+original vision.</li>
+</ul>
+<h2 id="dont-take-my-word-for-it">Don’t take my word for it!</h2>
+<blockquote>
+<p>Simple can be harder than complex - Steve Jobs</p>
+</blockquote>
+<blockquote>
+<p>Simplicity is the ultimate sophistication – Leonardo da Vinci</p>
+</blockquote>
+<blockquote>
+<p>Everything should be made as simple as possible, but not simpler –
+Albert Einstein</p>
+</blockquote>]]></description>
+</item>
+<item>
+<title>AWS S3 has insane durability</title>
+<link>https://wclarke.net/posts/2022-01-23--s3-has-insane-durability.html</link>
+<pubDate>Wed  8 Jul 22:56:55 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-23--s3-has-insane-durability.html</guid>
+<description><![CDATA[<p>AWS S3, the “simple storage service”, stores data. It can store a lot
+of data. And it can store it reliably.</p>
+<p>S3 has <a href="https://aws.amazon.com/s3/faqs/">99.999999999%
+durability</a>. There are so many nines there it’s difficult to fully
+comprehend what that means.</p>
+<blockquote>
+<p>For example, if you store 10,000,000 objects with Amazon S3, you can
+on average expect to incur a loss of a single object once every 10,000
+years.</p>
+</blockquote>
+<p>In my opinion the reverse is even more impressive; if you stored
+10,000 objects for 100 million years, you’d only lose one.</p>
+<p>It’d be interesting to see how they achieve that.</p>
+<ul>
+<li>How many replications is enough? 3?</li>
+<li>How do they coordinate updates, deletes, etc.. to avoid data
+loss?</li>
+<li>.. and, with all this durability, <strong>how do they keep their
+response times so low?</strong></li>
+</ul>]]></description>
+</item>
+<item>
+<title>UUID collisions investigated with lisp</title>
+<link>https://wclarke.net/posts/2022-01-06--uuid-collisions-investigated-with-emacs-lisp.html</link>
+<pubDate>Wed  8 Jul 22:56:55 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-06--uuid-collisions-investigated-with-emacs-lisp.html</guid>
+<description><![CDATA[<h2 id="a-gentle-backgroun-in-computer-y-numbers">A gentle backgroun in
+computer-y numbers</h2>
+<p>A UUID is just a list of 128 bits. That is 2^128 different
+combinations (340,282,366,920,938,463,463,374,607,431,768,211,456). This
+big number is apparently ‘340 undecillion’. Incidentially, there are
+also 2^128 ipV6 addreses. Hopefully it’ll take a while for us to go
+through those…</p>
+<p>Under the hood, a UUID is just a load of 1s or 0s (much like anything
+in a computer). It’s just a string of 128 of them. Eg.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">01011011011010001011001111010011000101100011001001000110111110111010011101111001111000001011100101111101010100110010100111010111</span></span></code></pre></div>
+<p>Isn’t that fascinating?</p>
+<p>This loads of bits can also be rewritten in base 16 (hexidecimal)</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">5b68b3d3163246fba779e0b97d5329d7</span></span></code></pre></div>
+<p>…which is also the base 10 (“normal” number) of</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">121503393765045762381299543010238998999</span></span></code></pre></div>
+<p>These are the same number, just expressed differently.</p>
+<p>Each hexidecimal number (1-16 or 0-f) represets four bits (2^4 = 16).
+So hexidecimal is four times shorter and therefore a sensible standard
+to use for uinque identifiers.</p>
+<h2 id="uuid-prefixes">UUID Prefixes</h2>
+<p>I wanted to work out the probability that two UUIDs contained the
+same prefix. Because hexidecimal is base 16, it makes sense that for
+every UUID, 1 in 16 should start with <code>a</code>. And 1 in 16 should
+start with <code>5</code>, etc. But what about two <code>aa</code>? How
+do we calculate that? This would be <code>16 * 16</code>, which
+<code>256</code>. So there’d be a 1 in 256 chance of getting a UUID
+starting with <code>aa</code>.</p>
+<p>The pattern we can extrapolate is that for <code>n</code> digits, we
+need to multiply <code>16</code> together <code>n</code> times.</p>
+<p>Luckily maths people do this sort of sum a lot and there’s a
+shorthand for it, <code>^</code> (this process is called
+<code>exponentiation</code>).</p>
+<h2 id="working-out-some-numbers-hackily-with-emacs-lisp">Working out
+some numbers hackily with emacs lisp</h2>
+<p>I spend a lot of time in emacs and in emacs, lisp is just a keystroke
+away. If you write <code>(+ 5 5)</code>, put your cursor on the closing
+bracket and then press <code>C-x C-e</code> (control x followed by
+control e), you’ll evaluate the lisp you just wrote and the minibuffer
+will display <code>10</code>.</p>
+<p>I googled the exponentiation lisp operator (which was handily called
+<code>expt</code>) and typed the following:</p>
+<pre><code>(expt 16 1)</code></pre>
+<p>which gave the answer 16.</p>
+<p>I tried again with a diferent number and the function seemed to work
+/</p>
+<p>Using an emacs macro, I was able to generate a small table of
+these.</p>
+<pre><code>(expt 16 1) 16
+(expt 16 4) 65536
+(expt 16 8) 4294967296
+(expt 16 12) 281474976710656
+(expt 16 16) 18446744073709551616
+(expt 16 20) 1208925819614629174706176 
+(expt 16 24) 79228162514264337593543950336
+(expt 16 28) 5192296858534827628530496329220096
+(expt 16 32) 340282366920938463463374607431768211456</code></pre>
+<p>This list showing the total number of unique combinations of base-16
+numbers helped me decide how best to categorise UUID prefixes for
+something 👍</p>]]></description>
+</item>
+<item>
+<title>How to share private GPG keys securely</title>
+<link>https://wclarke.net/posts/2022-01-05--how-to-share-private-gpg-keys-securely.html</link>
+<pubDate>Wed  8 Jul 22:56:55 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-05--how-to-share-private-gpg-keys-securely.html</guid>
+<description><![CDATA[<p><a href="https://gnupg.org/">GPG</a>, short for GNU Privacy Guard, is
+a free cryptographic software suite. Lots of important sofware relies on
+it.</p>
+<p>Personally, I use <a href="https://www.passwordstore.org/">pass</a>,
+“the standard unix password manager” to manage my passwords and it works
+a treat. Under the hood, <code>pass</code> uses <code>gpg</code>. This
+lets me use my terminal as a password manager.</p>
+<p>There’s <a
+href="https://play.google.com/store/apps/details?id=dev.msfjarvis.aps">a
+great Android app</a> which implements the same pass “spec” . This app
+relies on <a href="https://www.openkeychain.org">openkeychain</a> for
+GPG-key management. In their <a
+href="https://www.openkeychain.org/faq/">FAQs</a>, they elegantly sum up
+how best to transfer your private key:</p>
+<h2 id="generate-a-strong-random-password">generate a strong random
+password</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gpg</span> <span class="at">--armor</span> <span class="at">--gen-random</span> 1 20</span></code></pre></div>
+<h2 id="encrypt-key-use-password-above-when-asked">encrypt key, use
+password above when asked</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gpg</span> <span class="at">--armor</span> <span class="at">--export-secret-keys</span> YOUREMAILADDRESS <span class="kw">|</span> <span class="ex">gpg</span> <span class="at">--armor</span> <span class="at">--symmetric</span> <span class="at">--output</span> mykey.sec.asc</span></code></pre></div>
+<h2 id="on-the-receiving-computer">on the receiving computer</h2>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">gpg</span> <span class="at">--decrypt</span> mykey.sec.asc <span class="kw">|</span> <span class="ex">gpg</span> <span class="at">--import</span></span></code></pre></div>
+<p>These steps will encrypt your secret keys symmetricly with a secure
+&amp; one-time random password.</p>
+<p>I’ve used <a
+href="https://github.com/magic-wormhole/magic-wormhole">magic-wormhole</a>
+in the past to transfer sensitive information from computer to computer.
+It’s worked really well. If you’re paranoid about your keys (and it may
+be worth being paranoid…), I’d look into using
+<code>magic-wormhole</code> to move your encrypted private GPG keys
+around. It’s really easy. Literally
+<code>wormhole send mykey.sec.asc</code>.</p>]]></description>
+</item>
+<item>
+<title>AI is gonna change everything. Obviously</title>
+<link>https://wclarke.net/posts/2022-01-03--ai-is-gonna-change-everything.-obviously.html</link>
+<pubDate>Wed  8 Jul 22:56:56 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-03--ai-is-gonna-change-everything.-obviously.html</guid>
+<description><![CDATA[<p><a href="https://openai.com">OpenAI</a> have created a model that
+produces text. Given some input text, it will create some intelligent
+guesses about subsequent text.</p>
+<p>It’s easy to sign up to have access and play around (<a
+href="https://openai.com/blog/openai-api/">link here</a>).</p>
+<p>This is only going to get exponentially better. Soon it’ll be way
+better than any humans so we’ll all be out of a job.. but at least we’l
+have some amazing books to read during our post-scarcity utopian
+lives.</p>
+<p>I was mucking around with it and tried to see if it could generate
+any new blog posts for me. Here are the ones it suggested:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># How to convert a String to a number in JavaScript</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>If you’re working with some weird form of string, sometimes the way it is formatted won’t be what you expect. Here are three ways to convert a string to an actual number in javascript. js</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu"># Feel conflicted about something? Take some time off!</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Don’t feel like you need to ‘power through’ your feelings of conflict or confusion. Just take the time you need and move on when you feel ready. life</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu"># What a Diff is</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>I was recently asked by someone what exactly a “diff” was. Here’s my answer! computing maths</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu"># OMG! How to make an app store?</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>So, you want to make an app store! Cool. But how do you actually go about doing it? tech dev</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu"># Have a backup plan</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>When something goes wrong, the best thing is often just to have a plan B. That way if things go awry, you’ve got a backup idea up your sleeve. business marketing sales strategy work worklife balance</span></code></pre></div>
+<p>Which is exactly the sort of nonsense I’d talk about.</p>
+<p>Some more title suggestions:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>A fun editor</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>Trying out Ruby</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>The Evils of the Global Inheritance</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>Permissions By Group</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>export a variable in bash</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>Docker: List Containers</span></code></pre></div>
+<p>My favourite is <code>The Evils of the Global Inheritance</code></p>]]></description>
+</item>
+<item>
+<title>Pulseaudio playing up? Try deleting ~/.config/pulse</title>
+<link>https://wclarke.net/posts/2022-01-02--nuke-pulseaudio.html</link>
+<pubDate>Wed  8 Jul 22:56:56 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2022-01-02--nuke-pulseaudio.html</guid>
+<description><![CDATA[<p>This is the solution to most tech problems. If it doesn’t work, turn
+it off and on. In this case, turning it <em>off</em> involved
+uninstalling / removing some dodgy configuration.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-r</span> ~/.config/pulse</span></code></pre></div>]]></description>
+</item>
+<item>
+<title>Function Composition is super cool</title>
+<link>https://wclarke.net/posts/2021-08-19--function-composition-is-super-cool.html</link>
+<pubDate>Wed  8 Jul 22:56:56 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2021-08-19--function-composition-is-super-cool.html</guid>
+<description><![CDATA[<p>Function composition is kind of important - especially in functional
+languages.</p>
+<p>I recently was trying to do something in Haskell where I wanted to do
+a kind of “deep” <code>map</code>.</p>
+<p>The function <code>map</code> has the type signature of</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>t <span class="fu">map</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span></code></pre></div>
+<p>What I wanted was:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ot">notSureHowToImplement ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [[a]] <span class="ot">-&gt;</span> [[b]]</span></code></pre></div>
+<p>I scrabbled around doing hacky and ugly things… until I realised that
+we should be able to use the default <code>map</code> function by
+calling it twice:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>t (<span class="fu">map</span> <span class="op">.</span> <span class="fu">map</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [[a]] <span class="ot">-&gt;</span> [[b]]</span></code></pre></div>
+<p>Tada!! Magic!</p>
+<p>But how does it work?</p>
+<p>This trick relies on some deep and mysterious secrets which
+functional programming is build upon: currying &amp; composition.</p>
+<p>If you eyeball the <code>map</code> function again, what it’s
+actually doing is taking a function and then returning another function
+that operates on a list to create another list:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>t <span class="fu">map</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">map</span><span class="ot"> ::</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> [a] <span class="ot">-&gt;</span> [b]</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="co">-- can be written like:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="co">-- map :: (a -&gt; b) -&gt; ([a] -&gt; [b])</span></span></code></pre></div>
+<p>The fact that <code>map</code> takes a function and returns a
+function means that… we can use <code>map</code> on <code>map</code>’s
+output function…</p>
+<p>A reminder about function composition: Function composition is just
+calling functions:</p>
+<pre class="nil"><code>h(x) = g(f(x))</code></pre>
+<p>In haskell this is so important that its operator is just
+“<code>.</code>”.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="dt">Prelude</span><span class="op">&gt;</span> <span class="op">:</span>t (<span class="op">.</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ot">(.) ::</span> (b <span class="ot">-&gt;</span> c) <span class="ot">-&gt;</span> (a <span class="ot">-&gt;</span> b) <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> c</span></code></pre></div>
+<p>so <code>(map . map) f</code> is the same as
+<code>map (map f )</code></p>
+<p>Here’s the function in practice:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Prelude</span><span class="op">&gt;</span> <span class="er">(</span><span class="ex">map</span> . map<span class="kw">)</span> <span class="kw">(</span><span class="ex">*</span> 2<span class="kw">)</span> <span class="ex">[[1,2,3],[4,5]]</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">[[2,4,6],[8,10]]</span></span></code></pre></div>
+<p>Isn’t it lovely?</p>]]></description>
+</item>
+<item>
+<title>Force a script to run as root (sudo)</title>
+<link>https://wclarke.net/posts/2020-07-16--force-a-script-to-run-sudo.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-07-16--force-a-script-to-run-sudo.html</guid>
+<description><![CDATA[<p>Just chuck this in at the start of a bash script and it’ll ensure the
+rest of the script is run by the root user:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env sh</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="bu">[</span> <span class="kw">`</span><span class="fu">whoami</span><span class="kw">`</span> <span class="ot">=</span> root <span class="bu">]</span> <span class="kw">||</span> <span class="kw">{</span> <span class="fu">sudo</span> <span class="st">&quot;</span><span class="va">$0</span><span class="st">&quot;</span> <span class="st">&quot;</span><span class="va">$@</span><span class="st">&quot;</span><span class="kw">;</span> <span class="bu">exit</span> <span class="va">$?</span><span class="kw">;</span> <span class="kw">}</span></span></code></pre></div>]]></description>
+</item>
+<item>
+<title>Trying to get Go modules to play ball with private repos?</title>
+<link>https://wclarke.net/posts/2020-07-08--go-modules-with-private-repos.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-07-08--go-modules-with-private-repos.html</guid>
+<description><![CDATA[<p><code>go</code> modules are wonderful. All go code should use
+them.</p>
+<p>It can still be a bit tricky getting private repos to work with
+<code>go mod</code>. Maybe these tips help… <code>¯\_(ツ)_/¯</code></p>
+<ul>
+<li><p>Set up <code>SSH</code> keys with your version control
+vendor</p></li>
+<li><p>Add the following to your <code>~/.gitconfig</code>:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>  <span class="ex">[url</span> <span class="st">&quot;ssh://git@github.com/&quot;</span>]</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>      <span class="ex">insteadOf</span> = https://github.com/</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">[url</span> <span class="st">&quot;ssh://git@gitlab.com/&quot;</span>]</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">insteadOf</span> = https://gitlab.com/</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">[url</span> <span class="st">&quot;ssh://git@bitbucket.org/&quot;</span>]</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">insteadOf</span> = https://bitbucket.org/</span></code></pre></div></li>
+<li><p>Add the offending repo as a <strong>private repo</strong>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>  <span class="ex">go</span> env <span class="at">-w</span> GOPRIVATE=gitlab.com/you/your-project,github.com/someone/their-project</span></code></pre></div></li>
+</ul>]]></description>
+</item>
+<item>
+<title>Ask stupid questions</title>
+<link>https://wclarke.net/posts/2020-06-27--ask-stupid-questions.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-06-27--ask-stupid-questions.html</guid>
+<description><![CDATA[<p>Stupid questions aren’t stupid. It’s important to clarify things
+rather than working on assumptions or guesses. If you don’t know about
+something, it’s not your fault. It’s only your fault if you
+<strong>don’t</strong> ask.</p>
+<p>It can be scary to admit that you don’t know stuff… but it’s worth
+trying (or pretending) to be confident &amp; ask them. Like anything,
+it’ll become easier to ask stupid questions the more you ask.</p>
+<p>Here are some stupid questions in case you can’t think of any off the
+top of your head:</p>
+<ul>
+<li>Why are we building this?</li>
+<li>What’s this acronym?</li>
+<li>Why would a customer want to do this?</li>
+<li>Is this MVP really minimum?</li>
+<li>Is this MVP really viabale?</li>
+<li>Why are we doing this this way? Could this approach work?</li>
+<li>How are we measuring X?</li>
+</ul>]]></description>
+</item>
+<item>
+<title>Enjoy it!</title>
+<link>https://wclarke.net/posts/2020-05-27--enjoy-it.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-05-27--enjoy-it.html</guid>
+<description><![CDATA[<p>You’re likely to spend a significant percentage of your waking life
+working. You may as well try to enjoy it.</p>
+<p>Money’s kinda pointless if you’re miserable earning and spending
+it.</p>
+<p>If you’re doing something you don’t like, you should seriously
+consider making a change.</p>
+<p>You can:</p>
+<ul>
+<li>try to change your teams</li>
+<li>try to change your hours</li>
+<li>try to change your hour-flexibilty</li>
+<li>try to change your jobs</li>
+<li>try to change your company</li>
+<li>try to change your projects</li>
+<li>try to change your managers</li>
+<li>try to change your industries</li>
+<li>try to change the technology you work with</li>
+<li>try to learn more stuff</li>
+<li>try to change your perspectives:
+<ul>
+<li>try to get more interested with what you do on a day-to-day way</li>
+<li>try to engage more with your company’s <strong>product</strong></li>
+<li>try to engage more with your company’s
+<strong>decisions</strong></li>
+<li>try to take more ownership over what you’re doing. A wrong decision
+may be better than no decision at all.</li>
+</ul></li>
+</ul>
+<p>Life should be fun. Play around a bit and don’t take anything toooo
+seriously. Enjoy it!</p>]]></description>
+</item>
+<item>
+<title>Document EVERYTHING!!!</title>
+<link>https://wclarke.net/posts/2020-03-01--document-everything.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-03-01--document-everything.html</guid>
+<description><![CDATA[<p>People leave jobs all the time. People get run over by busses or win
+the lottery. People forget stuff.</p>
+<p>It’s important to document things, especially technical things.</p>
+<pre class="nil"><code>code != documentation</code></pre>
+<p>Source code explains <strong>how</strong> things work… it’s simply
+telling the computer the algorithm you want run. What’s not often
+mentioned is wider context.</p>
+<ul>
+<li>Why do we want this thing at all?</li>
+<li>What problem does it solve?</li>
+<li>Why don’t we approach this in a different way?</li>
+<li>What are the current constraints? Is there time / business /
+financial pressure?</li>
+<li>Is this meant to be scalable or an MVP?</li>
+<li>What does this object / table represent?</li>
+</ul>
+<p>Use comments and documentation widely to make it easier for the next
+person - often you.</p>]]></description>
+</item>
+<item>
+<title>How to find rows which don&apos;t exist in a table</title>
+<link>https://wclarke.net/posts/2020-01-08--find-sql-rows-which-dont-exist-in-table.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2020-01-08--find-sql-rows-which-dont-exist-in-table.html</guid>
+<description><![CDATA[<p>I was recently stumped for a while trying to find rows that
+<strong>didn’t</strong> exist in my SQL table.</p>
+<p>What I needed was to create a fake table (<code>WITH ...</code>),
+<code>JOIN</code> it onto my real table… and only select those which
+were <code>NULL</code> for the real table.</p>
+<p>In the following example, I’m trying to find whether either
+<code>bob</code> or <code>andrea</code> don’t exist in the database:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">WITH</span> expected(email) <span class="kw">AS</span> (</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">VALUES</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>(<span class="st">&#39;bob@example.com&#39;</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>(<span class="st">&#39;andrea@example.com&#39;</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> email</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="kw">FROM</span> expected</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="kw">LEFT</span> <span class="kw">JOIN</span> my_real_table_name t1</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="kw">ON</span> t1.email_address <span class="op">=</span> expected.email;</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="kw">WHERE</span> t1.email_address <span class="kw">IS</span> <span class="kw">NULL</span></span></code></pre></div>]]></description>
+</item>
+<item>
+<title>Get things done &gt; tech used</title>
+<link>https://wclarke.net/posts/2019-12-10--getting-things-done.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-12-10--getting-things-done.html</guid>
+<description><![CDATA[<p>Technology is a lever. It lets us do things.</p>
+<p><a href="https://www.youtube.com/watch?v=4x8wTj-n33A">As Steve Jobs
+said:</a></p>
+<blockquote>
+<p>Man is a toolmaker, has the ability to make a tool to amplify the
+amount of inherent ability that he has.</p>
+</blockquote>
+<p>The whole point of technology is that it let’s us <strong>do</strong>
+things.</p>
+<p>As a software engineer, it can be tempting to fall into the trap of
+spending loads of time optimising your developer environments.</p>
+<ul>
+<li>Which shiny new thing should I use?</li>
+<li>Is there a vim plugin to save me 3 seconds per day?</li>
+<li>Can I <a href="https://github.com/NARKOZ/hacker-scripts">automate a
+coffee machine from my terminal?</a></li>
+</ul>
+<p>These are all loads of fun, and you learn loads by doing them… but
+the end result is just that you’ll be better at doing a (potentially
+very specific) job in the future.</p>
+<p>Technology can impact every facet of our lives for enormous good. We
+have the ability to improve the world <strong>loads</strong>… and
+there’s more to technology than just a slick development
+environment.</p>
+<p>Maybe try finishing that side-project, or sitting down and thinking
+what you really want to <strong>achieve</strong>, rather than
+<strong>how</strong>.</p>]]></description>
+</item>
+<item>
+<title>Defaults are good. Try them out!</title>
+<link>https://wclarke.net/posts/2019-08-10--defaults-are-good.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-08-10--defaults-are-good.html</guid>
+<description><![CDATA[<p>Most defaults have been carefully thought out. It’s worth at least
+looking over them before deciding that they’re useless &amp;
+old-fashioned.</p>
+<p>While it’s true that many defaults are the result of some
+old-fashioned constraints (eg. <code>QWERTY</code> keyboard or the vim
+homerow being one key to the left), it may be worth your time just
+accepting their flawed premises and trying to use them anyway. There’s
+value if people are also using them.</p>
+<p>If your vim config is totally unique to you (or you’re a
+<code>dvorak</code> user), you’ll have a hard time pairing with someone
+else or <code>SSH</code>-ing into a server.</p>
+<p>The creators of customisable products have hopefully thought long and
+hard about the best way to use <strong>their</strong> creations. They’ll
+be far more invested in making it work well than you will and they’ll
+have a vision of how they want their products being used.</p>
+<p>Sometimes it’s sensible to just accept defaults.</p>]]></description>
+</item>
+<item>
+<title>Boring product names FTW</title>
+<link>https://wclarke.net/posts/2019-07-11--boring-product-names-ftw.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-07-11--boring-product-names-ftw.html</guid>
+<description><![CDATA[<p>In a company I worked at recently, we released a fantastic shiny-new
+thing. It was a smaller version of another product called `cargo`, which
+did something related to packaging.</p>
+<p>The question is, what should we call it? Here are some names we came
+up with:</p>
+<ul>
+<li><code>parcel</code></li>
+<li><code>package</code></li>
+<li><code>freight</code></li>
+<li><code>cargo-mini</code></li>
+<li><code>gateway</code></li>
+<li><code>specific-and-boring-product-description</code></li>
+<li><code>catalyst</code></li>
+</ul>
+<p>Any guesses which are the best names?</p>
+<p>Our developers and users already knew about <code>cargo</code>. They
+had the mental context in their head. Because of this,
+<code>cargo-mini</code> makes sense as a smaller version of
+<code>cargo</code>. I’m quite a fan of absurdly verbose but specific
+names, so I’m also a fan of
+<code>specific-and-boring-product-description</code></p>]]></description>
+</item>
+<item>
+<title>Cron is cool</title>
+<link>https://wclarke.net/posts/2019-06-08--cron-is-cool.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-06-08--cron-is-cool.html</guid>
+<description><![CDATA[<p>Cron jobs have a slightly terrifying syntax. But there are loads of
+easy online <a href="https://crontab-generator.org/">tools like this one
+to help.</a></p>
+<p>It can be really useful to have background jobs doing all sorts of
+things in the background.</p>
+<p>The whole point of computers is to automate stuff… and
+<code>cron</code> is a really easy UNIX-y way of doing this.</p>
+<p>Disclaimer: For one-off scripts, cron jobs can be great…but it
+doesn’t scale particularly well. Eg. if you need to syncronise lots of
+background jobs, it’s probably better to look for something else.</p>]]></description>
+</item>
+<item>
+<title>Automate Repetitive Tasks</title>
+<link>https://wclarke.net/posts/2019-05-02--automate-repetitive-tasks.html</link>
+<pubDate>Wed  8 Jul 22:56:57 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-05-02--automate-repetitive-tasks.html</guid>
+<description><![CDATA[<p>Computers are good at doing boring things. Humans are too, but humans
+are also good at doing other, more interesting and creative things.</p>
+<p>In every job I’ve been at, there have always been loads of ways to
+save human time by telling a computer to do some stuff instead of doing
+it manually. This is especially true for non-super-technical areas;
+there could be lots of delicious low-hanging fruit.</p>
+<p>You don’t even need to be able to code to do loads of stuff; services
+like <a href="https://ifttt.com/">IFTTT</a> or <a
+href="https://docs.google.com/spreadsheets/">Google sheets</a> have lots
+of automatable functionality baked in.</p>
+<p>In the past I’ve save loads of time by completely automating:</p>
+<ul>
+<li>Sending daily emails to clients about latest statistics (with some
+top-level analysis)</li>
+<li>Creation &amp; management of Adwords campaigns</li>
+<li>Daily parsing of reports (&amp; inserting into a database)</li>
+</ul>
+<p>{{&lt; figure
+src=“https://imgs.xkcd.com/comics/is%5Fit%5Fworth%5Fthe%5Ftime%5F2x.png”
+&gt;}}</p>
+<p>The trick here is to pick your battles. Some tasks are easy to
+automate (those which involve structured data). Others are difficult.
+But always remember to keep tabs on where you spend your time; you may
+be able to free up a lot of time by some simple automation!</p>]]></description>
+</item>
+<item>
+<title>Maybe try vim</title>
+<link>https://wclarke.net/posts/2019-04-08--maybe-try-vim.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-04-08--maybe-try-vim.html</guid>
+<description><![CDATA[<p><code>vim</code> people like to talk about <code>vim</code> and often
+don’t shut up about it.</p>
+<p>It takes a long time to learn &amp; adapt to modal editing and all of
+<code>vim</code>’s esoteric keybindings.</p>
+<p>Despite that, it’s really popular. Perhaps people are onto
+something?</p>
+<p>If you edit text for a living, it’s probably worth your while looking
+into learning the basics of <code>vim</code> properly (no arrow keys,
+that’s cheating!).</p>
+<p>{{&lt; figure src=“/images/doit.gif” &gt;}}</p>]]></description>
+</item>
+<item>
+<title>We should all know git</title>
+<link>https://wclarke.net/posts/2019-03-08--we-should-all-know-git-well.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2019-03-08--we-should-all-know-git-well.html</guid>
+<description><![CDATA[<p>Version control’s mega important. I bet you used it even at school,
+saving stuff as <code>important-thing-VERSION-4.doc</code></p>
+<p>There’s so much to learn about git. And most of us could afford to
+know a bit more about how it works.</p>
+<ul>
+<li><code>reflog</code> has saved my life many times</li>
+<li>shortcuts like <code>git checkout -</code> save loads of time</li>
+<li><a
+href="https://github.com/git/git/tree/master/contrib/completion">completion
+scripts</a> can make your life easier &amp; show options you didn’t know
+about</li>
+</ul>
+<p>If you don’t already, it’s probably worth curating a
+<code>~/.gitconfig</code> that you check into… <code>git</code>… and
+store somewhere.</p>]]></description>
+</item>
+<item>
+<title>jq is a cool tool</title>
+<link>https://wclarke.net/posts/2018-06-08--jq-is-a-cool-tool.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2018-06-08--jq-is-a-cool-tool.html</guid>
+<description><![CDATA[<p><a href="https://stedolan.github.io/jq/"><code>jq</code></a> is
+pretty cool. It’s a command-line utility that interacts with
+<code>JSON</code>.</p>
+<p>I only recently discovered that it does <strong>loads</strong> more
+than just pretty-printing <code>JSON</code>.</p>
+<p>You can <code>map</code> over it and do really quite complex data
+processing with <code>jq</code>.</p>
+<p>I recently had to extract some data from an API and ended up piping
+into this:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">jq</span> <span class="st">&#39;.Chart.Purchases | map((. | first | tostring) + &quot;, &quot; + (. | last  | tostring) )&#39;</span></span></code></pre></div>
+<p>It’s really flexible and nice to use!</p>
+<p>I’d recommend people have a quick browse through the <a
+href="https://stedolan.github.io/jq/tutorial/">jq examples and
+tutorial</a> just so they know the full extent of what <code>jq</code>
+can do.</p>]]></description>
+</item>
+<item>
+<title>My favourite Ruby books</title>
+<link>https://wclarke.net/posts/2015-05-28--my-favourite-ruby-books.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-05-28--my-favourite-ruby-books.html</guid>
+<description><![CDATA[<p><a
+href="http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21"><img
+src="http://ecx.images-amazon.com/images/I/41gtODXuRlL._AA160_.jpg"
+alt="Pickaxe Guide" /></a></p>
+<h3 id="programming-ruby-1.9-2.0-the-pragmatic-programmers-guide"><a
+href="http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21">Programming
+Ruby 1.9 &amp; 2.0: The Pragmatic Programmers’ Guide</a></h3>
+<p>by <a href="https://twitter.com/pragdave">Dave Thomas</a>, <a
+href="https://twitter.com/PragmaticAndy">Andy Hunt</a> &amp; <a
+href="https://twitter.com/chadfowler">Chad Fowler</a></p>
+<p>The ‘pickaxe’ book is a complete overview to Ruby. It’s a pretty
+hefty book, covering these topics:</p>
+<ul>
+<li>A great tutorial on using Ruby.</li>
+<li>The definitive reference to the language.</li>
+<li>Complete documentation of all built-in classes, modules, and
+methods.</li>
+<li>Complete descriptions of all 97 standard libraries.</li>
+</ul>
+<p><a
+href="http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21"><img
+src="http://ecx.images-amazon.com/images/I/51U-Wi%2BkYvL._AA160_.jpg"
+alt="POODR" /></a></p>
+<h3 id="practical-object-oriented-design-in-ruby-an-agile-primer"><a
+href="http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21">Practical
+Object Oriented Design in Ruby: An Agile Primer</a></h3>
+<p>by <a href="https://twitter.com/sandimetz">Sandi Metz</a></p>
+<p>Ruby likes objects and ‘POODR’ shows how to make the most of them.
+Modular code is easier to maintain, reuse and understand. Sandi Metz has
+some interesting ideas on OOP - her <a
+href="https://robots.thoughtbot.com/sandi-metz-rules-for-developers">rules</a>
+have become important. We see the world in objects, and I think that
+code usually makes more sense in objects too.</p>
+<p><a
+href="http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21"><img
+src="http://ecx.images-amazon.com/images/I/51qiS5gf-HL._AA160_.jpg"
+alt="Rails" /></a></p>
+<h3 id="ruby-on-rails-tutorial-learn-web-development-with-rails"><a
+href="http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21">Ruby
+on Rails Tutorial: Learn Web Development with Rails</a></h3>
+<p>by <a href="https://twitter.com/mhartl">Michael Hartl</a></p>
+<p>This is a great introduction to Rails. It starts slow enough for
+complete n0obs, but has enough depth to interest far more advanced
+programmers. It walks through TDD, getting to use the console and git,
+and covers encryption, AJAX and how Rails works on a practical level.
+There is also a free, online version of the book <a
+href="https://www.railstutorial.org/book">here</a></p>
+<p><a
+href="http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21"><img
+src="http://ecx.images-amazon.com/images/I/41IDuwJXFCL._AA160_.jpg"
+alt="Eloquent Ruby" /></a></p>
+<h3 id="eloquent-ruby"><a
+href="http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21">Eloquent
+Ruby</a></h3>
+<p>by <a href="https://twitter.com/russolsen">Russ Olsen</a></p>
+<p>One of the best things about Ruby is its expressiveness and elegance.
+Understanding how Ruby was designed to work helps you to really tap into
+its power and makes a lot of things make a lot more sense.</p>]]></description>
+</item>
+<item>
+<title>Vim Folds</title>
+<link>https://wclarke.net/posts/2015-04-18--vim-folds.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-04-18--vim-folds.html</guid>
+<description><![CDATA[<p>I was originally scared of vim folds. They were confusing and hard to
+manage. And there were extra shortcuts to learn.</p>
+<p>I’ve recently started playing with them and have found that they can
+be useful, especially with long documents.</p>
+<p>The main shortcuts you need to learn are:</p>
+<p><strong>za</strong> - toggle current fold open/closed
+<strong>zR</strong> - open all folds <strong>zM</strong> - close all
+folds</p>
+<p>This would work as an explicit fold:</p>
+<pre><code># My super clever method {{{
+def clever_method
+  ...
+  something clever
+  ...
+end
+# }}}</code></pre>
+<p>The <code>}}}</code> triple curly braces then let the area
+<em>fold</em> into something like:</p>
+<pre><code>+--  7 lines: My super clever method -----------------</code></pre>
+<p>which lets you expand / contract it with <strong>za</strong>.</p>
+<p>It’s probably worth adding <strong>za</strong> as a shortcut.</p>
+<p>There’s loads more you can do with them, but this is a fairly easy
+way to start to understand them..</p>]]></description>
+</item>
+<item>
+<title>Git Diff for files</title>
+<link>https://wclarke.net/posts/2015-03-26--git-diff-for-files.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-26--git-diff-for-files.html</guid>
+<description><![CDATA[<p>You can find the differences between files by using
+<code>git diff</code>:</p>
+<pre><code>git diff commit1 commit2</code></pre>
+<p>This will list all the differences, which could be a long list of
+changes.</p>
+<p>If you’re looking for just the <strong>file names</strong>, you can
+use the <strong>–name-only</strong> flag:</p>
+<pre><code>git diff --name-only commit1 commit2</code></pre>
+<p>You can see which files have changed in the last couple of commits
+with:</p>
+<pre><code>git diff --name-only HEAD~2</code></pre>]]></description>
+</item>
+<item>
+<title>View Last Vim Commands</title>
+<link>https://wclarke.net/posts/2015-03-15--vim--view-last-commands.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-15--vim--view-last-commands.html</guid>
+<description><![CDATA[<p>You can see your last commands by:</p>
+<ol type="1">
+<li>Pressing <code>:</code> (which is hopefully mapped to just
+<code>;</code>)</li>
+<li><code>&lt;ctrl-p&gt;</code> (‘previous’ in many unix applications)
+You can also press <code>up</code> if you find this easier… although you
+shouldn’t…</li>
+</ol>
+<p>Another way is to press <code>q:</code>, which provides a list of
+your recent commands. You can <code>k</code> your way through them and
+open (<code>&lt;cr&gt;</code>) them.</p>]]></description>
+</item>
+<item>
+<title>Vim Text Objects</title>
+<link>https://wclarke.net/posts/2015-03-14--vim-text-objects.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-14--vim-text-objects.html</guid>
+<description><![CDATA[<p>One of the most powerful features in Vim is <strong>text
+objects</strong>. These increase the number of ‘vim nouns’ that you can
+use with ‘vim verbs’.</p>
+<p>Imagine your cursor is in the middle of a paragraph you want to
+delete. Instead of laboriously deleting single lines, you could just
+type <code>dip</code> for ’ delete inner paragraph’. The text object
+represents <em>the entire paragraph</em>.</p>
+<p>A list of these is:</p>
+<p><code>iw</code> inner word <code>it</code> inner xml / html tag
+<code>is</code> inner sentence <code>i'</code> inner single quotation
+marks <code>i"</code> inner double quotation marks <code>i{</code> inner
+<code>{ ... }</code> braces <code>i[</code> inner <code>[ ... ]</code>
+braces <code>i(</code> inner <code>( ... )</code> braces <code>ip</code>
+inner paragraph <code>im</code> inner ruby method (from the <a
+href="https://github.com/nelstrom/vim-textobj-rubyblock">vim-textobj-rubyblock
+plugin</a>)</p>
+<p>The same commands also work with <code>a</code> for
+<strong>a</strong> (eg. <code>ca(</code> will also <em>change a
+bracket</em>, rather than just the contents of them)</p>
+<p>For an in-depth explanation, type <code>:h text-objects</code> into
+vim.</p>]]></description>
+</item>
+<item>
+<title>Save time with Bash &amp; !!</title>
+<link>https://wclarke.net/posts/2015-03-14--save-time-with-bash-&amp;-!!.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-14--save-time-with-bash-&amp;-!!.html</guid>
+<description><![CDATA[<p><code>!!</code> in Bash / Zsh works the same way as <code>_</code>
+does in irb / Pry.</p>
+<p>It substitutes the return value of the previous line into the current
+line.</p>]]></description>
+</item>
+<item>
+<title>Ruby - Hash#fetch</title>
+<link>https://wclarke.net/posts/2015-03-14--ruby--hash-fetch.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-14--ruby--hash-fetch.html</guid>
+<description><![CDATA[<p>If you can’t be bothered to set a default on a hash, you can always
+use <code>Hash#fetch</code> to specify a default as you go.</p>
+<p>These are the examples from the <a
+href="http://ruby-doc.org/core-2.2.1/Hash.html">docs</a></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>h <span class="kw">=</span> <span class="kw">{</span> <span class="st">&quot;a&quot;</span> <span class="kw">=&gt;</span> <span class="dv">100</span>, <span class="st">&quot;b&quot;</span> <span class="kw">=&gt;</span> <span class="dv">200</span> <span class="kw">}</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>h<span class="at">.fetch</span>(<span class="st">&quot;a&quot;</span>)                            <span class="co">#=&gt; 100</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>h<span class="at">.fetch</span>(<span class="st">&quot;z&quot;</span>, <span class="st">&quot;go fish&quot;</span>)                 <span class="co">#=&gt; &quot;go fish&quot;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>h<span class="at">.fetch</span>(<span class="st">&quot;z&quot;</span>) <span class="kw">{</span> <span class="kw">|</span>el<span class="kw">|</span> <span class="st">&quot;go fish, </span><span class="sc">#{</span>el<span class="sc">}</span><span class="st">&quot;</span><span class="kw">}</span>   <span class="co">#=&gt; &quot;go fish, z&quot;</span></span></code></pre></div>
+<p>I usually think it’s safer to use this rather than Hash#[] (which is
+just usuing the normal <code>hash[:possibly_doesnt_exist]</code>
+syntax), as it removes the chances of a rogue <code>nil</code> popping
+up.</p>]]></description>
+</item>
+<item>
+<title>Vim - Ctrl-R in Insert Mode</title>
+<link>https://wclarke.net/posts/2015-03-10--vim--ctrl-r-in-insert-mode.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-10--vim--ctrl-r-in-insert-mode.html</guid>
+<description><![CDATA[<p><code>ctrl-r</code> in <strong>Insert Mode</strong> is pretty
+useful.</p>
+<p>It inserts text based on your current vim context.</p>
+<p>Many of these commands work with registers, so it may be worth
+getting your head round those….</p>
+<table>
+<thead>
+<tr class="header">
+<th>Ctrl-R Shortcut</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ctrl-r %</code></td>
+<td>inserts filename</td>
+</tr>
+<tr class="even">
+<td><code>ctrl-r :</code></td>
+<td>inserts last command</td>
+</tr>
+<tr class="odd">
+<td><code>ctrl-r /</code></td>
+<td>inserts last search</td>
+</tr>
+<tr class="even">
+<td><code>ctrl-r =</code></td>
+<td>inserts evaluated sum (eg. 2+3)</td>
+</tr>
+<tr class="odd">
+<td><code>ctrl-r [a-z 0-9 key]</code></td>
+<td>inserts text from register</td>
+</tr>
+</tbody>
+</table>
+<p>Hope they help!</p>]]></description>
+</item>
+<item>
+<title>Vim Movement</title>
+<link>https://wclarke.net/posts/2015-03-04--vim-movement.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-04--vim-movement.html</guid>
+<description><![CDATA[<p>There are a load of ways to move around in vim. The first things you
+learn (<code>h</code>, <code>j</code>, <code>k</code> &amp;
+<code>l</code>) generally aren’t that efficient. <code>w</code>ord,
+<code>e</code>nd, <code>t</code>ill, <code>/</code> (buffer search)
+&amp; <code>f</code> (line search) are usually better.</p>
+<p>On top of these, there’s a handful of other, lesser-known
+commands:</p>
+<p><strong>z commands</strong> (also used for folding)</p>
+<p><code>zz</code> move current line to middle of screen <code>zt</code>
+move current line to top of screen <code>zb</code> move current line to
+bottom of screen</p>
+<p><strong>Moving over lines quickly</strong></p>
+<p><code>ctrl-e</code> move up 1 line <code>ctrl-y</code> move down 1
+line <code>ctrl-u</code> move up 1/2 page <code>ctrl-d</code> move down
+1/2 page <code>ctrl-b</code> move up 1 page <code>ctrl-f</code> move
+down 1 page</p>]]></description>
+</item>
+<item>
+<title>Hide files from Git Index</title>
+<link>https://wclarke.net/posts/2015-03-01--hide-files-from-git-index.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-03-01--hide-files-from-git-index.html</guid>
+<description><![CDATA[<p>If you want to hide an already-commited file in Git, you can:</p>
+<p><code>git update-index --assume-unchanged &lt;file&gt;</code></p>
+<p>This lets you alter the files and you won’t be at (too much) risk of
+committing those changes by mistake.</p>
+<p>This can be useful if you want a fairly quick way of hiding
+environmental variables… But be careful…</p>]]></description>
+</item>
+<item>
+<title>Git Log</title>
+<link>https://wclarke.net/posts/2015-02-25--git-log.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-02-25--git-log.html</guid>
+<description><![CDATA[<p><code>git log</code> is fairly useful.</p>
+<p>It’s even more useful with a few other commands:</p>
+<p><code>git log --all</code> - Include all branches in output
+<code>git log --graph</code> - Include visual depiction of branchesall
+branches in output <code>git log --oneline</code> - This is kinda
+self-explanatory. <code>git log --decorate</code> - Show branches
+<code>git log ..branch</code> &amp; <code>git log master..</code> -
+These commands can help you find the differences between branches.</p>]]></description>
+</item>
+<item>
+<title>The Object#try method in Rails</title>
+<link>https://wclarke.net/posts/2015-02-17--object-try-method-in-rails.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-02-17--object-try-method-in-rails.html</guid>
+<description><![CDATA[<p>Say you’re in Rails and want check that a method exists &amp; that it
+is not nil:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>my_object<span class="at">.my_method</span></span></code></pre></div>
+<p>One way you could do this is:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> my_object</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> my_object<span class="at">.my_method</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    my_object<span class="at">.my_method</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>If you were cleverer, you could just do:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> my_object <span class="kw">&amp;&amp;</span> my_object<span class="at">.my_method</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    my_object<span class="at">.my_method</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">...</span></span></code></pre></div>
+<p>The trouble with these approaches is they can become cumbersome:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> my_object <span class="kw">&amp;&amp;</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>   my_object<span class="at">.my_method</span> <span class="kw">&amp;&amp;</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    my_object<span class="at">.my_method.my_second_method</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>my_object<span class="at">.my_method.my_second_method</span></span></code></pre></div>
+<p>And that’s using the more concise syntax… A better approach would be
+to use the Object#try method. It ‘tries’ an object’s method and, instead
+of going mental, calmly returns nil if that method doesn’t work.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>my_object<span class="at">.try</span>(<span class="wa">:my_method</span>)</span></code></pre></div>
+<p>Ta da! This makes the more nested existence-validations read much
+better:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>my_object<span class="at">.try</span>(<span class="wa">:my_method</span>)<span class="at">.try</span>(<span class="wa">:my_second_method</span>)</span></code></pre></div>
+<p>If you’re using standard ruby, the <code>#defined?</code> and
+<code>#nil?</code> methods could help…</p>]]></description>
+</item>
+<item>
+<title>The Holy Grail of Vim Commands</title>
+<link>https://wclarke.net/posts/2015-02-15--the-holy-grail-of-vim-commands.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-02-15--the-holy-grail-of-vim-commands.html</guid>
+<description><![CDATA[<p><code>:h holy-grail</code></p>
+<p>Type it in. Now.</p>
+<pre><code>     _________
+    |o^o^o^o^o|
+    {   _!_   }
+     \   !   /
+      `.   .&#39;
+        )=(
+       ( + )
+        ) (
+    .--&#39;   `--.
+    `---------&#39;</code></pre>]]></description>
+</item>
+<item>
+<title>Random Vim Shortcuts</title>
+<link>https://wclarke.net/posts/2015-01-27--random-vim-shortcuts.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-01-27--random-vim-shortcuts.html</guid>
+<description><![CDATA[<table>
+<thead>
+<tr class="header">
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>ggg?G</td>
+<td>rot13 entire buffer</td>
+</tr>
+<tr class="even">
+<td>guu</td>
+<td>lowercase line</td>
+</tr>
+<tr class="odd">
+<td>gUU</td>
+<td>uppercase line</td>
+</tr>
+<tr class="even">
+<td>ga</td>
+<td>show hex &amp; ascii value of character</td>
+</tr>
+</tbody>
+</table>]]></description>
+</item>
+<item>
+<title>Vim Registers</title>
+<link>https://wclarke.net/posts/2015-01-05--vim-registers.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2015-01-05--vim-registers.html</guid>
+<description><![CDATA[<p>Vim Registers are where yanked / deleted text ends up.</p>
+<p>Registers are usually accessed by the <code>"</code> key.</p>
+<p>There are many different registers:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Register</th>
+<th>Description</th>
+<th>Example</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Unnamed</td>
+<td>default / automatic</td>
+<td>dw</td>
+</tr>
+<tr class="even">
+<td>Numbered (0)</td>
+<td>last <strong>yanked</strong> text</td>
+<td>“0p</td>
+</tr>
+<tr class="odd">
+<td>Numbered (1-9)</td>
+<td>historically <strong>deleted</strong> text</td>
+<td>“5p</td>
+</tr>
+<tr class="even">
+<td>Black Hole</td>
+<td>/dev/null of registers</td>
+<td>“_dw</td>
+</tr>
+<tr class="odd">
+<td>Named</td>
+<td>a-z registers (like macros)</td>
+<td>“ay</td>
+</tr>
+</tbody>
+</table>
+<p>Hope this makes sense! To set &amp; get the contents of the register,
+you just need to do reference the name. Eg: <code>"ayw</code> =&gt;
+<code>"ap</code></p>]]></description>
+</item>
+<item>
+<title>Suspend Vim</title>
+<link>https://wclarke.net/posts/2014-12-14--suspend-vim.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-12-14--suspend-vim.html</guid>
+<description><![CDATA[<p>If you want to suspend vim (or many other unix appications), pressing
+<code>ctrl-z</code> will ‘suspend’ them.</p>
+<p>You can then do important things on your shell.</p>
+<p>To return, just type <code>fg</code> (foreground).</p>
+<p>If you want to see what else you’ve suspended, <code>jobs</code> will
+tell you.</p>]]></description>
+</item>
+<item>
+<title>Return a Boolean in Ruby</title>
+<link>https://wclarke.net/posts/2014-11-23--ruby--return-a-boolean.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-11-23--ruby--return-a-boolean.html</guid>
+<description><![CDATA[<p>If you want to return a <code>true</code> or <code>false</code> value
+in ruby, you could try something like:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> variable</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="dv">true</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="dv">false</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>That’s not very good. In Ruby, we don’t need to explicitly return
+variables:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> variable</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="dv">true</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="cf">else</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="dv">false</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span></code></pre></div>
+<p>This is a bit long-winded. We could try the ternary operator:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>variable ? <span class="dv">true</span> : <span class="dv">false</span></span></code></pre></div>
+<p>We can thin this out even more by using a double negative:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>!!variable</span></code></pre></div>
+<p>This is performing an ‘inverse’ <code>!variable</code> method (which
+returns the opposite bool type).</p>]]></description>
+</item>
+<item>
+<title>Create a Free Twitter Bot - hosted on Heroku</title>
+<link>https://wclarke.net/posts/2014-10-23--create-a-free-twitter-bot--hosted-on-heroku.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-23--create-a-free-twitter-bot--hosted-on-heroku.html</guid>
+<description><![CDATA[<p>I decided to make a <a
+href="https://twitter.com/damnnaturescary">Twitter Bot</a> hosted on
+Heroku. And I managed to do it really easily. Surprisingly. The source
+code for this is <a href="https://github.com/wmmc/Damn-Nature">on
+Github</a>.</p>
+<p>Here are the basic steps I took:</p>
+<h3 id="think-of-something-funny-useful-for-your-bot-to-do.">1. Think of
+something funny / useful for your bot to do.</h3>
+<ul>
+<li>This is the hard part…</li>
+</ul>
+<h3 id="register-a-new-twitter-account">2. Register a new Twitter
+Account</h3>
+<h3 id="create-a-new-twitter-app---go-to-httpdev.twitter.comapps">3.
+Create a new Twitter ‘app’ - go to <a
+href="http://dev.twitter.com/apps">http://dev.twitter.com/apps</a></h3>
+<ul>
+<li>This will have the ability to control your twitter account on your
+behalf.</li>
+<li>Make a note of the API keys.</li>
+</ul>
+<h3 id="enable-read-write-permissions-for-this-app">4. Enable Read /
+Write Permissions for this App</h3>
+<ul>
+<li>Found under ‘Permissions’.</li>
+<li>If you need an extra mobile number, try <a
+href="http://wmmc.github.io/2014/10/22/twitter-apps-authentication--without-another-mobile-number/">this
+trick</a>.</li>
+</ul>
+<h3 id="write-some-code-which-interacts-with-the-twitter-api.">5. Write
+some code which interacts with the Twitter API.</h3>
+<ul>
+<li>Sferik’s <a href="https://github.com/sferik/twitter">twitter gem</a>
+makes this very easy in Ruby.</li>
+<li>If you’re looking for inspiration, browse my <a
+href="https://github.com/wmmc/Damn-Nature/blob/master/twitter.rb">code</a>.
+It’s not very complicated… And the twitter gem is very well
+documented.</li>
+<li>Remember to use <a
+href="https://devcenter.heroku.com/articles/config-vars">Environmental
+Variables</a> to hide your API keys.</li>
+</ul>
+<h3 id="create-a-gemfile-rakefile-for-heroku-to-latch-onto.">6. Create a
+Gemfile / Rakefile for Heroku to latch onto.</h3>
+<ul>
+<li>Again, examples of these can be found on my <a
+href="https://github.com/wmmc/Damn-Nature/blob/master/Rakefile">Github
+profile</a>.</li>
+<li>The rakefile basically defines an isolated process that can be run
+by heroku.</li>
+<li>The Gemfile lists all the Gems you’ll need to install.</li>
+<li>You may need to run <code>bundle install</code> (as usual…)</li>
+</ul>
+<h3 id="check-you-can-do-what-you-want-from-the-command-line.">7. Check
+you can do what you want from the command line.</h3>
+<ul>
+<li>By running your rake task.</li>
+</ul>
+<h3 id="create-a-new-heroku-app.">8. Create a new <a
+href="http://heroku.com">Heroku App</a>.</h3>
+<h3 id="push-your-current-files-to-heroku.">9. Push your current files
+to Heroku.</h3>
+<ul>
+<li>This should be a .rb file, a Rakefile, a Gemfile &amp; a
+Gemfile.lock</li>
+</ul>
+<h3 id="add-heroku-scheduler-to-your-heroku-app">10. Add <a
+href="https://addons.heroku.com/scheduler">Heroku Scheduler</a> to your
+Heroku app</h3>
+<ul>
+<li><code>heroku addons:add scheduler</code> - the fastest way to add
+this.</li>
+<li>This will allow you to customise how often it runs.</li>
+<li>You can set it to run every 10 minutes if you feel the need…</li>
+<li>To customise this, you’ll need to log into you Heroku Account.</li>
+</ul>
+<h3 id="add-your-environmental-variables-to-heroku.">11. Add your
+Environmental Variables to Heroku.</h3>
+<p>You should be ready to take Twitter by storm now!</p>]]></description>
+</item>
+<item>
+<title>Twitter Apps Authentication - without another mobile number</title>
+<link>https://wclarke.net/posts/2014-10-22--twitter-apps-authentication--without-another-mobile-number.html</link>
+<pubDate>Wed  8 Jul 22:56:58 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-22--twitter-apps-authentication--without-another-mobile-number.html</guid>
+<description><![CDATA[<p>I recently created a new twitter account (<a
+href="http://twitter.com/damnnaturescary">Damn Nature, You Scary</a>). I
+had trouble <strong>registering</strong> a new app as, apparently, each
+app needs a (unique) mobile number.</p>
+<p>The process wouldn’t let me change the permissions of the new app to
+read <strong>and write</strong>.</p>
+<p>I managed to get this working by:</p>
+<ol type="1">
+<li><p>Download the app on my mobile (iOS in my case, although Android
+apparently works, too)</p></li>
+<li><p>Log into the app</p></li>
+<li><p>Still on your mobile, go to http://dev.twitter.com/apps</p></li>
+<li><p>Change the <strong>permissions</strong> of your app to
+<strong>Read &amp; Write</strong></p></li>
+<li><p>Click <strong>Update</strong></p></li>
+</ol>
+<p>That should work!</p>]]></description>
+</item>
+<item>
+<title>UNIX Shell For Dummies</title>
+<link>https://wclarke.net/posts/2014-10-20--unix-shell-for-dummies.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-20--unix-shell-for-dummies.html</guid>
+<description><![CDATA[<p>Learning a few UNIX commands can be useful. Since it’s the ‘default’
+programming language that pops up when you run the Terminal, it’s worth
+knowing a few of the more basic commands: These are sorted by
+‘difficulty’ - you should know the first ones first.</p>
+<h2 id="navigation">Navigation</h2>
+<h3 id="cd---changes-the-current-directory."><code>cd</code> - changes
+the current directory.</h3>
+<ul>
+<li><code>cd ~</code> - changes where you are to HOME directory</li>
+<li><code>cd Documents</code> - goes one file deeper into the
+‘Documents’ folder</li>
+<li><code>cd ..</code> - goes up one directory</li>
+</ul>
+<h3
+id="ls---list-files-or-directories-in-current-directory"><code>ls</code>
+- list files or directories in current directory</h3>
+<ul>
+<li><code>ls -la</code> - uses the options ‘-l’ (list in detail) and
+‘-a’ (show hidden files)</li>
+</ul>
+<p><code>pwd</code> - <strong>p</strong>rint <strong>w</strong>orking
+<strong>d</strong>irectory. Shows where you are (relative to the root
+folder)</p>
+<h2 id="copying">Copying</h2>
+<h3 id="cp---copy"><code>cp</code> - copy</h3>
+<ul>
+<li><code>cp anchovy.txt fishes/anchovy.txt</code> - creates a copy of
+the file under the ‘fishes’ directory.</li>
+</ul>
+<p><code>cp -r</code> - copy recursively. Useful for directories.</p>
+<ul>
+<li><code>cp -r anchovy fishes/anchovy</code> - copies all the
+anchovy-related files from the folder ‘anchovy’</li>
+</ul>
+<h2 id="deleting">Deleting</h2>
+<h3 id="rm---remove"><code>rm</code> - remove</h3>
+<ul>
+<li><code>rm platypus.txt</code> - deletes the specified file</li>
+</ul>
+<h3 id="rmdir---remove-directory"><code>rmdir</code> - remove
+directory</h3>
+<h2 id="moving-renaming">Moving / Renaming</h2>
+<h3 id="mv---move"><code>mv</code> - move</h3>
+<ul>
+<li>This works like cp, except it removes the initial file /
+directory</li>
+<li><code>mv anchovy.txt fishes/anchovy.txt</code> - moves &amp;
+<strong>removes</strong> the file.</li>
+<li>Renaming: <code>mv anchovy.txt sardine.txt</code></li>
+</ul>
+<h2 id="creating-folders">Creating Folders</h2>
+<h3 id="mkdir---creates-a-new-directory"><code>mkdir</code> - creates a
+new directory</h3>
+<ul>
+<li><code>mkdir pelicans</code></li>
+</ul>
+<p><code>mkdir -p</code> - creates a series of new directories.</p>
+<ul>
+<li><code>mkdir -p Pelecanidae/Pelicans/Great-White-Pelican</code></li>
+</ul>
+<h2 id="getting-help">Getting help</h2>
+<h3 id="man---find-the-manual"><code>man</code> - find the
+<strong>man</strong>ual</h3>
+<ul>
+<li><code>man man</code></li>
+<li><code>man pwd</code></li>
+</ul>
+<h2 id="showing-files">Showing files</h2>
+<h3 id="cat---show-pure-text-version-of-the-file."><code>cat</code> -
+show pure text version of the file.</h3>
+<ul>
+<li>Con<strong>cat</strong>enates &amp; prints the file
+<code>cat gerbil_name.txt</code> - simply outputs text: ‘Fred’</li>
+</ul>
+<h3 id="less---outputs-text-with-more-features."><code>less</code> -
+outputs text with more features.</h3>
+<ul>
+<li>Better for larger files. Includes scrolling, searching, etc..</li>
+<li><code>less encyclopedia.txt</code> - won’t crash &amp; is still
+useful</li>
+</ul>
+<h3 id="sort---guess-what-this-one-does"><code>sort</code> - guess what
+this one does…</h3>
+<ul>
+<li>Go on. Guess. I’m not going to tell you.</li>
+</ul>
+<h2 id="comparing-files">Comparing files</h2>
+<h3
+id="diff---shows-the-differences-between-two-files"><code>diff</code> -
+shows the <strong>diff</strong>erences between two files</h3>
+<ul>
+<li><code>diff red_spotted_woodpecker.txt lesser_woodpecker.txt</code></li>
+</ul>
+<h2 id="finding-programs">Finding programs</h2>
+<h3 id="whereis"><code>whereis</code></h3>
+<ul>
+<li>Useful if you’re running the wrong version of ruby. Or something
+similar.</li>
+<li>Provides the location of the executable file.</li>
+</ul>
+<h2 id="changing-file-permissions">Changing File Permissions</h2>
+<h3 id="chmod"><code>chmod</code></h3>
+<ul>
+<li>A common chmod file permission to set is <code>chmod 755</code>,
+which is <code>rwx</code> for the Owner but only <code>rw</code> for
+other users.</li>
+</ul>
+<h2 id="search-for-text">Search for text</h2>
+<h3 id="grep"><code>grep</code></h3>
+<p>I’ve written a quick primer on UNIX file permissions <a
+href="%7B%7B%20site.url%20%7D%7D/_posts/2014-10-18-unix-permissions.md">here</a></p>
+<p>Grep’s a fairly big topic:</p>
+<figure>
+<img src="%7B%7B%20site.url%20%7D%7D/assets/grep.jpg" alt="Grep Book" />
+<figcaption aria-hidden="true">Grep Book</figcaption>
+</figure>
+<ul>
+<li><code>grep "some string" filename</code></li>
+<li><code>grep "REGEX" filename</code></li>
+<li><code>grep -i "some string" filename</code> - case insensitive</li>
+</ul>
+<h2 id="flags">Flags</h2>
+<p>Flags are optional parameters that you can pass in to a shell
+command. We’ve met some already; here’re two: <code>ls -la</code>. You
+can see a full list of available options under the <code>man</code> page
+of the commands.</p>]]></description>
+</item>
+<item>
+<title>UNIX Permissions for no0bs</title>
+<link>https://wclarke.net/posts/2014-10-18--unix-permissions.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-18--unix-permissions.html</guid>
+<description><![CDATA[<p>File permissions can either be: <code>r</code>, <code>w</code> or
+<code>x</code>. <strong>R</strong>eadable, <strong>W</strong>riteable or
+e<strong>X</strong>ecutable.</p>
+<p>There are also 3 ‘tiers’ of access allowed: ‘Owner’, ‘Group’ &amp;
+‘Other’ These 3 different access levels can be represented like
+this:</p>
+<p>Owner: <code>rwx</code> Group: <code>rwx</code>, Other:
+<code>rwx</code></p>
+<p>This can be shortened to: <code>rwxrwxrwx</code></p>
+<p>In the previous example, anyone is able to read, write(edit) or
+execute(run) the file. To disallow them, you can substitute
+<code>-</code>s in:</p>
+<ul>
+<li><code>rwx------</code> would only be useful for the owner of the
+file.</li>
+<li><code>r--r--r--</code> would mean that anyone can read the
+file.</li>
+</ul>
+<p>Clever programmers like to do things with the minimum system
+requirements; reading 9 letters for each file would be energetically
+expensive / resource intensive. To solve this problem, they often
+shorten this syntax (<code>rwxrwxrwx</code>) <strong>even</strong> more
+using binary.</p>
+<p>They say that:</p>
+<ul>
+<li>Read = 4 bits (binary 100)</li>
+<li>Write = 2 bits (binary 010)</li>
+<li>Execute = 1 bit (binary 001)</li>
+</ul>
+<p>Using these simple rules, you can efficiently say that, in decimal
+(or octal) numbers:</p>
+<ul>
+<li><strong>0</strong> = No permissions</li>
+<li><strong>1</strong> = Execute</li>
+<li><strong>2</strong> = Write</li>
+<li><strong>3</strong> = Write &amp; Execute</li>
+<li><strong>4</strong> = Read</li>
+<li><strong>5</strong> = Read &amp; Execute</li>
+<li><strong>6</strong> = Read &amp; Write</li>
+<li><strong>7</strong> = Read, Write &amp; Execute</li>
+</ul>
+<p>Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?</p>
+<p>Anyway, this system allows us to transform:</p>
+<ul>
+<li><code>rwx------</code> to <code>700</code></li>
+<li><code>r--r--r--</code> to <code>444</code></li>
+</ul>
+<p>A common file permission to set is <code>chmod 755</code>, which is
+<code>rwx</code> for the Owner but only <code>rw-</code> for other
+users.</p>]]></description>
+</item>
+<item>
+<title>Real Defaults With Hashes</title>
+<link>https://wclarke.net/posts/2014-10-16--real-defaults-with-hashes.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-16--real-defaults-with-hashes.html</guid>
+<description><![CDATA[<h3 id="beware-of-setting-hashdefault">Beware of setting
+Hash#default!</h3>
+<p>Unless you know the pitfalls of Hash#default, you should tread
+carefully…</p>
+<p>You can set default values for hashes a number of ways. Eg:</p>
+<ol type="1">
+<li>Hash.new(default_value)</li>
+<li>Hash.new.default = default_value</li>
+</ol>
+<p><code>Hash.new(0)</code> usually works as expected, but
+<code>Hash.new([])</code> can be tricky.</p>
+<p>If you wanted to append any values to a hash instantiated like this,
+there will be problems; the array is not just a <strong>default</strong>
+array, but it’s also a <strong>shared</strong> array.</p>
+<p>An example:</p>
+<pre><code>h = Hash.new([])
+h[&#39;fish&#39;] &lt;&lt; &#39;carp&#39;
+puts h  # =&gt; nil.</code></pre>
+<p>What’s happening here is that we’ve edited the default value of the
+hash. We haven’t actually assigned the default value to our lovely
+‘fish’. To actually assign, we need to do:</p>
+<pre><code>h[&#39;fish&#39;] &lt;&lt;= &#39;carp&#39;</code></pre>
+<p>Note the <strong>=</strong> sign. However, this is not perfect:</p>
+<pre><code>puts h  # =&gt; {fish: [&#39;carp&#39;, &#39;carp&#39;]}</code></pre>
+<p>Our ‘default’ value how has two carp in it. If we were to add another
+key-value pair, this would get even messier:</p>
+<pre><code>h[&#39;dog&#39;] &lt;&lt;= &#39;poodle&#39;
+puts h  # =&gt; {fish: [&#39;carp&#39;, &#39;carp&#39;, &#39;poodle&#39;], dog:[&#39;carp&#39;, &#39;carp&#39;, &#39;poodle&#39;]}</code></pre>
+<h3 id="a-disaster">A disaster!</h3>
+<p>Our carp and Poodle have now mixed. Hopefully it makes sense what’s
+happening; we’re altering the (single) default array, which points to
+all our default values. How do we resolve the situation?</p>
+<h2 id="blocks-to-the-rescue">Blocks to the rescue!</h2>
+<p>You can pass in a block when initializing the Hash.</p>
+<pre><code>Hash.new {|hash, key| ... rest of block... }</code></pre>
+<p>To create a default hash which hash a <em>unique</em> default for
+each key/value pair, we can then do this:</p>
+<pre><code>Hash.new {|hash, key| hash[key] = [] }</code></pre>
+<p>Since this block is run each time we assign a new key, the default
+value will always be <code>[]</code>.</p>
+<p>See also <a
+href="http://ruby-doc.org/core-2.1.3/Hash.html#method-i-default_proc-3D">Hash#default_proc</a>.</p>
+<p>The benefit of using blocks &amp; procs is that we’re able to write
+clever pieces of code.. and could make our default value do anything we
+wanted.</p>]]></description>
+</item>
+<item>
+<title>My CV... in pure Ruby</title>
+<link>https://wclarke.net/posts/2014-10-12--my-cv...-in-pure-ruby.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-12--my-cv...-in-pure-ruby.html</guid>
+<description><![CDATA[<p>Apparently I sometimes try to be funny….</p>
+<p>I thought it would be a good idea to try to port my CV to Ruby.</p>
+<p>This is what happened:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode ruby"><code class="sourceCode ruby"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">WilliamClarke</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="ot">attr_accessor</span> <span class="wa">:notableProjects</span>, <span class="wa">:education</span>, <span class="wa">:interests</span>, <span class="wa">:employment</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> initialize</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@home</span> <span class="kw">=</span> <span class="vs">&#39;London&#39;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@phone</span> <span class="kw">=</span> <span class="vs">&#39;07XXXXXXXXX&#39;</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@website</span> <span class="kw">=</span> <span class="vs">&#39;wmmclarke.com&#39;</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@blog</span> <span class="kw">=</span> <span class="vs">&#39;wmmc.github.io&#39;</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="ot">@github</span> <span class="kw">=</span> <span class="vs">&#39;github.com/wmmc&#39;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> super_enthusiastic?</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>    <span class="dv">true</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> summary</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;I really enjoy programming.</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="st">    Over the last 2 years, I have spent most of my free time focusing on Ruby.</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="st">    I also have experience with web development &amp; SQL.</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="st">    I am eager to learn much more about software development.&quot;</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>my <span class="kw">=</span> <span class="dt">WilliamClarke</span><span class="at">.new</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a><span class="cf">class</span> <span class="dt">Project</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>  <span class="cf">def</span> initialize(args)</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>    args<span class="at">.each</span> <span class="kw">{</span> <span class="kw">|</span>key, value<span class="kw">|</span> instance_variable_set(<span class="st">&quot;@</span><span class="sc">#{</span>key<span class="sc">}</span><span class="st">&quot;</span>, value) <span class="kw">}</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="cf">end</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="cf">end</span></span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>my<span class="at">.notableProjects</span> <span class="kw">=</span> <span class="kw">[</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Project</span><span class="at">.new</span>(</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>    <span class="wa">title: </span>  <span class="vs">&#39;PPC Campaign Builder&#39;</span>,</span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>    <span class="wa">summary: </span><span class="vs">&#39;Ruby script which generates Adwords-formatted PPC Campaigns.&#39;</span>),</span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Project</span><span class="at">.new</span>(</span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>    <span class="wa">title: </span>  <span class="vs">&#39;Website &amp; Blog&#39;</span>,</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="wa">summary: </span><span class="ot">%w(</span><span class="st">HTML CSS JS jQuery Rails ActionMailer Jekyll</span><span class="ot">)</span>),</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Project</span><span class="at">.new</span>(</span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>    <span class="wa">title: </span>  <span class="vs">&#39;Twitter Bot&#39;</span>,</span>
+<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>    <span class="wa">summary: </span><span class="vs">&#39;Smug tweets to people who can’t spell. Hosted on Heroku.&#39;</span>),</span>
+<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>  <span class="dt">Project</span><span class="at">.new</span>(</span>
+<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>    <span class="wa">title: </span>  <span class="vs">&#39;Other projects&#39;</span>,</span>
+<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>    <span class="wa">summary: </span><span class="vs">&#39;Crossword Generator, Shakespeare Prediction, Langton’s Ant&#39;</span>)</span>
+<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a><span class="kw">]</span></span>
+<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="dt">Employment</span> <span class="kw">=</span> <span class="dt">Struct</span><span class="at">.new</span>(<span class="wa">:name</span>, <span class="wa">:title</span>, <span class="wa">:date</span>, <span class="wa">:role</span>, <span class="wa">:achievements</span>, <span class="wa">:skills</span>)</span>
+<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>my<span class="at">.employment</span> <span class="kw">=</span> <span class="dt">Employment</span><span class="at">.new</span>(</span>
+<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  <span class="vs">&#39;Forward3D&#39;</span>,         <span class="co"># name</span></span>
+<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  <span class="vs">&#39;PPC Analyst&#39;</span>,       <span class="co"># title</span></span>
+<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  <span class="vs">&#39;2012-08 - 2014-08&#39;</span>, <span class="co"># date</span></span>
+<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  <span class="co"># role</span></span>
+<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Managed the paid search activity for two e-commerce clients.&#39;</span>,</span>
+<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a>   <span class="vs">&#39;Automated many processes using Ruby, Javascript and Hive.&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  <span class="co"># achievements</span></span>
+<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Wrote a script to generate PPC campaigns, saving hundreds of man-hours.&#39;</span>,</span>
+<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>   <span class="vs">&#39;Automated most of my reporting duties.&#39;</span>,</span>
+<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a>   <span class="vs">&#39;Update ads automatically based on product prices &amp; stock levels&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>  <span class="co"># skills</span></span>
+<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Ruby, Javascript &amp; Hive used on a daily basis.&#39;</span>,</span>
+<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>   <span class="vs">&#39;Built, updated and queried Databases using HiveQL and SQL.&#39;</span><span class="kw">]</span></span>
+<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>my<span class="at">.education</span> <span class="kw">=</span> <span class="kw">{</span></span>
+<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  <span class="wa">durhamUniversity: </span><span class="kw">[</span></span>
+<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>    <span class="vs">&#39;MSc Evolutionary Anthropology&#39;</span>,</span>
+<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>    <span class="vs">&#39;BA  Archaeology &amp; Anthropology&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>  <span class="wa">etonCollege: </span><span class="kw">{</span> <span class="wa">aLevels: </span><span class="kw">[</span></span>
+<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[</span><span class="ch">&#39;A&#39;</span>, <span class="vs">&#39;Ancient History&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[</span><span class="ch">&#39;A&#39;</span>, <span class="vs">&#39;Biology&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[</span><span class="ch">&#39;B&#39;</span>, <span class="vs">&#39;English Literature&#39;</span><span class="kw">]</span></span>
+<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>  <span class="kw">]</span></span>
+<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>  <span class="kw">}</span></span>
+<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>my<span class="at">.interests</span> <span class="kw">=</span> <span class="kw">[</span></span>
+<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Programming&#39;</span>, <span class="vs">&#39;Ruby, Javascript, SQL &amp; Web Development. Active on Github&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Sport&#39;</span>, <span class="vs">&#39;I enjoy playing squash, tennis, skiing and diving.&#39;</span><span class="kw">]</span>,</span>
+<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[</span><span class="vs">&#39;Also&#39;</span>,<span class="ot"> %w(</span><span class="st">Travelling woodworking Choral Music Go Piano Investing</span><span class="ot">)</span><span class="kw">]</span></span>
+<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a><span class="kw">]</span></span>
+<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a><span class="co"># To print out to console:</span></span>
+<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a><span class="fu">require</span> <span class="vs">&#39;pp&#39;</span></span>
+<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>pp my</span></code></pre></div>
+<p>It actually works.. and spits out the data in an <em>even</em> more
+incomprehensible way.</p>]]></description>
+</item>
+<item>
+<title>Dealing With DNS</title>
+<link>https://wclarke.net/posts/2014-10-10--dealing-with-dns.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-10--dealing-with-dns.html</guid>
+<description><![CDATA[<p>When I registered my website <a
+href="http://wmmclarke.com">wmmclarke.com</a>, I had no idea what a DNS
+was. According to <a
+href="http://en.wikipedia.org/wiki/Domain_Name_System">wikipedia</a>,
+<em>the Domain Name Sysstem (DNS) is a hierarchical distributed naming
+system for computers, services, or any resource connected to the
+Internet or a private network</em>. Not exactly immediately obvious…</p>
+<p>The most common analogy for DNS records is probably a
+<em>phonebook</em>, which translates addresses that computers like
+(93.184.216.119) to addresses that humans like (wikipedia.org).</p>
+<p>See my <a
+href="2014-09-02--a-quick-introduction-to-ip-addresses">post about IP
+addresses</a>.</p>
+<p>This link is especially good at dealing with <a
+href="http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/">what
+happens when you navigate to a URL</a>.</p>
+<hr />
+<p>Anyway… I’m getting sidetracked. I’m going to show how I delt with
+Heroku &amp; 123-reg.co.uk to set up my DNS properly:</p>
+<p>I found this quite fiddly to get working… so here’s what I did:</p>
+<h2 id="dealing-with-dns">1). Dealing with DNS</h2>
+<ul>
+<li>Click on ‘Manage DNS’ and navigate to ‘Advanced DNS’</li>
+<li>Add 2 new <a
+href="http://en.wikipedia.org/wiki/CNAME_record">CNAME</a>:</li>
+</ul>
+<h3 id="www">- www</h3>
+<pre><code>- DNS Entry: www
+- Type: CNAME
+- Destination Target: &lt;your URL without the &#39;www&#39; and with a &#39;.&#39; at the end&gt;</code></pre>
+<h3 id="everything-else">- Everything else</h3>
+<pre><code>- DNS Entry: *
+- Type: CNAME
+- Destination Target: &lt;your URL without the &#39;www&#39; and with a &#39;.&#39; at the end&gt;</code></pre>
+<h2 id="getting-rid-of-that-pesky-www-subdomain.">2). Getting rid of
+that pesky ‘www’ subdomain.</h2>
+<ul>
+<li><p>Go back to the main list of options</p></li>
+<li><p>Click on ‘Web Forwarding’</p></li>
+<li><p>Add a permament (301) redirection:</p>
+<ul>
+<li>Domain Name: &lt;Your URL without the www. I just put
+‘wmmclarke.com’&gt;</li>
+<li>Forwarding Type: 301</li>
+<li>Forwarding Destination: &lt;Your URL with http://www prepended to
+it.&gt;</li>
+</ul></li>
+</ul>
+<p>That should be it!</p>]]></description>
+</item>
+<item>
+<title>Clever Vim Commands &amp; Keybindings</title>
+<link>https://wclarke.net/posts/2014-10-08--clever-vim-commands-&amp;-keybindings.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-08--clever-vim-commands-&amp;-keybindings.html</guid>
+<description><![CDATA[<p>I have recently spent a while trying to learn how to edit text
+effectively. I figure that if I’m going to be spending a while editing
+text, it’s worth learning how to do it as efficiently as possible.</p>
+<p>I’ve been using <a href="https://github.com/skwp/dotfiles">YADR</a>
+as a basis for my dotfiles. Dotfiles, if you don’t know, are files which
+start with a fullstop (and therefore are hidden in UNIX systems).
+Dotfiles mostly refer to configuration files in the home directory - eg.
+<code>.bashrc</code> or <code>.vimrc</code>. One of the benefits of
+using a monolithic package like this is it quickly lets you do more cool
+stuff as you’re learning (over boring native Vim).</p>
+<p>I’ve put the extra files I’ve configured into my
+<code>.vimrc.after</code> file, which you can find <a
+href="https://gist.github.com/19b76686f75f3b28dda8">HERE!</a>.</p>
+<h2 id="remap-the-keyboard.">Remap the keyboard.</h2>
+<p>The caps lock key is in a really important place but is largely
+redundant. You can remap it to something more useful (OS X: go to System
+Preferences &gt; Keyboard &gt; Shortcuts). For Vim users, the Ctrl key
+is very important. Remap it!</p>
+<p>If you’re clever, you can also use the Caps Lock button as Esc (also
+very important for Vim users) by downloading <a
+href="https://pqrs.org/osx/karabiner/">Karabiner</a>. This can set
+Escape for a single-press of Ctrl (which we now have at Caps Lock).
+Anything other Ctrl commands stay the same.</p>
+<p>I’ve found that other keys are poorly placed; eg <code>#</code> and
+<code>_</code>, so I’ve remapped them too. Especially for Ruby
+development, I found it tricky to constantly press <code>alt + 3</code>
+for <code>#</code>. Now it’s where ± is (next to 1).</p>
+<h2 id="use-good-vim-plugins.">Use good vim plugins.</h2>
+<p>YADR comes with a load of fantastic plugins:</p>
+<p>These are the preinstalled plugins that I use most:</p>
+<ul>
+<li>Pathogen (a bundler for plugins)</li>
+<li>Vim Ruby &amp; Vim Rails</li>
+<li>Solarized colours</li>
+<li>Vim sneak</li>
+<li>NERDTree</li>
+<li>Vim Surround</li>
+<li>CtrlR</li>
+</ul>
+<p>I’ve added a few more of my own, too:</p>
+<ul>
+<li><a href="christoomey/vim-tmux-navigator">Tmux-Navigator</a> - Makes
+navigating Tmux panes just like navigating Vim panes</li>
+<li><a href="t9md/vim-ruby-xmpfilter">Ruby xmpfilter</a> - Gives you the
+ability to run a ruby script (or part of it) mid-edit.</li>
+<li><a href="thoughtbot/vim-rspec">Vim-Rspec</a> - Good Rspec
+integration from thoughtbot</li>
+<li><a href="csexton/jekyll.vim">Jekyll</a> - Easy Blogging from
+vim.</li>
+</ul>
+<h2 id="use-good-keyboard-shortcuts">Use good keyboard shortcuts</h2>
+<p>The whole point of Vim is that it’s easy to define the shortcuts you
+like. Well.. maybe not the whole point, but it’s meant to be designed
+towards what works for <em>you</em>. So do what works for you. Having
+said that, I’m going to show the shortcuts which work best for me at the
+moment:</p>
+<ul>
+<li>the <code>!</code> command lets you use normal bash functions</li>
+<li>the <code>%</code> sign refers to the current file.</li>
+<li><code>&lt;CR&gt;</code> stands for carriage return (enter)</li>
+</ul>
+<p>Using this we can make a mapping like this:</p>
+<pre><code>noremap &lt;leader&gt;md :!open -a &#39;Marked 2&#39; %&lt;cr&gt;&lt;cr&gt;
+noremap &lt;Leader&gt;oc :!open /Applications/Google\ Chrome.app %&lt;CR&gt;</code></pre>
+<p>The <code>:</code> key is obviously important for Vim commands. The
+<code>;</code> key is less important. Swap them!</p>
+<pre><code>noremap ; :
+noremap : ;</code></pre>
+<p><code>jk</code> can be a fast way of returning back to normal
+mode</p>
+<pre><code>imap jk &lt;ESC&gt;</code></pre>
+<p>Sometimes you can’t save a file. Something about an E212 error. Force
+it with this:</p>
+<pre><code>ca w!! w !sudo tee &quot;%&quot;</code></pre>
+<p>Shortcuts to save and quit:</p>
+<pre><code>inoremap &lt;silent&gt; &lt;C-q&gt; &lt;ESC&gt;:q&lt;CR&gt;&lt;ESC&gt;
+nnoremap &lt;silent&gt; &lt;C-q&gt; :q&lt;CR&gt;
+noremap  &lt;C-s&gt;    :update&lt;CR&gt;&lt;ESC&gt;
+vnoremap  &lt;C-s&gt;   &lt;C-C&gt;:update&lt;CR&gt;&lt;ESC&gt;
+inoremap  &lt;C-s&gt;   &lt;C-O&gt;:update&lt;CR&gt;&lt;ESC&gt;</code></pre>
+<p>This vim function lets you toggle Solarized background colour within
+the editor.</p>
+<pre><code>function! ToggleBackground()
+    let &amp;background = ( &amp;background == &quot;dark&quot;? &quot;light&quot; : &quot;dark&quot; )
+endfunction</code></pre>
+<p>This lowers the timeout:</p>
+<pre><code>set timeoutlen=500</code></pre>]]></description>
+</item>
+<item>
+<title>Getting Started With Jekyll</title>
+<link>https://wclarke.net/posts/2014-10-06--getting-started-with-jekyll.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-10-06--getting-started-with-jekyll.html</guid>
+<description><![CDATA[<p>I have been told that it’s good to write a blog. Something about
+self-promotion and helping other people…</p>
+<p>I originally wanted to create something through rails, but, having
+thought about it, it would have taken a while to set everything up
+correctly. No need to reinvent the wheel…</p>
+<p><a href="http://jekyllrb.com/">Jekyll</a> is a blogging / website
+platform built with Ruby. It’s what I would have aimed to build, only
+simpler, more efficient, pre-built and with an active community behind
+it.</p>
+<p>Jekyll’s main selling point is that it integrates text files well
+into a static site.</p>
+<p>It’s simple to use and set up out of the box:</p>
+<pre><code>~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&gt; Now browse to http://localhost:4000</code></pre>
+<p>If you’re lazy, I’d recommend not doing this, though. Jekyll
+Bootstrap, discussed below, has a few more features that may be
+useful.</p>
+<h2 id="jekyll-bootstrap">Jekyll Bootstrap</h2>
+<p><a href="http://jekyllbootstrap.com/">Jekyll Bootstrap</a> uses
+Twitter’s <a href="http://getbootstrap.com/">bootstrap</a> and includes
+a number of extra in-build functionality including clever rake tasks,
+themes and comments.</p>
+<p>Here’s a really good starting point: <a
+href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html"><em>Jekyll
+Bootstrap Quick Start Guide</em></a></p>
+<p>One of the great things about Jekyll Bootstrap is that it integrates
+well with <a href="https://pages.github.com/">Github Pages</a>. This
+lets you host your own site for <em>FREE</em>! You get the custom domain
+of <em>your_github_username</em>.github.io.</p>
+<p>The only tweak that I had to make with the current version of Jekyll
+Bootstrap was to change the default github._com_ to github._io_</p>
+<h2 id="updating-your-settings">Updating Your Settings</h2>
+<p>Go to <code>_config.yml</code> to update your settings:</p>
+<ul>
+<li>Github Username</li>
+<li>Twitter Username</li>
+<li>Analytics Tracking ID</li>
+<li>Disqus shortname</li>
+</ul>
+<p>You’ll probably have to go to <a
+href="https://disqus.com/admin/create/">Disqus</a> to create a shortname
+and <a href="http://www.google.com/analytics/">Google Analytics</a> to
+get your tracking code.</p>
+<h2 id="generating-new-posts">Generating New Posts</h2>
+<p>Once you have everything set up, you’ll be able to run</p>
+<pre><code>$ rake post title=&quot;Hello World&quot;</code></pre>
+<p>To create new posts or</p>
+<pre><code>$ rake page name=&quot;about.md&quot;</code></pre>
+<p>To create new pages.</p>
+<h2
+id="there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">There
+you have it - a free, fully functioning static blog set up in only a few
+minutes!</h2>
+<hr />
+<hr />
+<p>Here are a few more tips I recommend to make it even easier to use
+Jekyll and Markdown.</p>
+<h4 id="using-jekyll-with-vim">Using Jekyll with Vim</h4>
+<p>There’s a great <a href="https://github.com/csexton/jekyll.vim">vim
+plugin</a> for jekyll. This lets you, anywhere in the file structure, to
+access your current posts or to create a new one.</p>
+<pre><code>map &lt;Leader&gt;jb  :JekyllBuild&lt;CR&gt;
+map &lt;Leader&gt;jn  :JekyllPost&lt;CR&gt;
+map &lt;Leader&gt;jl  :JekyllList&lt;CR&gt;.</code></pre>
+<h4 id="ultra-fancy-markdown-editing.">Ultra fancy Markdown
+editing.</h4>
+<p>I use <a href="http://marked2app.com/">Marked 2</a>, which is a
+fairly slick markdown live previewer. You can call it straight from vim
+using this mapping in your .vimrc:</p>
+<pre><code>noremap &lt;leader&gt;md :!open -a &#39;Marked 2&#39; %&lt;cr&gt;&lt;cr&gt;</code></pre>
+<p>(Assuming you’re on OS X)</p>
+<hr />
+<p>I hope this’ll help some people get started with Jekyll. Good luck
+with it!</p>]]></description>
+</item>
+<item>
+<title>Remove file from Git (after committing)</title>
+<link>https://wclarke.net/posts/2014-09-11--remove-file-from-git-(after-committing).html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-09-11--remove-file-from-git-(after-committing).html</guid>
+<description><![CDATA[<p>Removing files from git is pretty straightforward.
+<code>git rm ...</code>. But if you want to <strong>completely</strong>
+remove files from git, after they’ve been committed, <strong>while
+keeping them locally</strong>, this can be tricky.</p>
+<p><code>git update-index --assume-unchanged &lt;file&gt;</code> should
+work.</p>]]></description>
+</item>
+<item>
+<title>A Quick Introduction to IP Addresses</title>
+<link>https://wclarke.net/posts/2014-09-02--a-quick-introduction-to-ip-addresses.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-09-02--a-quick-introduction-to-ip-addresses.html</guid>
+<description><![CDATA[<p>IP (Internet Protocol) addresses are ways of identifying unique
+internet-accessible devices. They are also ‘addresses’ in the sense of
+showing its location (think of postal addresses).</p>
+<h3 id="background">Background</h3>
+<p>When you type a web page into the computer, what you’re really asking
+is for some information from a different device (usually a big server
+somewhere in the world). There are several complex stages to finding
+this, but one of the key components is having an identifying ‘marker’ on
+each device; so you know which address to get the information from, and
+also so the information knows how to get back to you.</p>
+<h3 id="ipv4">IPv4</h3>
+<p>Recently, we’ve been running out of traditional (IPv4) IP addresses:
+using 4 different 32 bit numbers (eg. 93.184.216.119), giving us access
+to 4,294,967,296 possible unique addresses (2<sup>32</sup>)).</p>
+<h3 id="ipv6">IPv6</h3>
+<p>IPv6 uses 2<sup>128</sup> numbers, which is quite a bit bigger
+(<em>340,282,366,920,938,463,463,374,607,431,768,211,456</em>). An
+example of one of these is: 2001:db8:0:1234:0:567:8:1. <strong>To put
+that in perspective, 2<sup>128</sup> E. coli bacteria (which are pretty
+small) would be around 26 times heavier than Earth (which is pretty
+big).</strong></p>
+<p>Take home point is we’re not going to be running out of IP Addresses
+soon.</p>]]></description>
+</item>
+<item>
+<title>Writing Files Through Shell</title>
+<link>https://wclarke.net/posts/2014-08-25--writing-files-through-shell.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-08-25--writing-files-through-shell.html</guid>
+<description><![CDATA[<h1 id="writing-to-file-in-bash">Writing to file in Bash</h1>
+<pre><code>cat &gt;/my/path.extension &lt;&lt;EOL
+line 1,
+line 2,
+line 3,
+line 4 line
+...
+EOL</code></pre>
+<h2 id="another-thing-about-cat">Another thing about cat:</h2>
+<p>cat &gt; file <strong>writes</strong> to file<em> cat &gt;&gt; file
+<strong>appends</strong> to file</em></p>]]></description>
+</item>
+<item>
+<title>Trying Vim</title>
+<link>https://wclarke.net/posts/2014-07-12--trying-vim.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-07-12--trying-vim.html</guid>
+<description><![CDATA[<h1 id="starting-vim">Starting Vim</h1>
+<p>Using Vim &amp; TMUX feels like it makes you faster after a couple of
+weeks.</p>
+<p>It does take a while to get used to it.</p>
+<p>Although I’ve read loads of contradictory advice, I think that it’s
+best to get started with a well-defined set-up. YADR is the one that I
+like.</p>
+<p>If you’re unsure about trying vim, you could start a mini-turorial on
+your unix machine with</p>
+<pre><code>vimtutor</code></pre>
+<p>It’s a great resource to learn the basic motions &amp; get the feel
+of Vim.</p>]]></description>
+</item>
+<item>
+<title>Setting Up Rspec</title>
+<link>https://wclarke.net/posts/2014-07-06--setting-up-rspec.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-07-06--setting-up-rspec.html</guid>
+<description><![CDATA[<h3
+id="a-quick-memory-jog-on-how-to-set-up-a-rails-application-with-rspec-capybara">A
+quick memory-jog on how to set up a rails application with Rspec &amp;
+capybara:</h3>
+<pre><code>rails generate rspec:install</code></pre>
+<h4 id="test-helper-file">Test helper file:</h4>
+<pre><code>require &#39;capybara/rails&#39;</code></pre>
+<h4 id="gemfile">Gemfile</h4>
+<pre><code>gem &#39;rspec-rails&#39;
+gem &#39;selenium-webdriver&#39;
+gem &#39;capybara&#39;</code></pre>
+<h4 id="specspec_helper.rb">spec/spec_helper.rb</h4>
+<pre><code># This file is copied to spec/ when you run &#39;rspec-railss generate rspec:install&#39;
+.
+.
+RSpec.configure do |config|
+  .
+  .
+  .
+  config.include Capybara::DSL
+end</code></pre>]]></description>
+</item>
+<item>
+<title>The Python Challenge</title>
+<link>https://wclarke.net/posts/2014-05-02--the-python-challenge.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-05-02--the-python-challenge.html</guid>
+<description><![CDATA[<p>The <a href="http://www.pythonchallenge.com">Python Challenge</a> is
+a great way to practise some varied programming challenges.</p>
+<p>There are lots of different stages and clever ways to solve the
+puzzles.</p>
+<p>Try it now!</p>]]></description>
+</item>
+<item>
+<title>Sublime Text Snippets</title>
+<link>https://wclarke.net/posts/2014-04-16--sublime-text-snippets.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-04-16--sublime-text-snippets.html</guid>
+<description><![CDATA[<p>One way to work faster is to have predefined <em>snippets</em> or
+blocks of code help you with repetitive typing.</p>
+<h3 id="how-to-use-snippets-in-sublime-text">How to use Snippets in
+Sublime Text:</h3>
+<p>In sublime text you can install these by going to
+<code>Tools =&gt; New Snippet...</code> This will give you a confusing
+XML document looking like this:</p>
+<pre><code>&lt;snippet&gt;
+  &lt;content&gt;&lt;![CDATA[
+Hello, ${1:this} is a ${2:snippet}.
+]]&gt;&lt;/content&gt;
+  &lt;!-- Optional: Set a tabTrigger to define how to trigger the snippet --&gt;
+  &lt;!-- &lt;tabTrigger&gt;hello&lt;/tabTrigger&gt; --&gt;
+  &lt;!-- Optional: Set a scope to limit where the snippet will trigger --&gt;
+  &lt;!-- &lt;scope&gt;source.python&lt;/scope&gt; --&gt;
+&lt;/snippet&gt;</code></pre>
+<h4 id="section"><content></h4>
+<p>The text in between the <code>[CDATA[</code> and <code>]]</code> are
+what you want to edit. The <code>$1</code> or <code>${1:this}</code> are
+where the cursor will be after you activate the snippet. This text after
+the <code>:</code> is the default and you can get to <code>$2</code> by
+tabbing.</p>
+<h4 id="section-1"><tabTrigger></h4>
+<p>The word you’d like to trigger the snippet should go here (in this
+example, ‘hello’ + <kbd>Tab</kbd>).</p>
+<h4 id="section-2"><scope></h4>
+<p>Scope determines which files the snippet will work on. The scopes
+that I use most often and available to Sublime Text include
+<code>source.ruby</code>, <code>source.ruby.rails</code> &amp;
+<code>text.html.erb</code>.</p>
+<h4 id="keyboard-shortcuts">Keyboard Shortcuts</h4>
+<p>If you feel the need, you can bind the snippet to a keyboard
+shortcut. This would involve adding a line to your ‘Keybindings - User’
+file (found under <code>Sublime Text =&gt; Preferences</code>).</p>
+<p>Here’s the sort of thing you’d want to add:</p>
+<pre><code>{ &quot;keys&quot;: [&quot;alt+shift+e&quot;], &quot;command&quot;: &quot;insert_snippet&quot;, &quot;args&quot;: {&quot;name&quot;: &quot;Packages/User/my-clever.sublime-snippet&quot;}}</code></pre>
+<p>Be careful to make sure it’s in a vaild JSON array - eg. watch out
+for commas &amp; make sure there are square brackets enclosing
+everything.</p>]]></description>
+</item>
+<item>
+<title>Show Vim Mappings</title>
+<link>https://wclarke.net/posts/2014-03-15--show-vim-mappings.html</link>
+<pubDate>Wed  8 Jul 22:56:59 BST 2026</pubDate>
+<guid>https://wclarke.net/posts/2014-03-15--show-vim-mappings.html</guid>
+<description><![CDATA[<p>Vim has a helpful command to show all your mappings:</p>
+<p><code>:map</code></p>
+<p>This lists all your mappings. You can extend this:</p>
+<p>If you wanted to find all your leader mappings,
+<code>:map &lt;leader&gt;</code> would return a list of them.</p>
+<p>You can use this to find spare bindings &amp; avoid overwriting
+important ones!</p>]]></description>
+</item>
+</channel></rss>

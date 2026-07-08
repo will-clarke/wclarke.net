@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-23" />
+  <meta name="description" content="Heroku’s a site that gives you free servers to make cool stuff on. You can host twitter bots on there to enrich the interwebs." />
+  <title>Will Clarke – Create a Free Twitter Bot - hosted on Heroku</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/museum/2021-ssssg/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body>
+<div class=main><a href="/museum/2021-ssssg/index.html">Will Clarke</a></div>
+
+<nav>
+   <a href="/museum/2021-ssssg/">home</a>
+   <a href="/museum/2021-ssssg/posts.html">posts</a>
+   <a href="/museum/2021-ssssg/about.html">about</a>
+   <a href="/museum/2021-ssssg/tags.html">tags</a>
+</nav>
+<header id="title-block-header">
+<h1 class="title">Create a Free Twitter Bot - hosted on Heroku</h1>
+<p class="date">2014-10-23</p>
+</header>
+<p>I decided to make a <a
+href="https://twitter.com/damnnaturescary">Twitter Bot</a> hosted on
+Heroku. And I managed to do it really easily. Surprisingly. The source
+code for this is <a href="https://github.com/wmmc/Damn-Nature">on
+Github</a>.</p>
+<p>Here are the basic steps I took:</p>
+<h3 id="think-of-something-funny-useful-for-your-bot-to-do.">1. Think of
+something funny / useful for your bot to do.</h3>
+<ul>
+<li>This is the hard part…</li>
+</ul>
+<h3 id="register-a-new-twitter-account">2. Register a new Twitter
+Account</h3>
+<h3 id="create-a-new-twitter-app---go-to-httpdev.twitter.comapps">3.
+Create a new Twitter ‘app’ - go to <a
+href="http://dev.twitter.com/apps">http://dev.twitter.com/apps</a></h3>
+<ul>
+<li>This will have the ability to control your twitter account on your
+behalf.</li>
+<li>Make a note of the API keys.</li>
+</ul>
+<h3 id="enable-read-write-permissions-for-this-app">4. Enable Read /
+Write Permissions for this App</h3>
+<ul>
+<li>Found under ‘Permissions’.</li>
+<li>If you need an extra mobile number, try <a
+href="http://wmmc.github.io/2014/10/22/twitter-apps-authentication--without-another-mobile-number/">this
+trick</a>.</li>
+</ul>
+<h3 id="write-some-code-which-interacts-with-the-twitter-api.">5. Write
+some code which interacts with the Twitter API.</h3>
+<ul>
+<li>Sferik’s <a href="https://github.com/sferik/twitter">twitter gem</a>
+makes this very easy in Ruby.</li>
+<li>If you’re looking for inspiration, browse my <a
+href="https://github.com/wmmc/Damn-Nature/blob/master/twitter.rb">code</a>.
+It’s not very complicated… And the twitter gem is very well
+documented.</li>
+<li>Remember to use <a
+href="https://devcenter.heroku.com/articles/config-vars">Environmental
+Variables</a> to hide your API keys.</li>
+</ul>
+<h3 id="create-a-gemfile-rakefile-for-heroku-to-latch-onto.">6. Create a
+Gemfile / Rakefile for Heroku to latch onto.</h3>
+<ul>
+<li>Again, examples of these can be found on my <a
+href="https://github.com/wmmc/Damn-Nature/blob/master/Rakefile">Github
+profile</a>.</li>
+<li>The rakefile basically defines an isolated process that can be run
+by heroku.</li>
+<li>The Gemfile lists all the Gems you’ll need to install.</li>
+<li>You may need to run <code>bundle install</code> (as usual…)</li>
+</ul>
+<h3 id="check-you-can-do-what-you-want-from-the-command-line.">7. Check
+you can do what you want from the command line.</h3>
+<ul>
+<li>By running your rake task.</li>
+</ul>
+<h3 id="create-a-new-heroku-app.">8. Create a new <a
+href="http://heroku.com">Heroku App</a>.</h3>
+<h3 id="push-your-current-files-to-heroku.">9. Push your current files
+to Heroku.</h3>
+<ul>
+<li>This should be a .rb file, a Rakefile, a Gemfile &amp; a
+Gemfile.lock</li>
+</ul>
+<h3 id="add-heroku-scheduler-to-your-heroku-app">10. Add <a
+href="https://addons.heroku.com/scheduler">Heroku Scheduler</a> to your
+Heroku app</h3>
+<ul>
+<li><code>heroku addons:add scheduler</code> - the fastest way to add
+this.</li>
+<li>This will allow you to customise how often it runs.</li>
+<li>You can set it to run every 10 minutes if you feel the need…</li>
+<li>To customise this, you’ll need to log into you Heroku Account.</li>
+</ul>
+<h3 id="add-your-environmental-variables-to-heroku.">11. Add your
+Environmental Variables to Heroku.</h3>
+<p>You should be ready to take Twitter by storm now!</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/museum/2021-ssssg/tags/ruby.html">ruby</a> <a
+href="/museum/2021-ssssg/tags/heroku.html">heroku</a></p>
+<footer>
+  <hr>
+  <p>Generated by my super simple <a href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">'ssssg' shell script</a><br>
+</footer>
+</body>
+</html>

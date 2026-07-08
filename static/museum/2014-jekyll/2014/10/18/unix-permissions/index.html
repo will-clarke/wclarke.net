@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      UNIX Permissions for no0bs &middot; William Clarke's Blog
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="post">
+  <h1 class="post-title">UNIX Permissions for no0bs</h1>
+  <span class="post-date">18 Oct 2014</span>
+  <p>File permissions can either be: <code class="language-plaintext highlighter-rouge">r</code>, <code class="language-plaintext highlighter-rouge">w</code> or <code class="language-plaintext highlighter-rouge">x</code>.
+<strong>R</strong>eadable, <strong>W</strong>riteable or e<strong>X</strong>ecutable.</p>
+
+<p>There are also 3 ‘tiers’ of access allowed: ‘Owner’, ‘Group’ &amp; ‘Other’
+These 3 different access levels can be represented like this:</p>
+
+<p>Owner: <code class="language-plaintext highlighter-rouge">rwx</code> Group: <code class="language-plaintext highlighter-rouge">rwx</code>, Other: <code class="language-plaintext highlighter-rouge">rwx</code></p>
+
+<p>This can be shortened to: <code class="language-plaintext highlighter-rouge">rwxrwxrwx</code></p>
+
+<p>In the previous example, anyone is able to read, write(edit) or execute(run) the file.
+To disallow them, you can substitute <code class="language-plaintext highlighter-rouge">-</code>s in:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">rwx------</code> would only be useful for the owner of the file.</li>
+  <li><code class="language-plaintext highlighter-rouge">r--r--r--</code> would mean that anyone can read the file.</li>
+</ul>
+
+<p>Clever programmers like to do things with the minimum system requirements; reading 9 letters for each file would be energetically expensive / resource intensive.
+To solve this problem, they often shorten this syntax (<code class="language-plaintext highlighter-rouge">rwxrwxrwx</code>) <strong>even</strong> more using binary.</p>
+
+<p>They say that:</p>
+
+<ul>
+  <li>Read = 4 bits (binary 100)</li>
+  <li>Write = 2 bits (binary 010)</li>
+  <li>Execute = 1 bit (binary 001)</li>
+</ul>
+
+<p>Using these simple rules, you can efficiently say that, in decimal (or octal) numbers:</p>
+
+<ul>
+  <li><strong>0</strong> = No permissions</li>
+  <li><strong>1</strong> = Execute</li>
+  <li><strong>2</strong> = Write</li>
+  <li><strong>3</strong> = Write &amp; Execute</li>
+  <li><strong>4</strong> = Read</li>
+  <li><strong>5</strong> = Read &amp; Execute</li>
+  <li><strong>6</strong> = Read &amp; Write</li>
+  <li><strong>7</strong> = Read, Write &amp; Execute</li>
+</ul>
+
+<p>Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?</p>
+
+<p>Anyway, this system allows us to transform:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">rwx------</code> to <code class="language-plaintext highlighter-rouge">700</code></li>
+  <li><code class="language-plaintext highlighter-rouge">r--r--r--</code> to <code class="language-plaintext highlighter-rouge">444</code></li>
+</ul>
+
+<p>A common file permission to set is <code class="language-plaintext highlighter-rouge">chmod 755</code>, which is <code class="language-plaintext highlighter-rouge">rwx</code> for the Owner but only <code class="language-plaintext highlighter-rouge">rw-</code> for other users.</p>
+
+</div>
+
+
+<div class="message"><strong style="font-size:1.5em;">Tags</strong>
+
+  <ul class="tag_box inline">
+    
+    
+   
+    <li><a href="/museum/2014-jekyll/tags#UNIX">UNIX <sup>2</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Shell">Shell <sup>5</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Bash">Bash <sup>4</s></a></li>
+  
+
+
+
+  </ul>
+</div>
+  
+
+
+
+
+<!-- disqus removed for museum snapshot -->
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/">
+            My favourite Ruby books
+            <small>28 May 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/04/18/vim-folds/">
+            Vim Folds
+            <small>18 Apr 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/03/26/git-diff-for-files/">
+            Git Diff for files
+            <small>26 Mar 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Dealing With DNS | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "Dealing With DNS",
+      "headline" : "Dealing With DNS",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-10-10 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-10-10 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/dealing-with-dns\/",
+      "wordCount" : "249",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">Dealing With DNS</h1>
+            <time datetime="2014-10-10 00:00:00 &#43;0000 UTC" class="post__date">Oct 10 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>When I registered my website <a href="http://wmmclarke.com" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>wmmclarke.com</a>
+, I had no idea what a DNS was. According to <a href="http://en.wikipedia.org/wiki/Domain_Name_System" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>wikipedia</a>
+, <em>the Domain Name Sysstem (DNS) is a hierarchical distributed naming system for computers, services, or any resource connected to the Internet or a private network</em>. Not exactly immediately obvious&hellip;</p>
+<p>The most common analogy for DNS records is probably a <em>phonebook</em>, which translates addresses that computers like (93.184.216.119) to addresses that humans like (wikipedia.org).</p>
+<p>See my <a href="/museum/2020-org/blog/a-quick-introduction-to-ip-addresses/" 
+  
+  
+>post about IP addresses</a>
+.</p>
+<p>This link is especially good at dealing with <a href="http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>what happens when you navigate to a URL</a>
+.</p>
+<hr>
+<p>Anyway&hellip; I&rsquo;m getting sidetracked. I&rsquo;m going to show how I delt with Heroku &amp; 123-reg.co.uk to set up my DNS properly:</p>
+<p>I found this quite fiddly to get working&hellip; so here&rsquo;s what I did:</p>
+<h2 id="1-dealing-with-dns">1). Dealing with DNS<a class="anchor" href="#1-dealing-with-dns">#</a></h2>
+<ul>
+<li>Click on &lsquo;Manage DNS&rsquo; and navigate to &lsquo;Advanced DNS&rsquo;</li>
+<li>Add 2 new <a href="http://en.wikipedia.org/wiki/CNAME_record" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>CNAME</a>
+:</li>
+</ul>
+<h3 id="--www">- www<a class="anchor" href="#--www">#</a></h3>
+<pre><code>- DNS Entry: www
+- Type: CNAME
+- Destination Target: &lt;your URL without the 'www' and with a '.' at the end&gt;
+</code></pre>
+<h3 id="--everything-else">- Everything else<a class="anchor" href="#--everything-else">#</a></h3>
+<pre><code>- DNS Entry: *
+- Type: CNAME
+- Destination Target: &lt;your URL without the 'www' and with a '.' at the end&gt;
+</code></pre>
+<h2 id="2-getting-rid-of-that-pesky-www-subdomain">2). Getting rid of that pesky &lsquo;www&rsquo; subdomain.<a class="anchor" href="#2-getting-rid-of-that-pesky-www-subdomain">#</a></h2>
+<ul>
+<li>
+<p>Go back to the main list of options</p>
+</li>
+<li>
+<p>Click on &lsquo;Web Forwarding&rsquo;</p>
+</li>
+<li>
+<p>Add a permament (301) redirection:</p>
+<ul>
+<li>Domain Name: &lt;Your URL without the www. I just put &lsquo;wmmclarke.com&rsquo;&gt;</li>
+<li>Forwarding Type: 301</li>
+<li>Forwarding Destination: &lt;Your URL with http://www prepended to it.&gt;</li>
+</ul>
+</li>
+</ul>
+<p>That should be it!</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/dns/">dns</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/heroku/">heroku</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/clever-vim-commands-keybindings/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">Clever Vim Commands &amp; Keybindings</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/my-cv...-in-pure-ruby/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >My CV... in pure Ruby</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>

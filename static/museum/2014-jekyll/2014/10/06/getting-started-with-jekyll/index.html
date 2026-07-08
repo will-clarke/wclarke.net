@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Getting Started With Jekyll &middot; William Clarke's Blog
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="post">
+  <h1 class="post-title">Getting Started With Jekyll</h1>
+  <span class="post-date">06 Oct 2014</span>
+  <p>I have been told that it’s good to write a blog. Something about self-promotion and helping other people…</p>
+
+<p>I originally wanted to create something through rails, but, having thought about it, it would have taken a while to set everything up correctly. No need to reinvent the wheel…</p>
+
+<p><a href="http://jekyllrb.com/">Jekyll</a> is a blogging / website platform built with Ruby. It’s what I would have aimed to build, only simpler, more efficient, pre-built  and  with an active community behind it.</p>
+
+<p>Jekyll’s main selling point is that it integrates text files well into a static site.</p>
+
+<p>It’s simple to use and set up out of the box:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&gt; Now browse to http://localhost:4000
+</code></pre></div></div>
+
+<p>If you’re lazy, I’d recommend not doing this, though. Jekyll Bootstrap, discussed below, has a few more features that may be useful.</p>
+
+<h2 id="jekyll-bootstrap">Jekyll Bootstrap</h2>
+
+<p><a href="http://jekyllbootstrap.com/">Jekyll Bootstrap</a> uses Twitter’s <a href="http://getbootstrap.com/">bootstrap</a> and includes a number of extra in-build functionality including clever rake tasks, themes and comments.</p>
+
+<p>Here’s a really good starting point: <a href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html"><em>Jekyll Bootstrap Quick Start Guide</em></a></p>
+
+<p>One of the great things about Jekyll Bootstrap is that it integrates well with <a href="https://pages.github.com/">Github Pages</a>.  This lets you host your own site for <em>FREE</em>! You get the custom domain of <em>your_github_username</em>.github.io.</p>
+
+<p>The only tweak that I had to make with the current version of Jekyll Bootstrap was to change the default github.<em>com</em> to github.<em>io</em></p>
+
+<h2 id="updating-your-settings">Updating Your Settings</h2>
+
+<p>Go to <code class="language-plaintext highlighter-rouge">_config.yml</code> to update your settings:</p>
+<ul>
+  <li>Github Username</li>
+  <li>Twitter Username</li>
+  <li>Analytics Tracking ID</li>
+  <li>Disqus shortname</li>
+</ul>
+
+<p>You’ll probably have to go to <a href="https://disqus.com/admin/create/">Disqus</a> to create a shortname and <a href="http://www.google.com/analytics/">Google Analytics</a> to get your tracking code.</p>
+
+<h2 id="generating-new-posts">Generating New Posts</h2>
+<p>Once you have everything set up, you’ll be able to run</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ rake post title="Hello World" To create new posts or 
+
+$ rake page name="about.md" To create new pages.
+</code></pre></div></div>
+
+<h2 id="there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">There you have it - a free, fully functioning static blog set up in only a few minutes!</h2>
+
+<hr />
+<hr />
+
+<p>Here are a few more tips I recommend to make it even easier to use Jekyll and Markdown.</p>
+
+<h4 id="using-jekyll-with-vim">Using Jekyll with Vim</h4>
+
+<p>There’s a great <a href="https://github.com/csexton/jekyll.vim">vim plugin</a> for jekyll. This lets you, anywhere in the file structure, to access your current posts or to create a new one.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>map &lt;Leader&gt;jb  :JekyllBuild&lt;CR&gt;
+map &lt;Leader&gt;jn  :JekyllPost&lt;CR&gt;
+map &lt;Leader&gt;jl  :JekyllList&lt;CR&gt;.
+</code></pre></div></div>
+
+<h4 id="ultra-fancy-markdown-editing">Ultra fancy Markdown editing.</h4>
+
+<p>I use <a href="http://marked2app.com/">Marked 2</a>, which is a fairly slick markdown live previewer.
+You can call it straight from vim using this mapping in your .vimrc:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap &lt;leader&gt;md :!open -a 'Marked 2' %&lt;cr&gt;&lt;cr&gt;
+</code></pre></div></div>
+
+<p>(Assuming you’re on OS X)</p>
+
+<hr />
+
+<p>I hope this’ll help some people get started with Jekyll. Good luck with it!</p>
+
+</div>
+
+
+<div class="message"><strong style="font-size:1.5em;">Tags</strong>
+
+  <ul class="tag_box inline">
+    
+    
+   
+    <li><a href="/museum/2014-jekyll/tags#Ruby">Ruby <sup>11</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Jekyll">Jekyll <sup>1</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Blog">Blog <sup>1</s></a></li>
+  
+
+
+
+  </ul>
+</div>
+  
+
+
+
+
+<!-- disqus removed for museum snapshot -->
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/">
+            My favourite Ruby books
+            <small>28 May 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/04/18/vim-folds/">
+            Vim Folds
+            <small>18 Apr 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/03/26/git-diff-for-files/">
+            Git Diff for files
+            <small>26 Mar 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

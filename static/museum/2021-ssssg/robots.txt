@@ -1,0 +1,6 @@
+# Hey, person.
+# Nice one for reading this robots.txt file.
+# Not really sure why though....
+
+User-agent: *
+Sitemap: https://wclarke.net/sitemap.txt

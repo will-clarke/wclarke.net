@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en-us">
+
+  <head>
+  <link href="http://gmpg.org/xfn/11" rel="profile">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+
+  <!-- Enable responsiveness on mobile devices-->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+
+  <title>
+    
+      Clever Vim Commands & Keybindings &middot; William Clarke's Blog
+    
+  </title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/poole.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/syntax.css">
+  <link rel="stylesheet" href="/museum/2014-jekyll/public/css/lanyon.css">
+  <link rel="stylesheet" href="http://fonts.googleapis.com/css?family=PT+Serif:400,400italic,700|PT+Sans:400">
+
+  <!-- Icons -->
+  <link rel="apple-touch-icon-precomposed" sizes="144x144" href="/museum/2014-jekyll/public/apple-touch-icon-precomposed.png">
+  <link rel="shortcut icon" href="/museum/2014-jekyll/public/favicon.ico">
+
+  <!-- RSS -->
+  <link rel="alternate" type="application/rss+xml" title="RSS" href="/museum/2014-jekyll/atom.xml">
+</head>
+
+
+  <body>
+
+    <!-- Target for toggling the sidebar `.sidebar-checkbox` is for regular
+     styles, `#sidebar-checkbox` for behavior. -->
+<input type="checkbox" class="sidebar-checkbox" id="sidebar-checkbox">
+
+<!-- Toggleable sidebar -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-item">
+    <p>Ramblings from <a href="http://wmmclarke.com" target="_blank">William Clarke.</a></p>
+  </div>
+
+  <nav class="sidebar-nav">
+    <a class="sidebar-nav-item" href="/museum/2014-jekyll">Home</a>
+
+    
+
+    
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/about/">About</a>
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/archive/">Archive</a>
+        
+      
+    
+      
+    
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+      
+    
+      
+        
+          <a class="sidebar-nav-item" href="/museum/2014-jekyll/tags/">Tags</a>
+        
+      
+    
+
+    <a class="sidebar-nav-item" href="/museum/2014-rails/">Website</a>
+    <a class="sidebar-nav-item" href="https://twitter.com/wmmclarke" target="_blank">Twitter</a>
+    <a class="sidebar-nav-item" href="http://github.com/wmmc" target="_blank">GitHub Projects</a>
+  </nav>
+
+  <div class="sidebar-item">
+    <p>
+      &copy; 2026. All rights reserved.
+    </p>
+  </div>
+</div>
+
+
+    <!-- Wrap is the content to shift when toggling the sidebar. We wrap the
+         content to avoid any CSS collisions with our real content. -->
+    <div class="wrap">
+      <div class="masthead">
+        <div class="container">
+          <h3 class="masthead-title">
+            <a href="/museum/2014-jekyll/" title="Home">William Clarke's Blog</a>
+            <small><a href="http://wmmclarke.com" >wmmclarke.com</a></small>
+          </h3>
+        </div>
+      </div>
+
+      <div class="container content">
+        <div class="post">
+  <h1 class="post-title">Clever Vim Commands & Keybindings</h1>
+  <span class="post-date">08 Oct 2014</span>
+  <p>I have recently spent a while trying to learn how to edit text effectively. I figure that if I’m going to be spending a while editing text, it’s worth learning how to do it as efficiently as possible.</p>
+
+<p>I’ve been using <a href="https://github.com/skwp/dotfiles">YADR</a> as a basis for my dotfiles. Dotfiles, if you don’t know, are files which start with a fullstop (and therefore are hidden in UNIX systems). Dotfiles mostly refer to configuration files in the home directory - eg. <code class="language-plaintext highlighter-rouge">.bashrc</code> or  <code class="language-plaintext highlighter-rouge">.vimrc</code>. One of the benefits of using a monolithic package like this is it quickly lets you do more cool stuff as you’re learning (over boring native Vim).</p>
+
+<p>I’ve put the extra files I’ve configured into my <code class="language-plaintext highlighter-rouge">.vimrc.after</code> file, which you can find <a href="https://gist.github.com/19b76686f75f3b28dda8">HERE!</a>.</p>
+
+<h2 id="remap-the-keyboard">Remap the keyboard.</h2>
+
+<p>The caps lock key is in a really important place but is largely redundant. You can remap it to something more useful (OS X: go to System Preferences &gt; Keyboard &gt; Shortcuts). For Vim users, the Ctrl key is very important. Remap it!</p>
+
+<p>If you’re clever, you can also use the Caps Lock button as Esc (also very important for Vim users) by downloading <a href="https://pqrs.org/osx/karabiner/">Karabiner</a>. This can set Escape for a single-press of Ctrl (which we now have at Caps Lock). Anything other Ctrl commands stay the same.</p>
+
+<p>I’ve found that other keys are poorly placed; eg <code class="language-plaintext highlighter-rouge">#</code> and <code class="language-plaintext highlighter-rouge">_</code>, so I’ve remapped them too. Especially for Ruby development, I found it tricky to constantly press <code class="language-plaintext highlighter-rouge">alt + 3</code> for <code class="language-plaintext highlighter-rouge">#</code>. Now it’s where ± is (next to 1).</p>
+
+<h2 id="use-good-vim-plugins">Use good vim plugins.</h2>
+
+<p>YADR comes with a load of fantastic plugins:</p>
+
+<p>These are the preinstalled plugins that I use most:</p>
+
+<ul>
+  <li>Pathogen (a bundler for plugins)</li>
+  <li>Vim Ruby &amp; Vim Rails</li>
+  <li>Solarized colours</li>
+  <li>Vim sneak</li>
+  <li>NERDTree</li>
+  <li>Vim Surround</li>
+  <li>CtrlR</li>
+</ul>
+
+<p>I’ve added a few more of my own, too:</p>
+
+<ul>
+  <li><a href="christoomey/vim-tmux-navigator">Tmux-Navigator</a> - Makes navigating Tmux panes just like navigating Vim panes</li>
+  <li><a href="t9md/vim-ruby-xmpfilter">Ruby xmpfilter</a> - Gives you the ability to run a ruby script (or part of it) mid-edit.</li>
+  <li><a href="thoughtbot/vim-rspec">Vim-Rspec</a> - Good Rspec integration from thoughtbot</li>
+  <li><a href="csexton/jekyll.vim">Jekyll</a> - Easy Blogging from vim.</li>
+</ul>
+
+<h2 id="use-good-keyboard-shortcuts">Use good keyboard shortcuts</h2>
+
+<p>The whole point of Vim is that it’s easy to define the shortcuts you like. Well.. maybe not the whole point, but it’s meant to be designed towards what works for <em>you</em>. So do what works for you. Having said that, I’m going to show the shortcuts which work best for me at the moment:</p>
+
+<ul>
+  <li>the <code class="language-plaintext highlighter-rouge">!</code> command lets you use normal bash functions</li>
+  <li>the <code class="language-plaintext highlighter-rouge">%</code> sign refers to the current file.</li>
+  <li>
+    <CR> stands for carriage return (enter)
+
+</CR>
+  </li>
+</ul>
+<p>Using this we can make a mapping like this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap &lt;leader&gt;md :!open -a 'Marked 2' %&lt;cr&gt;&lt;cr&gt;
+noremap &lt;Leader&gt;oc :!open /Applications/Google\ Chrome.app %&lt;CR&gt;
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">:</code> key is obviously important for Vim commands. The <code class="language-plaintext highlighter-rouge">;</code> key is less important. Swap them!</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>noremap ; :
+noremap : ;
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">jk</code> can be a fast way of returning back to normal mode</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>imap jk &lt;ESC&gt;
+</code></pre></div></div>
+
+<p>Sometimes you can’t save a file. Something about an E212 error. Force it with this:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>ca w!! w !sudo tee "%"
+</code></pre></div></div>
+
+<p>Shortcuts to save and quit:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>inoremap &lt;silent&gt; &lt;C-q&gt; &lt;ESC&gt;:q&lt;CR&gt;&lt;ESC&gt;
+nnoremap &lt;silent&gt; &lt;C-q&gt; :q&lt;CR&gt;
+noremap  &lt;C-s&gt;    :update&lt;CR&gt;&lt;ESC&gt;
+vnoremap  &lt;C-s&gt;   &lt;C-C&gt;:update&lt;CR&gt;&lt;ESC&gt;
+inoremap  &lt;C-s&gt;   &lt;C-O&gt;:update&lt;CR&gt;&lt;ESC&gt;
+</code></pre></div></div>
+
+<p>This vim function lets you toggle Solarized background colour within the editor.</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>function! ToggleBackground()
+    let &amp;background = ( &amp;background == "dark"? "light" : "dark" )
+endfunction
+</code></pre></div></div>
+
+<p>This lowers the timeout:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>set timeoutlen=500
+</code></pre></div></div>
+
+</div>
+
+
+<div class="message"><strong style="font-size:1.5em;">Tags</strong>
+
+  <ul class="tag_box inline">
+    
+    
+   
+    <li><a href="/museum/2014-jekyll/tags#Vim">Vim <sup>12</s></a></li>
+   
+    <li><a href="/museum/2014-jekyll/tags#Editor">Editor <sup>3</s></a></li>
+  
+
+
+
+  </ul>
+</div>
+  
+
+
+
+
+<!-- disqus removed for museum snapshot -->
+<div class="related">
+  <h2>Related Posts</h2>
+  <ul class="related-posts">
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/">
+            My favourite Ruby books
+            <small>28 May 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/04/18/vim-folds/">
+            Vim Folds
+            <small>18 Apr 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+      <li>
+        <h3>
+          <a href="/museum/2014-jekyll/2015/03/26/git-diff-for-files/">
+            Git Diff for files
+            <small>26 Mar 2015</small>
+          </a>
+        </h3>
+      </li>
+    
+  </ul>
+</div>
+
+      </div>
+    </div>
+
+    <label for="sidebar-checkbox" class="sidebar-toggle"></label>
+
+    <script>
+      (function(document) {
+        var toggle = document.querySelector('.sidebar-toggle');
+        var sidebar = document.querySelector('#sidebar');
+        var checkbox = document.querySelector('#sidebar-checkbox');
+
+        document.addEventListener('click', function(e) {
+          var target = e.target;
+
+          if(!checkbox.checked ||
+             sidebar.contains(target) ||
+             (target === checkbox || target === toggle)) return;
+
+          checkbox.checked = false;
+        }, false);
+      })(document);
+    </script>
+    <!-- analytics removed for museum snapshot -->
+  </body>
+</html>

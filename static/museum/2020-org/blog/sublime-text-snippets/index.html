@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Sublime Text Snippets | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "Sublime Text Snippets",
+      "headline" : "Sublime Text Snippets",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-04-16 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-04-16 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/sublime-text-snippets\/",
+      "wordCount" : "257",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">Sublime Text Snippets</h1>
+            <time datetime="2014-04-16 00:00:00 &#43;0000 UTC" class="post__date">Apr 16 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>One way to work faster is to have predefined <em>snippets</em> or blocks of code help you with repetitive typing.</p>
+<h3 id="how-to-use-snippets-in-sublime-text">How to use Snippets in Sublime Text:<a class="anchor" href="#how-to-use-snippets-in-sublime-text">#</a></h3>
+<p>In sublime text you can install these by going to <code>Tools =&gt; New Snippet...</code>
+This will give you a confusing XML document looking like this:</p>
+<pre><code>&lt;snippet&gt;
+  &lt;content&gt;&lt;![CDATA[
+Hello, ${1:this} is a ${2:snippet}.
+]]&gt;&lt;/content&gt;
+  &lt;!-- Optional: Set a tabTrigger to define how to trigger the snippet --&gt;
+  &lt;!-- &lt;tabTrigger&gt;hello&lt;/tabTrigger&gt; --&gt;
+  &lt;!-- Optional: Set a scope to limit where the snippet will trigger --&gt;
+  &lt;!-- &lt;scope&gt;source.python&lt;/scope&gt; --&gt;
+&lt;/snippet&gt;
+</code></pre>
+<h4 id="content"><content></h4>
+<p>The text in between the <code>[CDATA[</code> and <code>]]</code> are what you want to edit.
+The <code>$1</code> or <code>${1:this}</code> are where the cursor will be after you activate the snippet. This text after the <code>:</code> is the default and you can get to <code>$2</code> by tabbing.</p>
+<h4 id="tabtrigger"><tabTrigger></h4>
+<p>The word you&rsquo;d like to trigger the snippet should go here (in this example, &lsquo;hello&rsquo; + <kbd>Tab</kbd>).</p>
+<h4 id="scope"><scope></h4>
+<p>Scope determines which files the snippet will work on. The scopes that I use most often and available to Sublime Text include <code>source.ruby</code>, <code>source.ruby.rails</code> &amp; <code>text.html.erb</code>.</p>
+<h4 id="keyboard-shortcuts">Keyboard Shortcuts</h4>
+<p>If you feel the need, you can bind the snippet to a keyboard shortcut. This would involve adding a line to your &lsquo;Keybindings - User&rsquo; file (found under <code>Sublime Text =&gt; Preferences</code>).</p>
+<p>Here&rsquo;s the sort of thing you&rsquo;d want to add:</p>
+<pre><code>{ &quot;keys&quot;: [&quot;alt+shift+e&quot;], &quot;command&quot;: &quot;insert_snippet&quot;, &quot;args&quot;: {&quot;name&quot;: &quot;Packages/User/my-clever.sublime-snippet&quot;}}
+</code></pre>
+<p>Be careful to make sure it&rsquo;s in a vaild JSON array - eg. watch out for commas &amp; make sure there are square brackets enclosing everything.</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/editor/">editor</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/show-vim-mappings/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">Show Vim Mappings</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/the-python-challenge/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >The Python Challenge</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>

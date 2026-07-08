@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-08" />
+  <meta name="description" content="Getting good at vim involves making every key-stroke as efficient as possible. You need to master keybindings in order to do this." />
+  <title>Will Clarke – Clever Vim Commands &amp; Keybindings</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/museum/2021-ssssg/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+</head>
+<body>
+<div class=main><a href="/museum/2021-ssssg/index.html">Will Clarke</a></div>
+
+<nav>
+   <a href="/museum/2021-ssssg/">home</a>
+   <a href="/museum/2021-ssssg/posts.html">posts</a>
+   <a href="/museum/2021-ssssg/about.html">about</a>
+   <a href="/museum/2021-ssssg/tags.html">tags</a>
+</nav>
+<header id="title-block-header">
+<h1 class="title">Clever Vim Commands &amp; Keybindings</h1>
+<p class="date">2014-10-08</p>
+</header>
+<p>I have recently spent a while trying to learn how to edit text
+effectively. I figure that if I’m going to be spending a while editing
+text, it’s worth learning how to do it as efficiently as possible.</p>
+<p>I’ve been using <a href="https://github.com/skwp/dotfiles">YADR</a>
+as a basis for my dotfiles. Dotfiles, if you don’t know, are files which
+start with a fullstop (and therefore are hidden in UNIX systems).
+Dotfiles mostly refer to configuration files in the home directory - eg.
+<code>.bashrc</code> or <code>.vimrc</code>. One of the benefits of
+using a monolithic package like this is it quickly lets you do more cool
+stuff as you’re learning (over boring native Vim).</p>
+<p>I’ve put the extra files I’ve configured into my
+<code>.vimrc.after</code> file, which you can find <a
+href="https://gist.github.com/19b76686f75f3b28dda8">HERE!</a>.</p>
+<h2 id="remap-the-keyboard.">Remap the keyboard.</h2>
+<p>The caps lock key is in a really important place but is largely
+redundant. You can remap it to something more useful (OS X: go to System
+Preferences &gt; Keyboard &gt; Shortcuts). For Vim users, the Ctrl key
+is very important. Remap it!</p>
+<p>If you’re clever, you can also use the Caps Lock button as Esc (also
+very important for Vim users) by downloading <a
+href="https://pqrs.org/osx/karabiner/">Karabiner</a>. This can set
+Escape for a single-press of Ctrl (which we now have at Caps Lock).
+Anything other Ctrl commands stay the same.</p>
+<p>I’ve found that other keys are poorly placed; eg <code>#</code> and
+<code>_</code>, so I’ve remapped them too. Especially for Ruby
+development, I found it tricky to constantly press <code>alt + 3</code>
+for <code>#</code>. Now it’s where ± is (next to 1).</p>
+<h2 id="use-good-vim-plugins.">Use good vim plugins.</h2>
+<p>YADR comes with a load of fantastic plugins:</p>
+<p>These are the preinstalled plugins that I use most:</p>
+<ul>
+<li>Pathogen (a bundler for plugins)</li>
+<li>Vim Ruby &amp; Vim Rails</li>
+<li>Solarized colours</li>
+<li>Vim sneak</li>
+<li>NERDTree</li>
+<li>Vim Surround</li>
+<li>CtrlR</li>
+</ul>
+<p>I’ve added a few more of my own, too:</p>
+<ul>
+<li><a href="christoomey/vim-tmux-navigator">Tmux-Navigator</a> - Makes
+navigating Tmux panes just like navigating Vim panes</li>
+<li><a href="t9md/vim-ruby-xmpfilter">Ruby xmpfilter</a> - Gives you the
+ability to run a ruby script (or part of it) mid-edit.</li>
+<li><a href="thoughtbot/vim-rspec">Vim-Rspec</a> - Good Rspec
+integration from thoughtbot</li>
+<li><a href="csexton/jekyll.vim">Jekyll</a> - Easy Blogging from
+vim.</li>
+</ul>
+<h2 id="use-good-keyboard-shortcuts">Use good keyboard shortcuts</h2>
+<p>The whole point of Vim is that it’s easy to define the shortcuts you
+like. Well.. maybe not the whole point, but it’s meant to be designed
+towards what works for <em>you</em>. So do what works for you. Having
+said that, I’m going to show the shortcuts which work best for me at the
+moment:</p>
+<ul>
+<li>the <code>!</code> command lets you use normal bash functions</li>
+<li>the <code>%</code> sign refers to the current file.</li>
+<li><code>&lt;CR&gt;</code> stands for carriage return (enter)</li>
+</ul>
+<p>Using this we can make a mapping like this:</p>
+<pre><code>noremap &lt;leader&gt;md :!open -a &#39;Marked 2&#39; %&lt;cr&gt;&lt;cr&gt;
+noremap &lt;Leader&gt;oc :!open /Applications/Google\ Chrome.app %&lt;CR&gt;</code></pre>
+<p>The <code>:</code> key is obviously important for Vim commands. The
+<code>;</code> key is less important. Swap them!</p>
+<pre><code>noremap ; :
+noremap : ;</code></pre>
+<p><code>jk</code> can be a fast way of returning back to normal
+mode</p>
+<pre><code>imap jk &lt;ESC&gt;</code></pre>
+<p>Sometimes you can’t save a file. Something about an E212 error. Force
+it with this:</p>
+<pre><code>ca w!! w !sudo tee &quot;%&quot;</code></pre>
+<p>Shortcuts to save and quit:</p>
+<pre><code>inoremap &lt;silent&gt; &lt;C-q&gt; &lt;ESC&gt;:q&lt;CR&gt;&lt;ESC&gt;
+nnoremap &lt;silent&gt; &lt;C-q&gt; :q&lt;CR&gt;
+noremap  &lt;C-s&gt;    :update&lt;CR&gt;&lt;ESC&gt;
+vnoremap  &lt;C-s&gt;   &lt;C-C&gt;:update&lt;CR&gt;&lt;ESC&gt;
+inoremap  &lt;C-s&gt;   &lt;C-O&gt;:update&lt;CR&gt;&lt;ESC&gt;</code></pre>
+<p>This vim function lets you toggle Solarized background colour within
+the editor.</p>
+<pre><code>function! ToggleBackground()
+    let &amp;background = ( &amp;background == &quot;dark&quot;? &quot;light&quot; : &quot;dark&quot; )
+endfunction</code></pre>
+<p>This lowers the timeout:</p>
+<pre><code>set timeoutlen=500</code></pre>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/museum/2021-ssssg/tags/vim.html">vim</a> <a
+href="/museum/2021-ssssg/tags/editor.html">editor</a> <a
+href="/museum/2021-ssssg/tags/unix.html">unix</a></p>
+<footer>
+  <hr>
+  <p>Generated by my super simple <a href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">'ssssg' shell script</a><br>
+</footer>
+</body>
+</html>

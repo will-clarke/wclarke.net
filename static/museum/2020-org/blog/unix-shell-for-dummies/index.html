@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>UNIX Shell For Dummies | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "UNIX Shell For Dummies",
+      "headline" : "UNIX Shell For Dummies",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-10-20 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-10-20 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/unix-shell-for-dummies\/",
+      "wordCount" : "439",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">UNIX Shell For Dummies</h1>
+            <time datetime="2014-10-20 00:00:00 &#43;0000 UTC" class="post__date">Oct 20 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>Learning a few UNIX commands can be useful. Since it&rsquo;s the &lsquo;default&rsquo; programming language that pops up when you run the Terminal, it&rsquo;s worth knowing a few of the more basic commands:
+These are sorted by &lsquo;difficulty&rsquo; - you should know the first ones first.</p>
+<h2 id="navigation">Navigation<a class="anchor" href="#navigation">#</a></h2>
+<h3 id="cd---changes-the-current-directory"><code>cd</code> - changes the current directory.<a class="anchor" href="#cd---changes-the-current-directory">#</a></h3>
+<ul>
+<li><code>cd ~</code> - changes where you are to HOME directory</li>
+<li><code>cd Documents</code>  - goes one file deeper into the &lsquo;Documents&rsquo; folder</li>
+<li><code>cd ..</code> - goes up one directory</li>
+</ul>
+<h3 id="ls---list-files-or-directories-in-current-directory"><code>ls</code> - list files or directories in current directory<a class="anchor" href="#ls---list-files-or-directories-in-current-directory">#</a></h3>
+<ul>
+<li><code>ls -la</code> - uses the options &lsquo;-l&rsquo; (list in detail) and &lsquo;-a&rsquo; (show hidden files)</li>
+</ul>
+<p><code>pwd</code> - <strong>p</strong>rint <strong>w</strong>orking <strong>d</strong>irectory. Shows where you are (relative to the root folder)</p>
+<h2 id="copying">Copying<a class="anchor" href="#copying">#</a></h2>
+<h3 id="cp---copy"><code>cp</code> - copy<a class="anchor" href="#cp---copy">#</a></h3>
+<ul>
+<li><code>cp anchovy.txt fishes/anchovy.txt</code> - creates a copy of the file under the &lsquo;fishes&rsquo; directory.</li>
+</ul>
+<p><code>cp -r</code> - copy recursively. Useful for directories.</p>
+<ul>
+<li><code>cp -r anchovy fishes/anchovy</code> - copies all the anchovy-related files from the folder &lsquo;anchovy&rsquo;</li>
+</ul>
+<h2 id="deleting">Deleting<a class="anchor" href="#deleting">#</a></h2>
+<h3 id="rm---remove"><code>rm</code> - remove<a class="anchor" href="#rm---remove">#</a></h3>
+<ul>
+<li><code>rm platypus.txt</code> - deletes the specified file</li>
+</ul>
+<h3 id="rmdir---remove-directory"><code>rmdir</code> - remove directory<a class="anchor" href="#rmdir---remove-directory">#</a></h3>
+<h2 id="moving--renaming">Moving / Renaming<a class="anchor" href="#moving--renaming">#</a></h2>
+<h3 id="mv---move"><code>mv</code> - move<a class="anchor" href="#mv---move">#</a></h3>
+<ul>
+<li>This works like cp, except it removes the initial file / directory</li>
+<li><code>mv anchovy.txt fishes/anchovy.txt</code> - moves &amp; <strong>removes</strong> the file.</li>
+<li>Renaming: <code>mv anchovy.txt sardine.txt</code></li>
+</ul>
+<h2 id="creating-folders">Creating Folders<a class="anchor" href="#creating-folders">#</a></h2>
+<h3 id="mkdir---creates-a-new-directory"><code>mkdir</code> - creates a new directory<a class="anchor" href="#mkdir---creates-a-new-directory">#</a></h3>
+<ul>
+<li><code>mkdir pelicans</code></li>
+</ul>
+<p><code>mkdir -p</code> - creates a series of new directories.</p>
+<ul>
+<li><code>mkdir -p Pelecanidae/Pelicans/Great-White-Pelican</code></li>
+</ul>
+<h2 id="getting-help">Getting help<a class="anchor" href="#getting-help">#</a></h2>
+<h3 id="man---find-the-manual"><code>man</code> - find the <strong>man</strong>ual<a class="anchor" href="#man---find-the-manual">#</a></h3>
+<ul>
+<li><code>man man</code></li>
+<li><code>man pwd</code></li>
+</ul>
+<h2 id="showing-files">Showing files<a class="anchor" href="#showing-files">#</a></h2>
+<h3 id="cat---show-pure-text-version-of-the-file"><code>cat</code> - show pure text version of the file.<a class="anchor" href="#cat---show-pure-text-version-of-the-file">#</a></h3>
+<ul>
+<li>Con<strong>cat</strong>enates &amp; prints the file
+<code>cat gerbil_name.txt</code> - simply outputs text: &lsquo;Fred&rsquo;</li>
+</ul>
+<h3 id="less---outputs-text-with-more-features"><code>less</code> - outputs text with more features.<a class="anchor" href="#less---outputs-text-with-more-features">#</a></h3>
+<ul>
+<li>Better for larger files. Includes scrolling, searching, etc..</li>
+<li><code>less encyclopedia.txt</code> - won&rsquo;t crash &amp; is still useful</li>
+</ul>
+<h3 id="sort---guess-what-this-one-does"><code>sort</code> - guess what this one does&hellip;<a class="anchor" href="#sort---guess-what-this-one-does">#</a></h3>
+<ul>
+<li>Go on. Guess. I&rsquo;m not going to tell you.</li>
+</ul>
+<h2 id="comparing-files">Comparing files<a class="anchor" href="#comparing-files">#</a></h2>
+<h3 id="diff---shows-the-differences-between-two-files"><code>diff</code> - shows the <strong>diff</strong>erences between two files<a class="anchor" href="#diff---shows-the-differences-between-two-files">#</a></h3>
+<ul>
+<li><code>diff red_spotted_woodpecker.txt lesser_woodpecker.txt</code></li>
+</ul>
+<h2 id="finding-programs">Finding programs<a class="anchor" href="#finding-programs">#</a></h2>
+<h3 id="whereis"><code>whereis</code><a class="anchor" href="#whereis">#</a></h3>
+<ul>
+<li>Useful if you&rsquo;re running the wrong version of ruby. Or something similar.</li>
+<li>Provides the location of the executable file.</li>
+</ul>
+<h2 id="changing-file-permissions">Changing File Permissions<a class="anchor" href="#changing-file-permissions">#</a></h2>
+<h3 id="chmod"><code>chmod</code><a class="anchor" href="#chmod">#</a></h3>
+<ul>
+<li>A common chmod file permission to set is <code>chmod 755</code>, which is <code>rwx</code> for the Owner but only <code>rw</code> for other users.</li>
+</ul>
+<h2 id="search-for-text">Search for text<a class="anchor" href="#search-for-text">#</a></h2>
+<h3 id="grep"><code>grep</code><a class="anchor" href="#grep">#</a></h3>
+<p>I&rsquo;ve written a quick primer on UNIX file permissions [here]({{ site.url }}/_posts/2014-10-18-unix-permissions.md)</p>
+<p>Grep&rsquo;s a fairly big topic:</p>
+<p>![Grep Book]({{ site.url }}/assets/grep.jpg)</p>
+<ul>
+<li><code>grep &quot;some string&quot; filename</code></li>
+<li><code>grep &quot;REGEX&quot; filename</code></li>
+<li><code>grep -i &quot;some string&quot; filename</code> - case insensitive</li>
+</ul>
+<h2 id="flags">Flags<a class="anchor" href="#flags">#</a></h2>
+<p>Flags are optional parameters that you can pass in to a shell command. We&rsquo;ve met some already; here&rsquo;re two: <code>ls -la</code>. You can see a full list of available options under the <code>man</code> page of the commands.</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/shell/">shell</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/unix/">unix</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/bash/">bash</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/unix-permissions/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">UNIX Permissions for no0bs</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/twitter-apps-authentication-without-another-mobile-number/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >Twitter Apps Authentication - without another mobile number</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>

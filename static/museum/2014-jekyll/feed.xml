@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.10.0">Jekyll</generator><link href="http://blog.wmmclarke.com/museum/2014-jekyll/feed.xml" rel="self" type="application/atom+xml" /><link href="http://blog.wmmclarke.com/museum/2014-jekyll/" rel="alternate" type="text/html" /><updated>2026-07-08T22:53:23+01:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/feed.xml</id><title type="html">William Clarke’s Blog</title><subtitle>Ramblings from &lt;a href=&quot;http://wmmclarke.com&quot; target=&quot;_blank&quot;&gt;William Clarke.&lt;/a&gt;</subtitle><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><entry><title type="html">My favourite Ruby books</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/" rel="alternate" type="text/html" title="My favourite Ruby books" /><published>2015-05-28T00:00:00+01:00</published><updated>2015-05-28T00:00:00+01:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/05/28/my-favourite-ruby-books/"><![CDATA[<div style="float:right">
+  <p><a href="http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21"><img src="http://ecx.images-amazon.com/images/I/41gtODXuRlL._AA160_.jpg" alt="Pickaxe Guide" /></a></p>
+</div>
+
+<h3 id="programming-ruby-19--20-the-pragmatic-programmers-guide"><a href="http://www.amazon.co.uk/Programming-Ruby-1-9-2-0-Programmers/dp/1937785491/?tag=wilclasblo-21">Programming Ruby 1.9 &amp; 2.0: The Pragmatic Programmers’ Guide</a></h3>
+
+<p>by <a href="https://twitter.com/pragdave">Dave Thomas</a>, <a href="https://twitter.com/PragmaticAndy">Andy Hunt</a> &amp; <a href="https://twitter.com/chadfowler">Chad Fowler</a></p>
+
+<p>The ‘pickaxe’ book is a complete overview to Ruby. It’s a pretty hefty book, covering these topics:</p>
+<ul>
+  <li>A great tutorial on using Ruby.</li>
+  <li>The definitive reference to the language.</li>
+  <li>Complete documentation of all built-in classes, modules, and methods.</li>
+  <li>Complete descriptions of all 97 standard libraries.</li>
+</ul>
+
+<div style="float:right">
+  <p><a href="http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21"><img src="http://ecx.images-amazon.com/images/I/51U-Wi%2BkYvL._AA160_.jpg" alt="POODR" /></a></p>
+</div>
+
+<h3 id="practical-object-oriented-design-in-ruby-an-agile-primer"><a href="http://www.amazon.co.uk/Practical-Object-Oriented-Design-Ruby-Addison-Wesley-ebook/dp/B0096BYG7C?tag=wilclasblo-21">Practical Object Oriented Design in Ruby: An Agile Primer</a></h3>
+
+<p>by <a href="https://twitter.com/sandimetz">Sandi Metz</a></p>
+
+<p>Ruby likes objects and ‘POODR’ shows how to make the most of them.
+Modular code is easier to maintain, reuse and understand.
+Sandi Metz has some interesting ideas on OOP - her <a href="https://robots.thoughtbot.com/sandi-metz-rules-for-developers">rules</a> have become important.
+We see the world in objects, and I think that code usually makes more sense in objects too.</p>
+
+<div style="float:right">
+  <p><a href="http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21"><img src="http://ecx.images-amazon.com/images/I/51qiS5gf-HL._AA160_.jpg" alt="Rails" /></a></p>
+</div>
+
+<h3 id="ruby-on-rails-tutorial-learn-web-development-with-rails"><a href="http://www.amazon.co.uk/Ruby-Rails-Tutorial-Addison-Wesley-Professional/dp/0134077709/?tag=wilclasblo-21">Ruby on Rails Tutorial: Learn Web Development with Rails</a></h3>
+
+<p>by <a href="https://twitter.com/mhartl">Michael Hartl</a></p>
+
+<p>This is a great introduction to Rails. It starts slow enough for complete n0obs, but has enough depth
+to interest far more advanced programmers. It walks through TDD, getting to use the console and git,
+and covers encryption, AJAX and how Rails works on a practical level.
+There is also a free, online version of the book <a href="https://www.railstutorial.org/book">here</a></p>
+
+<div style="float:right">
+  <p><a href="http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21"><img src="http://ecx.images-amazon.com/images/I/41IDuwJXFCL._AA160_.jpg" alt="Eloquent Ruby" /></a></p>
+</div>
+
+<h3 id="eloquent-ruby"><a href="http://www.amazon.co.uk/Eloquent-Ruby-Addison-Wesley-Professional-Series/dp/0321584104/?tag=wilclasblo-21">Eloquent Ruby</a></h3>
+
+<p>by <a href="https://twitter.com/russolsen">Russ Olsen</a></p>
+
+<p>One of the best things about Ruby is its expressiveness and elegance.
+Understanding how Ruby was designed to work helps you to really tap into its
+power and makes a lot of things make a lot more sense.</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Ruby" /><category term="Books" /><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Vim Folds</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/04/18/vim-folds/" rel="alternate" type="text/html" title="Vim Folds" /><published>2015-04-18T00:00:00+01:00</published><updated>2015-04-18T00:00:00+01:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/04/18/vim-folds</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/04/18/vim-folds/"><![CDATA[<p>I was originally scared of vim folds. They were confusing and hard to manage. And there were extra shortcuts to learn.</p>
+
+<p>I’ve recently started playing with them and have found that they can be useful, especially with long documents.</p>
+
+<p>The main shortcuts you need to learn are:</p>
+
+<p><strong>za</strong>  -  toggle current fold open/closed
+<strong>zR</strong>  -  open all folds
+<strong>zM</strong>  -  close all folds</p>
+
+<p>This would work as an explicit fold:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code># My super clever method {{{
+def clever_method
+  ...
+  something clever
+  ...
+end
+# }}}
+</code></pre></div></div>
+
+<p>The <code class="language-plaintext highlighter-rouge">}}}</code> triple curly braces then let the area <em>fold</em> into something like:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+--  7 lines: My super clever method -----------------
+</code></pre></div></div>
+
+<p>which lets you expand / contract it with <strong>za</strong>.</p>
+
+<p>It’s probably worth adding <strong>za</strong> as a shortcut.</p>
+
+<p>There’s loads more you can do with them, but this is a fairly easy way to start to understand them..</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Vim" /><category term="Tips" /><summary type="html"><![CDATA[I was originally scared of vim folds. They were confusing and hard to manage. And there were extra shortcuts to learn.]]></summary></entry><entry><title type="html">Git Diff for files</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/26/git-diff-for-files/" rel="alternate" type="text/html" title="Git Diff for files" /><published>2015-03-26T00:00:00+00:00</published><updated>2015-03-26T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/26/git-diff-for-files</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/26/git-diff-for-files/"><![CDATA[<p>You can find the differences between files by using <code class="language-plaintext highlighter-rouge">git diff</code>:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff commit1 commit2
+</code></pre></div></div>
+
+<p>This will list all the differences, which could be a long list of changes.</p>
+
+<p>If you’re looking for just the <strong>file names</strong>, you can use the <strong>–name-only</strong> flag:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff --name-only commit1 commit2
+</code></pre></div></div>
+
+<p>You can see which files have changed in the last couple of commits with:</p>
+
+<div class="language-plaintext highlighter-rouge"><div class="highlight"><pre class="highlight"><code>git diff --name-only HEAD~2
+</code></pre></div></div>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="git" /><summary type="html"><![CDATA[You can find the differences between files by using git diff:]]></summary></entry><entry><title type="html">Vim: View Last Commands</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/15/vim-view-last-commands/" rel="alternate" type="text/html" title="Vim: View Last Commands" /><published>2015-03-15T00:00:00+00:00</published><updated>2015-03-15T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/15/vim:-view-last-commands</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/15/vim-view-last-commands/"><![CDATA[<p>You can see your last commands by:</p>
+<ol>
+  <li>Pressing <code class="language-plaintext highlighter-rouge">:</code> (which is hopefully mapped to just <code class="language-plaintext highlighter-rouge">;</code>)</li>
+  <li><code class="language-plaintext highlighter-rouge">&lt;ctrl-p&gt;</code> (‘previous’ in many unix applications)
+  You can also press <code class="language-plaintext highlighter-rouge">up</code> if you find this easier… although you shouldn’t…</li>
+</ol>
+
+<p>Another way is to press <code class="language-plaintext highlighter-rouge">q:</code>, which provides a list of your recent commands. You can <code class="language-plaintext highlighter-rouge">k</code> your way through them and open (<code class="language-plaintext highlighter-rouge">&lt;cr&gt;</code>) them.</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Vim" /><category term="Commands" /><summary type="html"><![CDATA[You can see your last commands by: Pressing : (which is hopefully mapped to just ;) &lt;ctrl-p&gt; (‘previous’ in many unix applications) You can also press up if you find this easier… although you shouldn’t…]]></summary></entry><entry><title type="html">Ruby - Hash#fetch</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/ruby-hash-fetch/" rel="alternate" type="text/html" title="Ruby - Hash#fetch" /><published>2015-03-14T00:00:00+00:00</published><updated>2015-03-14T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/ruby--hash-fetch</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/ruby-hash-fetch/"><![CDATA[<p>If you can’t be bothered to set a default on a hash, you can always use <code class="language-plaintext highlighter-rouge">Hash#fetch</code> to specify a default as you go.</p>
+
+<p>These are the examples from the <a href="http://ruby-doc.org/core-2.2.1/Hash.html">docs</a></p>
+
+<div class="language-ruby highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">h</span> <span class="o">=</span> <span class="p">{</span> <span class="s2">"a"</span> <span class="o">=&gt;</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">"b"</span> <span class="o">=&gt;</span> <span class="mi">200</span> <span class="p">}</span>
+<span class="n">h</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="s2">"a"</span><span class="p">)</span>                            <span class="c1">#=&gt; 100</span>
+<span class="n">h</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="s2">"z"</span><span class="p">,</span> <span class="s2">"go fish"</span><span class="p">)</span>                 <span class="c1">#=&gt; "go fish"</span>
+<span class="n">h</span><span class="p">.</span><span class="nf">fetch</span><span class="p">(</span><span class="s2">"z"</span><span class="p">)</span> <span class="p">{</span> <span class="o">|</span><span class="n">el</span><span class="o">|</span> <span class="s2">"go fish, </span><span class="si">#{</span><span class="n">el</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>   <span class="c1">#=&gt; "go fish, z"</span>
+</code></pre></div></div>
+
+<p>I usually think it’s safer to use this rather than Hash#[] (which is just usuing the normal <code class="language-plaintext highlighter-rouge">hash[:possibly_doesnt_exist]</code> syntax), as it removes the chances of a rogue <code class="language-plaintext highlighter-rouge">nil</code> popping up.</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Ruby" /><category term="Hash" /><summary type="html"><![CDATA[If you can’t be bothered to set a default on a hash, you can always use Hash#fetch to specify a default as you go.]]></summary></entry><entry><title type="html">Save time with Bash &amp;amp; !!</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/save-time-with-bash-&-!!/" rel="alternate" type="text/html" title="Save time with Bash &amp;amp; !!" /><published>2015-03-14T00:00:00+00:00</published><updated>2015-03-14T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/save-time-with-bash-&amp;-!!</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/save-time-with-bash-&amp;-!!/"><![CDATA[<p><code class="language-plaintext highlighter-rouge">!!</code> in Bash / Zsh works the same way as <code class="language-plaintext highlighter-rouge">_</code> does in irb / Pry.</p>
+
+<p>It substitutes the return value of the previous line into the current line.</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Bash" /><category term="Zsh" /><category term="Shell" /><category term="Tips" /><summary type="html"><![CDATA[!! in Bash / Zsh works the same way as _ does in irb / Pry.]]></summary></entry><entry><title type="html">Vim Text Objects</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/vim-text-objects/" rel="alternate" type="text/html" title="Vim Text Objects" /><published>2015-03-14T00:00:00+00:00</published><updated>2015-03-14T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/vim-text-objects</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/14/vim-text-objects/"><![CDATA[<p>One of the most powerful features in Vim is <strong>text objects</strong>. These increase the number of ‘vim nouns’ that you can use with ‘vim verbs’.</p>
+
+<p>Imagine your cursor is in the middle of a paragraph you want to delete. Instead of laboriously deleting single lines, you could just type <code class="language-plaintext highlighter-rouge">dip</code> for ‘ delete inner paragraph’. The text object represents <em>the entire paragraph</em>.</p>
+
+<p>A list of these is:</p>
+
+<p><code class="language-plaintext highlighter-rouge">iw</code>     inner word
+<code class="language-plaintext highlighter-rouge">it</code>     inner xml / html tag
+<code class="language-plaintext highlighter-rouge">is</code>     inner sentence
+<code class="language-plaintext highlighter-rouge">i'</code>     inner single quotation marks
+<code class="language-plaintext highlighter-rouge">i"</code>     inner double quotation marks
+<code class="language-plaintext highlighter-rouge">i{</code>     inner <code class="language-plaintext highlighter-rouge">{ ... }</code> braces
+<code class="language-plaintext highlighter-rouge">i[</code>     inner <code class="language-plaintext highlighter-rouge">[ ... ]</code> braces
+<code class="language-plaintext highlighter-rouge">i(</code>     inner <code class="language-plaintext highlighter-rouge">( ... )</code> braces
+<code class="language-plaintext highlighter-rouge">ip</code>     inner paragraph
+<code class="language-plaintext highlighter-rouge">im</code>     inner ruby method (from the <a href="https://github.com/nelstrom/vim-textobj-rubyblock">vim-textobj-rubyblock plugin</a>)</p>
+
+<p>The same commands also work with <code class="language-plaintext highlighter-rouge">a</code> for <strong>a</strong> (eg. <code class="language-plaintext highlighter-rouge">ca(</code> will also <em>change a bracket</em>, rather than just the contents of them)</p>
+
+<p>For an in-depth explanation, type <code class="language-plaintext highlighter-rouge">:h text-objects</code> into vim.</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Vim" /><category term="Text" /><summary type="html"><![CDATA[One of the most powerful features in Vim is text objects. These increase the number of ‘vim nouns’ that you can use with ‘vim verbs’.]]></summary></entry><entry><title type="html">Vim: Ctrl-R in Insert Mode</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/10/vim-ctrl-r-in-insert-mode/" rel="alternate" type="text/html" title="Vim: Ctrl-R in Insert Mode" /><published>2015-03-10T00:00:00+00:00</published><updated>2015-03-10T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/10/vim:-ctrl-r-in-insert-mode</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/10/vim-ctrl-r-in-insert-mode/"><![CDATA[<p><code class="language-plaintext highlighter-rouge">ctrl-r</code> in <strong>Insert Mode</strong> is pretty useful.</p>
+
+<p>It inserts text based on your current vim context.</p>
+
+<p>Many of these commands work with registers, so it may be worth getting your head round those….</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Ctrl-R Shortcut</th>
+      <th>What it does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ctrl-r %</code></td>
+      <td>inserts filename</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ctrl-r :</code></td>
+      <td>inserts last command</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ctrl-r /</code></td>
+      <td>inserts last search</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ctrl-r =</code></td>
+      <td>inserts evaluated sum (eg. 2+3)</td>
+    </tr>
+    <tr>
+      <td><code class="language-plaintext highlighter-rouge">ctrl-r [a-z 0-9 key]</code></td>
+      <td>inserts text from register</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Hope they help!</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Vim" /><category term="Tips" /><summary type="html"><![CDATA[ctrl-r in Insert Mode is pretty useful.]]></summary></entry><entry><title type="html">Vim Movement</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/04/vim-movement/" rel="alternate" type="text/html" title="Vim Movement" /><published>2015-03-04T00:00:00+00:00</published><updated>2015-03-04T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/04/vim-movement</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/04/vim-movement/"><![CDATA[<p>There are a load of ways to move around in vim.
+The first things you learn (<code class="language-plaintext highlighter-rouge">h</code>, <code class="language-plaintext highlighter-rouge">j</code>, <code class="language-plaintext highlighter-rouge">k</code> &amp; <code class="language-plaintext highlighter-rouge">l</code>) generally aren’t that efficient. <code class="language-plaintext highlighter-rouge">w</code>ord, <code class="language-plaintext highlighter-rouge">e</code>nd, <code class="language-plaintext highlighter-rouge">t</code>ill, <code class="language-plaintext highlighter-rouge">/</code> (buffer search) &amp; <code class="language-plaintext highlighter-rouge">f</code> (line search) are usually better.</p>
+
+<p>On top of these, there’s a handful of other, lesser-known commands:</p>
+
+<p><strong>z commands</strong> (also used for folding)</p>
+
+<p><code class="language-plaintext highlighter-rouge">zz</code>      move current line to middle of screen
+<code class="language-plaintext highlighter-rouge">zt</code>      move current line to top of screen
+<code class="language-plaintext highlighter-rouge">zb</code>      move current line to bottom of screen</p>
+
+<p><strong>Moving over lines quickly</strong></p>
+
+<p><code class="language-plaintext highlighter-rouge">ctrl-e</code>  move up 1 line
+<code class="language-plaintext highlighter-rouge">ctrl-y</code>  move down 1 line
+<code class="language-plaintext highlighter-rouge">ctrl-u</code>  move up 1/2 page
+<code class="language-plaintext highlighter-rouge">ctrl-d</code>  move down 1/2 page
+<code class="language-plaintext highlighter-rouge">ctrl-b</code>  move up 1 page
+<code class="language-plaintext highlighter-rouge">ctrl-f</code>  move down 1 page</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Vim" /><category term="Tips" /><summary type="html"><![CDATA[There are a load of ways to move around in vim. The first things you learn (h, j, k &amp; l) generally aren’t that efficient. word, end, till, / (buffer search) &amp; f (line search) are usually better.]]></summary></entry><entry><title type="html">Hide files from Git Index</title><link href="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/01/hide-files-from-git-index/" rel="alternate" type="text/html" title="Hide files from Git Index" /><published>2015-03-01T00:00:00+00:00</published><updated>2015-03-01T00:00:00+00:00</updated><id>http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/01/hide-files-from-git-index</id><content type="html" xml:base="http://blog.wmmclarke.com/museum/2014-jekyll/2015/03/01/hide-files-from-git-index/"><![CDATA[<p>If you want to hide an already-commited file in Git, you can:</p>
+
+<p><code class="language-plaintext highlighter-rouge">git update-index --assume-unchanged &lt;file&gt;</code></p>
+
+<p>This lets you alter the files and you won’t be at (too much) risk of committing those changes by mistake.</p>
+
+<p>This can be useful if you want a fairly quick way of hiding environmental variables… But be careful…</p>]]></content><author><name>William Clarke</name><email>wmmclarke@gmail.com</email></author><category term="Git" /><category term="Tips" /><summary type="html"><![CDATA[If you want to hide an already-commited file in Git, you can:]]></summary></entry></feed>

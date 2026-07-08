@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Getting Started With Jekyll | Will Clarke</title>
+
+  <meta charset="UTF-8">
+  <meta name="language" content="en">
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="content-type" content="text/html; charset=utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+  
+  
+
+  <link rel="shortcut icon" type="image/png" href="/museum/2020-org/favicon.ico" />
+
+  
+  
+    
+ 
+  
+  
+  
+  
+  
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/post.min.75c723d01f858cc7e782b4c4925cb68a2c7e82df58a81d2b89d397e990304221.css"/>
+  
+    
+    <link rel="stylesheet" href="/museum/2020-org/css/custom.min.e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.css"/>
+  
+  
+   
+   
+    
+
+<script type="application/ld+json">
+  
+    {
+      "@context" : "http://schema.org",
+      "@type" : "BlogPosting",
+      "mainEntityOfPage": {
+            "@type": "WebPage",
+            "@id": "https:\/\/wclarke.net\/museum\/2020-org\/"
+      },
+      "articleSection" : "blog",
+      "name" : "Getting Started With Jekyll",
+      "headline" : "Getting Started With Jekyll",
+      "description" : "",
+      "inLanguage" : "en-US",
+      "author" : "",
+      "creator" : "",
+      "publisher": "",
+      "accountablePerson" : "",
+      "copyrightHolder" : "",
+      "copyrightYear" : "2014",
+      "datePublished": "2014-10-06 00:00:00 \u002b0000 UTC",
+      "dateModified" : "2014-10-06 00:00:00 \u002b0000 UTC",
+      "url" : "https:\/\/wclarke.net\/museum\/2020-org\/blog\/getting-started-with-jekyll\/",
+      "wordCount" : "440",
+      "keywords" : ["Blog"]
+    }
+  
+  </script>
+</head>
+
+<body>
+    
+
+  <div class="burger__container">
+  <div class="burger" aria-controls="navigation" aria-label="Menu">
+    <div class="burger__meat burger__meat--1"></div>
+    <div class="burger__meat burger__meat--2"></div>
+    <div class="burger__meat burger__meat--3"></div>
+  </div>
+</div>
+ 
+
+  <nav class="nav" id="nav" role="navigation" style="background: #fff">
+  <ul class="nav__list">
+    
+    
+      <li>
+        <a  href="/museum/2020-org/">me</a>
+      </li>
+    
+      <li>
+        <a  class="active"
+         href="/museum/2020-org/blog">blog</a>
+      </li>
+    
+    <li><a href="/museum/2020-org/will-clarke--ex-deliveroo.pdf">CV</a></li>
+    <li><a href="" id="nyan-button">🕺</a></li>
+  </ul>
+</nav>
+
+
+  <main>
+    
+    
+
+    <div class="flex-wrapper">
+      <div class="post__container">
+        <div class="post">
+          <header class="post__header">
+            <h1 id="post__title">Getting Started With Jekyll</h1>
+            <time datetime="2014-10-06 00:00:00 &#43;0000 UTC" class="post__date">Oct 6 2014</time> 
+          </header>
+          <article class="post__content">
+              
+<p>I have been told that it&rsquo;s good to write a blog. Something about self-promotion and helping other people&hellip;</p>
+<p>I originally wanted to create something through rails, but, having thought about it, it would have taken a while to set everything up correctly. No need to reinvent the wheel&hellip;</p>
+<p><a href="http://jekyllrb.com/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Jekyll</a>
+ is a blogging / website platform built with Ruby. It&rsquo;s what I would have aimed to build, only simpler, more efficient, pre-built  and  with an active community behind it.</p>
+<p>Jekyll&rsquo;s main selling point is that it integrates text files well into a static site.</p>
+<p>It&rsquo;s simple to use and set up out of the box:</p>
+<pre><code>~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&gt; Now browse to http://localhost:4000
+</code></pre>
+<p>If you&rsquo;re lazy, I&rsquo;d recommend not doing this, though. Jekyll Bootstrap, discussed below, has a few more features that may be useful.</p>
+<h2 id="jekyll-bootstrap">Jekyll Bootstrap<a class="anchor" href="#jekyll-bootstrap">#</a></h2>
+<p><a href="http://jekyllbootstrap.com/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Jekyll Bootstrap</a>
+ uses Twitter&rsquo;s <a href="http://getbootstrap.com/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>bootstrap</a>
+ and includes a number of extra in-build functionality including clever rake tasks, themes and comments.</p>
+<p>Here&rsquo;s a really good starting point: <a href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html" 
+  
+   target="_blank" rel="noreferrer noopener" 
+><em>Jekyll Bootstrap Quick Start Guide</em></a>
+</p>
+<p>One of the great things about Jekyll Bootstrap is that it integrates well with <a href="https://pages.github.com/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Github Pages</a>
+.  This lets you host your own site for <em>FREE</em>! You get the custom domain of <em>your_github_username</em>.github.io.</p>
+<p>The only tweak that I had to make with the current version of Jekyll Bootstrap was to change the default github.<em>com</em> to github.<em>io</em></p>
+<h2 id="updating-your-settings">Updating Your Settings<a class="anchor" href="#updating-your-settings">#</a></h2>
+<p>Go to <code>_config.yml</code> to update your settings:</p>
+<ul>
+<li>Github Username</li>
+<li>Twitter Username</li>
+<li>Analytics Tracking ID</li>
+<li>Disqus shortname</li>
+</ul>
+<p>You&rsquo;ll probably have to go to <a href="https://disqus.com/admin/create/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Disqus</a>
+ to create a shortname and <a href="http://www.google.com/analytics/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Google Analytics</a>
+ to get your tracking code.</p>
+<h2 id="generating-new-posts">Generating New Posts<a class="anchor" href="#generating-new-posts">#</a></h2>
+<p>Once you have everything set up, you&rsquo;ll be able to run</p>
+<pre><code>$ rake post title=&quot;Hello World&quot;
+</code></pre>
+<p>To create new posts or</p>
+<pre><code>$ rake page name=&quot;about.md&quot;
+</code></pre>
+<p>To create new pages.</p>
+<h2 id="there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">There you have it - a free, fully functioning static blog set up in only a few minutes!<a class="anchor" href="#there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">#</a></h2>
+<hr>
+<hr>
+<p>Here are a few more tips I recommend to make it even easier to use Jekyll and Markdown.</p>
+<h4 id="using-jekyll-with-vim">Using Jekyll with Vim</h4>
+<p>There&rsquo;s a great <a href="https://github.com/csexton/jekyll.vim" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>vim plugin</a>
+ for jekyll. This lets you, anywhere in the file structure, to access your current posts or to create a new one.</p>
+<pre><code>map &lt;Leader&gt;jb  :JekyllBuild&lt;CR&gt;
+map &lt;Leader&gt;jn  :JekyllPost&lt;CR&gt;
+map &lt;Leader&gt;jl  :JekyllList&lt;CR&gt;.
+</code></pre>
+<h4 id="ultra-fancy-markdown-editing">Ultra fancy Markdown editing.</h4>
+<p>I use <a href="http://marked2app.com/" 
+  
+   target="_blank" rel="noreferrer noopener" 
+>Marked 2</a>
+, which is a fairly slick markdown live previewer.
+You can call it straight from vim using this mapping in your .vimrc:</p>
+<pre><code>noremap &lt;leader&gt;md :!open -a 'Marked 2' %&lt;cr&gt;&lt;cr&gt;
+</code></pre>
+<p>(Assuming you&rsquo;re on OS X)</p>
+<hr>
+<p>I hope this&rsquo;ll help some people get started with Jekyll. Good luck with it!</p>
+
+
+              
+          </article>
+          
+
+<ul class="tags__list">
+    
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/ruby/">ruby</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/jekyll/">jekyll</a>
+    </li>
+    <li class="tag__item">
+        <a class="tag__link" href="https://wclarke.net/museum/2020-org/tags/blog/">blog</a>
+    </li></ul>
+
+ <div class="pagination">
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/remove-file-from-git-after-committing/">
+        <span class="pagination__label">Previous Post</span>
+        <span class="pagination__title">Remove file from Git (after committing)</span>
+    </a>
+  
+
+  
+    <a class="pagination__item" href="https://wclarke.net/museum/2020-org/blog/clever-vim-commands-keybindings/">
+      <span class="pagination__label">Next Post</span>
+      <span class="pagination__title" >Clever Vim Commands &amp; Keybindings</span>
+    </a>
+  
+</div>
+
+          
+          <footer class="post__footer">
+            
+
+
+<div class="social-icons">
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitHub"
+         href="https://github.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/github.svg')"></div>
+      </a>
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="Email"
+         href="mailto:wmmclarke@gmail.com"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/email.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="GitLab"
+         href="https://gitlab.com/will-clarke"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/gitlab.svg')"></div>
+      </a>
+    
+  
+     
+    
+  
+     
+    
+      <a class="social-icons__link" rel="me" title="LinkedIn"
+         href="https://www.linkedin.com/in/wmmclarke/"
+         target="_blank" rel="noopener">
+        <div class="social-icons__icon" style="background-image: url('https://wclarke.net/museum/2020-org/svg/linkedin.svg')"></div>
+      </a>
+    
+  
+     
+    
+     
+</div>
+
+            <p>© 2026</p>
+          </footer>
+          </div>
+      </div>
+      
+    </div>
+    
+
+  </main>
+
+   
+
+  
+  <script src="/museum/2020-org/js/index.min.49e4d8a384357d9b445b87371863419937ede9fa77737522ffb633073aebfa44.js" crossorigin="anonymous"></script>
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+  
+  <script src="/museum/2020-org/js/loadNyan.min.b086d6790388528ad94ad6d666b9a5a277a0a0abdd06b01f4cec8574914aaaec.js" crossorigin="anonymous"></script>
+
+  
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/components/prism-core.min.js"></script>
+
+  
+  <script src="https://unpkg.com/prismjs@1.20.0/plugins/autoloader/prism-autoloader.min.js"
+    data-autoloader-path="https://unpkg.com/prismjs@1.20.0/components/"></script>
+
+  
+
+
+</body>
+
+</html>
