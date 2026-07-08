@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Stats - Will Clarke</title>
+  <meta name="description" content="Twelve and a half years of commits, counted.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .stat-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+      gap: 0.9rem;
+      margin: 1.5rem 0 2rem;
+    }
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.8rem 1rem;
+    }
+    .stat b {
+      display: block;
+      font-family: var(--mono);
+      font-size: 1.35rem;
+      font-weight: normal;
+    }
+    .stat span {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .years {
+      display: grid;
+      grid-template-columns: repeat(13, 1fr);
+      align-items: end;
+      gap: 4px;
+      height: 11rem;
+      margin: 2rem 0 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .years .col { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; }
+    .years .bar {
+      width: 100%;
+      max-width: 1.7rem;
+      background: var(--accent);
+      border-radius: 3px 3px 0 0;
+    }
+    .years .col.partial .bar { opacity: 0.45; }
+    .years .col .val {
+      position: absolute;
+      bottom: calc(var(--h) + 0.3rem);
+      left: 0; right: 0;
+      text-align: center;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+    }
+    .years .bar { height: var(--h); }
+    .year-labels {
+      display: grid;
+      grid-template-columns: repeat(13, 1fr);
+      gap: 4px;
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--muted);
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+    .langs { margin: 1.5rem 0; }
+    .langs .row {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr 4.5rem;
+      align-items: center;
+      gap: 0.6rem;
+      margin: 0.35rem 0;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+    }
+    .langs .name { color: var(--fg); text-align: right; }
+    .langs .track { height: 0.7rem; }
+    .langs .fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+      min-width: 2px;
+    }
+    .langs .num { color: var(--muted); }
+    .footnote { font-size: 0.85rem; color: var(--muted); }
+    details { margin: 1.5rem 0; }
+    summary { font-family: var(--mono); font-size: 0.8rem; color: var(--muted); cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <span class="brand"><a href="/">Will Clarke</a></span>
+    <nav>
+      <a href="/">home</a>
+      <a href="/projects.html">projects</a>
+      <a href="/posts.html">posts</a>
+      <a href="/about.html">about</a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Twelve and a half years of typing</h1>
+    <p class="lede">I pointed a script at every git repository of mine I could
+    find - 68 of them, across GitHub and sourcehut, mirrors deduplicated - and
+    counted everything since the first commit in February 2014.</p>
+
+    <div class="stat-row">
+      <div class="stat"><b>3,497</b><span>commits</span></div>
+      <div class="stat"><b>622,122</b><span>lines added</span></div>
+      <div class="stat"><b>229,159</b><span>lines removed</span></div>
+      <div class="stat"><b>68</b><span>repositories</span></div>
+    </div>
+
+    <h2>Commits per year</h2>
+    <div class="years" role="img" aria-label="Bar chart of commits per year, 2014 to 2026. Values in the table below.">
+      <div class="col"><span class="val" style="--h:23%">186</span><div class="bar" style="--h:23%" title="2014: 186 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:9.9%" title="2015: 80 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:9.6%" title="2016: 78 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:7.9%" title="2017: 64 commits"></div></div>
+      <div class="col"><span class="val" style="--h:5.4%">44</span><div class="bar" style="--h:5.4%" title="2018: 44 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:17.3%" title="2019: 140 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:31.8%" title="2020: 257 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:42%" title="2021: 340 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:18%" title="2022: 146 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:37.6%" title="2023: 304 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:68%" title="2024: 550 commits"></div></div>
+      <div class="col"><span class="val" style="--h:100%">809</span><div class="bar" style="--h:100%" title="2025: 809 commits"></div></div>
+      <div class="col partial"><span class="val" style="--h:61.7%">499</span><div class="bar" style="--h:61.7%" title="2026: 499 commits, by July"></div></div>
+    </div>
+    <div class="year-labels">
+      <span>'14</span><span>'15</span><span>'16</span><span>'17</span><span>'18</span><span>'19</span><span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span><span>'26</span>
+    </div>
+
+    <p>The low point is 2018: forty-four commits, a big year for the day job.
+    The recent cliff face is what it looks like. 2026 is the faded bar - half a
+    year old and already in third place.</p>
+
+    <h2>What the lines were</h2>
+    <p class="section-lede">"Lines added" is a terrible metric, so naturally
+    I've charted it.</p>
+
+    <div class="langs">
+      <div class="row"><span class="name">prose</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="num">135,790</span></div>
+      <div class="row"><span class="name">shell / config</span><div class="track"><div class="fill" style="width:77%"></div></div><span class="num">104,325</span></div>
+      <div class="row"><span class="name">javascript</span><div class="track"><div class="fill" style="width:62%"></div></div><span class="num">84,718</span></div>
+      <div class="row"><span class="name">html / css</span><div class="track"><div class="fill" style="width:43%"></div></div><span class="num">57,875</span></div>
+      <div class="row"><span class="name">ruby</span><div class="track"><div class="fill" style="width:35%"></div></div><span class="num">46,973</span></div>
+      <div class="row"><span class="name">c</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="num">44,163</span></div>
+      <div class="row"><span class="name">python</span><div class="track"><div class="fill" style="width:16%"></div></div><span class="num">21,812</span></div>
+      <div class="row"><span class="name">go</span><div class="track"><div class="fill" style="width:7.3%"></div></div><span class="num">9,960</span></div>
+      <div class="row"><span class="name">lua</span><div class="track"><div class="fill" style="width:6.4%"></div></div><span class="num">8,681</span></div>
+      <div class="row"><span class="name">elixir</span><div class="track"><div class="fill" style="width:3.6%"></div></div><span class="num">4,871</span></div>
+      <div class="row"><span class="name">rust</span><div class="track"><div class="fill" style="width:2.8%"></div></div><span class="num">3,771</span></div>
+      <div class="row"><span class="name">haskell</span><div class="track"><div class="fill" style="width:2.5%"></div></div><span class="num">3,432</span></div>
+      <div class="row"><span class="name">elm</span><div class="track"><div class="fill" style="width:1.6%"></div></div><span class="num">2,234</span></div>
+      <div class="row"><span class="name">everything else</span><div class="track"><div class="fill" style="width:69%"></div></div><span class="num">93,517</span></div>
+    </div>
+
+    <p>The biggest language I write is English. The most-committed repository,
+    out of 68, is <code>dotfiles</code>, with 504 commits. I'm not sure what
+    either of those says.</p>
+
+    <details>
+      <summary>the full table</summary>
+      <table>
+        <tr><th>year</th><th>commits</th><th>lines added</th><th>lines removed</th></tr>
+        <tr><td>2014</td><td>186</td><td>81,509</td><td>57,122</td></tr>
+        <tr><td>2015</td><td>80</td><td>3,197</td><td>455</td></tr>
+        <tr><td>2016</td><td>78</td><td>6,782</td><td>2,626</td></tr>
+        <tr><td>2017</td><td>64</td><td>2,912</td><td>1,527</td></tr>
+        <tr><td>2018</td><td>44</td><td>42,688</td><td>2,935</td></tr>
+        <tr><td>2019</td><td>140</td><td>4,530</td><td>2,778</td></tr>
+        <tr><td>2020</td><td>257</td><td>23,612</td><td>6,637</td></tr>
+        <tr><td>2021</td><td>340</td><td>36,355</td><td>21,161</td></tr>
+        <tr><td>2022</td><td>146</td><td>47,971</td><td>28,329</td></tr>
+        <tr><td>2023</td><td>304</td><td>18,376</td><td>4,662</td></tr>
+        <tr><td>2024</td><td>550</td><td>96,186</td><td>46,230</td></tr>
+        <tr><td>2025</td><td>809</td><td>112,104</td><td>29,793</td></tr>
+        <tr><td>2026 (to July)</td><td>499</td><td>145,900</td><td>24,904</td></tr>
+      </table>
+    </details>
+
+    <p class="footnote">Method: commits matched against the twelve email
+    addresses I've apparently had, deduplicated by hash across mirrored repos.
+    Lockfiles, <code>node_modules</code> (committed once, in 2023, on purpose),
+    generated sites, and the 3D printer's automated config backups are
+    excluded. 2014's JavaScript is mostly jQuery plugins committed by hand,
+    which was the style at the time.</p>
+  </main>
+
+  <footer class="site">
+    <a href="/">home</a> ·
+    <a href="/museum/">museum</a> ·
+    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+    <a href="https://github.com/will-clarke">github</a>
+  </footer>
+
+</div>
+</body>
+</html>
