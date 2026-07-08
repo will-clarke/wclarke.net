@@ -1,1 +1,4 @@
 .DS_Store
+
+# The tag pages are real content; override the global `tags` (ctags) ignore.
+!/tags/
