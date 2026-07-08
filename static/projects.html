@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Projects - Will Clarke</title>
+  <meta name="description" content="A cabinet of small things I've built: browser games, live toys, and some early code left up on purpose.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <span class="brand"><a href="/">Will Clarke</a></span>
+    <nav>
+      <a href="/">home</a>
+      <a href="/projects.html">projects</a>
+      <a href="/posts.html">posts</a>
+      <a href="/about.html">about</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Projects</h1>
+    <p class="lede">A cabinet of small things I've made. A few are useful. Most
+    exist because I couldn't leave them alone. It's all a bit self-indulgent,
+    which is rather the point of a personal site.</p>
+
+    <h2>Play these in your browser</h2>
+    <p class="section-lede">I keep writing little games in C, Rust, Elm and
+    Haskell, usually instead of finishing the previous one. WebAssembly means five
+    of them now run right here, so you can judge for yourself. They share a design
+    brief I found in an old README: <em>everything is pushable</em>, and
+    <em>optimise for OMG WOW moments</em>. I can only really vouch for the first
+    half.</p>
+
+    <div class="shelf">
+
+      <div class="card">
+        <h3><a href="/games/recursive-sokoban/">▶ Recursive Sokoban</a></h3>
+        <span class="tag">C · raylib · wasm</span>
+        <p>Boxes contain whole levels. Push one, step inside, solve the puzzle
+        within, climb back out. Nests up to 16 deep.</p>
+      </div>
+
+      <div class="card">
+        <h3><a href="/games/functional-sokoban/">▶ Functional Sokoban</a></h3>
+        <span class="tag">C · raylib · wasm</span>
+        <p>Push value boxes through function boxes - <code>+1</code>, <code>*2</code>,
+        <code>NEG</code>, <code>INV</code>. Later levels quietly teach you currying.</p>
+      </div>
+
+      <div class="card">
+        <h3><a href="/games/paint-machine/">▶ Paint Machine</a></h3>
+        <span class="tag">C · raylib · wasm</span>
+        <p>A small Zachtronics-ish factory: emitters feed colorers, cloners,
+        portals and fans to paint bands onto a canvas. Play, step, rewind.</p>
+      </div>
+
+      <div class="card">
+        <h3><a href="/games/slime-teleports/">▶ Slime &amp; Teleports</a></h3>
+        <span class="tag">C · raylib · wasm</span>
+        <p>Slime trails make things slide and refuse to stop. Recursive slime,
+        coloured teleport pairs, and a lighting system I did not need to add.</p>
+      </div>
+
+      <div class="card">
+        <h3><a href="/games/worm-division/">▶ Worm Division</a></h3>
+        <span class="tag">C · raylib · wasm</span>
+        <p>A worm divides, and the clones replay your input history with relative
+        orientation. Automation by accident. Now also has time machines.</p>
+      </div>
+
+      <div class="card">
+        <h3><a href="/asteroids/">▶ Asteroids</a></h3>
+        <span class="tag">Elm</span>
+        <p>Compiles straight to JavaScript, so it's been quietly playable here for
+        years - bugs and all.</p>
+      </div>
+
+    </div>
+
+    <blockquote>These five grew out of one 685-commit repo that got away from me.
+    In the history there's a level called <code>09_true_infinite.txt</code>, a
+    <code>05_curry.lvl</code> titled "Currying: Make +5 Function", and a commit that
+    just says "Put OMG TESTING level at the top". The <code>main</code> branch is
+    mostly a segfault diary, including three separate reverts of a time machine.</blockquote>
+
+    <h2>chip8</h2>
+    <p><span class="muted">C · wasm port pending</span></p>
+    <p>A CHIP-8 emulator with a clean, portable core and 36 real ROMs bundled -
+    PONG, TETRIS, INVADERS, the usual suspects. Today it runs in a terminal; the
+    browser port is on the list, somewhere below "tidy the shed".</p>
+
+    <h2>Things that are alive on the internet</h2>
+    <ul class="things">
+      <li><a href="https://t8r8r.fly.dev">t8r8r</a> - "fulfilling your potato-rating
+      needs." An ELO ranking system. For potatoes. Commits include "Add cringey
+      /about page" and "Make potatoes more boring". The joke is the product.</li>
+
+      <li><a href="https://shortstories.lol">shortstories.lol</a> - short stories from
+      language models I fine-tuned on my own laptop back in the Llama 2 days. They're
+      not good, and I nearly cooked the MacBook making them.</li>
+
+      <li><a href="https://intuition-2i1.pages.dev">intuition</a> - about 62
+      single-diagram maths proofs you can drag around and poke, plus a playground for
+      Conway-operator polyhedra. I'm quietly fond of this one.</li>
+
+      <li>classiccult - a zero-backend site listing classic and cult films across a
+      handful of London cinemas. A GitHub Action scrapes the listings once a day into
+      a static JSON file. To get past one cinema's Cloudflare I piggyback a stranger's
+      residential-Pi open-data project. Nothing to host, nothing to pay for.</li>
+
+      <li><a href="https://choosetwo.org">choosetwo.org</a> - trilemmas as SVG
+      triangles: pick any two. CAP theorem, Zooko's triangle, Epicurus, and one for
+      Career / Family / Hobbies. "Life is short; make a conscious decision how to
+      spend it."</li>
+    </ul>
+
+    <h2>The ones that only have a gif</h2>
+    <p class="section-lede">Some things don't sensibly compile to the web - a Haskell
+    terminal game, say. Here they are anyway.</p>
+    <ul class="things">
+      <li><strong>snake-hs</strong> - Snake, in Haskell, with <code>brick</code> and
+      <code>vty</code>. There is a gif.</li>
+      <li><strong>pong-rs</strong> - Pong in Rust and ncurses. The README promises an
+      "Unbeatably intelligent AI". It is not.</li>
+      <li><strong>hah</strong> - a small Rust arcade game with a GUI, and an
+      <code>example.gif</code> to prove it.</li>
+    </ul>
+
+    <h2>The meta bits</h2>
+    <ul class="things">
+      <li><a href="https://git.sr.ht/~will-clarke/super-simple-static-site-generator">super-simple-static-site-generator</a>
+      - "150 lines of fabulous shell script." It ran this site for years; I'm slowly
+      replacing it, which feels a bit ungrateful. One commit reads "this script has
+      somehow grown 😱".</li>
+
+      <li><a href="https://github.com/will-clarke/Codeschool-Video-Downloader">Codeschool-Video-Downloader</a>
+      - quietly my most-starred repo (46 ⭐), pull requests from strangers and all. It
+      downloads videos from a service that no longer exists. Timing is everything.</li>
+
+      <li><strong>tesco_rb</strong> - a Ruby gem wrapping the Tesco API. Commit log
+      bookend: "Published Gem! :grinning:". Proof I once finished one.</li>
+    </ul>
+
+    <h2>The early stuff (2014)</h2>
+    <p class="section-lede">Everyone's first code is embarrassing; here's mine, left
+    up on purpose. There's no grand trajectory to read into it - I was just having a
+    go and using a lot of capital letters.</p>
+    <ul class="things">
+      <li><strong>My-First-Big-Program</strong> - scrapes sites to build Google Ads
+      campaigns. Contains the comment <code>### SCRAPE THE SITE. OMG. TOTES AWESOME</code>
+      and error messages picked at random from <code>["It's not your fault.", "Stop
+      being stupid.", ...].sample</code>.</li>
+
+      <li><strong>Sir-Archibalds-Twitter-Account</strong> - "Aristocrat, Philanthropist
+      &amp; Spelling Nazi." A bot that replied to tweets mentioning "manors" as an
+      appalled toff: "Anything less than 800 acres is pitiful."</li>
+
+      <li><strong>Wordsearch</strong> and <strong>Crossword</strong> - generators.
+      Because why not.</li>
+    </ul>
+
+    <h2>Learning in public, with receipts</h2>
+    <p class="section-lede">Books I worked through - including the ones I gave up on.</p>
+    <ul class="things">
+      <li><strong>writing-an-interpreter-in-go</strong> - roughly a third through the
+      Monkey language. "Repl/main done - CHAPTER ONE DONE!!!!"</li>
+      <li><strong>crafting-compilers</strong> - a Lox interpreter, abandoned with
+      impeccable timing at the "number literals" section.</li>
+      <li><strong>ziglings</strong> - about 80% done in one week of July 2023.
+      "comptime is lit 🔥", "ZIGLING RUSH".</li>
+      <li><strong>advent-of-code</strong> - Elixir. Exactly one day attempted. "no
+      interesting sizes though."</li>
+    </ul>
+  </main>
+
+  <footer class="site">
+    <a href="/">home</a> ·
+    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+    <a href="https://github.com/will-clarke">github</a>
+  </footer>
+
+</div>
+</body>
+</html>

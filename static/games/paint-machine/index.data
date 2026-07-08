@@ -1,0 +1,1002 @@
+# Level
+width: 15
+height: 12
+
+# Player
+player: 8 4
+
+# Colorers
+colorer: 5 3 red
+colorer: 5 2 red
+
+# Cloners
+cloner: 5 7
+cloner: 4 6
+
+# Target Test - Test the target matching system
+width: 10
+height: 8
+
+# Player
+player: 1 1
+
+# Emitters (spawn blocks at tick 0)
+emitter: 2 1
+emitter: 4 1
+emitter: 6 1
+
+# Colorers (blocks fall through these)
+colorer: 2 3 red
+colorer: 4 3 blue
+colorer: 6 3 green
+
+# Target: expect red, blue, green blocks in order
+target: red blue green blue
+target: blue green blue
+
+# Walls (border)
+wall: 0 0 9 0
+wall: 0 7 9 7
+wall: 0 1 0 6
+wall: 9 1 9 6
+# Level
+width: 15
+height: 12
+
+# Player
+player: 2 2
+
+# Emitters
+emitter: 3 1
+emitter: 5 1
+emitter: 7 1
+
+# Colorers
+colorer: 3 3 red
+colorer: 5 3 blue
+colorer: 7 3 green
+
+# NextColor machines
+nextcolor: 4 5
+
+# Walls
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 3 0
+wall: 4 0
+wall: 5 0
+wall: 6 0
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 0 7
+wall: 1 7
+wall: 9 6
+wall: 9 5
+wall: 4 7
+wall: 9 4
+wall: 6 7
+wall: 9 3
+wall: 8 7
+wall: 9 7
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 9 1
+wall: 9 2
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 2 2
+
+# Plain blocks
+block: 3 2
+
+# Cloners
+cloner: 4 2
+cloner: 5 2
+
+# Walls
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 3 0
+wall: 4 0
+wall: 5 0
+wall: 6 0
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 0 7
+wall: 1 7
+wall: 2 7
+wall: 3 7
+wall: 4 7
+wall: 5 7
+wall: 6 7
+wall: 7 7
+wall: 8 7
+wall: 9 7
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 9 1
+wall: 9 2
+wall: 9 3
+wall: 9 4
+wall: 9 5
+wall: 9 6
+
+# Portal Test Level
+width: 12
+height: 10
+
+# Player
+player: 2 2
+
+# Blocks to test portals
+block: 5 2
+block: 7 2
+
+# Two red portals (entrance and exit)
+portal: 5 5 red
+portal: 5 8 red
+
+# Two blue portals
+portal: 7 5 blue
+portal: 7 8 blue
+
+# Walls
+wall: 0 0 11 0
+wall: 0 9 11 9
+wall: 0 1 0 8
+wall: 11 1 11 8
+# Level
+width: 15
+height: 12
+
+# Player
+player: 4 1
+
+# Emitters
+emitter: 5 1
+emitter: 9 1
+emitter: 11 1
+emitter: 11 8
+
+# Colorers
+colorer: 5 4 red
+
+# NextColor machines
+nextcolor: 9 5
+nextcolor: 12 7
+nextcolor: 11 2
+
+# Cloners
+cloner: 3 7
+cloner: 5 7
+
+# Portals
+portal: 9 3 red
+portal: 9 7 red
+
+# Fans
+fan: 11 10 left
+
+# FlipFlop A
+flipflop_a: 11 6 0
+flipflop_a: 11 3 0
+
+# Walls
+wall: 14 10
+wall: 14 6
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 3 0
+wall: 4 0
+wall: 5 0
+wall: 6 0
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 10 0
+wall: 11 0
+wall: 12 0
+wall: 13 0
+wall: 14 0
+wall: 13 5
+wall: 1 11
+wall: 2 11
+wall: 3 11
+wall: 0 10
+wall: 0 9
+wall: 14 1
+wall: 14 2
+wall: 14 9
+wall: 14 4
+wall: 14 3
+wall: 14 5
+wall: 14 7
+wall: 14 8
+wall: 14 11
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 0 7
+wall: 0 8
+wall: 4 11
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 2 2
+
+# Plain blocks
+block: 3 3
+block: 5 3
+block: 7 3
+block: 9 3
+
+# Emitters
+emitter: 5 1
+emitter: 6 1
+
+# Colorers
+colorer: 3 5 red
+colorer: 5 5 blue
+
+# NextColor machines
+nextcolor: 7 5
+nextcolor: 7 6
+nextcolor: 7 7
+
+# Cloners
+cloner: 9 5
+
+# Portals
+portal: 11 3 red
+portal: 11 8 red
+
+# Fans
+fan: 3 7 right
+fan: 7 8 left
+
+# Walls
+wall: 14 3
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 3 0
+wall: 4 0
+wall: 5 0
+wall: 6 0
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 10 0
+wall: 11 0
+wall: 12 0
+wall: 13 0
+wall: 14 0
+wall: 0 11
+wall: 1 11
+wall: 2 11
+wall: 14 10
+wall: 14 9
+wall: 14 5
+wall: 14 8
+wall: 7 11
+wall: 14 4
+wall: 14 6
+wall: 14 7
+wall: 11 11
+wall: 12 11
+wall: 13 11
+wall: 14 11
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 0 7
+wall: 0 8
+wall: 0 9
+wall: 0 10
+wall: 14 1
+wall: 14 2
+
+# Level
+width: 15
+height: 12
+
+# Emitters
+emitter: 4 3
+emitter: 6 0
+emitter: 7 0
+emitter: 9 0
+emitter: 8 0
+emitter: 9 3
+emitter: 6 7
+emitter: 11 0
+emitter: 11 3
+emitter: 11 7
+
+# Colorers
+colorer: 9 2 blue
+colorer: 4 5 red
+colorer: 9 5 orange
+colorer: 6 9 yellow
+colorer: 6 2 green
+colorer: 7 2 green
+colorer: 8 2 green
+colorer: 11 9 violet
+
+# Walls
+wall: 5 2
+wall: 3 4
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 1 6
+
+# Emitters
+emitter: 4 4
+emitter: 4 0
+emitter: 5 0
+emitter: 10 1
+emitter: 5 2
+
+# FlipFlop A
+flipflop_a: 5 6 0
+flipflop_a: 4 6 0
+
+# FlipFlop B
+flipflop_b: 10 6 0
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 9 1
+
+# Emitters
+emitter: 7 1
+emitter: 5 1
+
+# Cloners
+cloner: 5 6
+cloner: 7 3
+
+# Walls
+wall: 7 6
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 1 1
+
+# Emitters
+emitter: 3 0
+emitter: 4 0
+emitter: 5 0
+emitter: 6 0
+emitter: 4 3
+emitter: 5 3
+
+# Colorers
+colorer: 3 2 red
+colorer: 4 2 green
+colorer: 5 2 blue
+colorer: 6 2 yellow
+
+# Walls
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 14 10
+wall: 14 9
+wall: 14 8
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 10 0
+wall: 11 0
+wall: 12 0
+wall: 13 0
+wall: 14 0
+wall: 0 11
+wall: 1 11
+wall: 2 11
+wall: 3 11
+wall: 4 11
+wall: 5 11
+wall: 6 11
+wall: 7 11
+wall: 8 11
+wall: 9 11
+wall: 10 11
+wall: 11 11
+wall: 12 11
+wall: 13 11
+wall: 14 11
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 0 7
+wall: 0 8
+wall: 0 9
+wall: 0 10
+wall: 14 1
+wall: 14 2
+wall: 14 3
+wall: 14 4
+wall: 14 5
+wall: 14 6
+wall: 14 7
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 3 4
+
+# Emitters
+emitter: 5 1
+
+# NextColor machines
+nextcolor: 5 3
+
+# Cloners
+cloner: 5 5
+
+# Portals
+portal: 6 7 red
+portal: 5 0 red
+
+# Level
+width: 15
+height: 12
+
+# Target painting
+target: red blue green
+
+# Emitters
+emitter: 6 0
+
+# Colorers
+colorer: 8 9 red
+colorer: 9 9 orange
+
+# Cloners
+cloner: 6 4
+
+# Portals
+portal: 6 2 red
+portal: 5 7 red
+
+# Fans
+fan: 7 6 right
+fan: 8 6 right
+
+# FlipFlop A
+flipflop_a: 9 7 0
+flipflop_a: 8 7 0
+
+# FlipFlop B
+flipflop_b: 7 8 0
+
+# Level
+width: 15
+height: 12
+
+# Emitters
+emitter: 2 1
+
+# NextColor machines
+nextcolor: 2 3
+
+# Cloners
+cloner: 2 4
+
+# Portals
+portal: 1 9 red
+portal: 2 0 red
+
+# Fans
+fan: 3 6 right
+fan: 4 6 right
+fan: 5 6 right
+fan: 6 6 right
+fan: 7 6 right
+fan: 8 6 right
+fan: 9 6 right
+
+# Bins
+bin: 3 10
+
+# FlipFlop A
+flipflop_a: 3 8 0
+
+# FlipFlop B
+flipflop_b: 4 7 0
+flipflop_b: 5 7 0
+flipflop_b: 6 7 0
+flipflop_b: 7 7 0
+flipflop_b: 8 7 0
+flipflop_b: 9 7 0
+flipflop_b: 10 7 0
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 1 1
+
+# Emitters
+emitter: 8 2
+emitter: 7 1
+emitter: 6 1
+emitter: 5 2
+
+# Colorers
+colorer: 6 3 red
+colorer: 7 3 orange
+colorer: 5 5 blue
+colorer: 8 4 violet
+
+# Cloners
+cloner: 8 9
+
+# Fans
+fan: 8 6 left
+fan: 5 6 right
+
+# Rotate machines
+rotate: 9 10
+
+# Shrink machines (2x2)
+shrink: 6 7 0
+
+# Walls
+wall: 6 11
+wall: 11 11
+wall: 10 11
+wall: 13 11
+wall: 12 11
+wall: 0 0
+wall: 1 0
+wall: 2 0
+wall: 3 0
+wall: 4 0
+wall: 5 0
+wall: 6 0
+wall: 7 0
+wall: 8 0
+wall: 9 0
+wall: 10 0
+wall: 11 0
+wall: 12 0
+wall: 13 0
+wall: 14 0
+wall: 0 1
+wall: 0 2
+wall: 0 3
+wall: 0 4
+wall: 0 5
+wall: 0 6
+wall: 0 7
+wall: 0 8
+wall: 0 9
+wall: 0 10
+wall: 0 11
+wall: 14 1
+wall: 14 2
+wall: 14 3
+wall: 14 4
+wall: 14 5
+wall: 14 6
+wall: 14 7
+wall: 14 8
+wall: 14 9
+wall: 14 10
+wall: 14 11
+wall: 1 11
+wall: 2 11
+wall: 3 11
+wall: 4 11
+wall: 5 11
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 9 0
+
+# Emitters
+emitter: 6 1
+
+# NextColor machines
+nextcolor: 6 3
+nextcolor: 6 7
+
+# Cloners
+cloner: 5 6
+cloner: 6 5
+cloner: 10 3
+
+# Portals
+portal: 6 0 red
+portal: 10 2 orange
+portal: 8 11 orange
+portal: 4 9 red
+
+# Fans
+fan: 9 4 right
+
+# Rotate machines
+rotate: 8 10
+
+# Shrink machines (2x2)
+shrink: 6 8 0
+shrink: 10 5 4
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 8 2
+
+# Colorers
+colorer: 4 2 red
+colorer: 6 2 red
+
+# Cloners
+cloner: 4 5
+cloner: 7 5
+
+# Bins
+bin: 4 8
+bin: 6 8
+
+# Level
+width: 15
+height: 12
+
+# Emitters
+emitter: 2 1
+
+# Colorers
+colorer: 2 5 red
+colorer: 4 5 blue
+
+# Cloners
+cloner: 1 3
+cloner: 2 2
+
+# Portals
+portal: 2 0 indigo
+portal: 0 4 indigo
+
+# Fans
+fan: 3 4 right
+fan: 2 7 right
+fan: 3 7 right
+fan: 4 7 right
+fan: 5 7 right
+fan: 6 7 right
+fan: 7 7 right
+fan: 8 7 right
+fan: 9 7 right
+fan: 11 7 right
+fan: 12 7 right
+fan: 10 7 up
+fan: 10 6 up
+fan: 10 5 up
+fan: 10 4 up
+fan: 10 3 up
+fan: 10 2 up
+fan: 10 1 left
+fan: 9 1 left
+fan: 8 1 left
+fan: 7 1 down
+fan: 7 2 down
+fan: 7 3 down
+
+# Bins
+bin: 2 9
+
+# FlipFlop A
+flipflop_a: 2 8 0
+
+# FlipFlop B
+flipflop_b: 11 8 0
+flipflop_b: 12 8 0
+flipflop_b: 13 8 0
+flipflop_b: 7 8 0
+flipflop_b: 3 8 0
+flipflop_b: 4 8 0
+flipflop_b: 5 8 0
+flipflop_b: 6 8 0
+flipflop_b: 9 8 0
+flipflop_b: 8 8 0
+flipflop_b: 10 8 0
+
+# Level
+width: 15
+height: 12
+
+# Player
+player: 2 4
+
+# Emitters
+emitter: 5 3
+
+# NextColor machines
+nextcolor: 4 6
+
+# Cloners
+cloner: 5 4
+
+# Portals
+portal: 5 2 blue
+portal: 6 9 blue
+
+# Fans
+fan: 2 7 left
+fan: 4 7 left
+fan: 3 7 left
+fan: 1 7 left
+fan: 0 8 right
+fan: 1 8 right
+fan: 2 8 right
+fan: 3 9 left
+fan: 1 9 left
+fan: 2 9 left
+fan: 7 3 left
+
+# FlipFlop A
+flipflop_a: 6 8 0
+
+# FlipFlop B
+flipflop_b: 4 8 0
+
+
+# Puzzle 1: "First Brush"
+# Goal: Create a single red horizontal stripe
+# Concept: Learn that blocks fall through colorers and paint the background
+# Difficulty: Tutorial (no pushing required)
+
+width: 8
+height: 10
+
+# Player (just watching)
+player: 1 8
+
+# Single emitter spawns one block
+emitter: 4 0
+
+# Red colorer in the path
+colorer: 4 4 red
+
+# Target: one solid red stripe
+target: red
+
+# Walls (simple border)
+wall: 0 0
+wall: 7 0
+wall: 0 9
+wall: 7 9
+# Puzzle 2: "Traffic Light"
+# Goal: Create three equal stripes - Red (top/oldest), Yellow (middle), Green (bottom/newest)
+# Concept: Timing creates layers - earlier blocks paint higher up
+# Difficulty: Easy - must push colorers into correct timing positions
+# Solution: Arrange colorers so red falls first, yellow second, green last
+
+width: 12
+height: 12
+
+# Player starts in middle
+player: 1 6
+
+# Three emitters at different heights (to create natural timing)
+emitter: 3 1
+emitter: 6 3
+emitter: 9 2
+
+# Colorers START in wrong positions - player must fix!
+# They need to be pushed so blocks fall in order: red -> yellow -> green
+colorer: 4 8 green   # Wrong! Should be at bottom path
+colorer: 7 7 red     # Wrong! Should be at top path
+colorer: 9 6 yellow  # Wrong! Should be at middle path
+
+# Target: red yellow green (in that order, oldest to newest)
+target: red yellow green
+
+# Walls to create channels and constraints
+wall: 0 0
+wall: 11 0
+wall: 0 11
+wall: 11 11
+wall: 2 5
+wall: 5 4
+wall: 8 6
+# Puzzle 3: "Split Decision"
+# Goal: Create ONE stripe that's 50% blue, 50% red (side by side)
+# Concept: Multiple blocks falling on SAME tick divide the stripe proportionally
+# Difficulty: Medium - requires understanding timing = layers
+# Solution: Push colorers to same vertical height so both blocks fall simultaneously
+
+width: 10
+height: 10
+
+# Player in middle
+player: 5 5
+
+# Two emitters at SAME height (both spawn tick 0)
+emitter: 2 1
+emitter: 7 1
+
+# Two colorers at DIFFERENT heights initially - player must fix!
+colorer: 2 4 blue
+colorer: 7 6 red   # Wrong height! Needs to be at y=4 also
+
+# Target: Half blue, half red (order doesn't matter since same layer)
+target: blue red
+
+# Walls creating two channels
+wall: 0 0
+wall: 9 0
+wall: 0 9
+wall: 9 9
+wall: 4 0
+wall: 4 1
+wall: 4 2
+wall: 4 3
+wall: 4 4
+wall: 4 5
+# Puzzle 4: "Gradient"
+# Goal: Create four thin stripes - Blue, Red, Green, Yellow (oldest to newest)
+# Concept: Precise timing control creates multiple layers
+# Difficulty: Hard - tight space, must arrange for exact timing
+# Solution: Use walls and positioning to stagger fall times by 1-2 ticks each
+
+width: 11
+height: 14
+
+# Player
+player: 1 10
+
+# Four emitters in different positions
+emitter: 2 1
+emitter: 4 2
+emitter: 6 1
+emitter: 8 3
+
+# Colorers scattered - need careful positioning for timing
+colorer: 3 8 yellow
+colorer: 5 7 green
+colorer: 7 9 red
+colorer: 9 6 blue
+
+# Target: blue red green yellow (in timing order)
+target: blue red green yellow
+
+# Walls creating complex paths and timing constraints
+wall: 0 0
+wall: 10 0
+wall: 0 13
+wall: 10 13
+wall: 3 4
+wall: 3 5
+wall: 5 6
+wall: 7 4
+wall: 7 5
+wall: 9 7
+wall: 9 8
+# Puzzle 5: "Rainbow Thirds"
+# Goal: ONE stripe divided into Red (33%), Green (33%), Blue (33%)
+# Concept: Three blocks, same tick, different colors
+# Difficulty: Expert - requires perfect timing AND correct coloring
+# Solution: Arrange colorers so all 3 blocks travel equal distance before falling
+
+width: 13
+height: 12
+
+# Player
+player: 6 8
+
+# Three emitters at SAME height (all spawn tick 0)
+emitter: 3 1
+emitter: 6 1
+emitter: 9 1
+
+# Colorers initially at wrong heights - need symmetric arrangement
+colorer: 3 5 red
+colorer: 6 7 green   # Wrong! Must be at same height as others
+colorer: 9 4 blue    # Wrong! Must be at same height as others
+
+# Target: red green blue (all in one layer)
+target: red green blue
+
+# Walls creating channels (player must arrange colorers symmetrically)
+wall: 0 0
+wall: 12 0
+wall: 0 11
+wall: 12 11
+wall: 2 0
+wall: 2 1
+wall: 2 2
+wall: 5 0
+wall: 5 1
+wall: 5 2
+wall: 7 0
+wall: 7 1
+wall: 7 2
+wall: 10 0
+wall: 10 1
+wall: 10 2
+# Test level for bin block
+width: 10
+height: 10
+
+# Player
+player: 1 0
+
+# Emitters
+emitter: 3 0
+
+# NextColor machines
+nextcolor: 3 2
+
+# Bins
+bin: 3 5
+
+# Test level with two shrink machines
+width: 15
+height: 12
+
+# Player
+player: 1 0
+
+# Emitters
+emitter: 3 0
+emitter: 8 0
+
+# NextColor machines
+nextcolor: 3 2
+nextcolor: 8 2
+
+# Shrink machines (2x2)
+shrink: 2 5 0
+shrink: 7 5 1
+

@@ -1,0 +1,1273 @@
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+spawn-body: x=1, y=1, direction=DOWN
+spawn-body: x=2, y=1, direction=LEFT
+pill-division: x=1, y=4
+pill-time-machine: x=3, y=4
+pill-portal: x=5, y=4
+pill-infinite: x=7, y=4
+pill-division: x=1, y=4
+pill-time-machine: x=3, y=4
+pill-portal: x=5, y=4
+pill-infinite: x=7, y=4
+pill-division: x=1, y=4
+pill-time-machine: x=3, y=4
+pill-portal: x=5, y=4
+pill-infinite: x=7, y=4
+pill-division: x=1, y=4
+pill-time-machine: x=3, y=4
+pill-portal: x=5, y=4
+pill-infinite: x=7, y=4
+pill-portal: x=4, y=1
+---
+XX.XXXXXX
+X.......X
+X.......X
+X.......X
+X.......X
+X......@X
+XXXXXXXXX
+NAME: 6. S-Curve
+SOLVABLE: yes
+RATING: 1
+spawn-body: x=2, y=2, direction=RIGHT
+spawn-head: x=3, y=2, direction=RIGHT
+pellet: x=5, y=2, direction=RIGHT
+pellet: x=7, y=3, direction=LEFT
+pellet: x=7, y=4, direction=LEFT
+pellet: x=5, y=5, direction=RIGHT
+---
+XXXXXXXXXXX
+X....X....X
+X...... ..X
+X....X. ..X
+X....X....X
+X........@X
+XXXXXXXXXXX
+NAME: 8. Loop Around
+SOLVABLE: yes
+RATING: 1
+spawn-head: x=3, y=1, direction=RIGHT
+spawn-body: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+pellet: x=2, y=2, direction=RIGHT
+pellet: x=3, y=2, direction=RIGHT
+pellet: x=4, y=2, direction=RIGHT
+pellet: x=5, y=2, direction=RIGHT
+pellet: x=6, y=2, direction=RIGHT
+pellet: x=2, y=3, direction=UP
+pellet: x=6, y=3, direction=DOWN
+pellet: x=2, y=4, direction=LEFT
+pellet: x=3, y=4, direction=LEFT
+pellet: x=4, y=4, direction=LEFT
+pellet: x=5, y=4, direction=LEFT
+pellet: x=6, y=4, direction=DOWN
+---
+XXXXXXXXX
+X.......X
+X.......X
+X..@....X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: 9. Head and Body
+SOLVABLE: yes
+RATING: 1
+spawn-body: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+spawn-head: x=3, y=1, direction=RIGHT
+pellet: x=1, y=2, direction=UP
+pellet: x=2, y=2, direction=DOWN
+pellet: x=3, y=2, direction=UP
+pellet: x=4, y=2, direction=DOWN
+pellet: x=5, y=2, direction=UP
+pellet: x=6, y=2, direction=DOWN
+pellet: x=7, y=2, direction=UP
+pellet: x=8, y=2, direction=DOWN
+---
+XXXXXXXXXXX
+X.........X
+X........@X
+X.........X
+XXXXXXXXXXX
+NAME: Yo bro
+SOLVABLE: yes
+RATING: 2
+spawn-body: x=1, y=4, direction=UP
+spawn-body: x=1, y=3, direction=RIGHT
+spawn-body: x=2, y=4, direction=RIGHT
+spawn-head: x=3, y=4, direction=RIGHT
+spawn-body: x=2, y=3, direction=DOWN
+spawn-body: x=1, y=5, direction=UP
+spawn-body: x=2, y=5, direction=LEFT
+spawn-body: x=3, y=5, direction=LEFT
+spawn-body: x=4, y=5, direction=LEFT
+spawn-body: x=4, y=4, direction=DOWN
+spawn-body: x=4, y=3, direction=DOWN
+---
+XXXXXXXXXX
+X..#....@X
+X..X.....X
+X..X....XX
+X....X.XX 
+X@...XXX  
+XXXXXXX   
+NAME: 9. Maze Runner
+SOLVABLE: yes
+RATING: 3
+spawn-head: x=3, y=4, direction=LEFT
+spawn-body: x=4, y=4, direction=LEFT
+spawn-body: x=5, y=4, direction=LEFT
+spawn-body: x=5, y=5, direction=UP
+spawn-body: x=6, y=5, direction=LEFT
+spawn-body: x=7, y=5, direction=LEFT
+spawn-body: x=8, y=5, direction=LEFT
+spawn-body: x=8, y=6, direction=UP
+---
+XXXXXXXXXX
+X@X@X...@X
+X.X.X.XXXX
+X.X.X...@X
+X.....XXXX
+XXXX.....X
+X@...X.X.X
+XXXX.X.X.X
+X@...X@X@X
+XXXXXXXXXX
+NAME: First Pellet
+SOLVABLE: yes
+RATING: 1
+NOTES: Learn to eat pellets! Approach from the correct direction.
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+---
+XXXXXXXX
+X@...@XX
+X.....XX
+X....@XX
+X.....XX
+X@...@XX
+ XXTXX  
+NAME: Pellet Path
+SOLVABLE: yes
+RATING: 2
+NOTES: Collect pellets in sequence to grow and reach the goal
+spawn-body: x=4, y=1, direction=LEFT
+spawn-body: x=5, y=1, direction=LEFT
+spawn-body: x=6, y=1, direction=LEFT
+spawn-body: x=7, y=1, direction=LEFT
+spawn-head: x=3, y=1, direction=LEFT
+pellet: x=1, y=2, direction=DOWN
+pellet: x=2, y=2, direction=UP
+---
+XXXXXXXXX
+X.......X
+X..XXXXXX
+X...@@@@X
+XXXXXXXXX
+NAME: One Way Door
+SOLVABLE: yes
+RATING: 2
+NOTES: Pellets block the wrong direction - plan your route!
+spawn-head: x=7, y=2, direction=UP
+spawn-body: x=7, y=3, direction=UP
+spawn-body: x=7, y=4, direction=UP
+spawn-body: x=7, y=5, direction=UP
+---
+.........
+.T.......
+.........
+.........
+.........
+.@.......
+.........
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+---
+XXXXXXXXX
+X.....#.X
+X....#.#X
+X...#.#.X
+X..#.#.#X
+X.#.#.#@X
+XXXXXXXXX
+NAME: 1. First Steps
+SOLVABLE: yes
+RATING: 1
+NOTES: hey, this is awesome! i'm itroaqwertyuiopkjhgfdsazxcvbm
+spawn-head: x=1, y=2, direction=UP
+spawn-body: x=1, y=3, direction=UP
+---
+XXXXXXXXX
+X...#...X
+X.#.#.#@X
+X.#...#@X
+XXXXXXXXX
+NAME: 4. Straight Shot
+SOLVABLE: yes
+RATING: 1
+spawn-body: x=1, y=3, direction=RIGHT
+spawn-head: x=2, y=3, direction=RIGHT
+---
+XXXXXXXXXXX
+X....X....X
+X..X.X###.X
+X..X...X@.X
+X.XXXXXX#.X
+X......#..X
+XXXXXXXXXXX
+NAME: 6. S-Curven
+SOLVABLE: yes
+RATING: 1
+spawn-body: x=1, y=1, direction=RIGHT
+spawn-body: x=2, y=1, direction=RIGHT
+spawn-body: x=3, y=1, direction=RIGHT
+spawn-head: x=4, y=1, direction=RIGHT
+---
+XXXXXXX
+X.....X
+X..###X
+X..#@.X
+X..#@.X
+X...@@X
+XXXXXXX
+NAME: 7. First Box
+SOLVABLE: yes
+RATING: 1
+spawn-head: x=1, y=3, direction=UP
+spawn-body: x=1, y=4, direction=UP
+---
+XXXXXXXXX
+X...)#..X
+X...X.##X
+X..##..@X
+X...X.##X
+X...)#..X
+XXXXXXXXX
+NAME: 14. Box Shuffle
+SOLVABLE: yes
+RATING: 3
+spawn-head: x=4, y=1, direction=RIGHT
+spawn-body: x=3, y=1, direction=RIGHT
+spawn-body: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+---
+XXXXXXXXXXX
+X.........X
+X#XXXXXX.#X
+X...@.@@..X
+X.#X#XX#X#X
+X...@.@@..X
+X.....#...X
+XXXXXXXXXXX
+NAME: 15. Quad Push
+SOLVABLE: no
+RATING: 0
+spawn-head: x=7, y=11, direction=UP
+spawn-body: x=8, y=11, direction=LEFT
+spawn-body: x=8, y=10, direction=DOWN
+spawn-body: x=8, y=9, direction=DOWN
+spawn-body: x=7, y=9, direction=RIGHT
+spawn-body: x=6, y=9, direction=RIGHT
+spawn-body: x=6, y=10, direction=UP
+spawn-body: x=6, y=11, direction=UP
+spawn-body: x=6, y=12, direction=UP
+---
+XXXXXXXXXXXXXXX
+X......G......X
+X.............X
+X.............X
+X......#......X
+X.....#.#.....X
+X....#.#.#....X
+X...#.###.#...X
+X....#.#.#....X
+X...##...##...X
+X...##...##...X
+X...##...##...X
+X...#..#..#...X
+X....#...#....X
+XXXXXXXXXXXXXXX
+NAME: 17. Split Corridor
+SOLVABLE: no
+RATING: 0
+---
+XXXXXXXXXXXXX
+X...........X
+X.G.......G.X
+X...........X
+XXXX.....XXXX
+X...XX.XX...X
+X..X......#.X
+X..X........X
+X....XXXX...X
+XXXXXXXXXXXXX
+NAME: 12. Twin Pushers
+SOLVABLE: yes
+RATING: 0
+spawn-head: x=3, y=3, direction=RIGHT
+spawn-body: x=2, y=3, direction=RIGHT
+---
+XXXXXXXXXXXXX
+X@...#.#...@X
+X.@..###..@.X
+X.....#.....X
+XXXX......XXX
+   XXXXXXXX  
+NAME: Blank Template
+SOLVABLE: yes
+RATING: 4
+spawn-head: x=3, y=1, direction=DOWN
+---
+   .@   
+   .    
+(  .^  ^
+   .  ..
+   .  . 
+   .... 
+     ^  
+NAME: 2. Turn Around
+SOLVABLE: yes
+RATING: 1
+spawn-body: x=2, y=1, direction=LEFT
+spawn-head: x=1, y=1, direction=LEFT
+---
+XXXXXXXXX
+X......@X
+XXXXXXXXX
+         
+         
+NAME: 6. Escape!
+SOLVABLE: no
+RATING: 4
+spawn-head: x=3, y=3, direction=DOWN
+spawn-body: x=4, y=2, direction=LEFT
+spawn-body: x=3, y=2, direction=DOWN
+spawn-body: x=5, y=4, direction=LEFT
+spawn-body: x=4, y=3, direction=UP
+spawn-body: x=4, y=4, direction=UP
+---
+      @     
+   XXXXXX   
+  X...X..   
+  X...X..   
+.XX.....)  .
+   XXXXXX   
+NAME: 3. The Corner
+SOLVABLE: yes
+RATING: 0
+SOLUTION: FFFRFRFFFL
+spawn-body: x=3, y=5, direction=UP
+spawn-head: x=3, y=4, direction=UP
+---
+  XXXXXXX
+  X.#...X
+  X.X...X
+  X.X.#.X
+  X.X...X
+  X.X.@.X
+  XXXXXXX
+NAME: 16. Warehouse
+SOLVABLE: no
+RATING: 0
+spawn-head: x=6, y=8, direction=RIGHT
+pill-portal: x=6, y=3
+---
+XXXXXXXXXXXXXXXXXXXXX
+X...................X
+X.#.#.#.#.#.#.#.#.#.X
+X...................X
+X...................X
+X.#.#.#.#.#.#.#.#.#.X
+X...................X
+X...................X
+X. . . .@. . . . . .X
+XXXXXXXXXXXXXXXXXXXXX
+NAME: 18. Void Bridge
+SOLVABLE: no
+RATING: 0
+spawn-head: x=3, y=1, direction=RIGHT
+spawn-body: x=2, y=1, direction=RIGHT
+---
+XXXXXXXXXXX
+X.........X
+X.####....X
+X.........X
+X         X
+X         X
+X         X
+X.@.. ....X
+XXXXXXXXXXX
+NAME: Bridge Builder
+SOLVABLE: yes
+RATING: 3
+NOTES: Build bridges across voids to reach the goal
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXX
+XH......X
+X...    X
+X...###.X
+X.......X
+X......@X
+XXXXXXXXX
+NAME: Pellet Jump
+SOLVABLE: yes
+RATING: 3
+NOTES: Eat pellets to grow long enough to bridge the void
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXX
+XH)..)....X
+X.........X
+X....     X
+X....###..X
+X........@X
+XXXXXXXXXXX
+NAME: Void Maze
+SOLVABLE: yes
+RATING: 4
+NOTES: Navigate around voids and push boxes carefully
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXX
+XH........X
+X.   #   .X
+X. XXX X .X
+X.     # .X
+X. ### X .X
+X.     # .X
+X. XXX   .X
+X.......#@X
+XXXXXXXXXXX
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=1, y=1, direction=RIGHT
+spawn-body: x=0, y=1, direction=RIGHT
+---
+IIII I 
+IIIIII.
+@II.III
+IIIIIII
+ II.II.
+    II 
+NAME: Test New Tiles
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXXXXX
+X..........X
+X.I....T...X
+X.IIII.....X
+X..........X
+X...C......X
+X..##......X
+X.........@X
+XXXXXXXXXXXX
+NAME: Ice Pellets
+SOLVABLE: yes
+RATING: 3
+NOTES: Slide on ice to collect pellets - careful with direction!
+spawn-head: x=1, y=1, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X.IIII).X
+X.......X
+X.(IIII.X
+X......@X
+XXXXXXXXX
+NAME: Ice Into Void
+SOLVABLE: yes
+RATING: 4
+NOTES: Slide off ice edges - new feature! Don't fall too far.
+spawn-head: x=1, y=2, direction=RIGHT
+---
+XXXXXXXXXXX
+X.........X
+X.........X
+X.IIII    X
+X.........X
+X....IIIIIX
+X........@X
+XXXXXXXXXXX
+NAME: Slippery Snake
+SOLVABLE: yes
+RATING: 4
+NOTES: Grow while sliding - master the ice mechanics!
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXX
+XH).......X
+XIIIIII...X
+X.........X
+X...)IIIIIX
+X.........X
+X.......#@X
+XXXXXXXXXXX
+NAME: Coming Soon
+SOLVABLE: no
+RATING: 0
+spawn-head: x=3, y=1, direction=RIGHT
+spawn-body: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+---
+ IIIIIII
+IIIIIII.
+IIIIIII.
+ IIIIIII
+ IIIIII.
+ I@IIIII
+ IIIIIII
+ IIIIITI
+ IIIIII.
+NAME: Coming Soon
+SOLVABLE: no
+RATING: 0
+spawn-head: x=7, y=3, direction=UP
+spawn-body: x=7, y=4, direction=UP
+spawn-body: x=6, y=4, direction=RIGHT
+spawn-body: x=6, y=3, direction=DOWN
+spawn-body: x=6, y=2, direction=DOWN
+---
+XIIIIIIXX
+XIIIIII..
+XIIIIII..
+XIIIIIII.
+XIIIIIII.
+XIIIIIIII
+XIIIIIIII
+@XXXIIIII
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: omg
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X....#..X
+X...C...X
+X...C...X
+X......@X
+XXXXXXXXX
+NAME: Test New Tiles
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXXXXX
+X..........X
+X.I....T...X
+X.IIII.....X
+X..........X
+X...C......X
+X..##......X
+X.........@X
+XXXXXXXXXXXX
+NAME: Pellet Cloner
+SOLVABLE: yes
+RATING: 4
+NOTES: Push clone blocks into pellets to duplicate them!
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXX
+X.........X
+X....^....X
+XH...C....X
+X.........X
+X.........X
+X.@.@.@.@.X
+XXXXXXXXXXX
+NAME: Time Cloner
+SOLVABLE: yes
+RATING: 4
+NOTES: Clone time machines! Push clone blocks into them.
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXX
+X.........X
+X.........X
+XH..C.T...X
+X.........X
+X.........X
+X@@@@@@@@@X
+XXXXXXXXXXX
+NAME: Clone Cascade
+SOLVABLE: yes
+RATING: 5
+NOTES: Chain reactions! One clone creates many possibilities.
+spawn-head: x=1, y=4, direction=right
+---
+XXXXXXXXXXX
+X.........X
+X....^....X
+X......)..X
+XH...C....X
+X....(....X
+X....v....X
+X.@.@.@.@.X
+XXXXXXXXXXX
+NAME: Coming Soon
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X... .C.X
+X.#.....X
+X.C...C.X
+X...C...X
+X......@X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X.....T.X
+X...C...X
+X...C...X
+X.....T@X
+XXXXXXXXX
+NAME: Blank Template
+RATING: 0
+SOLVABLE: no
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X.......X
+X.......X
+X.......X
+X......@X
+XXXXXXXXX
+NAME: Test: Simultaneous Movement
+SOLVABLE: yes
+RATING: 1
+NOTES: Tests that two snakes one space apart don't merge when moving forward
+spawn-head: x=3, y=2, direction=RIGHT
+spawn-head: x=5, y=2, direction=RIGHT
+---
+##########
+##........
+##...@....
+##........
+##########
+NAME: 98. Basic Merge Test
+SPAWN: 3,5,RIGHT
+---
+..............
+..............
+..............
+..............
+..............
+...........P..
+..............
+..............
+..............
+..............
+NAME: Ice and Pellets
+SOLVABLE: yes
+RATING: 3
+NOTES: Combine ice sliding with pellet collection
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXX
+XH).......X
+XIIII.....X
+X.....IIIIX
+X.......).X
+X........@X
+XXXXXXXXXXX
+NAME: Rotator Pellets
+SOLVABLE: yes
+RATING: 4
+NOTES: Use rotators to approach pellets from the right direction
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXX
+XH........X
+X.>.......X
+X.v.......X
+X.>.......X
+X.).......X
+X........@X
+XXXXXXXXXXX
+NAME: Void Bridge Pellets
+SOLVABLE: yes
+RATING: 4
+NOTES: Eat pellets to grow long enough to bridge voids
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXXXX
+XH).).).)...X
+X...........X
+X....     ..X
+X....###....X
+X...........X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Box and Clone
+SOLVABLE: yes
+RATING: 4
+NOTES: Mix regular boxes with clone blocks
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXX
+X.........X
+X....#....X
+XH...C....X
+X.........X
+X.@.....@.X
+XXXXXXXXXXX
+NAME: Ice Clone Pellet
+SOLVABLE: yes
+RATING: 5
+NOTES: All mechanics together - plan carefully!
+spawn-head: x=1, y=2, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+XH.C........X
+XIIII.^.....X
+X...........X
+X..)IIIIII..X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Everything
+SOLVABLE: yes
+RATING: 5
+NOTES: Boxes, clones, pellets, ice, rotators, and voids!
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+X..#.C.^....X
+XH.>.......IX
+X..v   ###..X
+X..)........X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+pellet: x=2, y=2, direction=RIGHT
+pellet: x=3, y=2, direction=RIGHT
+pellet: x=4, y=2, direction=RIGHT
+pellet: x=5, y=2, direction=RIGHT
+pellet: x=6, y=2, direction=RIGHT
+pellet: x=7, y=2, direction=DOWN
+pellet: x=3, y=3, direction=LEFT
+pellet: x=4, y=3, direction=LEFT
+pellet: x=5, y=3, direction=LEFT
+pellet: x=6, y=3, direction=LEFT
+pellet: x=7, y=3, direction=DOWN
+pellet: x=3, y=4, direction=LEFT
+pellet: x=4, y=4, direction=LEFT
+pellet: x=5, y=4, direction=LEFT
+pellet: x=6, y=4, direction=LEFT
+pellet: x=7, y=4, direction=DOWN
+---
+XXXXXXXXX
+XXXXXX..X
+X.......X
+X.......X
+XX......X
+XXXX...@X
+XXXXXXXXX
+NAME: Pellet Maze
+SOLVABLE: yes
+RATING: 5
+NOTES: Navigate a maze of one-way pellet doors
+spawn-head: x=1, y=1, direction=right
+---
+XXXXXXXXXXXXX
+XH).X.......X
+X.v.X.^.....X
+X...X.X.....X
+X.)XXXX.....X
+X...........X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Clone Chain Reaction
+SOLVABLE: yes
+RATING: 5
+NOTES: Trigger multiple clone reactions in sequence
+spawn-head: x=1, y=4, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+X...^.^.^...X
+X...C.C.C...X
+XH..........X
+X...v.v.v...X
+X.@.@.@.@.@.X
+XXXXXXXXXXXXX
+NAME: Precision Slide
+SOLVABLE: yes
+RATING: 5
+NOTES: Ice, voids, and pellets - perfect timing required
+spawn-head: x=1, y=2, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+XH.IIIII....X
+X.......).  X
+X.....###...X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Rotator Challenge
+SOLVABLE: yes
+RATING: 5
+NOTES: Master rotators to collect all pellets
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+X.>.v.<.^...X
+XH).X.X.X.).X
+X.>.v.<.^...X
+X...........X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+spawn-body: x=1, y=1, direction=DOWN
+---
+XXXXXXXXX
+X.......X
+X.......X
+X.....)TX
+Xv......X
+XT)....@X
+XXXXXXXXX
+NAME: Test New Tiles
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXXXXX
+X..........X
+X.I....T...X
+X.IIII.....X
+X..........X
+X...C......X
+X..##......X
+X.........@X
+XXXXXXXXXXXX
+NAME: Pellet Time Travel
+SOLVABLE: yes
+RATING: 5
+NOTES: Use time travel to access pellets in different timelines
+spawn-head: x=1, y=2, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+XH.T....).v.X
+X...........X
+X..........@X
+XXXXXXXXXXXXX
+NAME: Clone Time Machines
+SOLVABLE: yes
+RATING: 5
+NOTES: Clone time machines to create multiple timelines!
+spawn-head: x=1, y=3, direction=right
+---
+XXXXXXXXXXXXX
+X...........X
+X...........X
+XH..C.T.....X
+X...........X
+X.@.@.@.@.@.X
+XXXXXXXXXXXXX
+NAME: Coming Soon
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=1, direction=RIGHT
+spawn-body: x=1, y=1, direction=RIGHT
+spawn-body: x=1, y=3, direction=UP
+spawn-body: x=1, y=2, direction=UP
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+pill-division: x=2, y=3
+pill-time-machine: x=3, y=3
+pill-portal: x=4, y=3
+pill-infinite: x=5, y=3
+---
+XXXXXXXXX
+X.......X
+........X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXX@
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Time Machine Multi-Segment Test
+spawn-head: x=2, y=2, direction=RIGHT
+spawn-body: x=1, y=2, direction=RIGHT
+spawn-body: x=0, y=2, direction=RIGHT
+---
+XXXXXXXXXXXX
+X..........X
+HBB....T...X
+X..........X
+X.........@X
+XXXXXXXXXXXX
+NAME: Blank Template
+SOLVABLE: no
+RATING: 0
+spawn-head: x=2, y=2, direction=RIGHT
+---
+XXXXXXXXX
+X.......X
+X.......X
+X.......X
+X.......X
+X......@X
+XXXXXXXXX
+NAME: Ultimate Pellet Puzzle
+SOLVABLE: yes
+RATING: 5
+NOTES: Complex pellet routing with all mechanics
+spawn-head: x=1, y=4, direction=right
+---
+XXXXXXXXXXXXXXX
+X.............X
+X.^.>.v.<.....X
+X.X.X.X.X.....X
+XH).X.).X.).#.X
+X.X.X.X.X.....X
+X.v.<.^.>.....X
+X............@X
+XXXXXXXXXXXXXXX
+NAME: Ice Void Pellet Master
+SOLVABLE: yes
+RATING: 5
+NOTES: Slide into void at the right time to collect pellets
+spawn-head: x=1, y=2, direction=right
+---
+XXXXXXXXXXXXXXX
+X.............X
+XH.)IIIII.....X
+X.....    .)..X
+X.....###.....X
+X....IIIII....X
+X............@X
+XXXXXXXXXXXXXXX
+NAME: Clone Everything
+SOLVABLE: yes
+RATING: 5
+NOTES: Use clones to multiply all game elements strategically
+spawn-head: x=1, y=4, direction=right
+---
+XXXXXXXXXXXXXXX
+X.............X
+X.#.^.T.......X
+X.C.C.C.......X
+XH............X
+X.............X
+X.@.@.@.@.@.@.X
+XXXXXXXXXXXXXXX
+NAME: The Gauntlet
+SOLVABLE: yes
+RATING: 5
+NOTES: The ultimate test - all mechanics, maximum challenge!
+spawn-head: x=1, y=5, direction=right
+---
+XXXXXXXXXXXXXXX
+X..^.>.v.<....X
+X..X.X.X.X....X
+X..)IIIII)....X
+X..     ###...X
+XH.C.T.#......X
+X..)IIIII)....X
+X..v.<.^.>....X
+X............@X
+XXXXXXXXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: Coming Soon
+RATING: 0
+SOLVABLE: no
+---
+XXXXXXXXX
+X.......X
+X...?...X
+X.......X
+X.......X
+X.......X
+X.......X
+XXXXXXXXX
+NAME: 18. Void Bridgen
+SOLVABLE: no
+RATING: 0
+spawn-head: x=9, y=1, direction=LEFT
+spawn-body: x=9, y=2, direction=UP
+spawn-body: x=8, y=3, direction=RIGHT
+spawn-body: x=9, y=3, direction=UP
+---
+XXXXXXXXXXX
+X       ..X
+X   .   ..X
+X   .    .X
+X         X
+X         X
+X .       X
+X@   .   .X
+XXXXXXXXXXX
+NAME: Blank Templaten
+SOLVABLE: no
+RATING: 0
+---
+XXXXXXXXXXX
+X.........X
+X.........X
+X.........X
+X.........X
+X.........X
+X.........X
+X.........X
+XXXXXXXXXXX

@@ -4,6 +4,8 @@ build: grab-posts-and-stories regenerate-stories-index
 	@echo Running "sssg" - may take a while...
 	@ ./ssssg || ssssg || echo "please put the "ssssg" file onto your path (make install)"
 	@rm -rf src/stories
+	@echo Copying hand-written static pages + games into dst/...
+	@cp -R static/. dst/
 
 grab-posts-and-stories:
 	$(eval tmpDir := $(shell mktemp -d))
