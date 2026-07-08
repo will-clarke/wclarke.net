@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2023-11-22" />
+  <meta name="description" content="Neovim is totally worth diving into… there are some fantastic plugins which make editing text a joy." />
+  <title>Will Clarke – Some cool neovim plugins</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">Some cool neovim plugins</h1>
+<p class="date">2023-11-22</p>
+</header>
+<p>In no particular order (other than the <code>:'&lt;'&gt;sort u</code>
+ordering after I ran
+<code>grep -r -o "[^\"]\+/[^\"]\+" "$HOME/.config/nvim/"</code> to find
+these in my config files)</p>
+<h1 id="l3mon4d3luasnip"><a
+href="https://github.com/L3MON4D3/LuaSnip">L3MON4D3/LuaSnip</a></h1>
+<p>Lua snip lets you define and trigger snippets in a really powerful
+way.</p>
+<h1 id="theprimeagenharpoon"><a
+href="https://github.com/ThePrimeagen/harpoon">ThePrimeagen/harpoon</a></h1>
+<p>Tags on steroids - [makes it super easy to change buffers &amp; ‘tag’
+buffers](https://github.com/makes it super easy to change buffers &amp;
+‘tag’ buffers)</p>
+<h1 id="nvim-treesitternvim-treesitter"><a
+href="https://github.com/nvim-treesitter/nvim-treesitter">nvim-treesitter/nvim-treesitter</a></h1>
+<p>Treesitter is a marvel. It parses your grammar, allowing you to
+render the language properly (syntax highlighting works!!)..but also
+allows you to do some other funky things like make vim text objects.</p>
+<p>Other cool plugins related to treesitter include</p>
+<ul>
+<li><a
+href="https://github.com/nvim-treesitter/nvim-treesitter-context">nvim-treesitter/nvim-treesitter-context</a></li>
+<li><a
+href="https://github.com/nvim-treesitter/nvim-treesitter-textobjects">nvim-treesitter/nvim-treesitter-textobjects</a></li>
+<li><a
+href="https://github.com/nvim-treesitter/playground">nvim-treesitter/playground</a></li>
+<li><a href="https://github.com/Wansmer/treesj">Wansmer/treesj</a></li>
+</ul>
+<h1 id="tpopevim-fugitive"><a
+href="https://github.com/tpope/vim-fugitive">tpope/vim-fugitive</a></h1>
+<p>Fugitive is not perfect, but it’s pretty close. It can do a load of
+Git stuff natively from within vim.</p>
+<p>Some other git-based plugins include:</p>
+<ul>
+<li><a
+href="https://github.com/lewis6991/gitsigns.nvim">lewis6991/gitsigns.nvim</a></li>
+<li><a
+href="https://github.com/sindrets/diffview.nvim">sindrets/diffview.nvim</a></li>
+<li><a
+href="https://github.com/akinsho/git-conflict.nvim">akinsho/git-conflict.nvim</a></li>
+<li><a
+href="https://github.com/f-person/git-blame.nvim">f-person/git-blame.nvim</a></li>
+</ul>
+<h1 id="ellisonleaoglow.nvim"><a
+href="https://github.com/ellisonleao/glow.nvim">ellisonleao/glow.nvim</a></h1>
+<p>Renders a cool markdown preview</p>
+<h1 id="folkewhich-key.nvim"><a
+href="https://github.com/folke/which-key.nvim">folke/which-key.nvim</a></h1>
+<p>Reminds you which key does what… and also provides a pretty decent
+global way to define keybindings.</p>
+<h1 id="gbprodyanky.nvim"><a
+href="https://github.com/gbprod/yanky.nvim">gbprod/yanky.nvim</a></h1>
+<p>Provides a good ‘emacs kill ring’ substitute</p>
+<h1 id="hrsh7thnvim-cmp"><a
+href="https://github.com/hrsh7th/nvim-cmp">hrsh7th/nvim-cmp</a></h1>
+<ul>
+<li><a
+href="https://github.com/hrsh7th/cmp-emoji">hrsh7th/cmp-emoji</a></li>
+<li><a
+href="https://github.com/hrsh7th/cmp-nvim-lsp">hrsh7th/cmp-nvim-lsp</a></li>
+</ul>
+<h1 id="jbyukivenn.nvim"><a
+href="https://github.com/jbyuki/venn.nvim">jbyuki/venn.nvim</a></h1>
+<p>Totally crazy way of drawing in neovim.</p>
+<h1 id="knubievim-kitty-navigator"><a
+href="https://github.com/knubie/vim-kitty-navigator">knubie/vim-kitty-navigator</a></h1>
+<p>There are alternatives, but this one lets me seamlessly navigate
+between vim splits and kitty panes.</p>
+<h1 id="linty-orgreadline.nvim"><a
+href="https://github.com/linty-org/readline.nvim">linty-org/readline.nvim</a></h1>
+<p>emacs keybindings FTW. Sometimes I like using readline shortcuts in
+<em>insert</em> mode.</p>
+<h1 id="lukas-reinekeindent-blankline.nvim"><a
+href="https://github.com/lukas-reineke/indent-blankline.nvim">lukas-reineke/indent-blankline.nvim</a></h1>
+<p>Makes dealing with JSON / yaml a little more tollerable.</p>
+<h1 id="max397574better-escape.nvim"><a
+href="https://github.com/max397574/better-escape.nvim">max397574/better-escape.nvim</a></h1>
+<p><code>jk</code> to <code>esc</code>.. .but in a nicer way.
+mfussenegger/nvim-dap</p>
+<h1 id="michaelbsniprun"><a
+href="https://github.com/michaelb/sniprun">michaelb/sniprun</a></h1>
+<p>Turn loads of code / files into a repl in a magical way ✨</p>
+<h1 id="mickael-menuzk-nvim"><a
+href="https://github.com/mickael-menu/zk-nvim">mickael-menu/zk-nvim</a></h1>
+<p><a href="https://github.com/mickael-menu/zk">zk</a> is a nice plain
+text note-taking assistant. The nvim integration is sweet.</p>
+<h1 id="nvim-neotestneotest"><a
+href="https://github.com/nvim-neotest/neotest">nvim-neotest/neotest</a></h1>
+<p>A fairly comprehensive testing framework. Using extra plugins (eg.
+nvim-neotest/neotest-go), you can add shortcuts to “test the entire
+file” or “run the test my cursor’s over”</p>
+<h1 id="neovimnvim-lspconfig"><a
+href="https://github.com/neovim/nvim-lspconfig">neovim/nvim-lspconfig</a></h1>
+<p>LSP is a must. It’s kind of fiddly to set up, though.</p>
+<h1 id="numtostrcomment.nvim"><a
+href="https://github.com/numToStr/Comment.nvim">numToStr/Comment.nvim</a></h1>
+<p>Commenting as it should be.</p>
+<h1 id="nvim-telescopetelescope.nvim"><a
+href="https://github.com/nvim-telescope/telescope.nvim">nvim-telescope/telescope.nvim</a></h1>
+<p>A neovim tour-de-force of engineering. This gives a nice frontend for
+searching.</p>
+<p>I like these plugins</p>
+<ul>
+<li><a
+href="https://github.com/nvim-telescope/telescope-frecency.nvim">nvim-telescope/telescope-frecency.nvim</a></li>
+<li><a
+href="https://github.com/nvim-telescope/telescope-live-grep-args.nvim">nvim-telescope/telescope-live-grep-args.nvim</a></li>
+<li><a
+href="https://github.com/nvim-telescope/telescope-ui-select.nvim">nvim-telescope/telescope-ui-select.nvim</a></li>
+</ul>
+<h1 id="nvimtoolsnone-ls.nvim"><a
+href="https://github.com/nvimtools/none-ls.nvim">nvimtools/none-ls.nvim</a></h1>
+<p>This is the successor of Null-ls, which allows you to add things like
+linting, formatting and code actions super easily using a standardised
+API. Null-ls has been deprecated now. This seems to be a community
+effort to continue the good work!</p>
+<p>jayp0521/mason-null-ls.nvim works well with this,</p>
+<h1 id="ray-xlsp_signature.nvim"><a
+href="https://github.com/ray-x/lsp_signature.nvim">ray-x/lsp_signature.nvim</a></h1>
+<h1 id="rest-nvimrest.nvim"><a
+href="https://github.com/rest-nvim/rest.nvim">rest-nvim/rest.nvim</a></h1>
+<p>HTTP is so much better in plain-text, rather than in Postman /
+Insomnia.</p>
+<h1 id="stevearcoil.nvim"><a
+href="https://github.com/stevearc/oil.nvim">stevearc/oil.nvim</a></h1>
+<p>My favourite file manager - <a
+href="https://github.com/everything%20is%20just%20a%20plain%20old%20nvim%20buffer">everything
+is just a plain old nvim buffer</a></p>
+<h1 id="tpopevim-surround"><a
+href="https://github.com/tpope/vim-surround">tpope/vim-surround</a></h1>
+<p>Tpope is an old-school vim legend. These other plugins are also
+really good</p>
+<ul>
+<li><a
+href="https://github.com/tpope/vim-dispatch">tpope/vim-dispatch</a></li>
+<li><a
+href="https://github.com/tpope/vim-repeat">tpope/vim-repeat</a></li>
+<li><a
+href="https://github.com/tpope/vim-unimpaired">tpope/vim-unimpaired</a></li>
+</ul>
+<h1 id="williambomanmason.nvim"><a
+href="https://github.com/williamboman/mason.nvim">williamboman/mason.nvim</a></h1>
+<p>Mason lets you easily install LSPs and other dependencies. It works
+great with <code>williamboman/mason-lspconfig.nvim</code></p>
+<h1 id="zbirenbaumcopilot.lua"><a
+href="https://github.com/zbirenbaum/copilot.lua">zbirenbaum/copilot.lua</a></h1>
+<p>Github Copilot integration in vim ❤️ Useful with
+<code>zbirenbaum/copilot-cmp</code></p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/vim.html">vim</a> <a
+href="/tags/editor.html">editor</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>

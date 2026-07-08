@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-06" />
+  <meta name="description" content="Jekyll’s a fancy static site generator that’s really easy to use." />
+  <title>Will Clarke – Getting Started With Jekyll</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">Getting Started With Jekyll</h1>
+<p class="date">2014-10-06</p>
+</header>
+<p>I have been told that it’s good to write a blog. Something about
+self-promotion and helping other people…</p>
+<p>I originally wanted to create something through rails, but, having
+thought about it, it would have taken a while to set everything up
+correctly. No need to reinvent the wheel…</p>
+<p><a href="http://jekyllrb.com/">Jekyll</a> is a blogging / website
+platform built with Ruby. It’s what I would have aimed to build, only
+simpler, more efficient, pre-built and with an active community behind
+it.</p>
+<p>Jekyll’s main selling point is that it integrates text files well
+into a static site.</p>
+<p>It’s simple to use and set up out of the box:</p>
+<pre><code>~ $ gem install jekyll
+~ $ jekyll new my-awesome-site
+~ $ cd my-awesome-site
+~/my-awesome-site $ jekyll serve
+# =&gt; Now browse to http://localhost:4000</code></pre>
+<p>If you’re lazy, I’d recommend not doing this, though. Jekyll
+Bootstrap, discussed below, has a few more features that may be
+useful.</p>
+<h2 id="jekyll-bootstrap">Jekyll Bootstrap</h2>
+<p><a href="http://jekyllbootstrap.com/">Jekyll Bootstrap</a> uses
+Twitter’s <a href="http://getbootstrap.com/">bootstrap</a> and includes
+a number of extra in-build functionality including clever rake tasks,
+themes and comments.</p>
+<p>Here’s a really good starting point: <a
+href="http://jekyllbootstrap.com/usage/jekyll-quick-start.html"><em>Jekyll
+Bootstrap Quick Start Guide</em></a></p>
+<p>One of the great things about Jekyll Bootstrap is that it integrates
+well with <a href="https://pages.github.com/">Github Pages</a>. This
+lets you host your own site for <em>FREE</em>! You get the custom domain
+of <em>your_github_username</em>.github.io.</p>
+<p>The only tweak that I had to make with the current version of Jekyll
+Bootstrap was to change the default github._com_ to github._io_</p>
+<h2 id="updating-your-settings">Updating Your Settings</h2>
+<p>Go to <code>_config.yml</code> to update your settings:</p>
+<ul>
+<li>Github Username</li>
+<li>Twitter Username</li>
+<li>Analytics Tracking ID</li>
+<li>Disqus shortname</li>
+</ul>
+<p>You’ll probably have to go to <a
+href="https://disqus.com/admin/create/">Disqus</a> to create a shortname
+and <a href="http://www.google.com/analytics/">Google Analytics</a> to
+get your tracking code.</p>
+<h2 id="generating-new-posts">Generating New Posts</h2>
+<p>Once you have everything set up, you’ll be able to run</p>
+<pre><code>$ rake post title=&quot;Hello World&quot;</code></pre>
+<p>To create new posts or</p>
+<pre><code>$ rake page name=&quot;about.md&quot;</code></pre>
+<p>To create new pages.</p>
+<h2
+id="there-you-have-it---a-free-fully-functioning-static-blog-set-up-in-only-a-few-minutes">There
+you have it - a free, fully functioning static blog set up in only a few
+minutes!</h2>
+<hr />
+<hr />
+<p>Here are a few more tips I recommend to make it even easier to use
+Jekyll and Markdown.</p>
+<h4 id="using-jekyll-with-vim">Using Jekyll with Vim</h4>
+<p>There’s a great <a href="https://github.com/csexton/jekyll.vim">vim
+plugin</a> for jekyll. This lets you, anywhere in the file structure, to
+access your current posts or to create a new one.</p>
+<pre><code>map &lt;Leader&gt;jb  :JekyllBuild&lt;CR&gt;
+map &lt;Leader&gt;jn  :JekyllPost&lt;CR&gt;
+map &lt;Leader&gt;jl  :JekyllList&lt;CR&gt;.</code></pre>
+<h4 id="ultra-fancy-markdown-editing.">Ultra fancy Markdown
+editing.</h4>
+<p>I use <a href="http://marked2app.com/">Marked 2</a>, which is a
+fairly slick markdown live previewer. You can call it straight from vim
+using this mapping in your .vimrc:</p>
+<pre><code>noremap &lt;leader&gt;md :!open -a &#39;Marked 2&#39; %&lt;cr&gt;&lt;cr&gt;</code></pre>
+<p>(Assuming you’re on OS X)</p>
+<hr />
+<p>I hope this’ll help some people get started with Jekyll. Good luck
+with it!</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/ruby.html">ruby</a> <a
+href="/tags/blog.html">blog</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>

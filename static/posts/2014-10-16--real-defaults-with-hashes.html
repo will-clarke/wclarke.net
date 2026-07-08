@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-16" />
+  <meta name="description" content="Ruby hashes have a gotcha that the uninitiated should be aware of." />
+  <title>Will Clarke – Real Defaults With Hashes</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">Real Defaults With Hashes</h1>
+<p class="date">2014-10-16</p>
+</header>
+<h3 id="beware-of-setting-hashdefault">Beware of setting
+Hash#default!</h3>
+<p>Unless you know the pitfalls of Hash#default, you should tread
+carefully…</p>
+<p>You can set default values for hashes a number of ways. Eg:</p>
+<ol type="1">
+<li>Hash.new(default_value)</li>
+<li>Hash.new.default = default_value</li>
+</ol>
+<p><code>Hash.new(0)</code> usually works as expected, but
+<code>Hash.new([])</code> can be tricky.</p>
+<p>If you wanted to append any values to a hash instantiated like this,
+there will be problems; the array is not just a <strong>default</strong>
+array, but it’s also a <strong>shared</strong> array.</p>
+<p>An example:</p>
+<pre><code>h = Hash.new([])
+h[&#39;fish&#39;] &lt;&lt; &#39;carp&#39;
+puts h  # =&gt; nil.</code></pre>
+<p>What’s happening here is that we’ve edited the default value of the
+hash. We haven’t actually assigned the default value to our lovely
+‘fish’. To actually assign, we need to do:</p>
+<pre><code>h[&#39;fish&#39;] &lt;&lt;= &#39;carp&#39;</code></pre>
+<p>Note the <strong>=</strong> sign. However, this is not perfect:</p>
+<pre><code>puts h  # =&gt; {fish: [&#39;carp&#39;, &#39;carp&#39;]}</code></pre>
+<p>Our ‘default’ value how has two carp in it. If we were to add another
+key-value pair, this would get even messier:</p>
+<pre><code>h[&#39;dog&#39;] &lt;&lt;= &#39;poodle&#39;
+puts h  # =&gt; {fish: [&#39;carp&#39;, &#39;carp&#39;, &#39;poodle&#39;], dog:[&#39;carp&#39;, &#39;carp&#39;, &#39;poodle&#39;]}</code></pre>
+<h3 id="a-disaster">A disaster!</h3>
+<p>Our carp and Poodle have now mixed. Hopefully it makes sense what’s
+happening; we’re altering the (single) default array, which points to
+all our default values. How do we resolve the situation?</p>
+<h2 id="blocks-to-the-rescue">Blocks to the rescue!</h2>
+<p>You can pass in a block when initializing the Hash.</p>
+<pre><code>Hash.new {|hash, key| ... rest of block... }</code></pre>
+<p>To create a default hash which hash a <em>unique</em> default for
+each key/value pair, we can then do this:</p>
+<pre><code>Hash.new {|hash, key| hash[key] = [] }</code></pre>
+<p>Since this block is run each time we assign a new key, the default
+value will always be <code>[]</code>.</p>
+<p>See also <a
+href="http://ruby-doc.org/core-2.1.3/Hash.html#method-i-default_proc-3D">Hash#default_proc</a>.</p>
+<p>The benefit of using blocks &amp; procs is that we’re able to write
+clever pieces of code.. and could make our default value do anything we
+wanted.</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/ruby.html">ruby</a> <a
+href="/tags/tips.html">tips</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>

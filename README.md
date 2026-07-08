@@ -1,15 +1,25 @@
 # My blog
 
-I use my [super simple static site
-generator](https://git.sr.ht/~will-clarke/super-simple-static-site-generator)
-shell script to turn these markdown files into a **TOTALLY BEAUTIFUL WEB SURFING
-EXPERIENCE**.
+A hand-written static site. Everything lives in [`static/`](static/) as plain
+HTML/CSS - no build step, no generator, no dependencies. To change something,
+edit the file; to add a post, drop an `.html` file in `static/posts/` and add a
+link to `static/posts.html` (and `static/index.xml` if you care about RSS).
 
 I've no idea what I write here. Or why. ¯\_(ツ)_/¯
 
-Now also home to [the museum](static/museum/) - every dead version of this site
-since 2014, restored and served as raw HTML - and [stats](static/stats.html),
-twelve and a half years of commits counted by `scripts/stats-collect.py`.
+## Deploy
+
+`static/` is served verbatim by **Cloudflare Pages** (Framework preset: None,
+Build command: empty, Build output directory: `static`). Every push to `master`
+redeploys automatically.
+
+## Also here
+
+- [The museum](static/museum/) - every dead version of this site since 2014,
+  restored and served as raw HTML.
+- [Stats](static/stats.html) - twelve and a half years of commits, counted by
+  `scripts/stats-collect.py` (the one remaining script; run it by hand to
+  refresh the numbers).
 
 ## Next ideas
 

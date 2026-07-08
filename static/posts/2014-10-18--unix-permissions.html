@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-18" />
+  <meta name="description" content="Why chmod +x? What does it all mean? How does it work? What are those magic numbers like 777?" />
+  <title>Will Clarke – UNIX Permissions for no0bs</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">UNIX Permissions for no0bs</h1>
+<p class="date">2014-10-18</p>
+</header>
+<p>File permissions can either be: <code>r</code>, <code>w</code> or
+<code>x</code>. <strong>R</strong>eadable, <strong>W</strong>riteable or
+e<strong>X</strong>ecutable.</p>
+<p>There are also 3 ‘tiers’ of access allowed: ‘Owner’, ‘Group’ &amp;
+‘Other’ These 3 different access levels can be represented like
+this:</p>
+<p>Owner: <code>rwx</code> Group: <code>rwx</code>, Other:
+<code>rwx</code></p>
+<p>This can be shortened to: <code>rwxrwxrwx</code></p>
+<p>In the previous example, anyone is able to read, write(edit) or
+execute(run) the file. To disallow them, you can substitute
+<code>-</code>s in:</p>
+<ul>
+<li><code>rwx------</code> would only be useful for the owner of the
+file.</li>
+<li><code>r--r--r--</code> would mean that anyone can read the
+file.</li>
+</ul>
+<p>Clever programmers like to do things with the minimum system
+requirements; reading 9 letters for each file would be energetically
+expensive / resource intensive. To solve this problem, they often
+shorten this syntax (<code>rwxrwxrwx</code>) <strong>even</strong> more
+using binary.</p>
+<p>They say that:</p>
+<ul>
+<li>Read = 4 bits (binary 100)</li>
+<li>Write = 2 bits (binary 010)</li>
+<li>Execute = 1 bit (binary 001)</li>
+</ul>
+<p>Using these simple rules, you can efficiently say that, in decimal
+(or octal) numbers:</p>
+<ul>
+<li><strong>0</strong> = No permissions</li>
+<li><strong>1</strong> = Execute</li>
+<li><strong>2</strong> = Write</li>
+<li><strong>3</strong> = Write &amp; Execute</li>
+<li><strong>4</strong> = Read</li>
+<li><strong>5</strong> = Read &amp; Execute</li>
+<li><strong>6</strong> = Read &amp; Write</li>
+<li><strong>7</strong> = Read, Write &amp; Execute</li>
+</ul>
+<p>Hopefully that makes sense. Read + Execute = 4 + 1 = 5. Geddit?</p>
+<p>Anyway, this system allows us to transform:</p>
+<ul>
+<li><code>rwx------</code> to <code>700</code></li>
+<li><code>r--r--r--</code> to <code>444</code></li>
+</ul>
+<p>A common file permission to set is <code>chmod 755</code>, which is
+<code>rwx</code> for the Owner but only <code>rw-</code> for other
+users.</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/unix.html">unix</a> <a
+href="/tags/shell.html">shell</a> <a href="/tags/bash.html">bash</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>

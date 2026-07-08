@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2022-01-03" />
+  <meta name="description" content="GTP3 is a scarily-good language model to create human-like text." />
+  <title>Will Clarke – AI is gonna change everything. Obviously</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+      }
+    pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+    div.sourceCode
+      { color: #cccccc; background-color: #303030; }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ffcfaf; } /* Alert */
+    code span.an { color: #7f9f7f; font-weight: bold; } /* Annotation */
+    code span.at { } /* Attribute */
+    code span.bn { color: #dca3a3; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #f0dfaf; } /* ControlFlow */
+    code span.ch { color: #dca3a3; } /* Char */
+    code span.cn { color: #dca3a3; font-weight: bold; } /* Constant */
+    code span.co { color: #7f9f7f; } /* Comment */
+    code span.cv { color: #7f9f7f; font-weight: bold; } /* CommentVar */
+    code span.do { color: #7f9f7f; } /* Documentation */
+    code span.dt { color: #dfdfbf; } /* DataType */
+    code span.dv { color: #dcdccc; } /* DecVal */
+    code span.er { color: #c3bf9f; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #c0bed1; } /* Float */
+    code span.fu { color: #efef8f; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #7f9f7f; font-weight: bold; } /* Information */
+    code span.kw { color: #f0dfaf; } /* Keyword */
+    code span.op { color: #f0efd0; } /* Operator */
+    code span.ot { color: #efef8f; } /* Other */
+    code span.pp { color: #ffcfaf; font-weight: bold; } /* Preprocessor */
+    code span.sc { color: #dca3a3; } /* SpecialChar */
+    code span.ss { color: #cc9393; } /* SpecialString */
+    code span.st { color: #cc9393; } /* String */
+    code span.va { } /* Variable */
+    code span.vs { color: #cc9393; } /* VerbatimString */
+    code span.wa { color: #7f9f7f; font-weight: bold; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">AI is gonna change everything. Obviously</h1>
+<p class="date">2022-01-03</p>
+</header>
+<p><a href="https://openai.com">OpenAI</a> have created a model that
+produces text. Given some input text, it will create some intelligent
+guesses about subsequent text.</p>
+<p>It’s easy to sign up to have access and play around (<a
+href="https://openai.com/blog/openai-api/">link here</a>).</p>
+<p>This is only going to get exponentially better. Soon it’ll be way
+better than any humans so we’ll all be out of a job.. but at least we’l
+have some amazing books to read during our post-scarcity utopian
+lives.</p>
+<p>I was mucking around with it and tried to see if it could generate
+any new blog posts for me. Here are the ones it suggested:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu"># How to convert a String to a number in JavaScript</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>If you’re working with some weird form of string, sometimes the way it is formatted won’t be what you expect. Here are three ways to convert a string to an actual number in javascript. js</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu"># Feel conflicted about something? Take some time off!</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>Don’t feel like you need to ‘power through’ your feelings of conflict or confusion. Just take the time you need and move on when you feel ready. life</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu"># What a Diff is</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>I was recently asked by someone what exactly a “diff” was. Here’s my answer! computing maths</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu"># OMG! How to make an app store?</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>So, you want to make an app store! Cool. But how do you actually go about doing it? tech dev</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu"># Have a backup plan</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>When something goes wrong, the best thing is often just to have a plan B. That way if things go awry, you’ve got a backup idea up your sleeve. business marketing sales strategy work worklife balance</span></code></pre></div>
+<p>Which is exactly the sort of nonsense I’d talk about.</p>
+<p>Some more title suggestions:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode md"><code class="sourceCode markdown"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>A fun editor</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>Trying out Ruby</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>The Evils of the Global Inheritance</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>Permissions By Group</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>export a variable in bash</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>Docker: List Containers</span></code></pre></div>
+<p>My favourite is <code>The Evils of the Global Inheritance</code></p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/ai.html">ai</a> <a
+href="/tags/future.html">future</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="dcterms.date" content="2014-10-10" />
+  <meta name="description" content="DNS can be scary. It can be confusing. But it doesn’t have to be! It’s important. Here’s a primer to get you up and running.." />
+  <title>Will Clarke – Dealing With DNS</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+</head>
+<body>
+<div class="wrap">
+<header class="site">
+  <span class="brand"><a href="/">Will Clarke</a></span>
+  <nav>
+    <a href="/">home</a>
+    <a href="/projects.html">projects</a>
+    <a href="/posts.html">posts</a>
+    <a href="/about.html">about</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </nav>
+</header>
+<main>
+<header id="title-block-header">
+<h1 class="title">Dealing With DNS</h1>
+<p class="date">2014-10-10</p>
+</header>
+<p>When I registered my website <a
+href="http://wmmclarke.com">wmmclarke.com</a>, I had no idea what a DNS
+was. According to <a
+href="http://en.wikipedia.org/wiki/Domain_Name_System">wikipedia</a>,
+<em>the Domain Name Sysstem (DNS) is a hierarchical distributed naming
+system for computers, services, or any resource connected to the
+Internet or a private network</em>. Not exactly immediately obvious…</p>
+<p>The most common analogy for DNS records is probably a
+<em>phonebook</em>, which translates addresses that computers like
+(93.184.216.119) to addresses that humans like (wikipedia.org).</p>
+<p>See my <a
+href="2014-09-02--a-quick-introduction-to-ip-addresses">post about IP
+addresses</a>.</p>
+<p>This link is especially good at dealing with <a
+href="http://igoro.com/archive/what-really-happens-when-you-navigate-to-a-url/">what
+happens when you navigate to a URL</a>.</p>
+<hr />
+<p>Anyway… I’m getting sidetracked. I’m going to show how I delt with
+Heroku &amp; 123-reg.co.uk to set up my DNS properly:</p>
+<p>I found this quite fiddly to get working… so here’s what I did:</p>
+<h2 id="dealing-with-dns">1). Dealing with DNS</h2>
+<ul>
+<li>Click on ‘Manage DNS’ and navigate to ‘Advanced DNS’</li>
+<li>Add 2 new <a
+href="http://en.wikipedia.org/wiki/CNAME_record">CNAME</a>:</li>
+</ul>
+<h3 id="www">- www</h3>
+<pre><code>- DNS Entry: www
+- Type: CNAME
+- Destination Target: &lt;your URL without the &#39;www&#39; and with a &#39;.&#39; at the end&gt;</code></pre>
+<h3 id="everything-else">- Everything else</h3>
+<pre><code>- DNS Entry: *
+- Type: CNAME
+- Destination Target: &lt;your URL without the &#39;www&#39; and with a &#39;.&#39; at the end&gt;</code></pre>
+<h2 id="getting-rid-of-that-pesky-www-subdomain.">2). Getting rid of
+that pesky ‘www’ subdomain.</h2>
+<ul>
+<li><p>Go back to the main list of options</p></li>
+<li><p>Click on ‘Web Forwarding’</p></li>
+<li><p>Add a permament (301) redirection:</p>
+<ul>
+<li>Domain Name: &lt;Your URL without the www. I just put
+‘wmmclarke.com’&gt;</li>
+<li>Forwarding Type: 301</li>
+<li>Forwarding Destination: &lt;Your URL with http://www prepended to
+it.&gt;</li>
+</ul></li>
+</ul>
+<p>That should be it!</p>
+<hr />
+<h2 id="tags">Tags</h2>
+<p><a href="/tags/dns.html">dns</a> <a
+href="/tags/heroku.html">heroku</a> <a href="/tags/ip.html">ip</a> <a
+href="/tags/networking.html">networking</a></p>
+</main>
+<footer class="site">
+  <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+  <a href="https://github.com/will-clarke">github</a> ·
+  <a href="/tags.html">tags</a> ·
+  <a href="/index.xml">rss</a>
+</footer>
+</div>
+</body>
+</html>
