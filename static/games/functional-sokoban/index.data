@@ -1,404 +1,397 @@
 # Functional Sokoban Level
-name: Tutorial - Add One
-width: 12
-height: 10
+# Solver-verified optimal: 8 moves
+name: First Steps
+width: 8
+height: 7
 
 tiles:
-############
-#..........#
-#..........#
-#..........#
-#..........#
-#.....G....#
-#..........#
-#..........#
-#..........#
-############
+########
+#......#
+#.3....#
+#......#
+#.....G#
+#......#
+########
 
 entities:
-player 2 5
-value 4 5 number 4
-function 6 5 add1 left
+player 1 2
+value 2 2 number 3
 
 goals:
-goal 9 5 number 5
-# Functional Sokoban Level
-name: Chain Reaction
-width: 16
-height: 10
-
-tiles:
-################
-#..............#
-#..............#
-#..............#
-#..............#
-#..............G
-#..............#
-#..............#
-#..............#
-################
-
-entities:
-player 2 5
-value 3 5 number 2
-function 6 5 double left
-function 9 5 add1 left
-value 5 3 number 4
-value 3 3 number 4
-value 7 2 color 255 0 0
-portal 9 2 0 255 100 255
-portal 13 2 0 255 100 255
-portal 9 3 2 255 100 255
-portal 13 3 2 255 100 255
-
-goals:
-goal 14 5 number 5
-goal 14 3 number 5
-goal 14 4 number 5
-goal 14 4 number 5
-goal 14 4 number 5
-goal 14 3 number 5
-goal 14 3 number 5
-goal 15 5 number 5
-goal 14 5 number 5
-# Functional Sokoban Level
-name: Color Transform
-width: 14
-height: 10
-
-tiles:
-##############
-#............#
-#............#
-#...........G#
-#............#
-#............#
-#...........G#
-#............#
-#............#
-##############
-
-entities:
-player 2 5
-value 4 3 number 7
-value 4 6 number 3
-function 7 3 red left
-function 7 6 blue left
-
-goals:
-goal 12 3 color 255 0 0
-goal 12 6 color 0 0 255
-# Functional Sokoban Level
-name: Clone Test
-width: 10
-height: 8
-
-tiles:
-##########
-#........#
-#........#
-#........#
-#........#
-#........#
-#........#
-##########
-
-entities:
-player 1 1
-value 2 3 number 5
-function 4 3 clone left
-function 3 3 clone left
-goal 6 2 number 5
-goal 6 4 number 5
-
-goals:
-goal 6 2 number 5
-goal 6 4 number 5
-# Functional Sokoban Level
-name: Currying: Make +5 Function
-width: 16
-height: 10
-
-tiles:
-################
-#..............#
-#..............#
-#..............#
-#..............#
-#.............G#
-#..............#
-#..............#
-#..............#
-################
-
-entities:
-player 2 5
-value 4 5 number 5
-function 7 5 add left
-value 11 5 number 3
-
-goals:
-goal 14 5 number 8
-# Functional Sokoban Level
-name: Color Manipulation: Darken
-width: 14
-height: 10
-
-tiles:
-##############
-#............#
-#............#
-#............#
-#............#
-#...........G#
-#............#
-#............#
-#............#
-##############
-
-entities:
-player 2 5
-value 4 5 color 255 100 50
-function 7 5 darken left
-
-goals:
-goal 12 5 color 178 70 35
-# Functional Sokoban Level
-name: Nested Box Test
-width: 12
-height: 8
-
-tiles:
-############
-#..........#
-#..........#
-#..........#
-#..........#
-#..........#
-#..........#
-############
-
-entities:
-player 1 1
-value 2 3 number 3
-function 4 3 add1 left
-nested 6 3 left
-  nested_interior:
-  width: 7
-  height: 7
-  tiles:
-  #######
-  #.....#
-  #.....#
-  #..I.O#
-  #.....#
-  #.....#
-  #######
-  entities:
-  function 3 3 add1 left
-  end_nested_interior
-goal 9 3 number 4
-
-goals:
-goal 9 3 number 4
-# Functional Sokoban Level
-name: Nested Portal Test
-width: 12
-height: 8
-
-tiles:
-############
-#..........#
-#..........#
-#..........#
-#..........#
-#..........#
-#..........#
-############
-
-entities:
-player 1 1
-value 2 3 number 3
-nested 5 3 left
-  nested_interior:
-  width: 7
-  height: 7
-  tiles:
-  #######
-  #.....#
-  #.....#
-  #..I.O#
-  #.....#
-  #.....#
-  #######
-  entities:
-  function 3 3 add1 left
-  end_nested_interior
-goal 9 3 number 4
-
-goals:
-goal 9 3 number 4
-# Functional Sokoban Level
-name: Number to Color Pipeline
-width: 16
-height: 10
-
-tiles:
-################
-#..............#
-#..............#
-#..............#
-#..............#
-#.............G#
-#..............#
-#..............#
-#..............#
-################
-
-entities:
-player 2 5
-value 4 5 number 100
-function 7 5 to_color left
-function 10 5 lighten left
-
-goals:
-goal 14 5 color 130 130 130
-# Functional Sokoban Level
-name: Function Composition
-width: 18
-height: 10
-
-tiles:
-##################
-#................#
-#................#
-#................#
-#................#
-#................G
-#................#
-#................#
-#................#
-##################
-
-entities:
-player 2 5
-value 4 5 number 3
-function 7 5 double left
-function 9 5 add1 left
-function 11 5 add1 left
-
-goals:
-goal 16 5 number 8
-# Functional Sokoban Level
-name: Color Channel Pipeline
-width: 18
-height: 10
-
-tiles:
-##################
-#................#
-#................#
-#................#
-#................#
-#................G
-#................#
-#................#
-#................#
-##################
-
-entities:
-player 2 5
-value 4 5 color 200 150 100
-function 7 5 red_channel left
-function 9 5 sub1 left
-function 11 5 to_color left
-
-goals:
-goal 16 5 color 199 199 199
-# Functional Sokoban Level
-name: Portal Routing
-width: 16
-height: 10
-
-tiles:
-################
-#..............#
-#..............#
-#.........###..#
-#.....GGG...G..#
-#.....GGG.....G#
-#..............#
-#..............#
-#..............#
-################
-
-entities:
-player 2 4
-value 1 1 number 0
-value 1 2 number 3
-value 1 3 number 5
-function 3 1 ifzero right
-value 3 3 number 5
-value 2 6 number 5
-portal 5 0 0 255 100 255
-portal 5 4 0 255 100 255
-portal 5 8 1 100 255 100
-portal 5 6 1 100 255 100
-function 11 6 lighten left
-function 10 5 clone left
-function 9 6 ifzero left
-function 7 8 negate left
-function 11 7 abs left
-function 12 2 max left
-value 6 2 number 0
-value 3 2 number 5
-value 7 2 number 5
-
-goals:
-goal 5 4 number 0
 goal 6 4 number 3
+# Functional Sokoban Level
+# Solver-verified optimal: 5 moves
+name: The Machine
+width: 10
+height: 5
+
+tiles:
+##########
+#........#
+#.4.....G#
+#........#
+##########
+
+entities:
+player 1 2
+value 2 2 number 4
+function 5 2 add1 left
+
+goals:
+goal 8 2 number 5
+# Functional Sokoban Level
+# Solver-verified optimal: 25 moves
+name: One-Way Valve
+width: 9
+height: 7
+
+tiles:
+#########
+#.......#
+#.......#
+#..5...G#
+#.......#
+#.......#
+#########
+
+entities:
+player 1 3
+value 3 3 number 5
+function 5 3 add1 right
+
+goals:
+goal 7 3 number 6
+# Functional Sokoban Level
+# Solver-verified optimal: 13 moves
+name: Heavy Machinery
+width: 10
+height: 7
+
+tiles:
+##########
+#........#
+#...A....#
+#........#
+#.3....G.#
+#........#
+##########
+
+entities:
+player 1 1
+value 2 4 number 3
+function 4 2 add1 left
+
+goals:
+goal 7 4 number 4
+# Functional Sokoban Level
+# Solver-verified optimal: 22 moves
+name: Double Time
+width: 10
+height: 7
+
+tiles:
+##########
+#........#
+#.3......#
+#........#
+#.......G#
+#........#
+##########
+
+entities:
+player 1 1
+value 2 2 number 3
+function 4 2 double left
+
+goals:
+goal 8 4 number 12
+# Functional Sokoban Level
+# Solver-verified optimal: 5 moves
+name: Assembly Line
+width: 11
+height: 5
+
+tiles:
+###########
+#.........#
+#.3......G#
+#.........#
+###########
+
+entities:
+player 1 2
+value 2 2 number 3
+function 5 2 double left
+function 6 2 add1 left
+
+goals:
+goal 9 2 number 7
+# Functional Sokoban Level
+# Solver-verified optimal: 23 moves
+name: Order of Operations
+width: 11
+height: 7
+
+tiles:
+###########
+#.........#
+#.........#
+#.3......G#
+#.........#
+#.........#
+###########
+
+entities:
+player 1 1
+value 2 3 number 3
+function 6 2 double left
+function 6 4 add1 left
+
+goals:
+goal 9 3 number 8
+# Functional Sokoban Level
+# Solver-verified optimal: 9 moves
+name: Below Zero
+width: 10
+height: 6
+
+tiles:
+##########
+#........#
+#.2......#
+#.......G#
+#........#
+##########
+
+entities:
+player 1 2
+value 2 2 number 2
+function 5 2 add1 left
+function 7 2 negate left
+
+goals:
+goal 8 3 number -3
+# Functional Sokoban Level
+# Solver-verified optimal: 12 moves
+name: Twins
+width: 10
+height: 5
+
+tiles:
+##########
+#......G.#
+#.7......#
+#......G.#
+##########
+
+entities:
+player 1 2
+value 2 2 number 7
+function 5 2 clone left
+
+goals:
+goal 7 1 number 7
+goal 7 3 number 7
+# Functional Sokoban Level
+# Solver-verified optimal: 18 moves
+name: Fork in the Road
+width: 10
+height: 7
+
+tiles:
+##########
+#........#
+#.0....G.#
+#........#
+#.5....G.#
+#........#
+##########
+
+entities:
+player 1 1
+value 2 2 number 0
+value 2 4 number 5
+function 4 3 ifzero left
+
+goals:
+goal 7 2 number 0
 goal 7 4 number 5
 # Functional Sokoban Level
-name: Countdown Recursion
-width: 14
-height: 10
+# Solver-verified optimal: 21 moves
+name: The Factory
+width: 11
+height: 7
 
 tiles:
-##############
-#............#
-#............#
-#............#
-#............#
-#............#
-#............#
-#............#
-#............#
-##############
+###########
+#.........#
+#.3.......#
+#.........#
+#.4......G#
+#.........#
+###########
 
 entities:
 player 1 1
-value 2 4 number 5
-nested 4 4 left
-  nested_interior:
-  width: 9
-  height: 9
-  tiles:
-  #########
-  #.......#
-  #.......#
-  #.......#
-  #.I.....#
-  #.......#
-  #......O#
-  #.......#
-  #########
-  entities:
-  function 3 4 ifzero down
-  function 3 6 sub1 left
-  self 5 6
-  end_nested_interior
-goal 10 4 number 0
+value 2 2 number 3
+value 2 4 number 4
+function 5 2 add left
 
 goals:
-goal 10 4 number 0
+goal 9 4 number 7
+# Functional Sokoban Level
+# Solver-verified optimal: 24 moves
+name: Times Tables
+width: 10
+height: 6
+
+tiles:
+##########
+#........#
+#.3......#
+#.4..M...#
+#.......G#
+##########
+
+entities:
+player 1 1
+value 2 2 number 3
+value 2 3 number 4
+function 5 3 multiply left
+
+goals:
+goal 8 4 number 12
+# Functional Sokoban Level
+# Solver-verified optimal: 22 moves
+name: Clockwork
+width: 11
+height: 6
+
+tiles:
+###########
+#.........#
+#.5.......#
+#........G#
+#.........#
+###########
+
+entities:
+player 1 1
+value 2 2 number 5
+value 2 3 number 12
+function 5 2 mod left
+
+goals:
+goal 9 3 number 2
+# Functional Sokoban Level
+# Solver-verified optimal: 23 moves
+name: Compound Interest
+width: 10
+height: 7
+
+tiles:
+##########
+#........#
+#.2......#
+#........#
+#.......G#
+#........#
+##########
+
+entities:
+player 1 1
+value 2 2 number 2
+function 4 2 double left
+function 4 4 add1 left
+
+goals:
+goal 8 4 number 10
+# Functional Sokoban Level
+# Solver-verified optimal: 4 moves
+name: Paint Shop
+width: 10
+height: 5
+
+tiles:
+##########
+#........#
+#.9.....G#
+#........#
+##########
+
+entities:
+player 1 2
+value 2 2 number 9
+function 5 2 red left
+function 6 2 invert left
+
+goals:
+goal 8 2 color 0 255 255
+# Functional Sokoban Level
+# Solver-verified optimal: 18 moves
+name: Prism
+width: 11
+height: 6
+
+tiles:
+###########
+#.........#
+#.........#
+#.........#
+#.......G.#
+###########
+
+entities:
+player 1 1
+value 2 2 color 200 60 60
+function 5 2 red_channel left
+function 5 4 to_color left
+
+goals:
+goal 8 4 color 200 200 200
+# Functional Sokoban Level
+# Solver-verified optimal: 20 moves
+name: Zero Hour
+width: 10
+height: 7
+
+tiles:
+##########
+#........#
+#......G.#
+#.2......#
+#........#
+#........#
+##########
+
+entities:
+player 1 1
+value 2 3 number 2
+function 5 3 sub1 left
+function 7 3 ifzero left
+
+goals:
+goal 7 2 number 0
+# Functional Sokoban Level
+# Solver-verified optimal: 22 moves
+name: The Gauntlet
+width: 11
+height: 7
+
+tiles:
+###########
+#.........#
+#.....F...#
+#.3.C....G#
+#.........#
+####...####
+###########
+
+entities:
+player 1 3
+value 2 3 number 3
+function 4 3 clone left
+function 6 2 add left
+
+goals:
+goal 9 3 number 6
