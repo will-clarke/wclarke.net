@@ -1,4 +1,4 @@
 ---
 title: Posts
-description: Some random ramblings from the back of my mind.
+description: Occasional writing about tools, games, and whichever rabbit hole ate that month.
 ---

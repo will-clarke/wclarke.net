@@ -1,4 +1,4 @@
 ---
 title: Tags
-description: OMG. Everything's linked up. Neato!
+description: Posts, grouped by tag.
 ---

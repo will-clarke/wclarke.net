@@ -6,7 +6,21 @@
   <title>About - Will Clarke</title>
   <meta name="description" content="A bit about Will Clarke.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-  <link rel="stylesheet" href="/css/site.css">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <div class="wrap">
@@ -18,23 +32,25 @@
       <a href="/projects.html">projects</a>
       <a href="/posts.html">posts</a>
       <a href="/about.html">about</a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
     </nav>
   </header>
 
   <main>
     <h1>About</h1>
-    <p class="lede">I'm a software engineer, based in the middle of rural Dorset.
-    I've worked remotely for a good while now, from a house made of mud (fancily
-    called "cob") with no central heating and a wood fire that does most of the
-    heavy lifting.</p>
+    <p class="lede">I studied anthropology, moved into software in 2011, and
+    stayed. Since then I've worked mostly on backends and internal tooling,
+    remotely for the last several years, from Dorset.</p>
 
-    <p>Backends and tooling by day; games, emulators and homelab tinkering the rest
-    of the time. If you want the tinkering, that's over in <a href="/projects.html">projects</a>.</p>
+    <p>Outside work I build the things in <a href="/projects.html">projects</a>:
+    browser games, emulators, and a homelab in the shed. Recurring interests:
+    recursive puzzle mechanics, small emulators and interpreters, genetic
+    algorithms, build tooling, static site generators, and cob houses.</p>
 
     <h2>Links</h2>
     <ul class="things">
-      <li><a href="https://git.sr.ht/~will-clarke">Source Hut</a> - where most of my
-      interesting code now lives</li>
+      <li><a href="https://git.sr.ht/~will-clarke">Source Hut</a> - where most of
+      my recent code lives</li>
       <li><a href="https://github.com/will-clarke">GitHub</a></li>
       <li><a href="https://www.linkedin.com/in/wmmclarke/">LinkedIn</a></li>
       <li><a href="mailto:wmmclarke@gmail.com">Email</a></li>
@@ -43,9 +59,10 @@
   </main>
 
   <footer class="site">
-    <a href="/">home</a> ·
-    <a href="/projects.html">projects</a> ·
-    <a href="/posts.html">posts</a>
+    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+    <a href="https://github.com/will-clarke">github</a> ·
+    <a href="/tags.html">tags</a> ·
+    <a href="/index.xml">rss</a>
   </footer>
 
 </div>
