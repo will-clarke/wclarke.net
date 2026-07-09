@@ -61,6 +61,8 @@ body {
 .wrap {
   max-width: 42rem;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;          /* keep prose above the background canvases */
 }
 
 ::selection {
@@ -287,6 +289,14 @@ footer.site a:hover { color: var(--accent); }
 }
 .trippy-toggle:hover,
 .trippy-toggle[aria-pressed="true"] { color: var(--accent); }
+
+/* Game of Life watermark (js/life.js): a faint ink layer behind everything */
+#life-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
 
 html.trippy { overflow-x: hidden; }
 
