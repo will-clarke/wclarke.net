@@ -49,25 +49,26 @@ global ctags ignore would otherwise silently drop them.
 ## The games
 
 5 WASM sokoban variants, each with a redesigned, solver-verified level set
-(rebuilt 2026-07-08). Source lives in the sokoban repo's `improve-<game>`
-branches (`~/code/wclarke-gems/_sokoban-variants/*`, `make web` emcc target,
-needs `source ~/code/emsdk/emsdk_env.sh`; fuller detail in that repo's
-`STATUS.md`).
+(rebuilt 2026-07-08, expanded 2026-07-09). Source lives in the sokoban repo's
+`improve-<game>` branches (`~/code/wclarke-gems/_sokoban-variants/*`, `make web`
+emcc target, needs `source ~/code/emsdk/emsdk_env.sh`; fuller detail in that
+repo's `STATUS.md`).
 
-- **worm-division** - 29 levels in 6 sets, all BFS-verified.
-- **paint-machine** - 15 levels; solver links the real engine.
-- **recursive-sokoban** - 12 levels teaching enter/exit/smuggle/self-reference.
-- **slime-teleports** - 15 levels (classic → slime → portals).
-- **functional-sokoban** - 18 levels (machines, currying, clone, ifzero).
+- **worm-division** - 36 levels in 7 sets incl. `07_time` (rewind pill spawns a
+  ghost replaying your moves); every level replay-verified through the real
+  engine, the 7 time levels provably require time travel.
+- **paint-machine** - 30 levels; rainbow/gradient showcases + big machine
+  levels; solver links the real engine.
+- **recursive-sokoban** - 20 levels: enter/exit/smuggle, twin rooms, decoy
+  copies, mutual recursion; BFS-solved AND solutions replayed in-engine.
+- **slime-teleports** - 21 levels (classic → slime → portals → [Master]).
+- **functional-sokoban** - 25 levels (machines, currying, clone, ifzero);
+  goal tiles now show their expected value, menu shows level names.
 
-Known gaps (nobody's playtested for feel/UX yet):
+Known gaps (solver-verified, but only lightly human-playtested):
 
-- functional-sokoban: goal tiles don't render their expected value; menu shows
-  filenames, not level names.
-- recursive-sokoban: no next-level flow after "LEVEL COMPLETE" (ESC only);
-  R-reset is a stub.
-- worm-division: levels not re-titled; no portal/time-machine levels shipped.
-- paint-machine: one pre-existing stale unit test fails (`test_block_falls`).
+- worm-division levels 30-36 need a feel pass (ghost timing is unforgiving).
+- Browser progress doesn't persist across reloads (saves go to wasm MEMFS).
 
 ## Also here
 
