@@ -102,3 +102,219 @@ flipflop_b: 6 7 0
 colorer: 6 10 blue
 colorer: 8 10 red
 target: red blue
+# Conveyor Belt - a fan chain whisks blocks across the works
+player: 6 1
+emitter: 1 0
+fan: 1 4 right
+fan: 2 4 right
+fan: 3 4 right
+fan: 4 4 right
+fan: 5 4 right
+fan: 6 2 right
+fan: 7 4 right
+fan: 8 4 right
+fan: 9 4 right
+fan: 10 4 right
+fan: 11 4 right
+fan: 12 4 right
+bin: 6 8
+colorer: 13 8 green
+target: green
+# Gradient - lower emitters paint earlier stripes
+player: 12 0
+emitter: 3 3
+emitter: 6 2
+emitter: 9 1
+emitter: 12 1
+colorer: 3 8 red
+colorer: 6 8 green
+colorer: 9 8 yellow
+colorer: 12 8 blue
+target: blue red green yellow
+# Grand Tour - one block, three columns, last colorer wins
+player: 9 1
+emitter: 3 0
+colorer: 3 6 red
+portal: 3 9 violet
+portal: 8 3 violet
+colorer: 7 6 yellow
+portal: 7 9 green
+portal: 11 2 green
+colorer: 11 7 blue
+target: blue
+# The Grand Machine - sit back and watch it paint a rainbow
+player: 0 2
+emitter: 2 6
+fan: 2 8 right
+colorer: 2 7 red
+emitter: 4 4
+colorer: 4 7 orange
+fan: 4 9 left
+emitter: 6 3
+colorer: 6 4 yellow
+cloner: 6 5
+bin: 7 9
+emitter: 8 2
+colorer: 8 6 green
+emitter: 10 1
+colorer: 10 5 blue
+emitter: 12 0
+colorer: 12 4 violet
+target: red orange yellow green blue violet
+# The Compactor - four blocks press into one
+player: 12 9
+block: 6 4
+block: 7 4
+emitter: 6 0
+emitter: 7 0
+shrink: 6 6 0
+colorer: 10 9 violet
+target: violet
+# Full Spectrum - seven towers, one missing tooth
+player: 5 5
+emitter: 1 0
+emitter: 3 0
+emitter: 5 0
+emitter: 7 0
+emitter: 9 0
+emitter: 11 0
+emitter: 13 0
+nextcolor: 1 2
+nextcolor: 3 2
+nextcolor: 3 3
+nextcolor: 5 2
+nextcolor: 5 3
+nextcolor: 5 4
+nextcolor: 7 2
+nextcolor: 7 3
+nextcolor: 7 4
+nextcolor: 6 5
+nextcolor: 9 2
+nextcolor: 9 3
+nextcolor: 9 4
+nextcolor: 9 5
+nextcolor: 9 6
+nextcolor: 11 2
+nextcolor: 11 3
+nextcolor: 11 4
+nextcolor: 11 5
+nextcolor: 11 6
+nextcolor: 11 7
+nextcolor: 13 2
+nextcolor: 13 3
+nextcolor: 13 4
+nextcolor: 13 5
+nextcolor: 13 6
+nextcolor: 13 7
+nextcolor: 13 8
+target: red orange yellow green blue indigo violet
+# Double Rainbow - one block, two colors
+player: 12 8
+emitter: 7 0
+cloner: 7 3
+nextcolor: 6 6
+nextcolor: 8 5
+nextcolor: 9 6
+nextcolor: 8 7
+nextcolor: 8 8
+target: red green
+# Ripen - every lap through the loop, the color deepens
+player: 5 9
+emitter: 5 0
+fan: 5 3 right
+fan: 6 3 right
+nextcolor: 7 4
+nextcolor: 6 6
+portal: 7 1 violet
+portal: 7 10 violet 2
+target: indigo
+# Prism - split one drop into three colors
+player: 12 6
+emitter: 7 0
+cloner: 7 3
+cloner: 6 6
+cloner: 10 6
+colorer: 5 9 red
+colorer: 7 9 yellow
+colorer: 9 9 blue
+target: red yellow blue
+# Fireworks - one rocket, five-color burst
+player: 13 8
+emitter: 7 0
+cloner: 7 2
+cloner: 6 5
+cloner: 8 5
+cloner: 5 8
+cloner: 11 8
+colorer: 4 9 red
+colorer: 6 9 orange
+colorer: 7 9 yellow
+colorer: 8 9 green
+colorer: 10 9 blue
+target: red orange yellow green blue
+# Rainbow Echo - one block, three stripes, each echo brighter
+player: 0 10
+emitter: 6 0
+portal: 7 1 violet
+nextcolor: 7 2
+cloner: 7 4
+portal: 6 9 violet 3
+bin: 2 10
+target: red orange yellow
+# Rainbow Thirds - three drops share one stripe, color them all
+player: 1 5
+emitter: 3 1
+emitter: 7 1
+emitter: 11 1
+colorer: 2 5 red
+colorer: 6 6 green
+colorer: 10 7 blue
+wall: 1 0 1 2
+wall: 5 0 5 2
+wall: 9 0 9 2
+wall: 13 0 13 2
+target: red green blue
+# Switchyard - the gates hold a wagon until its partner passes
+player: 0 4
+block: 1 4
+block: 6 2
+emitter: 10 0
+flipflop_a: 3 5 0
+flipflop_a: 6 5 0
+flipflop_b: 10 5 0
+colorer: 3 8 yellow
+colorer: 6 8 red
+colorer: 10 8 blue
+target: red yellow blue
+# Assembly Line - patch the belt, refit the splitter
+player: 4 8
+emitter: 2 0
+fan: 2 3 right
+fan: 3 3 right
+fan: 5 3 right
+fan: 6 3 right
+fan: 4 6 right
+cloner: 9 6
+colorer: 6 9 orange
+colorer: 8 9 green
+bin: 4 10
+target: orange green
+# Repair Job - the rainbow factory is out of order
+player: 14 4
+emitter: 2 6
+colorer: 2 7 red
+fan: 2 8 right
+emitter: 4 4
+colorer: 4 7 orange
+fan: 4 9 left
+emitter: 6 3
+colorer: 6 4 yellow
+cloner: 6 7
+bin: 10 9
+emitter: 8 2
+colorer: 8 6 green
+emitter: 10 1
+colorer: 10 5 blue
+emitter: 12 0
+colorer: 13 4 violet
+target: red orange yellow green blue violet

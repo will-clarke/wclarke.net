@@ -395,3 +395,175 @@ function 6 2 add left
 
 goals:
 goal 9 3 number 6
+# Functional Sokoban Level
+# Solver-verified optimal: 15 moves
+# Chain into a splitter: add1 feeds straight into clone, one push makes two 5s.
+name: Production Line
+width: 11
+height: 5
+
+tiles:
+###########
+#.......G.#
+#.4.......#
+#.......G.#
+###########
+
+entities:
+player 1 2
+value 2 2 number 4
+function 4 2 add1 left
+function 5 2 clone left
+
+goals:
+goal 8 1 number 5
+goal 8 3 number 5
+# Functional Sokoban Level
+# Solver-verified optimal: 15 moves
+# Clone a value, negate one copy: the goals want x and -x.
+name: Mirror Image
+width: 11
+height: 5
+
+tiles:
+###########
+#.......G.#
+#.5.......#
+#.......G.#
+###########
+
+entities:
+player 1 2
+value 2 2 number 5
+function 4 2 clone left
+function 5 1 negate left
+
+goals:
+goal 8 1 number -5
+goal 8 3 number 5
+# Functional Sokoban Level
+# Solver-verified optimal: 21 moves
+# The machines start out of place. Push them into a pipeline, then run the value.
+name: Assembly Required
+width: 11
+height: 7
+
+tiles:
+###########
+#.........#
+#.........#
+#.3......G#
+#.........#
+#.........#
+###########
+
+entities:
+player 1 1
+value 2 3 number 3
+function 4 2 add1 left
+function 6 4 double left
+
+goals:
+goal 9 3 number 8
+# Functional Sokoban Level
+# Solver-verified optimal: 22 moves
+# One 1 becomes a 0 and a 1; both goals sit behind the same ifzero router.
+name: Split Decision
+width: 11
+height: 7
+
+tiles:
+###########
+#.......#.#
+#......#G##
+#.1.......#
+#......#G##
+#.......#.#
+###########
+
+entities:
+player 1 1
+value 2 3 number 1
+function 4 3 clone left
+function 5 2 sub1 left
+function 8 3 ifzero left
+
+goals:
+goal 8 2 number 0
+goal 8 4 number 1
+# Functional Sokoban Level
+# Solver-verified optimal: 27 moves
+# Curry MIN with the 5, dock the machine downstairs, and cap a cloned 9.
+name: The Ceiling
+width: 11
+height: 7
+
+tiles:
+###########
+#.##...####
+#.5.......#
+#.#.....G.#
+#.9.......#
+#.#.....G.#
+###########
+
+entities:
+player 1 1
+value 2 2 number 5
+function 4 2 min left
+value 2 4 number 9
+function 4 4 clone left
+
+goals:
+goal 8 3 number 5
+goal 8 5 number 9
+# Functional Sokoban Level
+# Solver-verified optimal: 19 moves
+# One 3, one MULTIPLY. Clone it, curry with one copy, feed it the other: 3*3.
+name: Squared
+width: 12
+height: 6
+
+tiles:
+############
+#..........#
+#..........#
+#.3........#
+#........G.#
+############
+
+entities:
+player 1 1
+value 2 3 number 3
+function 4 3 clone left
+function 5 2 multiply left
+
+goals:
+goal 9 4 number 9
+# Functional Sokoban Level
+# Solver-verified optimal: 16 moves
+# Build MOD 2, dock it against the ifzero router, and sort even from odd.
+name: The Sorting Office
+width: 11
+height: 7
+
+tiles:
+###########
+#.........#
+#.2.......#
+#.....G...#
+#.74......#
+#.....G...#
+###########
+
+entities:
+player 1 1
+value 2 2 number 2
+function 4 2 mod left
+value 2 4 number 7
+value 3 4 number 4
+function 6 4 ifzero left
+
+goals:
+goal 6 3 number 0
+goal 6 5 number 1

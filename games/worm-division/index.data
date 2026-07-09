@@ -1,4 +1,4 @@
-NAME: 6. S-Curve
+NAME: The S-Bend
 SOLVABLE: yes
 RATING: 1
 SOLUTION: RRLBBBRRRRRFLLRFL
@@ -16,7 +16,7 @@ X....X. ..X
 X....X....X
 X........@X
 XXXXXXXXXXX
-NAME: 8. Loop Around
+NAME: Once Around the Block
 SOLVABLE: yes
 RATING: 1
 SOLUTION: RRRRBBBBLLLLLLFFFRRRRRBBLLLLFR
@@ -43,7 +43,7 @@ X..@....X
 X.......X
 X.......X
 XXXXXXXXX
-NAME: 9. Head and Body
+NAME: The Zipper
 SOLVABLE: yes
 RATING: 1
 SOLUTION: RBBLLLFFRBBRFRBRFFRBBRFFRBR
@@ -64,7 +64,7 @@ X.........X
 X........@X
 X.........X
 XXXXXXXXXXX
-NAME: Yo bro
+NAME: Tangled Up
 SOLVABLE: yes
 RATING: 2
 SOLUTION: LFFFRRRRR
@@ -87,7 +87,7 @@ X..X....XX
 X....X.XX 
 X@...XXX  
 XXXXXXX   
-NAME: Pellet Path
+NAME: Breadcrumb Trail
 SOLVABLE: yes
 RATING: 2
 NOTES: Collect pellets in sequence to grow and reach the goal
@@ -105,7 +105,7 @@ X.......X
 X..XXXXXX
 X...@@@@X
 XXXXXXXXX
-NAME: One Way Door
+NAME: One Way Street
 SOLVABLE: yes
 RATING: 2
 NOTES: Pellets block the wrong direction - plan your route!
@@ -122,10 +122,10 @@ spawn-body: x=7, y=5, direction=UP
 .........
 .@.......
 .........
-NAME: 1. First Steps
+NAME: Shove Off
 SOLVABLE: yes
 RATING: 1
-NOTES: hey, this is awesome! i'm itroaqwertyuiopkjhgfdsazxcvbm
+NOTES: Boxes move one cell at a time - push, never pull.
 SOLUTION: FRRRRBLRBR
 spawn-head: x=1, y=2, direction=UP
 spawn-body: x=1, y=3, direction=UP
@@ -135,7 +135,7 @@ X...#...X
 X.#.#.#@X
 X.#...#@X
 XXXXXXXXX
-NAME: 4. Straight Shot
+NAME: Straight Shot
 SOLVABLE: yes
 RATING: 1
 SOLUTION: FLBBBRRRRRRRF
@@ -149,7 +149,7 @@ X..X...X@.X
 X.XXXXXX#.X
 X......#..X
 XXXXXXXXXXX
-NAME: 6. S-Curven
+NAME: Around the Bend
 SOLVABLE: yes
 RATING: 1
 SOLUTION: BBBRB
@@ -165,7 +165,7 @@ X..#@.X
 X..#@.X
 X...@@X
 XXXXXXX
-NAME: 7. First Box
+NAME: Special Delivery
 SOLVABLE: yes
 RATING: 1
 SOLUTION: FRFLRRBBBRBRRFFRR
@@ -179,7 +179,7 @@ X..##..@X
 X...X.##X
 X...)#..X
 XXXXXXXXX
-NAME: 15. Quad Push
+NAME: Four on the Floor
 SOLVABLE: yes
 RATING: 0
 SOLUTION: FBBLFFFFLFFRFRFFF
@@ -208,7 +208,7 @@ X...##...##...X
 X...#..#..#...X
 X....#...#....X
 XXXXXXXXXXXXXXX
-NAME: 2. Turn Around
+NAME: About Face
 SOLVABLE: yes
 RATING: 1
 SOLUTION: RRRRR
@@ -220,7 +220,7 @@ X......@X
 XXXXXXXXX
          
          
-NAME: 6. Escape!
+NAME: The Great Escape
 SOLVABLE: yes
 RATING: 4
 SOLUTION: BRRRRRFFRFFLLL
@@ -237,7 +237,7 @@ spawn-body: x=4, y=4, direction=UP
   X...X..   
 .XX.....)  .
    XXXXXX   
-NAME: 3. The Corner
+NAME: Painted into a Corner
 SOLVABLE: yes
 RATING: 0
 SOLUTION: FFFRRRBBB
@@ -251,7 +251,7 @@ spawn-head: x=3, y=4, direction=UP
   X.X...X
   X.X.@.X
   XXXXXXX
-NAME: Bridge Builder
+NAME: Bridge the Gap
 SOLVABLE: yes
 RATING: 3
 NOTES: Build bridges across voids to reach the goal
@@ -265,7 +265,7 @@ X...###.X
 X.......X
 X......@X
 XXXXXXXXX
-NAME: Pellet Jump
+NAME: A Long Stretch
 SOLVABLE: yes
 RATING: 3
 NOTES: Eat pellets to grow long enough to bridge the void
@@ -279,7 +279,7 @@ X....     X
 X....###..X
 X........@X
 XXXXXXXXXXX
-NAME: Void Maze
+NAME: Mind the Gap
 SOLVABLE: yes
 RATING: 4
 NOTES: Navigate around voids and push boxes carefully
@@ -296,19 +296,20 @@ X.     # .X
 X. XXX   .X
 X.......#@X
 XXXXXXXXXXX
-NAME: Test New Tiles
-spawn-head: x=2, y=2, direction=RIGHT
+NAME: First Frost
+SOLVABLE: yes
+RATING: 2
+NOTES: Step onto ice and you slide until something solid stops you.
+SOLUTION: RBB
+spawn-head: x=1, y=2, direction=RIGHT
 ---
-XXXXXXXXXXXX
-X..........X
-X.I....T...X
-X.IIII.....X
-X..........X
-X...C......X
-X..##......X
-X.........@X
-XXXXXXXXXXXX
-NAME: Ice Into Void
+XXXXXXXX
+X......X
+X.IIII.X
+X......X
+X.....@X
+XXXXXXXX
+NAME: Thin Ice
 SOLVABLE: yes
 RATING: 4
 NOTES: Slide off ice edges - new feature! Don't fall too far.
@@ -323,7 +324,7 @@ X.........X
 X....IIIIIX
 X........@X
 XXXXXXXXXXX
-NAME: Slippery Snake
+NAME: Slippery Slope
 SOLVABLE: yes
 RATING: 4
 NOTES: Grow while sliding - master the ice mechanics!
@@ -338,7 +339,7 @@ X...)IIIIIX
 X.........X
 X.......#@X
 XXXXXXXXXXX
-NAME: Ice and Pellets
+NAME: Cold Snack
 SOLVABLE: yes
 RATING: 3
 NOTES: Combine ice sliding with pellet collection
@@ -352,10 +353,10 @@ X.....IIIIX
 X.......).X
 X........@X
 XXXXXXXXXXX
-NAME: Rotator Pellets
+NAME: Threading the Needle
 SOLVABLE: yes
 RATING: 4
-NOTES: Use rotators to approach pellets from the right direction
+NOTES: Approach each pellet from its arrow direction - and mind the missing floor tiles.
 SOLUTION: BBBBRFLFFRBRRRRRRRBBB
 spawn-head: x=1, y=1, direction=right
 ---
@@ -367,7 +368,7 @@ X.>.......X
 X.).......X
 X........@X
 XXXXXXXXXXX
-NAME: Void Bridge Pellets
+NAME: Eat, Stretch, Cross
 SOLVABLE: yes
 RATING: 4
 NOTES: Eat pellets to grow long enough to bridge voids
@@ -382,7 +383,7 @@ X....###....X
 X...........X
 X..........@X
 XXXXXXXXXXXXX
-NAME: Box and Clone
+NAME: Copy That
 SOLVABLE: yes
 RATING: 4
 NOTES: Mix regular boxes with clone blocks
@@ -396,7 +397,7 @@ XH...C....X
 X.........X
 X.@.....@.X
 XXXXXXXXXXX
-NAME: Ice Clone Pellet
+NAME: The Kitchen Sink
 SOLVABLE: yes
 RATING: 5
 NOTES: All mechanics together - plan carefully!
@@ -411,7 +412,7 @@ X...........X
 X..)IIIIII..X
 X..........@X
 XXXXXXXXXXXXX
-NAME: Precision Slide
+NAME: Pixel Perfect
 SOLVABLE: yes
 RATING: 5
 NOTES: Ice, voids, and pellets - perfect timing required
@@ -425,7 +426,7 @@ X.......).  X
 X.....###...X
 X..........@X
 XXXXXXXXXXXXX
-NAME: Clone Cascade
+NAME: Chain Reaction
 SOLVABLE: yes
 RATING: 5
 NOTES: Chain reactions! One clone creates many possibilities.
@@ -441,10 +442,10 @@ X....(....X
 X....v....X
 X.@.@.@.@.X
 XXXXXXXXXXX
-NAME: Pellet Time Travel
+NAME: Potholes
 SOLVABLE: yes
 RATING: 5
-NOTES: Use time travel to access pellets in different timelines
+NOTES: Two floor tiles in this room are missing. Route around the holes.
 SOLUTION: FRRRRRRBRFRRBRBB
 spawn-head: x=1, y=2, direction=right
 ---
@@ -454,7 +455,7 @@ XH.T....).v.X
 X...........X
 X..........@X
 XXXXXXXXXXXXX
-NAME: Ice Void Pellet Master
+NAME: Cliff Edge
 SOLVABLE: yes
 RATING: 5
 NOTES: Slide into void at the right time to collect pellets
@@ -469,3 +470,98 @@ X.....###.....X
 X....IIIII....X
 X............@X
 XXXXXXXXXXXXXXX
+NAME: Second Self
+SOLVABLE: yes
+RATING: 2
+NOTES: Grab the pill, stand on one goal, press SPACE. Your ghost repeats your moves - walk to the other goal while it takes your place.
+SOLUTION: RRRRBBDLLLLLL
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=3, y=1
+---
+XXXXXXX
+X.....X
+X.....X
+X@...@X
+XXXXXXX
+NAME: Wait for Me
+SOLVABLE: yes
+RATING: 3
+NOTES: Your ghost only crosses the first goal for a moment. Be standing on the other goal at exactly that step - bump a wall to wait.
+SOLUTION: RRBBRRDRRR
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=5, y=3
+---
+XXXXXXXXX
+X.......X
+X..@....X
+X......@X
+XXXXXXXXX
+NAME: Ghost Porter
+SOLVABLE: yes
+RATING: 3
+NOTES: Push the box onto its goal, park on a second goal, then rewind. Your ghost redoes the delivery while you claim the third goal.
+SOLUTION: RRRRBBLLDRRRRRRRR
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=2, y=1
+---
+XXXXXXXX
+X....#@X
+X......X
+X..@..@X
+XXXXXXXX
+NAME: Relay Push
+SOLVABLE: yes
+RATING: 4
+NOTES: Your ghost pushes the box sideways - be waiting above to push it down the moment it arrives. Two worms, one box, perfect handoff.
+SOLUTION: BRRFRDFFFBB
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=3, y=1
+---
+XXXXXXXXX
+X...@...X
+X.#.....X
+X...@...X
+X...@...X
+XXXXXXXXX
+NAME: Frozen Echo
+SOLVABLE: yes
+RATING: 4
+NOTES: The ice carries you across in one move - and carries your ghost the same way. Slide out, slide back, and share the two goals.
+SOLUTION: BRBBRBBDFFLLLBB
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=1, y=2
+---
+XXXXXXXXX
+X.......X
+X.IIII..X
+X.......X
+X@.....@X
+XXXXXXXXX
+NAME: Echo Chamber
+SOLVABLE: yes
+RATING: 5
+NOTES: Three goals, two pills. Rewind twice and choreograph both of your past selves - every wall bump you record is a beat they will keep.
+SOLUTION: RBBLLLLLDRRFFRBBDRRRRRRR
+spawn-head: x=1, y=1, direction=RIGHT
+pill-time-machine: x=2, y=1
+pill-time-machine: x=4, y=1
+---
+XXXXXXXXX
+X.......X
+X.......X
+X@..@..@X
+XXXXXXXXX
+NAME: Ouroboros
+SOLVABLE: yes
+RATING: 5
+NOTES: Eat the pellet to grow, drape yourself over two goals, rewind. Your longer ghost re-eats and re-drapes - cover the other pair yourself.
+SOLUTION: RRRRRBBRDLLLLLLLL
+spawn-head: x=1, y=1, direction=RIGHT
+pellet: x=2, y=1, direction=RIGHT
+pill-time-machine: x=4, y=1
+---
+XXXXXXXXX
+X.......X
+X.......X
+X@@...@@X
+XXXXXXXXX
