@@ -268,3 +268,77 @@ footer.site a:hover { color: var(--accent); }
   .shelf { grid-template-columns: 1fr; }
   h1 { font-size: 1.5rem; }
 }
+
+/* ---- trippy mode -------------------------------------------------------
+   Toggled by the "✦ trippy" button (see js/trippy.js), which adds .trippy to
+   <html>. The canvas is the living backdrop; the column floats over it as a
+   frosted panel so prose stays readable. Motion is slow and opt-in. */
+
+.trippy-toggle {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin-left: 1.1em;
+  color: var(--muted);
+  cursor: pointer;
+}
+.trippy-toggle:hover,
+.trippy-toggle[aria-pressed="true"] { color: var(--accent); }
+
+html.trippy { overflow-x: hidden; }
+
+#trippy-canvas {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+html.trippy .wrap {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--line), 0 10px 40px rgba(0, 0, 0, 0.12);
+  padding: 1.5rem 1.6rem 3rem;
+}
+html.trippy .trippy-toggle { color: var(--accent); }
+
+@media (prefers-reduced-motion: no-preference) {
+  html.trippy h1,
+  html.trippy h2 {
+    background-image: linear-gradient(
+      100deg,
+      hsl(280 70% 60%), hsl(200 75% 55%), hsl(150 65% 48%),
+      hsl(40 85% 55%), hsl(340 75% 60%), hsl(280 70% 60%));
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: trippy-hue 9s linear infinite;
+  }
+  html.trippy .card {
+    animation: trippy-float 8s ease-in-out infinite;
+  }
+  html.trippy .card:nth-child(2n) { animation-duration: 10s; animation-delay: -3s; }
+  html.trippy .card:nth-child(3n) { animation-duration: 11s; animation-delay: -6s; }
+  html.trippy body { animation: trippy-breathe 12s ease-in-out infinite; }
+}
+
+@keyframes trippy-hue {
+  to { background-position: 300% 0; }
+}
+@keyframes trippy-float {
+  0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+  50%      { transform: translateY(-7px) rotate(0.6deg); }
+}
+@keyframes trippy-breathe {
+  0%, 100% { filter: saturate(1); }
+  50%      { filter: saturate(1.18); }
+}

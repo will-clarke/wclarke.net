@@ -1,4 +1,5 @@
 .DS_Store
+.playwright-mcp/
 
 # The tag pages are real content; override the global `tags` (ctags) ignore.
 !/tags/

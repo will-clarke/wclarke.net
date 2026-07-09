@@ -10,14 +10,16 @@ I've no idea what I write here. Or why. ¯\_(ツ)_/¯
 ## Layout
 
 ```
-index.html        landing (intro + featured)
+index.html        landing (intro + featured); hosts the "✦ FRACTALS" button
 projects.html     the cabinet (games, live toys, meta, website history)
 about.html
 404.html
 css/style.css     one shared, restyleable stylesheet
+js/trippy.js      cursor-driven recursive-fractal canvas (homepage only)
+writing.html      hub linking both posts and stories (in the top nav)
 posts/            the blog
-posts.html        blog index
-stories/          short fiction
+posts.html        blog index (still live; not in nav - reached via writing.html)
+stories/          short fiction (indexed from writing.html)
 tags/ tags.html   per-tag pages + index
 choosetwo/        self-hosted static copy of choosetwo.org (domain lapsed)
 games/<name>/      5 sokoban WASM builds, played at /games/<name>/
