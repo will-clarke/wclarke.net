@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Cascade</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --line:rgba(255,255,255,.07);
+    --line-strong:rgba(255,255,255,.16);
+    --b:#ffb43a;        /* black player (amber) */
+    --w:#3ad9ff;        /* white player (cyan) */
+    --panel:rgba(255,255,255,.02);
+    --cs:clamp(28px, 9.2vw, 46px);
+    --gap:6px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #12151f 0%, var(--bg) 60%);
+    color:#e7ecf5;
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:16px 12px 44px;gap:12px;
+  }
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.34em;font-size:22px;text-transform:uppercase}
+  h1 b{color:var(--b);text-shadow:0 0 18px var(--b);font-weight:700}
+  .sub{opacity:.5;font-size:11.5px;letter-spacing:.04em;margin-top:-4px;text-align:center;max-width:460px}
+
+  /* ---- score / turn ---- */
+  .scores{display:flex;gap:10px;width:100%;max-width:520px;align-items:stretch}
+  .score{
+    flex:1;border:1px solid var(--line);border-radius:14px;padding:9px 13px;
+    background:var(--panel);transition:.25s;position:relative;overflow:hidden;
+  }
+  .score.active{border-color:currentColor;box-shadow:0 0 26px -8px currentColor}
+  .score.b{color:var(--b)} .score.w{color:var(--w)}
+  .score .lbl{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;
+    display:flex;justify-content:space-between;align-items:center}
+  .score .num{font-size:30px;font-weight:700;color:#fff;line-height:1.05}
+  .score .num small{font-size:12px;font-weight:500;opacity:.55;color:currentColor;margin-left:3px}
+  .score .toplay{font-size:9.5px;letter-spacing:.12em;opacity:0;transition:.25s}
+  .score.active .toplay{opacity:.9}
+
+  /* ---- layout: board + meta ---- */
+  .arena{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+
+  #board{
+    display:grid;grid-template-columns:repeat(3,auto);gap:var(--gap);
+    padding:var(--gap);border-radius:16px;background:#05060a;
+    box-shadow:0 24px 70px -24px #000, inset 0 0 0 1px rgba(255,255,255,.04);
+    touch-action:manipulation;
+  }
+  .block{
+    display:grid;grid-template-columns:repeat(3,var(--cs));grid-template-rows:repeat(3,var(--cs));
+    border-radius:9px;position:relative;background:#080a10;
+    outline:1px solid transparent;transition:background .3s, outline-color .2s, box-shadow .3s;
+  }
+  .block.own-b{background:rgba(255,180,58,.09);box-shadow:inset 0 0 0 1px rgba(255,180,58,.28)}
+  .block.own-w{background:rgba(58,217,255,.09);box-shadow:inset 0 0 0 1px rgba(58,217,255,.28)}
+  .block.forced{outline-color:#fff;box-shadow:0 0 22px -4px #fff, inset 0 0 0 1px rgba(255,255,255,.4)}
+  .block.flip{animation:flip .55s ease}
+  @keyframes flip{
+    0%{transform:scale(1)}
+    35%{transform:scale(.86) rotateX(24deg)}
+    60%{transform:scale(1.06)}
+    100%{transform:scale(1)}
+  }
+  .block .owncrest{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:calc(var(--cs)*1.9);font-weight:800;pointer-events:none;opacity:0;transition:opacity .3s;
+    color:#fff;
+  }
+
+  .cell{
+    position:relative;display:flex;align-items:center;justify-content:center;cursor:pointer;
+    border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  }
+  .cell.cr{border-right:none} .cell.cb{border-bottom:none}
+  .cell:hover:not(.filled){background:rgba(255,255,255,.05)}
+  .cell.filled{cursor:default}
+  .cell.blocked{cursor:not-allowed}
+  .cell.blocked:hover{background:transparent}
+
+  .stone{
+    width:74%;height:74%;border-radius:50%;transform:scale(0);
+    animation:pop .28s cubic-bezier(.2,1.5,.4,1) forwards;
+  }
+  .stone.b{background:radial-gradient(circle at 35% 30%, #ffe4a8, var(--b) 60%, #a56a12);
+    box-shadow:0 0 14px -1px var(--b), inset 0 -2px 4px rgba(0,0,0,.35)}
+  .stone.w{background:radial-gradient(circle at 35% 30%, #d6f7ff, var(--w) 60%, #1a7fa0);
+    box-shadow:0 0 14px -1px var(--w), inset 0 -2px 4px rgba(0,0,0,.35)}
+  @keyframes pop{to{transform:scale(1)}}
+
+  /* ghost preview of steered target */
+  .cell .ghost{position:absolute;width:44%;height:44%;border-radius:50%;opacity:.28;pointer-events:none}
+
+  /* ---- meta board (self-similar) ---- */
+  .metawrap{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:132px}
+  .metalabel{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.5}
+  #meta{
+    display:grid;grid-template-columns:repeat(3,34px);grid-template-rows:repeat(3,34px);gap:4px;
+    padding:6px;border-radius:12px;background:#05060a;border:1px solid var(--line);
+    transition:box-shadow .35s, border-color .35s;
+  }
+  #meta.lead-b{border-color:rgba(255,180,58,.5);box-shadow:0 0 30px -6px var(--b)}
+  #meta.lead-w{border-color:rgba(58,217,255,.5);box-shadow:0 0 30px -6px var(--w)}
+  #meta.flip{animation:flip .6s ease}
+  .mcell{border-radius:6px;background:rgba(255,255,255,.03);transition:background .3s, box-shadow .3s;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:rgba(255,255,255,.75)}
+  .mcell.own-b{background:rgba(255,180,58,.85);color:#2a1c04;box-shadow:0 0 12px -2px var(--b)}
+  .mcell.own-w{background:rgba(58,217,255,.85);color:#04222b;box-shadow:0 0 12px -2px var(--w)}
+  .verdict{font-size:12.5px;letter-spacing:.03em;text-align:center;min-height:18px;opacity:.85}
+  .verdict b.b{color:var(--b)} .verdict b.w{color:var(--w)}
+
+  /* ---- controls ---- */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:520px}
+  button, .toggle{
+    font:inherit;font-size:12.5px;letter-spacing:.04em;color:#e7ecf5;
+    background:var(--panel);border:1px solid var(--line-strong);border-radius:10px;
+    padding:8px 14px;cursor:pointer;transition:.18s;user-select:none;
+  }
+  button:hover,.toggle:hover{background:rgba(255,255,255,.07);border-color:#fff}
+  button:active{transform:translateY(1px)}
+  .toggle.on{background:rgba(122,92,255,.18);border-color:#7a5cff;color:#cfc4ff}
+  .toggle .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#556;margin-right:6px;vertical-align:middle;transition:.18s}
+  .toggle.on .dot{background:#7a5cff;box-shadow:0 0 8px #7a5cff}
+
+  /* ---- win overlay ---- */
+  #overlay{
+    position:fixed;inset:0;background:rgba(4,5,9,.82);backdrop-filter:blur(4px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;z-index:20;
+    animation:fade .4s ease;
+  }
+  #overlay.show{display:flex}
+  @keyframes fade{from{opacity:0}}
+  #overlay .win{font-size:34px;font-weight:800;letter-spacing:.06em}
+  #overlay .win.b{color:var(--b);text-shadow:0 0 30px var(--b)}
+  #overlay .win.w{color:var(--w);text-shadow:0 0 30px var(--w)}
+  #overlay .detail{opacity:.7;font-size:14px}
+</style>
+</head>
+<body>
+  <h1><b>Cas</b>cade</h1>
+  <div class="sub">Place stones - they never move. Majority of a block's 9 cells wins the block; majority of the 9 blocks wins the game. Win ~31% of the board and still take it all.</div>
+
+  <div class="scores">
+    <div class="score b" id="sc-b">
+      <div class="lbl"><span>Amber</span><span class="toplay">TO PLAY</span></div>
+      <div class="num"><span id="blk-b">0</span><small>blocks</small></div>
+    </div>
+    <div class="score w" id="sc-w">
+      <div class="lbl"><span>Cyan</span><span class="toplay">TO PLAY</span></div>
+      <div class="num"><span id="blk-w">0</span><small>blocks</small></div>
+    </div>
+  </div>
+
+  <div class="arena">
+    <div id="board"></div>
+    <div class="metawrap">
+      <div class="metalabel">The Game</div>
+      <div id="meta"></div>
+      <div class="verdict" id="verdict">Nobody leads yet</div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="new">New game</button>
+    <div class="toggle" id="steer"><span class="dot"></span>Steer mode</div>
+    <div class="toggle" id="bot"><span class="dot"></span>Play the bot (Cyan)</div>
+  </div>
+
+  <div id="overlay">
+    <div class="win" id="win-text"></div>
+    <div class="detail" id="win-detail"></div>
+    <button id="again">Play again</button>
+  </div>
+
+<script>
+"use strict";
+(() => {
+  const N = 81;
+  // ---- geometry maps ----
+  // g = global 0..80 ; bi = block 0..8 ; k = within-block 0..8
+  const gToB = new Array(N), gToK = new Array(N), bkToG = [];
+  for (let bi = 0; bi < 9; bi++) {
+    bkToG[bi] = [];
+    const brow = (bi / 3) | 0, bcol = bi % 3;
+    for (let k = 0; k < 9; k++) {
+      const r = brow * 3 + ((k / 3) | 0), c = bcol * 3 + (k % 3);
+      const g = r * 9 + c;
+      gToB[g] = bi; gToK[g] = k; bkToG[bi][k] = g;
+    }
+  }
+
+  // ---- state ----
+  let board, turn, forced, over, botOn = false, steerOn = false, busy = false;
+  const cellEl = new Array(N), blockEl = new Array(9), crestEl = new Array(9), mcellEl = new Array(9);
+
+  // ---- ownership logic ----
+  const blockOwner = (bi) => {
+    let b = 0, w = 0;
+    for (let k = 0; k < 9; k++) { const v = board[bkToG[bi][k]]; if (v === 'b') b++; else if (v === 'w') w++; }
+    return b > w ? 'b' : w > b ? 'w' : null;   // tie -> contested
+  };
+  const gameOwner = (owners) => {
+    let b = 0, w = 0;
+    for (const o of owners) { if (o === 'b') b++; else if (o === 'w') w++; }
+    return b > w ? 'b' : w > b ? 'w' : null;
+  };
+  const boardFull = () => board.every(v => v !== null);
+
+  // ---- DOM build ----
+  const board_ = document.getElementById('board');
+  const meta_ = document.getElementById('meta');
+  function build() {
+    board_.innerHTML = ''; meta_.innerHTML = '';
+    for (let bi = 0; bi < 9; bi++) {
+      const blk = document.createElement('div');
+      blk.className = 'block';
+      const crest = document.createElement('div'); crest.className = 'owncrest';
+      blk.appendChild(crest); crestEl[bi] = crest;
+      for (let k = 0; k < 9; k++) {
+        const g = bkToG[bi][k];
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        if (k % 3 === 2) cell.classList.add('cr');
+        if (k >= 6) cell.classList.add('cb');
+        cell.addEventListener('click', () => onClick(g));
+        cellEl[g] = cell; blk.appendChild(cell);
+      }
+      blockEl[bi] = blk; board_.appendChild(blk);
+
+      const mc = document.createElement('div'); mc.className = 'mcell';
+      mcellEl[bi] = mc; meta_.appendChild(mc);
+    }
+  }
+
+  // ---- rendering ----
+  function paintStone(g) {
+    const v = board[g]; if (!v) return;
+    const cell = cellEl[g];
+    if (cell.querySelector('.stone')) return;
+    cell.classList.add('filled');
+    const s = document.createElement('div'); s.className = 'stone ' + v;
+    cell.appendChild(s);
+  }
+
+  function refresh(prevBlockOwners, prevGameOwner) {
+    // block tints + crests, detect flips
+    const owners = [];
+    for (let bi = 0; bi < 9; bi++) {
+      const o = blockOwner(bi); owners[bi] = o;
+      const blk = blockEl[bi];
+      blk.classList.toggle('own-b', o === 'b');
+      blk.classList.toggle('own-w', o === 'w');
+      // crest shows only when block is fully decided (full)
+      let filled = 0; for (let k = 0; k < 9; k++) if (board[bkToG[bi][k]]) filled++;
+      const crest = crestEl[bi];
+      crest.textContent = o ? (o === 'b' ? '◆' : '◆') : '';
+      crest.style.opacity = (o && filled === 9) ? '.14' : '0';
+      if (prevBlockOwners && prevBlockOwners[bi] !== o && o !== null) {
+        blk.classList.remove('flip'); void blk.offsetWidth; blk.classList.add('flip');
+      }
+    }
+    // meta
+    for (let bi = 0; bi < 9; bi++) {
+      const o = owners[bi], mc = mcellEl[bi];
+      mc.classList.toggle('own-b', o === 'b');
+      mc.classList.toggle('own-w', o === 'w');
+    }
+    const go = gameOwner(owners);
+    meta_.classList.toggle('lead-b', go === 'b');
+    meta_.classList.toggle('lead-w', go === 'w');
+    if (prevGameOwner !== undefined && prevGameOwner !== go && go !== null) {
+      setTimeout(() => { meta_.classList.remove('flip'); void meta_.offsetWidth; meta_.classList.add('flip'); }, 260);
+    }
+    // scores + verdict
+    const nb = owners.filter(o => o === 'b').length, nw = owners.filter(o => o === 'w').length;
+    document.getElementById('blk-b').textContent = nb;
+    document.getElementById('blk-w').textContent = nw;
+    const V = document.getElementById('verdict');
+    if (go === 'b') V.innerHTML = `<b class="b">Amber</b> leads the game ${nb}–${nw}`;
+    else if (go === 'w') V.innerHTML = `<b class="w">Cyan</b> leads the game ${nw}–${nb}`;
+    else V.textContent = nb + nw === 0 ? 'Nobody leads yet' : `Deadlocked ${nb}–${nw}`;
+    return { owners, go };
+  }
+
+  function setTurnUI() {
+    document.getElementById('sc-b').classList.toggle('active', turn === 'b' && !over);
+    document.getElementById('sc-w').classList.toggle('active', turn === 'w' && !over);
+    renderForced();
+  }
+
+  function renderForced() {
+    for (let bi = 0; bi < 9; bi++) blockEl[bi].classList.toggle('forced', steerOn && !over && forced === bi);
+    // blocked cells + ghost preview
+    for (let g = 0; g < N; g++) {
+      const cell = cellEl[g];
+      const legal = isLegal(g);
+      cell.classList.toggle('blocked', !over && !legal && !board[g]);
+      const oldGhost = cell.querySelector('.ghost'); if (oldGhost) oldGhost.remove();
+    }
+  }
+
+  const blockFull = (bi) => { for (let k = 0; k < 9; k++) if (!board[bkToG[bi][k]]) return false; return true; };
+
+  function isLegal(g) {
+    if (over || board[g]) return false;
+    if (!steerOn || forced === null) return true;
+    return gToB[g] === forced;
+  }
+
+  // ---- move flow ----
+  function onClick(g) {
+    if (busy || over || !isLegal(g)) return;
+    if (botOn && turn === 'w') return;      // bot owns cyan
+    doMove(g);
+  }
+
+  function doMove(g) {
+    const prevOwners = [];
+    for (let bi = 0; bi < 9; bi++) prevOwners[bi] = blockOwner(bi);
+    const prevGO = gameOwner(prevOwners);
+
+    board[g] = turn;
+    paintStone(g);
+
+    // set next forced block (steer)
+    const k = gToK[g];
+    forced = blockFull(k) ? null : k;
+
+    const { go } = refresh(prevOwners, prevGO);
+
+    turn = turn === 'b' ? 'w' : 'b';
+    setTurnUI();
+
+    if (boardFull()) { finish(go); return; }
+
+    if (botOn && turn === 'w') {
+      busy = true;
+      setTimeout(() => { busy = false; botMove(); }, 480);
+    }
+  }
+
+  // ---- bot: Blotto-flavoured 1-ply greedy ----
+  function legalMoves() {
+    const ms = [];
+    for (let g = 0; g < N; g++) if (isLegal(g)) ms.push(g);
+    return ms;
+  }
+  // evaluate board from cyan(w) perspective
+  function evalBoard() {
+    let score = 0;
+    for (let bi = 0; bi < 9; bi++) {
+      let b = 0, w = 0, e = 0;
+      for (let k = 0; k < 9; k++) { const v = board[bkToG[bi][k]]; if (v==='b')b++; else if (v==='w')w++; else e++; }
+      const owner = w>b?'w':b>w?'b':null;
+      // block value: owning matters most
+      if (owner==='w') score += 12; else if (owner==='b') score -= 12;
+      // efficiency: reward slim leads, punish overinvestment past a 5-4 win
+      const need = 5;
+      if (owner==='w') score -= Math.max(0, w-need)*2.2;      // wasted stones
+      else if (owner==='b') score += Math.max(0, b-need)*0.8; // opp waste is good for us (minor)
+      // contested/close blocks: value marginal advantage where it's still live
+      if (e>0) score += (w-b)*1.0;
+    }
+    return score;
+  }
+  function botMove() {
+    if (over) return;
+    const ms = legalMoves(); if (!ms.length) return;
+    let best = [], bestVal = -1e9;
+    for (const g of ms) {
+      board[g] = 'w';
+      let val = evalBoard();
+      // slight preference to steer opponent into an already-lost-for-them / full block
+      if (steerOn) { const tgt = gToK[g]; if (blockFull(tgt)) val += 0.5; }
+      board[g] = null;
+      if (val > bestVal + 1e-9) { bestVal = val; best = [g]; }
+      else if (Math.abs(val - bestVal) < 1e-9) best.push(g);
+    }
+    const g = best[(Math.random() * best.length) | 0];
+    doMove(g);
+  }
+
+  // ---- end ----
+  function finish(go) {
+    over = true; setTurnUI();
+    const owners = []; for (let bi = 0; bi < 9; bi++) owners[bi] = blockOwner(bi);
+    const winner = gameOwner(owners);
+    const nb = owners.filter(o=>o==='b').length, nw = owners.filter(o=>o==='w').length;
+    let cells_w = 0, cells_b = 0;
+    for (const v of board) { if (v==='b') cells_b++; else if (v==='w') cells_w++; }
+    const ov = document.getElementById('overlay');
+    const wt = document.getElementById('win-text');
+    const name = winner==='b'?'Amber':'Cyan';
+    wt.textContent = name + ' takes the game';
+    wt.className = 'win ' + winner;
+    document.getElementById('win-detail').innerHTML =
+      `Blocks ${winner==='b'?nb:nw}–${winner==='b'?nw:nb} &nbsp;·&nbsp; ` +
+      `won with ${winner==='b'?cells_b:cells_w}/81 cells (${Math.round((winner==='b'?cells_b:cells_w)/81*100)}% of the board)`;
+    ov.classList.add('show');
+  }
+
+  // ---- reset ----
+  function reset() {
+    board = new Array(N).fill(null);
+    turn = 'b'; forced = null; over = false; busy = false;
+    build();
+    refresh(null, undefined);
+    setTurnUI();
+    document.getElementById('overlay').classList.remove('show');
+  }
+
+  // ---- controls ----
+  document.getElementById('new').addEventListener('click', reset);
+  document.getElementById('again').addEventListener('click', reset);
+  document.getElementById('steer').addEventListener('click', (e) => {
+    steerOn = !steerOn; e.currentTarget.classList.toggle('on', steerOn);
+    if (!steerOn) forced = null;
+    renderForced();
+  });
+  document.getElementById('bot').addEventListener('click', (e) => {
+    botOn = !botOn; e.currentTarget.classList.toggle('on', botOn);
+    if (botOn && turn === 'w' && !over) { busy = true; setTimeout(()=>{busy=false;botMove();}, 300); }
+  });
+
+  reset();
+})();
+</script>
+</body>
+</html>

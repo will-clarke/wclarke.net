@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Stamp</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --panel:rgba(255,255,255,.02);
+    --line:rgba(255,255,255,.07);
+    --ink:#e9f0ff;          /* fractal colour */
+    --a:#3ad9ff;            /* stamp A / self */
+    --b:#ff7ac2;            /* stamp B */
+    --ok:#5cffb0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #12151f 0%, var(--bg) 62%);
+    color:#e7ecf5;
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:14px 12px 40px;gap:13px;
+  }
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.34em;font-size:21px;text-transform:uppercase}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:440px}
+
+  .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:13px}
+
+  /* level bar */
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+  .levelbar .name{font-weight:600;letter-spacing:.04em}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{border-color:rgba(255,255,255,.22);color:#fff}
+  button.nb:disabled{opacity:.3;cursor:default}
+  button.nb.hl{border-color:var(--a);color:#fff}
+  [hidden]{display:none!important}
+
+  /* dots */
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{
+    width:9px;height:9px;border-radius:50%;cursor:pointer;
+    background:rgba(255,255,255,.12);transition:.15s;
+  }
+  .dot:hover{background:rgba(255,255,255,.3)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  /* pictures */
+  .pics{display:flex;gap:12px}
+  .pic{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+  .pic .cap{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.5;text-align:center}
+  .frame{
+    position:relative;border-radius:14px;overflow:hidden;
+    background:#05060a;border:1px solid var(--line);
+    box-shadow:0 16px 46px -22px #000, inset 0 0 0 1px rgba(255,255,255,.02);
+    aspect-ratio:1;transition:box-shadow .3s,border-color .3s;
+  }
+  .frame canvas{width:100%;height:100%;display:block}
+  .frame.yours.win{border-color:var(--ok);box-shadow:0 0 40px -6px var(--ok), inset 0 0 0 1px rgba(92,255,176,.3)}
+  .frame.pop{animation:pop .55s ease}
+  @keyframes pop{0%{transform:scale(1)}28%{transform:scale(1.035)}100%{transform:scale(1)}}
+  .badge{
+    position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:13px;z-index:3;
+    background:var(--ok);color:#04120b;font-weight:700;opacity:0;transform:scale(.4);
+    transition:.28s cubic-bezier(.3,1.6,.5,1);
+  }
+  .frame.win .badge{opacity:1;transform:scale(1)}
+  .burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:2}
+  .burst.go::after{
+    content:"";position:absolute;left:0;top:0;width:14px;height:14px;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 0 0 2.5px var(--ok);
+    animation:ring .72s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes ring{from{width:14px;height:14px;opacity:.85}to{width:150%;height:150%;opacity:0}}
+
+  /* sandbox: one big canvas, no target */
+  body.sand #targetPic{display:none}
+  body.sand #yoursPic .cap{visibility:hidden}
+  body.sand .badge,body.sand #winMsg{display:none}
+
+  /* editors */
+  .editwrap{display:flex;flex-direction:column;gap:9px;align-items:center}
+  .editors{display:flex;gap:16px;justify-content:center}
+  .editor{display:flex;flex-direction:column;gap:6px;align-items:center}
+  .editor .elab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.65}
+  .editor .elab.a{color:var(--a)}
+  .editor .elab.b{color:var(--b)}
+  .grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
+    padding:7px;border-radius:14px;background:var(--panel);border:1px solid var(--line);
+  }
+  .cell{
+    width:44px;height:44px;border-radius:8px;position:relative;cursor:pointer;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+    transition:background .12s,border-color .12s,transform .06s;
+  }
+  .cell:active{transform:scale(.92)}
+  .cell.ink{background:var(--ink);border-color:var(--ink);box-shadow:0 0 12px -3px var(--ink)}
+  .cell canvas{width:100%;height:100%;display:block}
+  .cell .ring{position:absolute;inset:0;border-radius:8px;pointer-events:none}
+  .cell.refa .ring{box-shadow:inset 0 0 0 2px var(--a),0 0 12px -4px var(--a)}
+  .cell.refb .ring{box-shadow:inset 0 0 0 2px var(--b),0 0 12px -4px var(--b)}
+
+  /* legend */
+  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:11px;opacity:.75}
+  .legend .k{display:flex;align-items:center;gap:6px}
+  .sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid var(--line)}
+  .sw.ink{background:var(--ink);border-color:var(--ink)}
+  .sw.a{box-shadow:inset 0 0 0 2px var(--a)}
+  .sw.b{box-shadow:inset 0 0 0 2px var(--b)}
+  .hint{font-size:12.5px;opacity:.62;text-align:center;max-width:420px;min-height:34px;line-height:1.5}
+  .hint b{color:var(--a);font-weight:600}
+  .tapnote{font-size:11px;opacity:.4;text-align:center}
+  .par{font-size:12px;letter-spacing:.06em;opacity:.8;text-align:center}
+  .par b{font-weight:600}
+  .par .under{color:var(--ok)}
+  .par .over{color:var(--b)}
+
+  .win-msg{
+    text-align:center;font-size:13px;letter-spacing:.05em;color:var(--ok);
+    height:18px;opacity:0;transition:.3s;font-weight:600;
+  }
+  .win-msg.show{opacity:1}
+</style>
+</head>
+<body>
+  <h1>ST<b>A</b>MP</h1>
+  <div class="sub">Design one tiny stamp. It contains itself. Match the fractal.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Solid</span></div>
+      <div class="nav" id="navPlay">
+        <button class="nb" id="prev">‹</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next">›</button>
+        <button class="nb" id="toSand">✎ play</button>
+      </div>
+      <div class="nav" id="navSand" hidden>
+        <button class="nb" id="rand">⚄ random</button>
+        <button class="nb" id="clear">clear</button>
+        <button class="nb" id="exitSand">✕ exit</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="pics">
+      <div class="pic" id="targetPic">
+        <div class="cap">Target</div>
+        <div class="frame"><canvas id="target" width="486" height="486"></canvas></div>
+      </div>
+      <div class="pic" id="yoursPic">
+        <div class="cap">Yours</div>
+        <div class="frame yours" id="yoursFrame">
+          <canvas id="yours" width="486" height="486"></canvas>
+          <div class="burst" id="burst"></div>
+          <div class="badge">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="win-msg" id="winMsg">solved</div>
+
+    <div class="editwrap">
+      <div class="editors" id="editors"></div>
+      <div class="legend">
+        <div class="k"><span class="sw"></span>empty</div>
+        <div class="k"><span class="sw ink"></span>ink</div>
+        <div class="k"><span class="sw a"></span>self</div>
+        <div class="k" id="legB" style="display:none"><span class="sw b"></span>other</div>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="par" id="par" hidden></div>
+      <div class="tapnote">tap a cell to cycle · long-press to go back</div>
+    </div>
+  </div>
+
+<script>
+/* ---- cell values -------------------------------------------------
+   0 empty · 1 ink · 2 recurse into stamp 0 (A) · 3 recurse into stamp 1 (B)
+------------------------------------------------------------------- */
+const A=2, B=3;
+const LEVELS=[
+  { name:"Solid",
+    hint:"Every cell tapped once is <b>ink</b> - a solid block. Fill all nine.",
+    stamps:[[1,1,1, 1,1,1, 1,1,1]] },
+
+  { name:"Descent",
+    hint:"Tap a cell twice for <b>self</b>: it becomes the whole stamp again, shrunk. Three self-cells on the diagonal fall forever into a line.",
+    stamps:[[A,0,0, 0,A,0, 0,0,A]] },
+
+  { name:"Cantor Dust",
+    hint:"Only the four corners recurse. Each corner holds four corners, holding four corners… a scattering of stars.",
+    stamps:[[A,0,A, 0,0,0, A,0,A]] },
+
+  { name:"The Cross",
+    hint:"Self-cells in a plus. Each arm holds a smaller plus, holding smaller plusses…",
+    stamps:[[0,A,0, A,A,A, 0,A,0]] },
+
+  { name:"Saltire",
+    hint:"The plus, turned forty-five degrees: an X of X's of X's.",
+    stamps:[[A,0,A, 0,A,0, A,0,A]] },
+
+  { name:"Diamond",
+    hint:"A ring of self with a hollow centre and hollow corners. Lace all the way down.",
+    stamps:[[0,A,0, A,0,A, 0,A,0]] },
+
+  { name:"Triangle",
+    hint:"The classic. No ink at all - pure recursion is enough to draw.",
+    stamps:[[A,0,0, A,A,0, A,A,A]] },
+
+  { name:"Carpet",
+    hint:"Eight self-cells around a hole. Sierpiński's carpet.",
+    stamps:[[A,A,A, A,0,A, A,A,A]] },
+
+  { name:"Seeds",
+    hint:"Now mix them: solid <b>ink</b> in the middle, <b>self</b> in the corners. A seed inside a scatter of smaller seeds.",
+    stamps:[[A,0,A, 0,1,0, A,0,A]] },
+
+  { name:"Ink & Echo",
+    hint:"Solid corners; the centre keeps echoing the whole pattern inward.",
+    stamps:[[1,0,1, 0,A,0, 1,0,1]] },
+
+  { name:"Plus-Flower",
+    hint:"A plus of self around a solid <b>ink</b> heart.",
+    stamps:[[0,A,0, A,1,A, 0,A,0]] },
+
+  { name:"Sprout",
+    hint:"Asymmetry. Two arms reach up, one stem grows down - and each does it again.",
+    stamps:[[A,0,A, 0,A,0, 0,A,0]] },
+
+  { name:"Debug: Triangle", repair:true, par:1,
+    hint:"This stamp is almost Sierpiński's triangle, but the output is wrong. Compare the two pictures and fix the one cell that's off.",
+    start: [[A,0,0, A,A,0, A,A,0]],
+    stamps:[[A,0,0, A,A,0, A,A,A]] },
+
+  { name:"Debug: Carpet", repair:true, par:1,
+    hint:"One third is a solid block with no holes - it should be a smaller carpet. Find the cell that's <b>ink</b> where it should be <b>self</b>.",
+    start: [[A,A,A, A,0,A, A,1,A]],
+    stamps:[[A,A,A, A,0,A, A,A,A]] },
+
+  { name:"Two Minds",
+    hint:"Now two stamps. A cell can hold <b>self</b> or the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
+    stamps:[[0,B,0, B,0,B, 0,B,0],
+            [A,0,A, 0,0,0, A,0,A]] },
+
+  { name:"Ouroboros",
+    hint:"A holds four B-corners; B holds a cross of A. The scale alternates: corners, cross, corners, cross…",
+    stamps:[[B,0,B, 0,0,0, B,0,B],
+            [0,A,0, A,A,A, 0,A,0]] },
+
+  { name:"Duet",
+    hint:"A is an X of B; B is a plus of A. Every X is woven from plusses; every plus from X's.",
+    stamps:[[B,0,B, 0,B,0, B,0,B],
+            [0,A,0, A,A,A, 0,A,0]] },
+
+  { name:"Scatter",
+    hint:"A scatters four B's like dust; each B is a whole carpet of A. Carpets floating in the void.",
+    stamps:[[B,0,B, 0,0,0, B,0,B],
+            [A,A,A, A,0,A, A,A,A]] },
+
+  { name:"Lattice",
+    hint:"A is a diamond of B; B is corners of A. An endless woven grid.",
+    stamps:[[0,B,0, B,0,B, 0,B,0],
+            [B,0,B, 0,0,0, B,0,B]] },
+
+  { name:"Debug: Ouroboros", repair:true, par:1,
+    hint:"Two stamps, one bug. Stamp B's cross has lost a limb, so the whole fractal is lopsided. Repair B.",
+    start: [[B,0,B, 0,0,0, B,0,B],
+            [0,A,0, A,A,0, 0,A,0]],
+    stamps:[[B,0,B, 0,0,0, B,0,B],
+            [0,A,0, A,A,A, 0,A,0]] },
+];
+
+/* ---- rendering: the fixed point ---------------------------------- */
+function draw(ctx, stamps, id, x, y, size, color){
+  if(size < 1.15){                       // pixel limit: recurse cell = a lit dot (IFS attractor)
+    ctx.fillStyle=color;
+    ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size));
+    return;
+  }
+  const c=size/3, s=stamps[id];
+  for(let i=0;i<3;i++)for(let j=0;j<3;j++){
+    const v=s[i*3+j]; if(!v) continue;
+    const sx=x+j*c, sy=y+i*c;
+    if(v===1){ ctx.fillStyle=color; ctx.fillRect(sx, sy, c+0.6, c+0.6); }   // ink: solid, no detail
+    else draw(ctx, stamps, v-2, sx, sy, c, color);                         // recurse
+  }
+}
+function renderPic(canvas, stamps){
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  draw(ctx, stamps, 0, 0, 0, canvas.width, getCss('--ink'));
+}
+
+/* ---- fingerprint for win check (deterministic, integer-aligned) --- */
+const CMP=document.createElement('canvas'); CMP.width=CMP.height=243;
+const CMPX=CMP.getContext('2d',{willReadFrequently:true});
+function fingerprint(stamps){
+  CMPX.fillStyle='#000'; CMPX.fillRect(0,0,243,243);
+  draw(CMPX, stamps, 0, 0, 0, 243, '#fff');
+  return CMPX.getImageData(0,0,243,243).data;
+}
+function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]) d++; } return d; }
+
+/* ---- state ------------------------------------------------------- */
+let li=0;                 // level index
+let stamps=[];            // player's working stamps
+let baseline=[];          // starting state (blank, or a repair level's broken stamp)
+let targetFP=null;
+let sand=false;           // sandbox mode
+let prevWin=false, advTimer=null;
+let solved={};
+try{ solved=JSON.parse(localStorage.getItem('stamp-solved')||'{}'); }catch(e){}
+
+const $=id=>document.getElementById(id);
+function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+function buildDots(){
+  const host=$('dots'); host.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const d=document.createElement('div'); d.className='dot';
+    if(solved[i]) d.classList.add('solved');
+    d.title=L.name;
+    d.onclick=()=>{ if(sand) exitSandbox(); loadLevel(i); };
+    host.appendChild(d);
+  });
+}
+function markDots(){
+  [...$('dots').children].forEach((d,i)=>{
+    d.classList.toggle('cur', !sand && i===li);
+    d.classList.toggle('solved', !!solved[i]);
+  });
+}
+
+function loadLevel(i){
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  li=(i+LEVELS.length)%LEVELS.length;
+  const L=LEVELS[li];
+  baseline = (L.start||L.stamps).map(s=>L.start ? s.slice() : s.map(_=>0));
+  stamps = baseline.map(s=>s.slice());
+  targetFP = fingerprint(L.stamps);
+  renderPic($('target'), L.stamps);
+
+  $('lvnum').textContent=String(li+1).padStart(2,'0');
+  $('lvname').textContent=L.name;
+  $('hint').innerHTML=L.hint;
+  $('legB').style.display = L.stamps.length>1 ? 'flex':'none';
+  $('par').hidden = !L.repair;
+  $('prev').disabled = li===0;
+  $('next').disabled = li===LEVELS.length-1;
+  $('yoursFrame').classList.remove('win','pop');
+  $('winMsg').classList.remove('show');
+
+  buildEditors(); markDots(); update();
+}
+
+const maxVal = ()=> stamps.length>1 ? 3 : 2;
+const allowed = ()=>{ const n=maxVal(); const a=[0,1]; for(let v=2;v<=n;v++) a.push(v); return a; };
+
+function buildEditors(){
+  const host=$('editors'); host.innerHTML='';
+  const multi = stamps.length>1;
+  stamps.forEach((s,si)=>{
+    const ed=document.createElement('div'); ed.className='editor';
+    if(multi){
+      const lab=document.createElement('div');
+      lab.className='elab '+(si===0?'a':'b');
+      lab.textContent=si===0?'Stamp A':'Stamp B';
+      ed.appendChild(lab);
+    }
+    const grid=document.createElement('div'); grid.className='grid';
+    for(let k=0;k<9;k++){
+      const cell=document.createElement('div'); cell.className='cell';
+      cell.dataset.si=si; cell.dataset.k=k;
+      grid.appendChild(cell); bindCell(cell);
+    }
+    ed.appendChild(grid); host.appendChild(ed);
+  });
+}
+
+function bindCell(cell){
+  let timer=null, long=false;
+  const cycle=(back)=>{
+    const si=+cell.dataset.si, k=+cell.dataset.k;
+    const list=allowed(); let idx=list.indexOf(stamps[si][k]);
+    idx=(idx + (back?-1:1) + list.length)%list.length;
+    stamps[si][k]=list[idx]; update();
+  };
+  cell.addEventListener('pointerdown',()=>{ long=false; timer=setTimeout(()=>{ long=true; cycle(true); }, 420); });
+  const clear=()=>{ if(timer){clearTimeout(timer);timer=null;} };
+  cell.addEventListener('pointerup',()=>{ clear(); if(!long) cycle(false); });
+  cell.addEventListener('pointerleave',clear);
+  cell.addEventListener('contextmenu',e=>e.preventDefault());
+}
+
+function paintCell(cell){
+  const si=+cell.dataset.si, k=+cell.dataset.k, v=stamps[si][k];
+  cell.className='cell'; cell.innerHTML='';
+  if(v===1){ cell.classList.add('ink'); return; }
+  if(v>=2){
+    const refId=v-2;
+    cell.classList.add(refId===0?'refa':'refb');
+    const cv=document.createElement('canvas'); cv.width=cv.height=84;
+    cell.appendChild(cv);
+    draw(cv.getContext('2d'), stamps, refId, 0,0,84, getCss(refId===0?'--a':'--b'));
+    const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
+  }
+}
+
+function update(){
+  document.querySelectorAll('.cell').forEach(paintCell);
+  renderPic($('yours'), stamps);
+  if(!sand && LEVELS[li].repair) updatePar();
+  if(!sand) checkWin();
+}
+
+function editsFromBaseline(){
+  let n=0; stamps.forEach((s,si)=>s.forEach((v,k)=>{ if(v!==baseline[si][k]) n++; })); return n;
+}
+function updatePar(){
+  const e=editsFromBaseline(), par=LEVELS[li].par;
+  $('par').innerHTML = `edits <b class="${e<=par?'under':'over'}">${e}</b> &nbsp;·&nbsp; par <b>${par}</b>`;
+}
+
+function checkWin(){
+  const empty = stamps.every(s=>s.every(v=>v===0));
+  const win = !empty && pixelDiff(fingerprint(stamps), targetFP)===0;
+  const frame=$('yoursFrame');
+  frame.classList.toggle('win', win);
+  $('winMsg').classList.toggle('show', win);
+
+  if(win && !prevWin){                       // fresh solve
+    solved[li]=1;
+    try{ localStorage.setItem('stamp-solved', JSON.stringify(solved)); }catch(e){}
+    markDots();
+    celebrate();
+    const L=LEVELS[li], last = li===LEVELS.length-1;
+    let msg = last ? "every fractal solved ✦" : "solved";
+    if(L.repair && !last){ const e=editsFromBaseline(); msg = e<=L.par ? `fixed - par ${L.par}!` : `fixed in ${e} edits`; }
+    $('winMsg').textContent = msg;
+    if(!last) advTimer=setTimeout(()=>loadLevel(li+1), 1650);
+  }
+  if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; }
+  prevWin=win;
+}
+
+function celebrate(){
+  const frame=$('yoursFrame'), burst=$('burst');
+  frame.classList.remove('pop'); void frame.offsetWidth; frame.classList.add('pop');
+  burst.classList.remove('go');  void burst.offsetWidth; burst.classList.add('go');
+}
+
+/* ---- sandbox ----------------------------------------------------- */
+function enterSandbox(){
+  clearTimeout(advTimer); advTimer=null;
+  sand=true; document.body.classList.add('sand');
+  $('navPlay').hidden=true; $('navSand').hidden=false;
+  $('lvnum').textContent=''; $('lvname').textContent='Sandbox';
+  $('hint').innerHTML="Free play, no target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, or the <b>other</b>. Try ⚄ for a surprise.";
+  $('legB').style.display='flex';
+  stamps=[Array(9).fill(0), Array(9).fill(0)];
+  buildEditors(); markDots(); update();
+}
+function exitSandbox(){
+  sand=false; document.body.classList.remove('sand');
+  $('navPlay').hidden=false; $('navSand').hidden=true;
+  loadLevel(li);
+}
+function randomStamp(){
+  // weighted: empty, ink, self, other -> favours recursion so it stays interesting
+  const pool=[0,0,0,0,1,2,2,2,3,3];
+  stamps=[0,1].map(()=>Array.from({length:9},()=>pool[Math.floor(Math.random()*pool.length)]));
+  // guarantee at least one recursive cell so it isn't a dull static block
+  if(!stamps.flat().some(v=>v>=2)) stamps[0][4]=2;
+  update();
+}
+
+/* ---- controls ---------------------------------------------------- */
+$('prev').onclick =()=>loadLevel(li-1);
+$('next').onclick =()=>loadLevel(li+1);
+$('reset').onclick=()=>{ stamps=baseline.map(s=>s.slice()); update(); };
+$('toSand').onclick=enterSandbox;
+$('exitSand').onclick=exitSandbox;
+$('clear').onclick=()=>{ stamps=stamps.map(s=>s.map(_=>0)); update(); };
+$('rand').onclick=randomStamp;
+document.addEventListener('keydown',e=>{
+  if(sand) return;
+  if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
+  if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+});
+
+buildDots();
+loadLevel(0);
+</script>
+</body>
+</html>

@@ -22,7 +22,9 @@ posts.html        blog index (still live; not in nav - reached via writing.html)
 stories/          short fiction (indexed from writing.html)
 tags/ tags.html   per-tag pages + index
 choosetwo/        self-hosted static copy of choosetwo.org (domain lapsed)
-games/<name>/      5 sokoban WASM builds, played at /games/<name>/
+games/<name>/      games at /games/<name>/: 5 sokoban WASM builds + the
+                  ../games strategy set (imported via `make sync`)
+Makefile          `make sync` imports web content from sibling repos
 museum/           every dead version of this site since 2014, raw HTML
 stats.html        commit stats
 index.xml sitemap.txt robots.txt
@@ -47,6 +49,21 @@ headers needed) and `.wasm` serves as `application/wasm`.
 
 Note: the `tags/` pages are re-included via `.gitignore` (`!/tags/`) because the
 global ctags ignore would otherwise silently drop them.
+
+## Importing from sibling repos (`make sync`)
+
+The site has no build step, but some content is built and maintained in sibling
+repos. `make sync` runs their builds/copies and drops the web-servable output
+into the tree; you then review the diff and commit to deploy.
+
+- **`../games`** (self-contained HTML/JS games) → `/games/`. Relative links, so
+  it's a straight copy. The 6 sokoban WASM dirs (sourced from `wclarke-gems`,
+  not `../games`) are excluded from `--delete`, so the sync never prunes them.
+  `make sync PULL=0` skips the `git pull` of the source repo.
+- **intuition** is *not* synced. It hand-codes absolute (`/…`) links, so it
+  can't be served under a subpath; it runs as its own Cloudflare Pages project
+  (built from the `intuition` repo) at **intuition.wclarke.net**, linked from
+  `projects.html`.
 
 ## The games
 

@@ -1,0 +1,40 @@
+{
+  "games": [
+    {
+      "slug": "lumen",
+      "name": "Lumen",
+      "accent": "#ffb43a",
+      "tagline": "Every stone is a lamp and a wall. Light along its row & column until blocked. Cells lit by only you are yours; lit by both, worthless. Most territory wins."
+    },
+    {
+      "slug": "cascade",
+      "name": "Cascade",
+      "accent": "#3ad9ff",
+      "tagline": "Place stones - they never move. Win the majority of a block's 9 cells to take the block; a majority of blocks wins the game. Own ~31% of the board and still take it all."
+    },
+    {
+      "slug": "fracture",
+      "name": "Fracture",
+      "accent": "#ff5a6e",
+      "tagline": "Tap empty to place. Tap an enemy stone to shatter it into a new war. Win the line, own the cell."
+    },
+    {
+      "slug": "stamp",
+      "name": "Stamp",
+      "accent": "#ff7ac2",
+      "tagline": "Design one tiny stamp. It contains itself. Match the fractal."
+    },
+    {
+      "slug": "seed",
+      "name": "Seed",
+      "accent": "#57e08a",
+      "tagline": "Design a plant's DNA - one rewrite rule. Grow it generation by generation to light every sun, dodge the thorns, and fit inside the cave."
+    },
+    {
+      "slug": "loom",
+      "name": "Loom",
+      "accent": "#b98cff",
+      "tagline": "Author up to three rewrite rules. The loom runs them tick by tick, leftmost match first, until the bead thread matches the target - or unravels to nothing, or grows forever. Markov algorithms wearing a bead necklace."
+    }
+  ]
+}

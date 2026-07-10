@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Loom</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --panel:rgba(255,255,255,.02);
+    --line:rgba(255,255,255,.07);
+    --ink:#e9f0ff;
+    --a:#b98cff;            /* Loom accent (violet thread) */
+    --ok:#b98cff;
+    --bad:#ff6b7d;
+    /* bead colours */
+    --r:#ff5a6e; --o:#ffb43a; --g:#5cffb0; --b:#3ad9ff; --p:#ff7ac2;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #14121f 0%, var(--bg) 62%);
+    color:#e7ecf5;
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:14px 12px 44px;gap:12px;
+  }
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.4em;font-size:21px;text-transform:uppercase}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:450px}
+
+  .wrap{width:100%;max-width:452px;display:flex;flex-direction:column;gap:12px}
+
+  /* level bar */
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+  .levelbar .name{font-weight:600;letter-spacing:.03em}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{border-color:rgba(255,255,255,.22);color:#fff}
+  button.nb:disabled{opacity:.3;cursor:default}
+  [hidden]{display:none!important}
+
+  /* progress dots */
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.12);transition:.15s}
+  .dot:hover{background:rgba(255,255,255,.3)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  /* panels */
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+  .rowlab{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:6px}
+
+  /* bead rows */
+  .beads{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px}
+  .bead{
+    width:26px;height:26px;border-radius:50%;flex:none;position:relative;
+    background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.6), transparent 52%), var(--c,#666);
+    box-shadow:0 0 9px -2px var(--c,#666), inset 0 0 0 1px rgba(255,255,255,.16);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .bead.r{--c:var(--r)} .bead.o{--c:var(--o)} .bead.g{--c:var(--g)} .bead.b{--c:var(--b)} .bead.p{--c:var(--p)}
+  .empty-tag{font-size:12px;opacity:.35;letter-spacing:.12em}
+
+  /* start / goal strip */
+  .io{display:flex;gap:10px}
+  .io .card{flex:1;min-width:0}
+  .goal-inf{display:flex;align-items:center;gap:8px;min-height:30px;font-size:14px;letter-spacing:.02em}
+  .goal-inf .sym{font-size:19px}
+  .goal-inf.grow{color:var(--b)} .goal-inf.empty{color:var(--p)}
+
+  /* tape (the loom) */
+  .tape-card{position:relative;padding:15px 12px}
+  .tape{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;min-height:34px}
+  .tape .bead{width:30px;height:30px}
+  .tape .bead.hit{transform:scale(1.42);box-shadow:0 0 0 3px #fff, 0 0 18px 2px var(--c);z-index:2}
+  .tape .bead.neu{animation:pop .34s cubic-bezier(.3,1.7,.5,1)}
+  @keyframes pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+  .tick{position:absolute;top:8px;right:11px;font-size:11px;letter-spacing:.12em;opacity:.4;font-variant-numeric:tabular-nums}
+  .tape-card.win{border-color:var(--ok);box-shadow:0 0 34px -8px var(--ok)}
+  .tape-card.lose{animation:shake .4s}
+  @keyframes shake{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(4px)}50%{transform:translateX(-4px)}}
+
+  /* status */
+  .status{text-align:center;font-size:13px;letter-spacing:.03em;min-height:19px;font-weight:600;transition:.2s}
+  .status.win{color:var(--ok)} .status.lose{color:var(--bad)} .status.run{color:#9fb0c8;font-weight:400}
+
+  /* rules */
+  .rules{display:flex;flex-direction:column;gap:8px}
+  .rule{
+    display:flex;align-items:center;gap:8px;
+    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 8px;
+  }
+  .rule .idx{font-size:10px;opacity:.35;width:12px;flex:none;text-align:center}
+  .side{
+    flex:1;min-width:44px;min-height:38px;border-radius:9px;cursor:pointer;
+    display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:5px 7px;
+    background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);transition:.14s;
+  }
+  .side.rhs{background:rgba(255,255,255,.015)}
+  .side .bead{width:22px;height:22px}
+  .side.active{box-shadow:inset 0 0 0 2px var(--a), 0 0 13px -4px var(--a);border-color:transparent}
+  .side .ph{font-size:11px;opacity:.3;letter-spacing:.1em}
+  .arrow{opacity:.5;font-size:16px;flex:none}
+  .delrule{
+    flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--line);
+    background:transparent;color:#8b93a6;font-size:15px;cursor:pointer;line-height:1;
+  }
+  .delrule:hover{color:var(--bad);border-color:var(--bad)}
+  .addrule{
+    align-self:flex-start;background:transparent;border:1px dashed rgba(255,255,255,.18);
+    color:#9fb0c8;border-radius:10px;padding:6px 12px;font-size:12.5px;cursor:pointer;letter-spacing:.03em;
+  }
+  .addrule:hover{border-color:var(--a);color:#fff}
+  .addrule:disabled{opacity:.3;cursor:default}
+
+  /* palette */
+  .palwrap{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap}
+  .pal{
+    width:34px;height:34px;border-radius:50%;cursor:pointer;border:none;padding:0;
+    background:radial-gradient(circle at 34% 28%, rgba(255,255,255,.6), transparent 52%), var(--c);
+    box-shadow:0 0 10px -2px var(--c), inset 0 0 0 1px rgba(255,255,255,.18);
+    transition:transform .08s;
+  }
+  .pal:active{transform:scale(.88)}
+  .pal.r{--c:var(--r)} .pal.o{--c:var(--o)} .pal.g{--c:var(--g)} .pal.b{--c:var(--b)} .pal.p{--c:var(--p)}
+  .pal.cut{background:rgba(255,255,255,.05);color:#9fb0c8;font-size:15px;box-shadow:inset 0 0 0 1px var(--line)}
+
+  /* controls */
+  .controls{display:flex;gap:9px}
+  .controls button{flex:1;border-radius:11px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;letter-spacing:.03em}
+  .run{background:var(--a);border:1px solid var(--a);color:#160a2b;box-shadow:0 0 18px -6px var(--a)}
+  .run.stop{background:transparent;color:var(--a)}
+  .step{background:var(--panel);border:1px solid var(--line);color:#cfd7e6;flex:0 0 92px}
+  .step:hover{border-color:rgba(255,255,255,.22);color:#fff}
+
+  .stats{display:flex;justify-content:center;gap:16px;font-size:12px;opacity:.62;font-variant-numeric:tabular-nums}
+  .stats b{color:var(--a);font-weight:600}
+  .hint{font-size:12.5px;opacity:.62;text-align:center;line-height:1.5;min-height:36px}
+  .hint b{color:var(--a);font-weight:600}
+  .tapnote{font-size:11px;opacity:.38;text-align:center}
+</style>
+</head>
+<body>
+  <h1>LO<b>O</b>M</h1>
+  <div class="sub">Author rewrite rules. The loom runs them tick by tick, leftmost match first, until the thread matches - or halts, or grows forever.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Recolor</span></div>
+      <div class="nav">
+        <button class="nb" id="prev">‹</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next">›</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="io">
+      <div class="card">
+        <div class="rowlab">Start</div>
+        <div class="beads" id="startRow"></div>
+      </div>
+      <div class="card">
+        <div class="rowlab">Goal</div>
+        <div class="beads" id="goalRow"></div>
+      </div>
+    </div>
+
+    <div class="card tape-card" id="tapeCard">
+      <div class="tick" id="tick">tick 0</div>
+      <div class="tape" id="tape"></div>
+    </div>
+
+    <div class="status" id="status">&nbsp;</div>
+
+    <div class="rules" id="rules"></div>
+    <button class="addrule" id="addrule">+ rule</button>
+
+    <div class="palwrap" id="palette"></div>
+
+    <div class="controls">
+      <button class="run" id="run">▶ run</button>
+      <button class="step" id="step">⏭ step</button>
+    </div>
+
+    <div class="stats">
+      <span>ticks <b id="stTicks">0</b></span>
+      <span>rules <b id="stRules">0</b></span>
+      <span>best <b id="stBest">-</b></span>
+    </div>
+
+    <div class="hint" id="hint"></div>
+    <div class="tapnote">tap a slot to select it, then pick beads &middot; tap a bead to remove it</div>
+  </div>
+
+<script>
+/* ---------- engine: leftmost match FIRST -------------------------------
+   Each tick: scan positions left->right; at each position try rules in list
+   order; the first (position, rule) whose left side matches is applied. If no
+   rule matches anywhere, the loom halts.                                    */
+const MAX_TICKS=60, MAX_LEN=64;
+
+function matchAt(str,pos,lhs){
+  if(pos+lhs.length>str.length) return false;
+  for(let i=0;i<lhs.length;i++) if(str[pos+i]!==lhs[i]) return false;
+  return true;
+}
+function step(str,rules){
+  for(let pos=0;pos<str.length;pos++){
+    for(let r=0;r<rules.length;r++){
+      const lhs=rules[r].lhs;
+      if(!lhs.length) continue;
+      if(matchAt(str,pos,lhs)){
+        const rhs=rules[r].rhs;
+        return {next:[...str.slice(0,pos),...rhs,...str.slice(pos+lhs.length)], pos, lhsLen:lhs.length, rhsLen:rhs.length};
+      }
+    }
+  }
+  return null; // halt
+}
+
+/* ---------- levels ----------------------------------------------------- */
+const L = s => s.split('');
+const LEVELS=[
+ { name:'Recolor', goal:'equals', start:'rrr', target:'bbb',
+   hint:'Build a rule. Tap the <b>left</b> slot, pick a bead; tap the <b>right</b> slot, pick a bead. <b>red&rarr;blue</b> repaints every red, one tick at a time.' },
+ { name:'Flip', goal:'equals', start:'rb', target:'br',
+   hint:'A left side can be more than one bead. <b>red blue &rarr; blue red</b> swaps the pair in a single tick.' },
+ { name:'Bloom', goal:'equals', start:'g', target:'gggg',
+   hint:'A right side can be longer than the left - the thread <b>grows</b>. The loom stops the instant it equals the goal.' },
+ { name:'Unravel', goal:'empty', start:'pppp',
+   hint:'Leave the right side <b>empty</b> (the &empty; button) to cut a bead away. Unravel the whole thread to nothing.' },
+ { name:'Fuse', goal:'equals', start:'roro', target:'bb',
+   hint:'Collapse a pattern into fewer beads. <b>red amber &rarr; blue</b> fuses each pair.' },
+ { name:'Tide', goal:'equals', start:'brbr', target:'rrbb',
+   hint:'One tiny swap rule, run over and over, sorts the whole strand. Local rule, global order.' },
+ { name:'Ferry', goal:'equals', start:'prrr', target:'rrrp',
+   hint:'Make one bead walk across the others. A single swap rule can ferry it end to end.' },
+ { name:'Undo', goal:'empty', start:'robrob',
+   hint:'The left side can be a whole motif. Match the repeating unit and cut it - unravel to nothing in as few rules as you can.' },
+ { name:'Odd One', goal:'equals', start:'rrr', target:'b',
+   hint:'Three beads into one. A two-bead rule leaves a remainder on an odd strand - find the rule (or pair of rules) that lands exactly on one <b>blue</b>.' },
+ { name:'Runaway', goal:'grow', start:'g',
+   hint:'Some looms never rest. Author a rule so the thread <b>grows forever</b> and never halts.' },
+ { name:'Reverse', goal:'equals', start:'rbg', target:'gbr',
+   hint:'Reverse the strand. Give each colour a direction: float one left, sink another right. It may take all three rules.' },
+ { name:'Eternal', goal:'grow', start:'rb',
+   hint:'A finale. Grow forever - but make the thread <b>keep getting longer</b>, not just loop in place. A tangle that never stops.' },
+];
+
+const COLNAME={r:'red',o:'amber',g:'green',b:'blue',p:'pink'};
+
+/* ---------- state ------------------------------------------------------ */
+let li=0, level=null;
+let rules=[];                 // [{lhs:[],rhs:[]}]
+let active=null;              // {rule, side}
+let tape=[], ticks=0;
+let running=false, token=0;
+let outcome='idle';           // idle | run | win | lose
+let solved={}, best={};
+try{ solved=JSON.parse(localStorage.getItem('loom-solved')||'{}'); }catch(e){}
+try{ best=JSON.parse(localStorage.getItem('loom-best')||'{}'); }catch(e){}
+
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const arrEq=(a,b)=>a.length===b.length&&a.every((v,i)=>v===b[i]);
+const activeRules=()=>rules.filter(r=>r.lhs.length>0);
+
+/* alphabet: which bead colours this level offers in the palette */
+function alphabet(){
+  const set=new Set([...(level.start||''),...(level.target||'')]);
+  return ['r','o','g','b','p'].filter(c=>set.has(c));
+}
+
+/* ---------- bead helpers ---------------------------------------------- */
+function beadEl(c,extra){
+  const d=document.createElement('div');
+  d.className='bead '+c+(extra?' '+extra:'');
+  return d;
+}
+function fillBeads(host, arr, opts){
+  opts=opts||{};
+  host.innerHTML='';
+  if(!arr.length){
+    const t=document.createElement('span'); t.className='empty-tag';
+    t.textContent=opts.emptyText||'∅'; host.appendChild(t); return;
+  }
+  arr.forEach((c,i)=>{
+    let extra='';
+    if(opts.hit && i>=opts.hit[0] && i<opts.hit[0]+opts.hit[1]) extra='hit';
+    if(opts.neu && i>=opts.neu[0] && i<opts.neu[0]+opts.neu[1]) extra='neu';
+    host.appendChild(beadEl(c,extra));
+  });
+}
+
+/* ---------- progress dots --------------------------------------------- */
+function buildDots(){
+  const host=$('dots'); host.innerHTML='';
+  LEVELS.forEach((Lv,i)=>{
+    const d=document.createElement('div'); d.className='dot'; d.title=Lv.name;
+    d.onclick=()=>loadLevel(i);
+    host.appendChild(d);
+  });
+}
+function markDots(){
+  [...$('dots').children].forEach((d,i)=>{
+    d.classList.toggle('cur',i===li);
+    d.classList.toggle('solved',!!solved[i]);
+  });
+}
+
+/* ---------- level load ------------------------------------------------- */
+function loadLevel(i){
+  stopMachine();
+  li=(i+LEVELS.length)%LEVELS.length; level=LEVELS[li];
+  rules=[{lhs:[],rhs:[]}];
+  active={rule:0,side:'lhs'};
+  $('lvnum').textContent=String(li+1).padStart(2,'0');
+  $('lvname').textContent=level.name;
+  $('hint').innerHTML=level.hint;
+  $('prev').disabled=li===0; $('next').disabled=li===LEVELS.length-1;
+  fillBeads($('startRow'), L(level.start));
+  renderGoal();
+  buildPalette();
+  renderRules();
+  resetTape();
+  updateBest();
+  markDots();
+}
+
+function renderGoal(){
+  const host=$('goalRow');
+  host.className='beads';
+  if(level.goal==='equals'){ fillBeads(host, L(level.target)); }
+  else if(level.goal==='empty'){
+    host.innerHTML='<span class="goal-inf empty"><span class="sym">∅</span>unravel to nothing</span>';
+  } else {
+    host.innerHTML='<span class="goal-inf grow"><span class="sym">∞</span>grow forever</span>';
+  }
+}
+
+/* ---------- palette ---------------------------------------------------- */
+function buildPalette(){
+  const host=$('palette'); host.innerHTML='';
+  alphabet().forEach(c=>{
+    const b=document.createElement('button');
+    b.className='pal '+c; b.title=COLNAME[c];
+    b.onclick=()=>addBead(c);
+    host.appendChild(b);
+  });
+  const cut=document.createElement('button');
+  cut.className='pal cut'; cut.textContent='∅'; cut.title='remove the last bead in the selected slot';
+  cut.onclick=delBead;
+  host.appendChild(cut);
+}
+
+/* ---------- rules editor ---------------------------------------------- */
+function renderRules(){
+  const host=$('rules'); host.innerHTML='';
+  rules.forEach((rule,ri)=>{
+    const row=document.createElement('div'); row.className='rule';
+    const idx=document.createElement('div'); idx.className='idx'; idx.textContent=ri+1;
+    row.appendChild(idx);
+    row.appendChild(sideEl(ri,'lhs',rule.lhs,'left'));
+    const ar=document.createElement('div'); ar.className='arrow'; ar.textContent='→'; row.appendChild(ar);
+    row.appendChild(sideEl(ri,'rhs',rule.rhs,'∅'));
+    const del=document.createElement('button'); del.className='delrule'; del.textContent='×';
+    del.title='delete rule';
+    del.onclick=()=>{
+      if(rules.length>1){ rules.splice(ri,1); active=null; }
+      else { rules[0]={lhs:[],rhs:[]}; active={rule:0,side:'lhs'}; }
+      onRulesChanged();
+    };
+    row.appendChild(del);
+    host.appendChild(row);
+  });
+  $('addrule').disabled = rules.length>=3;
+  $('stRules').textContent=activeRules().length;
+}
+function sideEl(ri,side,arr,ph){
+  const el=document.createElement('div');
+  el.className='side '+side+(active&&active.rule===ri&&active.side===side?' active':'');
+  el.onclick=e=>{ e.stopPropagation(); active={rule:ri,side}; renderRules(); };
+  if(!arr.length){
+    const p=document.createElement('span'); p.className='ph'; p.textContent=ph; el.appendChild(p);
+  } else {
+    arr.forEach((c,i)=>{
+      const bd=beadEl(c);
+      bd.onclick=e=>{ e.stopPropagation(); active={rule:ri,side}; arr.splice(i,1); onRulesChanged(); };
+      el.appendChild(bd);
+    });
+  }
+  return el;
+}
+function addBead(c){
+  if(!active) active={rule:0,side:'lhs'};
+  rules[active.rule][active.side].push(c);
+  onRulesChanged();
+}
+function delBead(){
+  if(!active) return;
+  rules[active.rule][active.side].pop();
+  onRulesChanged();
+}
+$('addrule').onclick=()=>{
+  if(rules.length>=3) return;
+  rules.push({lhs:[],rhs:[]});
+  active={rule:rules.length-1,side:'lhs'};
+  onRulesChanged();
+};
+/* any edit resets the run so the tape always starts fresh */
+function onRulesChanged(){ stopMachine(); resetTape(); renderRules(); }
+
+/* ---------- tape / run ------------------------------------------------- */
+function resetTape(){
+  tape=L(level.start); ticks=0; outcome='idle';
+  $('tapeCard').classList.remove('win','lose');
+  setStatus('','');
+  renderTape();
+  $('stTicks').textContent='0';
+}
+function renderTape(opts){
+  fillBeads($('tape'), tape, opts);
+  $('tick').textContent='tick '+ticks;
+}
+function setStatus(txt,cls){
+  const s=$('status'); s.textContent=txt||' '; s.className='status'+(cls?' '+cls:'');
+}
+function setRunBtn(){
+  const b=$('run');
+  b.textContent=running?'■ stop':'▶ run';
+  b.classList.toggle('stop',running);
+}
+function stopMachine(){ running=false; token++; setRunBtn(); }
+
+/* one animated tick from the current tape */
+async function tick(myToken){
+  const s=step(tape, activeRules());
+  if(!s) return 'halt';
+  renderTape({hit:[s.pos,s.lhsLen]});
+  await sleep(160);
+  if(myToken!==token) return 'abort';
+  tape=s.next; ticks++;
+  renderTape({neu:[s.pos,s.rhsLen]});
+  $('stTicks').textContent=ticks;
+  if(level.goal==='equals' && arrEq(tape,L(level.target))) return 'win';
+  if(level.goal==='empty'  && tape.length===0) return 'win';
+  if(tape.length>MAX_LEN) return level.goal==='grow' ? 'win' : 'toolong';
+  if(ticks>=MAX_TICKS) return (level.goal==='grow' && tape.length>level.start.length) ? 'win' : 'timeout';
+  return 'go';
+}
+
+function settle(r){
+  if(r==='win'){ win(); return; }
+  if(r==='halt'){ loseHalt(); return; }
+  if(r==='toolong'){ flashLose('the loom tangled - the thread ran away'); return; }
+  if(r==='timeout'){ flashLose(level.goal==='grow' ? 'it never grows - the thread only loops in place' : 'the loom never rested'); return; }
+}
+
+async function runMachine(){
+  if(running){ stopMachine(); return; }
+  if(outcome==='win'||outcome==='lose') resetTape();
+  if(!activeRules().length){ flashLose('no rule to run - give a rule a left side'); return; }
+  running=true; outcome='run'; setRunBtn(); setStatus('running…','run');
+  const my=token;
+  while(running && my===token){
+    const r=await tick(my);
+    if(my!==token) return;
+    if(r==='go'){ await sleep(150); continue; }
+    running=false; setRunBtn();
+    settle(r);
+    return;
+  }
+}
+async function stepOnce(){
+  if(running) return;
+  if(outcome==='win'||outcome==='lose') resetTape();
+  if(!activeRules().length){ flashLose('no rule to run - give a rule a left side'); return; }
+  outcome='run'; setStatus('','');
+  const my=token;
+  const r=await tick(my);
+  if(my!==token) return;
+  if(r==='go'){ outcome='idle'; setStatus('',''); return; }
+  settle(r);
+}
+
+function loseHalt(){
+  if(level.goal==='grow') flashLose('the loom halted - it must run forever');
+  else if(level.goal==='empty') flashLose('halted, but the thread is not empty');
+  else flashLose('halted - the thread does not match the goal');
+}
+function flashLose(msg){
+  outcome='lose';
+  const c=$('tapeCard'); c.classList.remove('lose'); void c.offsetWidth; c.classList.add('lose');
+  setStatus(msg,'lose');
+}
+
+function win(){
+  outcome='win';
+  $('tapeCard').classList.add('win');
+  const r=activeRules().length, t=ticks;
+  const words={equals:'matched',empty:'unravelled',grow:'runs forever'};
+  const last=li===LEVELS.length-1;
+  setStatus('✓ '+words[level.goal]+'  ·  '+r+' rule'+(r!==1?'s':'')+' · '+t+' tick'+(t!==1?'s':'')+(last?'':'   next ›'), 'win');
+  solved[li]=1;
+  try{ localStorage.setItem('loom-solved',JSON.stringify(solved)); }catch(e){}
+  const prev=best[li];
+  if(!prev || r<prev.r || (r===prev.r && t<prev.t)){
+    best[li]={r,t};
+    try{ localStorage.setItem('loom-best',JSON.stringify(best)); }catch(e){}
+  }
+  updateBest(); markDots();
+}
+function updateBest(){
+  $('stBest').textContent = best[li] ? best[li].r+'r · '+best[li].t+'t' : '-';
+}
+
+/* ---------- controls --------------------------------------------------- */
+$('run').onclick=runMachine;
+$('step').onclick=stepOnce;
+$('prev').onclick=()=>loadLevel(li-1);
+$('next').onclick=()=>loadLevel(li+1);
+$('reset').onclick=()=>{ stopMachine(); resetTape(); };
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
+  if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+});
+
+buildDots();
+loadLevel(0);
+</script>
+</body>
+</html>

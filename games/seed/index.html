@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Seed</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --panel:rgba(255,255,255,.025);
+    --line:rgba(255,255,255,.08);
+    --ink:#e7ecf5;
+    --accent:#57e08a;      /* seed green */
+    --sun:#ffcf5c;
+    --thorn:#ff5a6e;
+    --stone:#8a93a6;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #12151f 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:14px 12px 40px;gap:12px;
+  }
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.34em;font-size:21px;text-transform:uppercase}
+  h1 b{color:var(--accent);text-shadow:0 0 18px var(--accent);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:440px}
+
+  .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
+
+  /* level bar */
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .levelbar .name{font-weight:600;letter-spacing:.03em;font-size:15px}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:7px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;
+  }
+  button.nb:hover{border-color:rgba(255,255,255,.22);color:#fff}
+  button.nb:disabled{opacity:.3;cursor:default}
+
+  /* garden */
+  .garden{
+    position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1;
+    background:radial-gradient(120% 120% at 50% 8%, #10151b 0%, #070a0e 70%);
+    border:1px solid var(--line);
+    box-shadow:0 18px 46px -22px #000, inset 0 0 0 1px rgba(255,255,255,.02);
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .garden.win{border-color:var(--accent);box-shadow:0 0 40px -6px var(--accent), inset 0 0 0 1px rgba(87,224,138,.3)}
+  .garden.bad{border-color:var(--thorn)}
+  .garden canvas{width:100%;height:100%;display:block}
+  .status{
+    position:absolute;left:0;right:0;bottom:0;padding:7px 12px;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:11.5px;letter-spacing:.04em;
+    background:linear-gradient(0deg, rgba(4,6,9,.82), transparent);
+    pointer-events:none;
+  }
+  .status .msg{font-weight:600}
+  .status .msg.ok{color:var(--accent)}
+  .status .msg.warn{color:var(--thorn)}
+  .status .suns{opacity:.8;letter-spacing:.12em}
+
+  /* grow controls */
+  .grow{display:flex;align-items:center;justify-content:center;gap:10px}
+  .step{
+    display:flex;align-items:center;gap:2px;background:var(--panel);
+    border:1px solid var(--line);border-radius:12px;padding:3px;
+  }
+  .step button{
+    background:transparent;border:0;color:#cfd7e6;font-size:18px;width:38px;height:34px;
+    cursor:pointer;border-radius:9px;transition:.12s;line-height:1;
+  }
+  .step button:hover{background:rgba(255,255,255,.06);color:#fff}
+  .step button:disabled{opacity:.28;cursor:default}
+  .step .gen{min-width:78px;text-align:center;font-size:12px;letter-spacing:.04em}
+  .step .gen b{color:var(--accent);font-weight:700;font-size:15px}
+  .step .gen small{opacity:.5}
+  button.replay{
+    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    border-radius:12px;padding:0 14px;height:40px;font-size:13px;cursor:pointer;
+    display:flex;align-items:center;gap:7px;transition:.15s;letter-spacing:.05em;
+  }
+  button.replay:hover{border-color:var(--accent);color:#fff}
+
+  /* DNA editor */
+  .dna{display:flex;flex-direction:column;gap:9px;background:var(--panel);
+       border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+  .dnahead{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.5}
+  .rule{display:flex;align-items:center;gap:8px;min-height:34px}
+  .rule .sym{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:700;
+    width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;
+    border-radius:7px;background:rgba(255,255,255,.05);cursor:pointer;transition:.12s;color:#dfe6f2;
+  }
+  .rule .arrow{opacity:.4;flex:none}
+  .rule.active .sym{background:var(--accent);color:#04120b;box-shadow:0 0 12px -3px var(--accent)}
+  .chips{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-height:26px;align-content:center}
+  .chip{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;
+    min-width:24px;height:26px;padding:0 6px;border-radius:6px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.05);
+    color:#e7ecf5;transition:transform .06s, background .12s;
+  }
+  .chip:active{transform:scale(.88)}
+  .chip.br{color:var(--accent)}
+  .chip.turn{color:#9fb4ff}
+  .chip.x{color:var(--sun)}
+  .chips .empty{opacity:.3;font-size:12px;font-style:italic}
+
+  .palette{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:2px}
+  .palette button{
+    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:600;
+    min-width:38px;height:38px;border-radius:10px;cursor:pointer;transition:.12s;
+    background:rgba(255,255,255,.05);border:1px solid var(--line);color:#e7ecf5;
+  }
+  .palette button:active{transform:scale(.9)}
+  .palette button.tok-br{color:var(--accent)}
+  .palette button.tok-turn{color:#9fb4ff}
+  .palette button.tok-x{color:var(--sun)}
+  .palette .spacer{flex:1}
+  .palette button.util{min-width:38px;font-size:13px;color:#aab4c6}
+
+  .hint{font-size:12.5px;opacity:.66;text-align:center;line-height:1.5;min-height:34px;padding:0 4px}
+  .hint b{color:var(--accent);font-weight:600}
+  .tapnote{font-size:11px;opacity:.36;text-align:center;margin-top:-4px}
+
+  .legend{display:flex;gap:16px;justify-content:center;font-size:11px;opacity:.7;flex-wrap:wrap}
+  .legend .k{display:flex;align-items:center;gap:6px}
+  .legend .d{width:11px;height:11px;border-radius:50%;flex:none}
+  .legend .d.sun{background:var(--sun);box-shadow:0 0 8px var(--sun)}
+  .legend .d.thorn{background:var(--thorn);box-shadow:0 0 8px var(--thorn)}
+  .legend .d.stone{background:var(--stone);border-radius:2px}
+</style>
+</head>
+<body>
+  <h1>SE<b>E</b>D</h1>
+  <div class="sub">Design a plant's DNA - one rewrite rule. Grow it to light every sun, dodge the thorns, fit the cave.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Sprout</span></div>
+      <div class="nav">
+        <button class="nb" id="prev">‹</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next">›</button>
+      </div>
+    </div>
+
+    <div class="garden" id="garden">
+      <canvas id="cv"></canvas>
+      <div class="status">
+        <span class="msg" id="msg"></span>
+        <span class="suns" id="sunsLeft"></span>
+      </div>
+    </div>
+
+    <div class="grow">
+      <div class="step">
+        <button id="genDown">−</button>
+        <div class="gen">gen <b id="genN">1</b><small id="genMax">/6</small></div>
+        <button id="genUp">+</button>
+      </div>
+      <button class="replay" id="replay">↺ grow</button>
+    </div>
+
+    <div class="dna">
+      <div class="dnahead">DNA · rewrite rules</div>
+      <div id="rules"></div>
+      <div class="palette" id="palette"></div>
+    </div>
+
+    <div class="legend">
+      <div class="k"><span class="d sun"></span>sun · light it</div>
+      <div class="k"><span class="d thorn"></span>thorn · avoid</div>
+      <div class="k"><span class="d stone"></span>rock · avoid</div>
+    </div>
+
+    <div class="hint" id="hint"></div>
+    <div class="tapnote">tap a token to add it · tap a chip to remove it</div>
+  </div>
+
+<script>
+"use strict";
+/* ===================================================================
+   SEED - an L-system growth puzzle.
+   You author rewrite rules (the DNA). The axiom is expanded `gen`
+   times, then a turtle draws the resulting string. The environment -
+   suns to touch, thorns/rocks to avoid, cave walls to fit inside -
+   is what turns the fractal into a puzzle.
+
+   Turtle alphabet:
+     F  draw a stem segment forward
+     X  a bud: draws nothing, but gets rewritten (structure only)
+     +  turn left by the level angle
+     -  turn right by the level angle
+     [  push state (start a branch)
+     ]  pop state  (end a branch)
+   World is 0..100 on both axes, y up, base at bottom.
+=================================================================== */
+
+const MAXLEN = 50000;   // cap expanded string length (safety / perf)
+
+/* ---- levels -------------------------------------------------------
+   base:[x,y] heading (deg, 90=up) angle len maxGen
+   axiom, symbols (editable rules shown in editor), tokens (palette)
+   start: rules the player begins with · sol: a known solution (self-test)
+------------------------------------------------------------------- */
+const LEVELS = [
+  {
+    name:"Sprout",
+    hint:"Your seed is one stem: <b>F</b>. Rewrite it - tap F twice so the rule reads <b>F→FF</b>: every stem becomes two. Then grow until you reach the sun.",
+    base:[50,3], heading:90, angle:25, len:4, maxGen:6,
+    axiom:"F", symbols:["F"], tokens:["F"],
+    suns:[{x:50,y:40,r:7}], thorns:[], walls:[],
+    start:{F:"F"}, startGen:3,
+    sol:{rules:{F:"FF"}, gen:4},
+  },
+  {
+    name:"Lean",
+    hint:"A new sun, off to the side. <b>+</b> turns left, <b>-</b> turns right. Bake a turn into the rule so the whole plant leans as it grows.",
+    base:[50,3], heading:90, angle:10, len:4, maxGen:6,
+    axiom:"F", symbols:["F"], tokens:["F","+","-"],
+    suns:[{x:72,y:35,r:8}], thorns:[], walls:[],
+    start:{F:"F"}, startGen:4,
+    sol:{rules:{F:"FF-"}, gen:4},
+  },
+  {
+    name:"Fork",
+    hint:"<b>[</b> starts a branch, <b>]</b> ends it - the stem returns to the fork and carries on. Two suns, one each side. Try <b>F[+F][-F]F</b>.",
+    base:[50,3], heading:90, angle:32, len:4, maxGen:5,
+    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
+    suns:[{x:40,y:31,r:7},{x:60,y:31,r:7}], thorns:[], walls:[],
+    start:{F:"F"}, startGen:3,
+    sol:{rules:{F:"F[+F][-F]F"}, gen:3},
+  },
+  {
+    name:"Ceiling",
+    hint:"A low cave roof - grow past it and the plant fails. Doubling with <b>FF</b> leaps from too-short to too-tall in one step. You need finer control: a gentler rule, or fewer generations.",
+    base:[50,3], heading:90, angle:25, len:4, maxGen:6,
+    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
+    suns:[{x:50,y:42,r:6}], thorns:[],
+    walls:[{x1:6,y1:54,x2:94,y2:54}],
+    start:{F:"F"}, startGen:2,
+    sol:{rules:{F:"FFF"}, gen:2},
+  },
+  {
+    name:"Thicket",
+    hint:"Three suns to light at once. A bushier rule fills more space - <b>F[+F]F[-F]F</b> makes a dense, self-similar shrub. Find the generation that covers all three.",
+    base:[50,3], heading:90, angle:25, len:3.4, maxGen:5,
+    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
+    suns:[{x:36,y:54,r:8},{x:64,y:84,r:8},{x:50,y:90,r:8}], thorns:[], walls:[],
+    start:{F:"F"}, startGen:3,
+    sol:{rules:{F:"F[+F]F[-F]F"}, gen:3},
+  },
+  {
+    name:"Needle",
+    hint:"The sun is off to the right; a thorn lurks on the left. Branch only toward the sun - grow the other way too and you'll snag the thorn. Sometimes you must prune.",
+    base:[50,3], heading:90, angle:28, len:4, maxGen:5,
+    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
+    suns:[{x:60,y:33,r:6}], thorns:[{x:40,y:27,r:6}], walls:[],
+    start:{F:"F"}, startGen:3,
+    sol:{rules:{F:"F[-F]F"}, gen:3},
+  },
+  {
+    name:"Two Minds",
+    hint:"Now two rules. <b>X</b> is a bud: it draws nothing but rewrites into new structure, while <b>F→FF</b> lengthens every stem each generation. The classic recipe for a living plant.",
+    base:[50,3], heading:90, angle:22, len:1.6, maxGen:5,
+    axiom:"X", symbols:["F","X"], tokens:["F","X","+","-","[","]"],
+    suns:[{x:30,y:58,r:9},{x:70,y:58,r:9},{x:50,y:80,r:9}], thorns:[], walls:[],
+    start:{F:"F", X:"X"}, startGen:4,
+    sol:{rules:{F:"FF", X:"F[+X][-X]FX"}, gen:5},
+  },
+];
+
+/* ---- expansion (the rewrite) ------------------------------------- */
+function expand(rules, axiom, gen){
+  let s = axiom;
+  for(let g=0; g<gen; g++){
+    let out = "";
+    for(let i=0;i<s.length;i++){
+      const ch = s[i];
+      out += (rules[ch] !== undefined) ? rules[ch] : ch;
+      if(out.length > MAXLEN) return out.slice(0, MAXLEN);
+    }
+    s = out;
+  }
+  return s;
+}
+
+/* ---- turtle interpretation --------------------------------------- */
+function interpret(str, lv){
+  const segs = [];
+  let x = lv.base[0], y = lv.base[1];
+  let a = lv.heading * Math.PI/180;
+  const da = lv.angle * Math.PI/180;
+  let depth = 0;    // bracket depth -> stem thickness
+  let fd = 0;       // forward depth -> growth order
+  const stack = [];
+  for(let i=0;i<str.length;i++){
+    const ch = str[i];
+    if(ch === 'F'){
+      const nx = x + Math.cos(a)*lv.len;
+      const ny = y + Math.sin(a)*lv.len;
+      fd++;
+      segs.push({x1:x,y1:y,x2:nx,y2:ny,depth,grow:fd});
+      x = nx; y = ny;
+    } else if(ch === '+'){ a += da; }
+    else if(ch === '-'){ a -= da; }
+    else if(ch === '['){ stack.push({x,y,a,depth,fd}); depth++; }
+    else if(ch === ']'){ const s = stack.pop(); if(s){ x=s.x; y=s.y; a=s.a; depth=s.depth; fd=s.fd; } }
+    // X and anything else: no-op for the turtle
+  }
+  return segs;
+}
+
+/* ---- geometry ---------------------------------------------------- */
+function distSegPt(sg, px, py){
+  const dx = sg.x2-sg.x1, dy = sg.y2-sg.y1;
+  const l2 = dx*dx + dy*dy;
+  let t = l2 ? ((px-sg.x1)*dx + (py-sg.y1)*dy)/l2 : 0;
+  t = t<0?0:t>1?1:t;
+  const cx = sg.x1 + t*dx, cy = sg.y1 + t*dy;
+  return Math.hypot(px-cx, py-cy);
+}
+function segCross(a, w){
+  const o=(ax,ay,bx,by,cx,cy)=>(by-ay)*(cx-bx)-(bx-ax)*(cy-by);
+  const d1=o(w.x1,w.y1,w.x2,w.y2,a.x1,a.y1), d2=o(w.x1,w.y1,w.x2,w.y2,a.x2,a.y2);
+  const d3=o(a.x1,a.y1,a.x2,a.y2,w.x1,w.y1), d4=o(a.x1,a.y1,a.x2,a.y2,w.x2,w.y2);
+  return ((d1>0)!==(d2>0)) && ((d3>0)!==(d4>0));
+}
+function outOfBounds(sg){
+  const bad = v => v < 1 || v > 99;
+  return bad(sg.x1)||bad(sg.x2)||sg.y1>99||sg.y2>99||sg.y1<0||sg.y2<0;
+}
+
+/* ---- evaluation (win check) -------------------------------------- */
+function evaluate(segs, lv){
+  const suns = lv.suns.map(s=>({...s, lit:false}));
+  let thornHit=false, wallHit=false, oob=false;
+  for(const sg of segs){
+    if(outOfBounds(sg)) oob = true;
+    for(const s of suns) if(!s.lit && distSegPt(sg,s.x,s.y) <= s.r) s.lit = true;
+    if(!thornHit) for(const t of lv.thorns) if(distSegPt(sg,t.x,t.y) <= t.r){ thornHit=true; break; }
+    if(!wallHit)  for(const w of lv.walls)  if(segCross(sg,w)){ wallHit=true; break; }
+  }
+  const allLit = suns.every(s=>s.lit);
+  const win = allLit && !thornHit && !wallHit && !oob && segs.length>0;
+  return {suns, thornHit, wallHit, oob, allLit, win};
+}
+
+/* expose for dev / self-test */
+window.SEED = {LEVELS, expand, interpret, evaluate,
+  run(i, rules, gen){ const L=LEVELS[i]; return evaluate(interpret(expand(rules,L.axiom,gen),L), L); }};
+
+/* ===================================================================
+   UI / state
+=================================================================== */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let W=380, H=380;                    // backing pixels (square)
+function layout(){
+  const dpr = Math.min(window.devicePixelRatio||1, 2.5);
+  const css = cv.clientWidth || 380;
+  W = H = Math.round(css*dpr);
+  cv.width = W; cv.height = H;
+  if(state) draw();
+}
+
+let li = 0;
+let state = null;   // {lv, rules, gen, segs, order, maxDepth, result, active}
+let anim = {t0:0, dur:0, raf:0, on:false};
+let solved = {};
+try{ solved = JSON.parse(localStorage.getItem('seed-solved')||'{}'); }catch(e){}
+
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+const X = wx => wx/100*W;
+const Y = wy => (1 - wy/100)*H;
+const S = u => u/100*W;   // scalar length world->px
+
+function loadLevel(i){
+  li = (i + LEVELS.length) % LEVELS.length;
+  const lv = LEVELS[li];
+  state = {
+    lv,
+    rules: Object.assign({}, lv.start),
+    gen: lv.startGen,
+    active: lv.symbols[0],
+    segs:[], order:[], maxDepth:1, result:null,
+  };
+  document.getElementById('lvnum').textContent = String(li+1).padStart(2,'0');
+  document.getElementById('lvname').textContent = lv.name;
+  document.getElementById('genMax').textContent = '/'+lv.maxGen;
+  document.getElementById('hint').innerHTML = lv.hint;
+  document.getElementById('prev').disabled = li===0;
+  buildPalette();
+  buildRules();
+  recompute(true);
+}
+
+/* --- compute plant from current DNA + gen --- */
+function recompute(animate){
+  const lv = state.lv;
+  const str = expand(state.rules, lv.axiom, state.gen);
+  const segs = interpret(str, lv);
+  state.segs = segs;
+  state.maxDepth = segs.reduce((m,s)=>Math.max(m,s.grow),1);
+  state.order = segs.map((_,i)=>i).sort((a,b)=> segs[a].grow-segs[b].grow || a-b);
+  state.result = evaluate(segs, lv);
+  updateStatus();
+  buildRules();
+  if(animate) startGrow(); else draw();
+}
+
+/* --- growth animation --- */
+function startGrow(){
+  cancelAnimationFrame(anim.raf);
+  const n = state.segs.length;
+  anim.dur = n ? Math.min(1100, 380 + n*0.9) : 200;
+  anim.t0 = performance.now();
+  anim.on = true;
+  const tick = now =>{
+    const p = Math.min(1, (now-anim.t0)/anim.dur);
+    draw(easeOut(p));
+    if(p<1) anim.raf = requestAnimationFrame(tick);
+    else anim.on = false;
+  };
+  anim.raf = requestAnimationFrame(tick);
+}
+const easeOut = p => 1-Math.pow(1-p,3);
+
+/* --- drawing --- */
+function draw(progress){
+  const p = progress===undefined ? 1 : progress;
+  const lv = state.lv;
+  ctx.clearRect(0,0,W,H);
+  drawGround();
+  drawWalls(lv);
+  // reveal count by growth order
+  const total = state.order.length;
+  const revealF = p*(state.maxDepth);           // how many growth-layers are shown
+  drawPlant(revealF);
+  drawThorns(lv);
+  drawSuns(lv, revealF);
+}
+
+function drawGround(){
+  const g = ctx.createLinearGradient(0,H*0.9,0,H);
+  g.addColorStop(0,'rgba(87,224,138,0)');
+  g.addColorStop(1,'rgba(87,224,138,.08)');
+  ctx.fillStyle=g; ctx.fillRect(0,H*0.9,W,H*0.1);
+  ctx.strokeStyle='rgba(87,224,138,.18)';
+  ctx.lineWidth=Math.max(1,S(0.4));
+  ctx.beginPath(); ctx.moveTo(0,Y(state.lv.base[1])); ctx.lineTo(W,Y(state.lv.base[1])); ctx.stroke();
+}
+
+function drawWalls(lv){
+  if(!lv.walls.length) return;
+  ctx.strokeStyle=css('--stone');
+  ctx.lineCap='round';
+  ctx.lineWidth=Math.max(3,S(2.6));
+  ctx.globalAlpha=.85;
+  for(const w of lv.walls){
+    ctx.beginPath(); ctx.moveTo(X(w.x1),Y(w.y1)); ctx.lineTo(X(w.x2),Y(w.y2)); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+
+function drawPlant(revealF){
+  const segs = state.segs, md = state.maxDepth;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  for(const idx of state.order){
+    const sg = segs[idx];
+    if(sg.grow-1 >= revealF) continue;           // not yet grown
+    const frac = Math.min(1, revealF-(sg.grow-1)); // partial on the frontier
+    const ex = sg.x1 + (sg.x2-sg.x1)*frac;
+    const ey = sg.y1 + (sg.y2-sg.y1)*frac;
+    const t = md>1 ? (sg.grow-1)/(md-1) : 1;       // 0 base -> 1 tip
+    const hue = 96 + t*46;                          // yellow-green -> green
+    const lig = 40 + t*26;
+    ctx.strokeStyle = `hsl(${hue} 70% ${lig}%)`;
+    ctx.lineWidth = Math.max(S(0.35), S(1.5)*Math.pow(0.72, sg.depth));
+    ctx.beginPath();
+    ctx.moveTo(X(sg.x1),Y(sg.y1)); ctx.lineTo(X(ex),Y(ey));
+    ctx.stroke();
+  }
+  // buds at fully-grown tips
+  const starts = new Set(segs.map(s=>s.x1.toFixed(2)+','+s.y1.toFixed(2)));
+  for(const sg of segs){
+    if(sg.grow-1 >= revealF-0.05) continue;
+    if(starts.has(sg.x2.toFixed(2)+','+sg.y2.toFixed(2))) continue; // continues -> not a tip
+    ctx.fillStyle='rgba(150,245,180,.9)';
+    ctx.beginPath(); ctx.arc(X(sg.x2),Y(sg.y2), Math.max(1.4,S(0.7)), 0, 7); ctx.fill();
+  }
+}
+
+function drawSuns(lv, revealF){
+  for(const s of lv.suns){
+    // lit as soon as a revealed segment reaches it
+    let lit=false;
+    for(const sg of state.segs){ if(sg.grow-1<revealF && distSegPt(sg,s.x,s.y)<=s.r){ lit=true; break; } }
+    const cx=X(s.x), cy=Y(s.y), r=S(s.r);
+    if(lit){
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r*2.4);
+      g.addColorStop(0,'rgba(255,207,92,.55)'); g.addColorStop(1,'rgba(255,207,92,0)');
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r*2.4,0,7); ctx.fill();
+    }
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,7);
+    ctx.fillStyle = lit ? 'rgba(255,222,130,.95)' : 'rgba(255,207,92,.16)';
+    ctx.fill();
+    ctx.lineWidth=Math.max(1.4,S(0.6));
+    ctx.strokeStyle = lit ? css('--sun') : 'rgba(255,207,92,.6)';
+    ctx.stroke();
+    if(lit){ ctx.strokeStyle='rgba(255,240,190,.9)'; ctx.lineWidth=Math.max(1,S(0.35));
+      ctx.beginPath(); ctx.arc(cx,cy,r*0.5,0,7); ctx.stroke(); }
+  }
+}
+
+function drawThorns(lv){
+  for(const t of lv.thorns){
+    const cx=X(t.x), cy=Y(t.y), r=S(t.r);
+    const g=ctx.createRadialGradient(cx,cy,0,cx,cy,r);
+    g.addColorStop(0,'rgba(255,90,110,.28)'); g.addColorStop(1,'rgba(255,90,110,.05)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill();
+    ctx.strokeStyle='rgba(255,90,110,.5)'; ctx.lineWidth=Math.max(1,S(0.4));
+    ctx.setLineDash([S(1.2),S(1.2)]); ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke(); ctx.setLineDash([]);
+    // spikes
+    ctx.strokeStyle=css('--thorn'); ctx.lineWidth=Math.max(1.4,S(0.7)); ctx.lineCap='round';
+    for(let k=0;k<8;k++){ const an=k/8*Math.PI*2, ir=r*0.32, or_=r*0.7;
+      ctx.beginPath(); ctx.moveTo(cx+Math.cos(an)*ir,cy+Math.sin(an)*ir);
+      ctx.lineTo(cx+Math.cos(an)*or_,cy+Math.sin(an)*or_); ctx.stroke(); }
+  }
+}
+
+/* --- status line + win --- */
+function updateStatus(){
+  const r = state.result, lit = r.suns.filter(s=>s.lit).length, tot = r.suns.length;
+  const msg = document.getElementById('msg');
+  const garden = document.getElementById('garden');
+  document.getElementById('sunsLeft').textContent =
+    '☀ '+lit+'/'+tot;
+  garden.classList.remove('win','bad');
+  msg.className='msg';
+  if(r.win){
+    msg.textContent='grown - beautiful'; msg.classList.add('ok'); garden.classList.add('win');
+    if(!solved[li]){ solved[li]=1; try{localStorage.setItem('seed-solved',JSON.stringify(solved));}catch(e){} }
+  } else if(r.oob){ msg.textContent='outside the cave'; msg.classList.add('warn'); garden.classList.add('bad'); }
+  else if(r.thornHit){ msg.textContent='caught on a thorn'; msg.classList.add('warn'); garden.classList.add('bad'); }
+  else if(r.wallHit){ msg.textContent='hit the rock'; msg.classList.add('warn'); garden.classList.add('bad'); }
+  else msg.textContent='';
+}
+
+/* ===================================================================
+   editor
+=================================================================== */
+const TOK_CLASS = {'[':'br',']':'br','+':'turn','-':'turn','X':'x'};
+function tokClass(t){ return TOK_CLASS[t]||''; }
+
+function buildPalette(){
+  const host=document.getElementById('palette'); host.innerHTML='';
+  for(const t of state.lv.tokens){
+    const b=document.createElement('button');
+    b.textContent=t; b.className='tok-'+(tokClass(t)||'f');
+    b.onclick=()=>addToken(t);
+    host.appendChild(b);
+  }
+  const sp=document.createElement('span'); sp.className='spacer'; host.appendChild(sp);
+  const bk=document.createElement('button'); bk.className='util'; bk.textContent='⌫'; bk.title='backspace';
+  bk.onclick=()=>{ const s=state.rules[state.active]; state.rules[state.active]=s.slice(0,-1); recompute(true); };
+  host.appendChild(bk);
+  const cl=document.createElement('button'); cl.className='util'; cl.textContent='clr';
+  cl.onclick=()=>{ state.rules[state.active]=''; recompute(true); };
+  host.appendChild(cl);
+}
+
+function addToken(t){
+  const s = state.rules[state.active] || '';
+  if(s.length>=16) return;   // keep rules authorable / bounded
+  state.rules[state.active] = s + t;
+  recompute(true);
+}
+
+function buildRules(){
+  const host=document.getElementById('rules'); host.innerHTML='';
+  for(const sym of state.lv.symbols){
+    const row=document.createElement('div');
+    row.className='rule'+(sym===state.active?' active':'');
+    const s=document.createElement('div'); s.className='sym'; s.textContent=sym;
+    s.onclick=()=>{ state.active=sym; buildRules(); };
+    const ar=document.createElement('span'); ar.className='arrow'; ar.textContent='→';
+    const chips=document.createElement('div'); chips.className='chips';
+    const rule=state.rules[sym]||'';
+    if(!rule){ const e=document.createElement('span'); e.className='empty'; e.textContent='(nothing)'; chips.appendChild(e); }
+    for(let i=0;i<rule.length;i++){
+      const c=document.createElement('div'); const ch=rule[i];
+      c.className='chip '+tokClass(ch); c.textContent=ch;
+      c.onclick=()=>{ state.active=sym;
+        state.rules[sym]=rule.slice(0,i)+rule.slice(i+1); recompute(true); };
+      chips.appendChild(c);
+    }
+    row.appendChild(s); row.appendChild(ar); row.appendChild(chips);
+    host.appendChild(row);
+  }
+}
+
+/* ===================================================================
+   controls
+=================================================================== */
+document.getElementById('genUp').onclick=()=>{ if(state.gen<state.lv.maxGen){ state.gen++; syncGen(); recompute(true);} };
+document.getElementById('genDown').onclick=()=>{ if(state.gen>0){ state.gen--; syncGen(); recompute(true);} };
+document.getElementById('replay').onclick=()=> startGrow();
+document.getElementById('prev').onclick=()=> loadLevel(li-1);
+document.getElementById('next').onclick=()=> loadLevel(li+1);
+document.getElementById('reset').onclick=()=>{ state.rules=Object.assign({},state.lv.start); state.gen=state.lv.startGen; state.active=state.lv.symbols[0]; syncGen(); recompute(true); };
+function syncGen(){
+  document.getElementById('genN').textContent=state.gen;
+  document.getElementById('genUp').disabled = state.gen>=state.lv.maxGen;
+  document.getElementById('genDown').disabled = state.gen<=0;
+}
+
+window.addEventListener('resize', layout);
+loadLevel(0);
+requestAnimationFrame(()=>{ layout(); syncGen(); });
+</script>
+</body>
+</html>

@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Fracture</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --line:rgba(255,255,255,.08);
+    --line-strong:rgba(255,255,255,.18);
+    --r:#ff5a6e;        /* player R */
+    --b:#3ad9ff;        /* player B */
+    --panel:rgba(255,255,255,.025);
+    --gap:2.2%;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(130% 120% at 50% -10%, #14171f 0%, var(--bg) 55%);
+    color:#e7ecf5;
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:14px 12px 40px;gap:12px;
+  }
+  h1{margin:0;font-weight:700;letter-spacing:.42em;font-size:22px;text-transform:uppercase}
+  h1 b{color:var(--r);text-shadow:0 0 18px var(--r);font-weight:700}
+  .sub{opacity:.5;font-size:11px;letter-spacing:.03em;text-align:center;max-width:440px;margin-top:-6px}
+
+  /* ---- scoreboard ---- */
+  .scores{display:flex;gap:10px;width:100%;max-width:460px}
+  .score{
+    flex:1;border:1px solid var(--line);border-radius:13px;padding:8px 13px;
+    background:var(--panel);transition:.25s;position:relative;overflow:hidden;
+  }
+  .score.active{border-color:currentColor;box-shadow:0 0 26px -8px currentColor}
+  .score.r{color:var(--r)} .score.b{color:var(--b)}
+  .score .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;
+    display:flex;justify-content:space-between;align-items:center}
+  .score .num{font-size:28px;font-weight:700;color:#fff;line-height:1.1}
+  .score .num small{font-size:11px;font-weight:500;opacity:.55;color:currentColor;margin-left:4px}
+  .score .toplay{font-size:9px;letter-spacing:.12em;opacity:0;transition:.25s}
+  .score.active .toplay{opacity:.9}
+
+  /* ---- breadcrumb ---- */
+  .crumbs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;width:100%;max-width:460px;
+    min-height:22px;font-size:11px;letter-spacing:.08em}
+  .crumb{background:var(--panel);border:1px solid var(--line);border-radius:7px;
+    padding:3px 9px;cursor:pointer;transition:.15s;color:#cfd6e4}
+  .crumb:hover{border-color:var(--line-strong)}
+  .crumb.here{cursor:default;opacity:.55}
+  .crumb .sep{opacity:.35;margin:0 1px}
+
+  /* ---- board ---- */
+  #stage{width:min(92vw,460px);position:relative}
+  .board{
+    display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+    gap:var(--gap);aspect-ratio:1;width:100%;
+  }
+  #focus{
+    padding:9px;border-radius:16px;background:rgba(255,255,255,.02);
+    border:1px solid var(--line);animation:pop .28s ease;
+  }
+  @keyframes pop{from{transform:scale(.94);opacity:.35}to{transform:scale(1);opacity:1}}
+
+  .cell{
+    position:relative;border-radius:12px;background:rgba(255,255,255,.028);
+    border:1px solid var(--line);cursor:pointer;transition:.14s;
+    display:flex;align-items:center;justify-content:center;overflow:hidden;
+  }
+  .cell:hover{border-color:var(--line-strong);background:rgba(255,255,255,.05)}
+  .cell.locked{cursor:default}
+  .cell.locked:hover{background:rgba(255,255,255,.028);border-color:var(--line)}
+
+  /* stones */
+  .stone{width:62%;height:62%;border-radius:50%;position:relative;animation:drop .22s ease}
+  .stone.r{background:radial-gradient(circle at 34% 30%, #ff97a5, var(--r) 62%);
+    box-shadow:0 0 20px -3px var(--r),inset 0 -3px 8px rgba(0,0,0,.35)}
+  .stone.b{background:radial-gradient(circle at 34% 30%, #b6f2ff, var(--b) 62%);
+    box-shadow:0 0 20px -3px var(--b),inset 0 -3px 8px rgba(0,0,0,.35)}
+  @keyframes drop{from{transform:scale(.2);opacity:0}to{transform:scale(1);opacity:1}}
+
+  /* a stone that can be challenged by the current player */
+  .cell.attackable .stone{cursor:crosshair}
+  .cell.attackable::after{
+    content:"";position:absolute;inset:6%;border-radius:12px;
+    border:2px dashed rgba(255,255,255,.28);animation:spin 9s linear infinite;
+    pointer-events:none;
+  }
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* sub-board previews inside a focus cell */
+  .cell .board{padding:9%;gap:6%}
+  .cell.sub{background:rgba(255,255,255,.015)}
+  .mcell{border-radius:26%;background:rgba(255,255,255,.03);
+    display:flex;align-items:center;justify-content:center}
+  .dot{width:64%;height:64%;border-radius:50%}
+  .dot.r{background:var(--r);box-shadow:0 0 6px -1px var(--r)}
+  .dot.b{background:var(--b);box-shadow:0 0 6px -1px var(--b)}
+  .deep{width:60%;height:60%;border-radius:20%;
+    background:repeating-linear-gradient(45deg,rgba(255,255,255,.13) 0 2px,transparent 2px 4px)}
+
+  /* zoom affordance on live sub-boards */
+  .cell.sub .zoom{position:absolute;bottom:5px;right:7px;font-size:9px;letter-spacing:.1em;
+    opacity:.4;pointer-events:none}
+
+  /* resolved boards */
+  .won{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-size:min(13vw,58px);font-weight:800}
+  .won.r{color:var(--r);background:radial-gradient(circle,rgba(255,90,110,.16),transparent 70%)}
+  .won.b{color:var(--b);background:radial-gradient(circle,rgba(58,217,255,.16),transparent 70%)}
+  .won.d{color:#8791a3;background:rgba(255,255,255,.04);font-size:min(6vw,26px);letter-spacing:.1em}
+  .cell .won{border-radius:12px}
+  #focus > .wonbanner{position:absolute;inset:9px;border-radius:16px;pointer-events:none;
+    display:flex;align-items:center;justify-content:center;font-weight:800;font-size:64px;
+    animation:pop .3s ease}
+
+  /* controls / help */
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:460px}
+  button{font:inherit;font-size:12px;letter-spacing:.06em;color:#dfe4ee;cursor:pointer;
+    background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 14px;
+    transition:.15s}
+  button:hover{border-color:var(--line-strong);background:rgba(255,255,255,.05)}
+  .opt{display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:.05em;
+    color:#dfe4ee;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:6px 12px;cursor:pointer}
+  .opt input{accent-color:var(--b)}
+  select{font:inherit;font-size:12px;color:#dfe4ee;background:var(--panel);
+    border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer}
+  .thinking{color:var(--b)!important}
+  .hint{font-size:11.5px;line-height:1.55;opacity:.6;max-width:440px;text-align:center}
+  .hint b.r{color:var(--r)} .hint b.b{color:var(--b)}
+  .banner{font-size:13px;letter-spacing:.05em;text-align:center;min-height:18px;transition:.2s;
+    font-weight:600}
+</style>
+</head>
+<body>
+  <h1><b>FRAC</b>TURE</h1>
+  <div class="sub">tap empty to place · tap an enemy stone to shatter it into a new war · win the line, own the cell</div>
+
+  <div class="scores">
+    <div class="score r" id="sc-r">
+      <div class="lbl">RED <span class="toplay">▸ to play</span></div>
+      <div class="num" id="res-r">30<small>stones</small></div>
+    </div>
+    <div class="score b" id="sc-b">
+      <div class="lbl">BLUE <span class="toplay">▸ to play</span></div>
+      <div class="num" id="res-b">30<small>stones</small></div>
+    </div>
+  </div>
+
+  <div class="crumbs" id="crumbs"></div>
+  <div id="stage"><div class="board" id="focus"></div></div>
+  <div class="banner" id="banner"></div>
+
+  <div class="controls">
+    <button id="btn-new">New game</button>
+    <button id="btn-tally">Tally now</button>
+    <button id="btn-help">Rules</button>
+    <label class="opt"><input type="checkbox" id="ai-on" checked> Blue is AI</label>
+    <select id="ai-lvl" title="AI strength">
+      <option value="1">easy</option>
+      <option value="3" selected>medium</option>
+      <option value="4">hard</option>
+    </select>
+  </div>
+  <div class="hint" id="hint"></div>
+
+<script>
+const LINES=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const other=p=>p==='r'?'b':'r';
+
+let ROOT, focus, turn, reserve, over, startRes=30;
+
+function newBoard(parent=null, pIdx=-1){
+  return {cells:Array.from({length:9},()=>({t:'e'})), winner:null, parent, pIdx};
+}
+function init(){
+  ROOT=newBoard(); focus=[]; turn='r'; reserve={r:startRes,b:startRes}; over=false; aiBusy=false;
+  aiOn=document.getElementById('ai-on').checked;
+  aiDepth=+document.getElementById('ai-lvl').value;
+  render();
+}
+function boardAt(path){ let b=ROOT; for(const i of path) b=b.cells[i].board; return b; }
+
+// owner of a cell for line/tally purposes ('r','b', or null)
+function owner(c){
+  if(c.t==='s') return c.owner;
+  if(c.t==='b' && (c.board.winner==='r'||c.board.winner==='b')) return c.board.winner;
+  return null;
+}
+function isFull(b){ return b.cells.every(c=> c.t==='s' || (c.t==='b'&&c.board.winner)); }
+function lineWin(b){
+  for(const [x,y,z] of LINES){
+    const o=owner(b.cells[x]);
+    if(o && o===owner(b.cells[y]) && o===owner(b.cells[z])) return o;
+  }
+  return null;
+}
+function tally(b){
+  let r=0,bl=0;
+  for(const c of b.cells){ const o=owner(c); if(o==='r')r++; else if(o==='b')bl++; }
+  return r>bl?'r':bl>r?'b':'d';
+}
+// resolve upward after a move (a board can't resolve while a sub-fight is live)
+function cascade(b){
+  if(!b || b.winner) { if(b&&b.winner&&b.parent) cascade(b.parent); return; }
+  const w=lineWin(b);
+  if(w){ b.winner=w; if(b.parent) cascade(b.parent); return; }
+  if(isFull(b)){ b.winner=tally(b); if(b.parent) cascade(b.parent); }
+}
+// force everything to resolve, bottom-up (empties count for nobody)
+function forceResolve(b){
+  for(const c of b.cells) if(c.t==='b' && !c.board.winner) forceResolve(c.board);
+  if(!b.winner) b.winner = lineWin(b) || tally(b);
+}
+
+/* ---------- AI (negamax + alpha-beta over the whole live tree) ---------- */
+let aiOn=true, aiSide='b', aiDepth=3, aiBusy=false;
+const NODE_CAP=60000; let NODES=0;
+
+function cloneB(b,parent,pIdx){
+  const nb={cells:null,winner:b.winner,parent:parent||null,pIdx:pIdx==null?-1:pIdx};
+  nb.cells=b.cells.map((c,i)=> c.t==='e'?{t:'e'}
+    : c.t==='s'?{t:'s',owner:c.owner}
+    : {t:'b',board:cloneB(c.board,nb,i)});
+  return nb;
+}
+function collect(board,path,turn,res,out){
+  if(board.winner) return;
+  board.cells.forEach((c,i)=>{
+    if(c.t==='e'){ if(res[turn]>0) out.push({path,idx:i,type:'place'}); }
+    else if(c.t==='s'){ if(c.owner!==turn && res[turn]>0) out.push({path,idx:i,type:'challenge'}); }
+    else collect(c.board, path.concat(i), turn, res, out);
+  });
+}
+function genMoves(st){ const out=[]; collect(st.root,[],st.turn,st.res,out); return out; }
+function apply(st,mv){
+  const root=cloneB(st.root,null,-1);
+  let b=root; for(const i of mv.path) b=b.cells[i].board;
+  const res={r:st.res.r,b:st.res.b};
+  if(mv.type==='place'){ b.cells[mv.idx]={t:'s',owner:st.turn}; res[st.turn]--; }
+  else { const def=b.cells[mv.idx].owner; const sub=newBoard(b,mv.idx);
+    sub.cells[4]={t:'s',owner:def}; b.cells[mv.idx]={t:'b',board:sub}; res[st.turn]--; }
+  cascade(b);
+  return {root,res,turn:other(st.turn)};
+}
+// signed control of a cell in [-1,1], + = red
+function ctrl(cell){
+  if(cell.t==='e') return 0;
+  if(cell.t==='s') return cell.owner==='r'?1:-1;
+  const w=cell.board.winner; if(w==='r')return 1; if(w==='b')return -1; if(w==='d')return 0;
+  let sum=0; for(const c of cell.board.cells) sum+=ctrl(c);
+  const t=sum/9*2; return t>0.85?0.85:t<-0.85?-0.85:t;
+}
+function lineScore(board){
+  let s=0;
+  for(const [x,y,z] of LINES){
+    const v=[ctrl(board.cells[x]),ctrl(board.cells[y]),ctrl(board.cells[z])];
+    let rp=0,bp=0; for(const t of v){ if(t>0)rp+=t; else if(t<0)bp-=t; }
+    if(rp>0&&bp>0) continue;                 // contested line ~ dead
+    if(rp>0) s+=rp*rp; else if(bp>0) s-=bp*bp; // reward building unopposed threats
+  }
+  s += ctrl(board.cells[4])*0.5;             // slight center bias
+  return s;
+}
+function evalState(st){
+  let s=0;
+  (function rec(board,depth){
+    if(board.winner) return;
+    s += lineScore(board)*100*Math.pow(0.25,depth);  // root lines dominate, deeper fights worth less
+    board.cells.forEach(c=>{ if(c.t==='b') rec(c.board,depth+1); });
+  })(st.root,0);
+  s += (st.res.r-st.res.b)*2;                // reserve advantage
+  return s;
+}
+function search(st,depth,a,bta){
+  NODES++;
+  if(st.root.winner!==null){ const w=st.root.winner; return w==='r'?1e6+depth:w==='b'?-(1e6+depth):0; }
+  if(depth<=0 || NODES>NODE_CAP) return evalState(st);
+  const moves=genMoves(st);
+  if(!moves.length){
+    if(st.res[st.turn]===0 && st.res[other(st.turn)]===0){
+      const c=cloneB(st.root,null,-1); forceResolve(c);
+      return c.winner==='r'?1e6:c.winner==='b'?-1e6:0;
+    }
+    return search({root:st.root,res:st.res,turn:other(st.turn)},depth-1,a,bta); // pass
+  }
+  if(st.turn==='r'){ let best=-Infinity;
+    for(const mv of moves){ const v=search(apply(st,mv),depth-1,a,bta);
+      if(v>best)best=v; if(best>a)a=best; if(a>=bta)break; } return best;
+  } else { let best=Infinity;
+    for(const mv of moves){ const v=search(apply(st,mv),depth-1,a,bta);
+      if(v<best)best=v; if(best<bta)bta=best; if(bta<=a)break; } return best;
+  }
+}
+function chooseMove(){
+  NODES=0;
+  const st={root:ROOT,res:{r:reserve.r,b:reserve.b},turn};
+  const moves=genMoves(st);
+  if(!moves.length) return null;
+  for(let i=moves.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [moves[i],moves[j]]=[moves[j],moves[i]]; } // variety
+  let best=null, bestV = turn==='r'?-Infinity:Infinity, a=-Infinity, bta=Infinity;
+  for(const mv of moves){
+    const v=search(apply(st,mv),aiDepth-1,a,bta);
+    if(turn==='r'){ if(v>bestV){bestV=v;best=mv;} if(bestV>a)a=bestV; }
+    else { if(v<bestV){bestV=v;best=mv;} if(bestV<bta)bta=bestV; }
+  }
+  return best;
+}
+function aiMove(){
+  if(over || !aiOn || turn!==aiSide) { aiBusy=false; return; }
+  const mv=chooseMove();
+  aiBusy=false;
+  if(!mv){ endTurn(); return; }
+  focus=mv.path.slice();          // reveal the board the AI acts on
+  if(mv.type==='place') place(mv.idx); else challenge(mv.idx);
+}
+
+function place(idx){
+  const b=boardAt(focus);
+  if(b.winner) return;
+  if(reserve[turn]<=0) return;
+  b.cells[idx]={t:'s', owner:turn};
+  reserve[turn]--;
+  cascade(b);
+  endTurn();
+}
+function challenge(idx){
+  const b=boardAt(focus);
+  if(b.winner) return;
+  if(reserve[turn]<=0){ flash("no stones left to open a fight"); return; }
+  const def=b.cells[idx].owner;
+  const sub=newBoard(b, idx);
+  sub.cells[4]={t:'s', owner:def};        // defender's head start = the center
+  b.cells[idx]={t:'b', board:sub};
+  reserve[turn]--;
+  focus=[...focus, idx];                    // zoom into the new war
+  endTurn();
+}
+function endTurn(){
+  if(ROOT.winner){ over=true; render(); return; }
+  turn=other(turn);
+  if(reserve.r<=0 && reserve.b<=0){ forceResolve(ROOT); over=true; }
+  else if(reserve[turn]<=0) turn=other(turn);   // skip a bankrupt player
+  render();
+  if(!over && aiOn && turn===aiSide && !aiBusy){
+    aiBusy=true;
+    const bn=document.getElementById('banner');
+    bn.className='banner thinking'; bn.textContent='Blue is thinking…';
+    setTimeout(aiMove,260);
+  }
+}
+
+function clickCell(idx){
+  if(over) return;
+  if(aiOn && turn===aiSide) return;   // not your turn
+  const b=boardAt(focus);
+  const c=b.cells[idx];
+  if(c.t==='b'){ focus=[...focus, idx]; render(); return; }   // zoom (even if resolved, to inspect)
+  if(b.winner) return;
+  if(c.t==='e'){
+    if(reserve[turn]<=0){ flash("no stones left"); return; }
+    place(idx);
+  } else if(c.t==='s'){
+    if(c.owner!==turn) challenge(idx);
+    else flash("that's your own stone");
+  }
+}
+
+/* ---------- rendering ---------- */
+function miniHTML(board, depth){
+  if(board.winner==='r'||board.winner==='b') return `<div class="won ${board.winner}">${board.winner==='r'?'✕':'◯'}</div>`;
+  if(board.winner==='d') return `<div class="won d">tie</div>`;
+  let inner='';
+  for(const c of board.cells){
+    let x='';
+    if(c.t==='s') x=`<span class="dot ${c.owner}"></span>`;
+    else if(c.t==='b') x = depth>0 ? miniHTML(c.board, depth-1) : `<span class="deep"></span>`;
+    inner+=`<div class="mcell">${x}</div>`;
+  }
+  return `<div class="board">${inner}</div>`;
+}
+
+function render(){
+  const b=boardAt(focus);
+  const el=document.getElementById('focus');
+  el.innerHTML='';
+  b.cells.forEach((c,idx)=>{
+    const d=document.createElement('div');
+    d.className='cell';
+    if(c.t==='e'){
+      // empty
+    } else if(c.t==='s'){
+      d.innerHTML=`<div class="stone ${c.owner}"></div>`;
+      if(!b.winner && !over && c.owner!==turn && reserve[turn]>0) d.classList.add('attackable');
+    } else if(c.t==='b'){
+      d.classList.add('sub');
+      d.innerHTML = miniHTML(c.board,2) + (c.board.winner?'':'<span class="zoom">⤢ zoom</span>');
+    }
+    if(b.winner || over) d.classList.add('locked');
+    d.onclick=()=>clickCell(idx);
+    el.appendChild(d);
+  });
+  // resolved banner over the focused board
+  if(b.winner){
+    const w=document.createElement('div');
+    w.className='wonbanner won '+b.winner;
+    w.textContent = b.winner==='r'?'RED':b.winner==='b'?'BLUE':'TIE';
+    w.style.fontSize = b.winner==='d'?'34px':'56px';
+    el.appendChild(w);
+  }
+
+  // scores
+  document.getElementById('res-r').innerHTML=reserve.r+'<small>stones</small>';
+  document.getElementById('res-b').innerHTML=reserve.b+'<small>stones</small>';
+  document.getElementById('sc-r').classList.toggle('active',!over && turn==='r');
+  document.getElementById('sc-b').classList.toggle('active',!over && turn==='b');
+
+  renderCrumbs();
+
+  // banner
+  const bn=document.getElementById('banner');
+  bn.className='banner';
+  if(over || ROOT.winner){
+    const w=ROOT.winner;
+    bn.style.color = w==='r'?'var(--r)':w==='b'?'var(--b)':'#8791a3';
+    bn.textContent = w==='d'?'The root fractured to a draw.':(w==='r'?'RED':'BLUE')+' owns the fracture. ✦';
+  } else {
+    bn.style.color='#8791a3';
+    bn.textContent = focus.length? `depth ${focus.length} — fight for this cell` : 'the root board';
+  }
+}
+
+function renderCrumbs(){
+  const c=document.getElementById('crumbs'); c.innerHTML='';
+  const mk=(label,path,here)=>{
+    const s=document.createElement('span');
+    s.className='crumb'+(here?' here':'');
+    s.textContent=label;
+    if(!here) s.onclick=()=>{ focus=path; render(); };
+    c.appendChild(s);
+    if(!here){ const sep=document.createElement('span'); sep.className='sep'; sep.textContent='›'; c.appendChild(sep); }
+  };
+  mk('root', [], focus.length===0);
+  for(let i=0;i<focus.length;i++){
+    const cellNo=focus[i]+1;
+    mk('cell '+cellNo, focus.slice(0,i+1), i===focus.length-1);
+  }
+}
+
+function flash(msg){
+  const bn=document.getElementById('banner');
+  const prev=bn.textContent, pc=bn.style.color;
+  bn.style.color='#c9a24a'; bn.textContent=msg;
+  setTimeout(()=>{ if(bn.textContent===msg){ render(); } },1100);
+}
+
+/* ---------- controls ---------- */
+document.getElementById('ai-on').onchange=e=>{ aiOn=e.target.checked;
+  if(!over && aiOn && turn===aiSide && !aiBusy){ aiBusy=true;
+    document.getElementById('banner').textContent='Blue is thinking…';
+    setTimeout(aiMove,160); } };
+document.getElementById('ai-lvl').onchange=e=>{ aiDepth=+e.target.value; };
+document.getElementById('btn-new').onclick=init;
+document.getElementById('btn-tally').onclick=()=>{
+  if(over) return;
+  forceResolve(ROOT); over=true; focus=[]; render();
+};
+document.getElementById('btn-help').onclick=()=>{
+  const h=document.getElementById('hint');
+  h.innerHTML = h.innerHTML ? '' :
+    `<b class="r">Place</b> a stone on any empty square (costs 1). Make a line of 3 to <b>own the board</b>.<br>
+     <b class="b">Challenge</b> an enemy stone and it <b>shatters</b> into a fresh 3×3 — the defender is reborn in its <b>center</b> (their head start) and you dive in. Winning that sub-board flips the parent cell to you, which can cascade all the way up.<br>
+     Every place and every shatter burns a stone. Depth is expensive — you can always take a fight deeper, if you can afford it. When both reserves hit 0 (or you hit <b>Tally now</b>) every unfinished board resolves by majority.`;
+};
+
+init();
+</script>
+</body>
+</html>

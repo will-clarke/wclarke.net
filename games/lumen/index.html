@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="dark" />
+<title>Lumen</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --grid-line:rgba(255,255,255,.10);
+    --black-light:#ffb43a;   /* black player's glow */
+    --white-light:#3ad9ff;   /* white player's glow */
+    --contested:#7a5cff;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #12151f 0%, var(--bg) 60%);
+    color:#e7ecf5;
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:16px 12px 40px;gap:14px;
+  }
+  h1{margin:4px 0 0;font-weight:700;letter-spacing:.28em;font-size:22px;text-transform:uppercase}
+  h1 span{color:var(--black-light);text-shadow:0 0 18px var(--black-light)}
+  .sub{opacity:.55;font-size:12px;letter-spacing:.05em;margin-top:-6px;text-align:center;max-width:420px}
+
+  .scores{display:flex;gap:10px;width:100%;max-width:420px}
+  .score{
+    flex:1;border:1px solid var(--grid-line);border-radius:14px;padding:10px 12px;
+    background:rgba(255,255,255,.02);transition:.2s;
+  }
+  .score.active{border-color:currentColor;box-shadow:0 0 24px -6px currentColor}
+  .score.b{color:var(--black-light)}
+  .score.w{color:var(--white-light)}
+  .score .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;display:flex;justify-content:space-between}
+  .score .num{font-size:30px;font-weight:700;color:#fff;line-height:1.1}
+  .score .num small{font-size:12px;font-weight:500;opacity:.6;color:currentColor}
+
+  .board-wrap{position:relative;touch-action:manipulation}
+  #board{
+    display:grid;gap:0;border-radius:16px;overflow:hidden;
+    background:#05060a;
+    box-shadow:0 20px 60px -20px #000, inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+  .cell{
+    position:relative;width:var(--cs);height:var(--cs);
+    border-right:1px solid var(--grid-line);border-bottom:1px solid var(--grid-line);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:background .18s ease;
+  }
+  .cell.nr{border-right:none}
+  .cell.nb{border-bottom:none}
+  .cell:hover:not(.filled){background:rgba(255,255,255,.05)}
+  .cell.filled{cursor:default}
+
+  /* light fills applied via inline background; add soft inner glow */
+  .cell .lit{position:absolute;inset:0;pointer-events:none;transition:opacity .25s}
+
+  .stone{
+    width:74%;height:74%;border-radius:50%;position:relative;z-index:2;
+    transition:transform .12s ease;
+  }
+  .stone.pop{animation:pop .18s ease}
+  @keyframes pop{from{transform:scale(.4)}to{transform:scale(1)}}
+  .stone.b{
+    background:radial-gradient(circle at 34% 30%, #4a4f5c, #0c0d12 70%);
+    box-shadow:0 2px 6px #000, 0 0 20px -2px var(--black-light);
+    border:1px solid rgba(255,180,58,.25);
+  }
+  .stone.w{
+    background:radial-gradient(circle at 34% 30%, #ffffff, #b9c6d6 72%);
+    box-shadow:0 2px 6px #000, 0 0 20px -2px var(--white-light);
+    border:1px solid rgba(58,217,255,.35);
+  }
+  /* preview stone on hover */
+  .cell:hover:not(.filled) .ghost{opacity:.35}
+  .ghost{opacity:0;transition:opacity .12s}
+
+  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:420px}
+  button{
+    font:inherit;color:#e7ecf5;background:rgba(255,255,255,.05);
+    border:1px solid var(--grid-line);border-radius:10px;padding:9px 14px;cursor:pointer;
+    transition:.15s;letter-spacing:.03em;
+  }
+  button:hover{background:rgba(255,255,255,.1)}
+  button.primary{background:var(--black-light);color:#141414;border-color:transparent;font-weight:600}
+  button.primary.w{background:var(--white-light)}
+  button:disabled{opacity:.3;cursor:default}
+
+  .banner{
+    min-height:20px;font-size:13px;letter-spacing:.04em;text-align:center;opacity:.85;
+    max-width:420px;
+  }
+  .banner.win{font-size:18px;font-weight:700}
+  select{font:inherit;background:rgba(255,255,255,.05);color:#e7ecf5;border:1px solid var(--grid-line);border-radius:10px;padding:9px 10px}
+</style>
+</head>
+<body>
+  <h1><span>L</span>umen</h1>
+  <div class="sub">Every stone is a lamp and a wall. Light along its row &amp; column until blocked. Cells lit by only you are yours; lit by both, worthless. Most territory wins.</div>
+
+  <div class="scores">
+    <div class="score b" id="sB"><div class="lbl"><span>Black</span><span id="rB"></span></div><div class="num" id="nB">0</div></div>
+    <div class="score w" id="sW"><div class="lbl"><span>White</span><span id="rW"></span></div><div class="num" id="nW">0</div></div>
+  </div>
+
+  <div class="board-wrap"><div id="board"></div></div>
+
+  <div class="banner" id="banner"></div>
+
+  <div class="controls">
+    <button class="primary" id="pieBtn" style="display:none">Pie rule: swap sides</button>
+    <button id="undoBtn">Undo</button>
+    <button id="resetBtn">New game</button>
+    <select id="sizeSel">
+      <option value="7">7 × 7</option>
+      <option value="9">9 × 9</option>
+    </select>
+    <select id="countSel">
+      <option value="8">8 stones</option>
+      <option value="12" selected>12 stones</option>
+      <option value="16">16 stones</option>
+    </select>
+  </div>
+
+<script>
+(() => {
+  const boardEl = document.getElementById('board');
+  const banner  = document.getElementById('banner');
+  const pieBtn  = document.getElementById('pieBtn');
+
+  let SIZE = 7, MAX = 12;
+  let grid, turn, placed, history, pieAvailable, over;
+
+  function reset(){
+    SIZE  = +document.getElementById('sizeSel').value;
+    MAX   = +document.getElementById('countSel').value;
+    grid  = Array.from({length:SIZE}, () => Array(SIZE).fill(null));
+    turn  = 'B';
+    placed = {B:0, W:0};
+    history = [];
+    pieAvailable = false;
+    over = false;
+    buildBoard();
+    render();
+  }
+
+  function buildBoard(){
+    const cs = Math.min(64, Math.floor((Math.min(window.innerWidth-32, 460)) / SIZE));
+    boardEl.style.setProperty('--cs', cs + 'px');
+    boardEl.style.gridTemplateColumns = `repeat(${SIZE}, var(--cs))`;
+    boardEl.innerHTML = '';
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      const d = document.createElement('div');
+      d.className = 'cell' + (c===SIZE-1?' nr':'') + (r===SIZE-1?' nb':'');
+      d.dataset.r=r; d.dataset.c=c;
+      d.innerHTML = '<div class="lit"></div>';
+      d.addEventListener('click', () => play(r,c));
+      boardEl.appendChild(d);
+    }
+  }
+
+  // Cast light: each stone shoots 4 rays until it hits any stone (exclusive).
+  function computeLight(){
+    const lit = Array.from({length:SIZE}, () => Array.from({length:SIZE}, () => ({B:false,W:false})));
+    const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      const col = grid[r][c];
+      if(!col) continue;
+      for(const [dr,dc] of dirs){
+        let nr=r+dr, nc=c+dc;
+        while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !grid[nr][nc]){
+          lit[nr][nc][col] = true;
+          nr+=dr; nc+=dc;
+        }
+      }
+    }
+    return lit;
+  }
+
+  function scores(lit){
+    const s = {B:0, W:0, contested:0};
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      if(grid[r][c]) continue;            // stone cells aren't territory
+      const {B,W} = lit[r][c];
+      if(B&&W) s.contested++;
+      else if(B) s.B++;
+      else if(W) s.W++;
+    }
+    return s;
+  }
+
+  function play(r,c){
+    if(over || grid[r][c]) return;
+    grid[r][c] = turn;
+    placed[turn]++;
+    history.push([r,c,turn]);
+    // pie rule: offered only right after the very first stone
+    pieAvailable = (history.length === 1);
+    turn = turn==='B' ? 'W' : 'B';
+    if(placed.B>=MAX && placed.W>=MAX) over = true;
+    render(r,c);
+  }
+
+  function swapPie(){
+    if(!pieAvailable) return;
+    // second player "takes" the first move: flip the lone stone's colour,
+    // keep it White's move-count, and it's now Black to play again...
+    // simplest faithful swap: recolour the single stone, counts follow.
+    const [r,c] = history[0];
+    grid[r][c] = 'W';
+    history[0][2] = 'W';
+    placed = {B:0, W:1};
+    turn = 'B';
+    pieAvailable = false;
+    render(r,c);
+  }
+
+  function undo(){
+    if(!history.length) return;
+    const [r,c,col] = history.pop();
+    grid[r][c] = null;
+    placed[col]--;
+    turn = col;
+    over = false;
+    pieAvailable = (history.length === 1);
+    render();
+  }
+
+  function render(lastR, lastC){
+    const lit = computeLight();
+    const cells = boardEl.children;
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      const cell = cells[r*SIZE + c];
+      const {B,W} = lit[r][c];
+      const litEl = cell.querySelector('.lit');
+      let bg = 'transparent';
+      if(B&&W) bg = 'radial-gradient(circle, rgba(122,92,255,.52), rgba(122,92,255,.22))';
+      else if(B) bg = 'radial-gradient(circle, rgba(255,180,58,.55), rgba(255,180,58,.20))';
+      else if(W) bg = 'radial-gradient(circle, rgba(58,217,255,.55), rgba(58,217,255,.20))';
+      litEl.style.background = bg;
+
+      // stone / ghost
+      const existing = cell.querySelector('.stone');
+      if(grid[r][c]){
+        cell.classList.add('filled');
+        if(!existing || !existing.classList.contains(grid[r][c].toLowerCase())){
+          if(existing) existing.remove();
+          const s = document.createElement('div');
+          s.className = 'stone ' + grid[r][c].toLowerCase() +
+            ((r===lastR&&c===lastC)?' pop':'');
+          cell.appendChild(s);
+        }
+      } else {
+        cell.classList.remove('filled');
+        if(existing) existing.remove();
+        if(!cell.querySelector('.ghost') && !over){
+          const g = document.createElement('div');
+          g.className = 'stone ghost ' + turn.toLowerCase();
+          cell.appendChild(g);
+        } else if(cell.querySelector('.ghost')){
+          cell.querySelector('.ghost').className = 'stone ghost ' + turn.toLowerCase();
+        }
+      }
+    }
+
+    const s = scores(lit);
+    document.getElementById('nB').innerHTML = s.B + ' <small>lit</small>';
+    document.getElementById('nW').innerHTML = s.W + ' <small>lit</small>';
+    document.getElementById('rB').textContent = (MAX - placed.B) + ' left';
+    document.getElementById('rW').textContent = (MAX - placed.W) + ' left';
+    document.getElementById('sB').classList.toggle('active', !over && turn==='B');
+    document.getElementById('sW').classList.toggle('active', !over && turn==='W');
+
+    pieBtn.style.display = pieAvailable ? '' : 'none';
+    pieBtn.className = 'primary' + (turn==='W'?' w':'');
+
+    if(over){
+      banner.className = 'banner win';
+      if(s.B===s.W) banner.textContent = `Tie — ${s.B} each.`;
+      else banner.textContent = (s.B>s.W?'Black':'White') + ` wins ${Math.max(s.B,s.W)} – ${Math.min(s.B,s.W)}` +
+        (s.contested?`  (${s.contested} contested)`:'');
+      banner.style.color = s.B===s.W ? '#e7ecf5' : (s.B>s.W?'var(--black-light)':'var(--white-light)');
+    } else {
+      banner.className = 'banner';
+      banner.style.color = '';
+      banner.textContent = (turn==='B'?'Black':'White') + ' to place' +
+        (pieAvailable?' — or White may swap sides.':'') +
+        `   ·   ${s.contested} contested`;
+    }
+  }
+
+  pieBtn.onclick = swapPie;
+  document.getElementById('undoBtn').onclick = undo;
+  document.getElementById('resetBtn').onclick = reset;
+  document.getElementById('sizeSel').onchange = reset;
+  document.getElementById('countSel').onchange = reset;
+  window.addEventListener('resize', () => { buildBoard(); render(); });
+
+  reset();
+})();
+</script>
+</body>
+</html>
