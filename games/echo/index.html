@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Echo</title>
+<style>
+  :root{
+    --bg:#0a0c12;
+    --panel:rgba(255,255,255,.02);
+    --line:rgba(255,255,255,.08);
+    --ink:#e7ecf5;
+    --a:#5cd6ff;          /* you / present / accent */
+    --echo:#b07bff;       /* echoes / the past */
+    --box:#ffb43a;        /* boxes */
+    --ok:#5cffb0;         /* solved / open */
+    --bad:#ff5a6e;        /* paradox */
+    --wall:#161a26;
+    --floor:#0e1119;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, #12151f 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:12px 12px 34px;gap:11px;
+    overflow-x:hidden;
+  }
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.4em;font-size:21px;text-transform:uppercase}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-7px;text-align:center;max-width:460px}
+
+  .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:11px}
+
+  /* level bar */
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:32px}
+  .levelbar .name{font-weight:600;letter-spacing:.03em;font-size:15px}
+  .levelbar .name small{opacity:.45;font-weight:400;margin-right:7px;letter-spacing:.14em;text-transform:uppercase;font-size:11px}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    border-radius:10px;padding:6px 10px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{border-color:rgba(255,255,255,.24);color:#fff}
+  button.nb:disabled{opacity:.28;cursor:default}
+  [hidden]{display:none!important}
+
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{width:8px;height:8px;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.13);transition:.15s}
+  .dot:hover{background:rgba(255,255,255,.32)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.cur{transform:scale(1.55);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  .hint{font-size:12.5px;opacity:.62;text-align:center;min-height:32px;line-height:1.4;padding:0 4px}
+
+  /* board */
+  .stage{display:flex;justify-content:center}
+  .board{position:relative;touch-action:none}
+  .cell{position:absolute;border-radius:5px}
+  .cell.floor{background:var(--floor);box-shadow:inset 0 0 0 1px rgba(255,255,255,.03)}
+  .cell.wall{background:transparent}
+  .cell.pad{background:radial-gradient(circle at 50% 50%, rgba(92,214,255,.22), rgba(92,214,255,.05));
+    box-shadow:inset 0 0 0 1px rgba(92,214,255,.4), 0 0 14px -4px var(--a)}
+  .cell.pad::after{content:"";position:absolute;inset:22%;border-radius:50%;border:1px solid rgba(92,214,255,.5)}
+  .cell.exit{background:radial-gradient(circle at 50% 50%, rgba(92,255,176,.16), rgba(92,255,176,.03));
+    box-shadow:inset 0 0 0 1px rgba(92,255,176,.32)}
+  .cell.exit.sealed{background:var(--floor);box-shadow:inset 0 0 0 1px rgba(255,90,110,.28)}
+  .cell.exit .ring{position:absolute;inset:20%;border-radius:5px;border:1.5px dashed rgba(92,255,176,.6);transition:.2s}
+  .cell.exit.sealed .ring{border-color:rgba(255,90,110,.5);transform:rotate(45deg) scale(.7);opacity:.7}
+  .cell.plate{box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+  .cell.plate .pl{position:absolute;inset:26%;border-radius:4px;border:1.5px solid var(--pc);opacity:.5;transition:.15s}
+  .cell.plate.on .pl{opacity:1;background:color-mix(in srgb, var(--pc) 28%, transparent);box-shadow:0 0 10px -3px var(--pc)}
+  .cell.door{background:var(--floor)}
+  .cell.door .dr{position:absolute;inset:8%;border-radius:4px;background:color-mix(in srgb, var(--pc) 60%, #0a0c12);
+    box-shadow:inset 0 0 0 1px var(--pc);transition:transform .16s ease, opacity .16s}
+  .cell.door.open .dr{transform:scale(.82);opacity:.16}
+
+  /* moving tokens */
+  .tok{position:absolute;left:0;top:0;transition:transform .13s ease, opacity .18s;pointer-events:none;z-index:5;
+    display:flex;align-items:center;justify-content:center}
+  .tok .body{border-radius:7px;width:72%;height:72%}
+  .player .body{background:radial-gradient(circle at 38% 32%, #d8f4ff, var(--a));
+    box-shadow:0 0 14px -2px var(--a), inset 0 0 0 1px rgba(255,255,255,.5)}
+  .echo .body{background:color-mix(in srgb, var(--echo) 60%, transparent);
+    border:1.5px solid color-mix(in srgb, var(--echo) 85%, #fff);border-radius:7px;
+    box-shadow:0 0 12px -3px var(--echo)}
+  .box .body{width:80%;height:80%;border-radius:5px;background:linear-gradient(150deg, color-mix(in srgb,var(--box) 85%,#fff), var(--box));
+    box-shadow:0 0 12px -4px var(--box), inset 0 0 0 1px rgba(0,0,0,.25)}
+  .tok.pop{animation:pop .3s ease}
+  @keyframes pop{0%{transform:var(--tf) scale(1)}45%{transform:var(--tf) scale(1.35);opacity:.4}100%{transform:var(--tf) scale(.2);opacity:0}}
+
+  /* overlays: trails + warnings + paradox */
+  .ov{position:absolute;pointer-events:none;z-index:3}
+  .trail{border-radius:50%;background:var(--echo);opacity:.16}
+  .warn{border-radius:6px;border:1.5px dashed color-mix(in srgb,var(--echo) 80%, #fff);opacity:.6;z-index:4}
+  .flash{border-radius:6px;box-shadow:inset 0 0 0 2px var(--bad),0 0 16px -2px var(--bad);z-index:6;animation:fl .6s ease 3}
+  @keyframes fl{0%,100%{opacity:.15}50%{opacity:.9}}
+
+  /* HUD */
+  .hud{display:flex;justify-content:space-between;align-items:center;font-size:12px;gap:8px;min-height:20px}
+  .hud .stat{display:flex;gap:12px;opacity:.72}
+  .hud .stat b{color:var(--ink);font-weight:600}
+  .hud .stat .lab{opacity:.5;letter-spacing:.06em;text-transform:uppercase;font-size:10px;margin-right:3px}
+  .hud .toggle{cursor:pointer;opacity:.55;user-select:none;font-size:11px;letter-spacing:.04em}
+  .hud .toggle.on{opacity:1;color:var(--echo)}
+
+  .banner{min-height:20px;font-size:12.5px;text-align:center;transition:.2s;line-height:1.35}
+  .banner.para{color:var(--bad)}
+  .banner.win{color:var(--ok);font-weight:600;letter-spacing:.02em}
+
+  /* controls */
+  .controls{display:flex;flex-direction:column;gap:9px;align-items:center;margin-top:2px}
+  .row{display:flex;gap:9px;justify-content:center}
+  .pad3{display:grid;grid-template-columns:repeat(3,54px);grid-template-rows:repeat(3,50px);gap:7px}
+  .key{background:var(--panel);border:1px solid var(--line);color:#dbe3f2;border-radius:12px;
+    font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;user-select:none}
+  .key:active{background:rgba(92,214,255,.14);border-color:var(--a)}
+  .key.blank{visibility:hidden}
+  .key.wait{font-size:12px;letter-spacing:.1em;color:#9fb0c8}
+  .key.big{padding:11px 0;font-size:13px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;min-width:96px}
+  .key.rewind{color:#6b7488;border-color:var(--line)}
+  .key.rewind.live{color:#0a0c12;background:linear-gradient(180deg,#8fe6ff,var(--a));border-color:var(--a);
+    box-shadow:0 0 18px -3px var(--a);animation:puls 1.6s ease-in-out infinite}
+  @keyframes puls{0%,100%{box-shadow:0 0 18px -6px var(--a)}50%{box-shadow:0 0 22px 0px var(--a)}}
+  .key.sm{min-width:74px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;padding:9px 0;color:#9fb0c8}
+
+  footer{opacity:.3;font-size:10.5px;letter-spacing:.05em;margin-top:6px;text-align:center;max-width:430px}
+</style>
+</head>
+<body>
+  <h1><b>E</b>cho</h1>
+  <div class="sub">Rewind on the pad to spawn a replay of your past self. Cooperate with the yous you used to be - then close every loop.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvlno">01</small><span id="lvlname">-</span></div>
+      <div class="nav">
+        <button class="nb" id="prev">‹</button>
+        <button class="nb" id="next">›</button>
+        <button class="nb" id="reset">Restart</button>
+      </div>
+    </div>
+    <div class="dots" id="dots"></div>
+    <div class="hint" id="hint"></div>
+
+    <div class="stage"><div class="board" id="board"></div></div>
+
+    <div class="hud">
+      <div class="stat">
+        <span><span class="lab">Ticks</span><b id="ticks">0</b> <span id="par" style="opacity:.5"></span></span>
+        <span><span class="lab">Lives</span><b id="lives">1</b></span>
+        <span><span class="lab">Echoes</span><b id="echoct">0</b></span>
+      </div>
+      <span class="toggle on" id="trailtog">trails</span>
+    </div>
+    <div class="banner" id="banner"></div>
+
+    <div class="controls">
+      <div class="pad3">
+        <div class="key blank"></div>
+        <div class="key" data-a="U">↑</div>
+        <div class="key blank"></div>
+        <div class="key" data-a="L">←</div>
+        <div class="key wait" data-a="W">WAIT</div>
+        <div class="key" data-a="R">→</div>
+        <div class="key blank"></div>
+        <div class="key" data-a="D">↓</div>
+        <div class="key blank"></div>
+      </div>
+      <div class="row">
+        <div class="key sm" id="undo">Undo</div>
+        <div class="key big rewind" id="rewind">Rewind</div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Deterministic. No randomness, no reflexes - the whole solution is the list of moves you make. Undo is infinite, across rewinds.</footer>
+
+<script>
+/* ------------------------------------------------------------------ *
+ *  ECHO engine  (pure, deterministic - state = f(level, input))
+ * ------------------------------------------------------------------ */
+const DIRS = { U:[0,-1], D:[0,1], L:[-1,0], R:[1,0], W:[0,0] };
+const MAX_ECHOES = 3;
+const kk = (x,y) => x+','+y;
+
+function parseLevel(def){
+  const rows = def.grid;
+  const h = rows.length, w = Math.max(...rows.map(r=>r.length));
+  const walls = new Set(), doors = [], plates = [], boxes = [];
+  let spawn=null, pad=null, exit=null;
+  for(let y=0;y<h;y++){ const row=rows[y];
+    for(let x=0;x<w;x++){ const c=row[x]||' ';
+      if(c==='#') walls.add(kk(x,y));
+      else if(c==='S') spawn={x,y};
+      else if(c==='P') pad={x,y};
+      else if(c==='E') exit={x,y};
+      else if(c==='*') boxes.push({x,y});
+      else if(c>='a'&&c<='c') plates.push({x,y,id:c.charCodeAt(0)-97});
+      else if(c>='A'&&c<='C') doors.push({x,y,id:c.charCodeAt(0)-65});
+    }}
+  return {name:def.name,hint:def.hint,par:def.par,w,h,walls,doors,plates,boxes,spawn,pad,exit};
+}
+function splitLives(input){
+  const lives=[[]];
+  for(const a of input){ if(a==='Z') lives.push([]); else lives[lives.length-1].push(a); }
+  return lives;
+}
+function simulate(level, input){
+  const lives = splitLives(input);
+  const g = lives.length-1, liveMoves = lives[g], T = liveMoves.length;
+  const doorAt = new Map(); level.doors.forEach(d=>doorAt.set(kk(d.x,d.y),d.id));
+  const startOf = j => (j===0 ? level.spawn : level.pad);
+
+  const echoPath=[];
+  for(let j=0;j<g;j++){ const m=lives[j]; let p={...startOf(j)}; const path=[{...p}];
+    for(const a of m){ const d=DIRS[a]; p={x:p.x+d[0],y:p.y+d[1]}; path.push({...p}); } echoPath.push(path); }
+
+  const apos={}; apos['P']={...startOf(g)};
+  for(let j=0;j<g;j++) if(lives[j].length>0) apos[j]={...startOf(j)};
+  const boxes = level.boxes.map(b=>({...b}));
+
+  const isWall=(x,y)=> x<0||y<0||x>=level.w||y>=level.h||level.walls.has(kk(x,y));
+  const isPad=(x,y)=> level.pad&&level.pad.x===x&&level.pad.y===y;
+  const doorOpen=(dd,store,boxArr,mover)=>
+    level.plates.filter(p=>p.id===dd).some(pl=>
+      boxArr.findIndex(b=>b.x===pl.x&&b.y===pl.y)>=0 ||
+      Object.keys(store).some(k=>k!==mover&&store[k].x===pl.x&&store[k].y===pl.y));
+
+  function tryMove(store,boxArr,id,a){
+    const d=DIRS[a], cur=store[id];
+    if(d[0]===0&&d[1]===0) return {ok:true};
+    const nx=cur.x+d[0], ny=cur.y+d[1];
+    const wallLike=(x,y)=>{ if(isWall(x,y)) return true; const dd=doorAt.get(kk(x,y)); return dd!==undefined && !doorOpen(dd,store,boxArr,id); };
+    if(wallLike(nx,ny)) return {ok:false,cell:{x:nx,y:ny}};
+    const bi=boxArr.findIndex(b=>b.x===nx&&b.y===ny);
+    if(bi>=0){ const bx=nx+d[0], by=ny+d[1];
+      const occ=!isPad(bx,by)&&Object.values(store).some(p=>p.x===bx&&p.y===by);
+      if(wallLike(bx,by)||boxArr.findIndex(b=>b.x===bx&&b.y===by)>=0||occ) return {ok:false,cell:{x:nx,y:ny}};
+      boxArr[bi]={x:bx,y:by}; store[id]={x:nx,y:ny}; return {ok:true};
+    }
+    if(!isPad(nx,ny)&&Object.values(store).some(p=>p.x===nx&&p.y===ny)) return {ok:false,cell:{x:nx,y:ny}};
+    store[id]={x:nx,y:ny}; return {ok:true};
+  }
+
+  let paradox=null, playerIllegal=null;
+  outer:
+  for(let t=0;t<T;t++){
+    for(let j=0;j<g;j++){
+      if(!(t<lives[j].length)) continue; if(!apos[j]) continue;
+      const r=tryMove(apos,boxes,j,lives[j][t]);
+      if(!r.ok){ paradox={echo:j,tick:t,cell:r.cell}; break outer; }
+    }
+    const r=tryMove(apos,boxes,'P',liveMoves[t]);
+    if(!r.ok){ playerIllegal={tick:t,cell:r.cell}; break outer; }
+    for(let j=0;j<g;j++) if(apos[j]&&t+1>=lives[j].length) delete apos[j];
+  }
+  if(!paradox&&!playerIllegal){
+    const aC={}; for(const k in apos) aC[k]={...apos[k]};
+    const bC=boxes.map(b=>({...b}));
+    for(let j=0;j<g;j++){
+      if(!(T<lives[j].length)) continue; if(!aC[j]) continue;
+      const r=tryMove(aC,bC,j,lives[j][T]);
+      if(!r.ok){ paradox={echo:j,tick:T,cell:r.cell}; break; }
+    }
+  }
+
+  const echoes=[];
+  for(let j=0;j<g;j++){ const path=echoPath[j];
+    if(T<lives[j].length) echoes.push({ id:j, age:g-j, x:path[T].x, y:path[T].y,
+      next: T+1<=lives[j].length ? path[T+1] : null, rest: path.slice(T+1), L:lives[j].length }); }
+  const player = apos['P'] ? {...apos['P']} : {...startOf(g)};
+  const doorsOpen=new Set(); level.doors.forEach(d=>{ if(doorOpen(d.id,apos,boxes,null)) doorsOpen.add(d.id); });
+  const onExit = level.exit && player.x===level.exit.x && player.y===level.exit.y;
+  return { g,T,player,echoes, activeEchoes:echoes.length, boxes:boxes.map(b=>({...b})),
+    doorsOpen, paradox, playerIllegal, onPad:isPad(player.x,player.y),
+    canRewind: isPad(player.x,player.y) && g<MAX_ECHOES,
+    won: !!onExit && echoes.length===0 };
+}
+
+/* ------------------------------------------------------------------ *
+ *  Levels
+ * ------------------------------------------------------------------ */
+const PC = ['#ffb43a','#5cff9d','#ff6ad5'];  // plate/door colours by id
+const LEVELS = [
+  { name:'First Loop', par:4,
+    hint:'Walk onto the pad and Rewind. Your echo replays your last life - here its body holds the door open for you.',
+    grid:['#######','#SaPAE#','#######'] },
+  { name:'Patience', par:6,
+    hint:'The door is only open while your echo stands on the plate. Time your run, then wait for its loop to close.',
+    grid:['########','#SaP.AE#','########'] },
+  { name:'Two Doors', par:6,
+    hint:'One echo, two doors. It opens each in turn as it walks the hall - follow close behind.',
+    grid:['#########','#SabPABE#','#########'] },
+  { name:'Sidestep', par:12,
+    hint:'Your echo needs that plate. Take the long way round so you never stand where it must go - then wait it out.',
+    grid:['######','#S.a.#','#P.A.#','###E##','######'] },
+  { name:'Long Hall', par:8,
+    hint:'Three doors, one echo. Keep pace and it opens the whole hall ahead of you.',
+    grid:['###########','#SabcPABCE#','###########'] },
+];
+
+/* ------------------------------------------------------------------ *
+ *  Game state + persistence
+ * ------------------------------------------------------------------ */
+let li = 0, level = null, input = [];
+let paradoxCount = 0, showTrails = true;
+let solved = {}, best = {};
+try{ solved = JSON.parse(localStorage.getItem('echo-solved')||'{}'); }catch(e){}
+try{ best   = JSON.parse(localStorage.getItem('echo-best')||'{}'); }catch(e){}
+const $ = id => document.getElementById(id);
+
+/* ------------------------------------------------------------------ *
+ *  Board build + render
+ * ------------------------------------------------------------------ */
+let cell = 44, cellEls = [], tokEls = {}, boardEl = $('board');
+
+function buildBoard(){
+  boardEl.innerHTML=''; cellEls=[]; tokEls={};
+  const maxW = Math.min(window.innerWidth-28, 440);
+  cell = Math.max(26, Math.min(56, Math.floor(maxW/level.w)));
+  const bw = cell*level.w, bh = cell*level.h;
+  boardEl.style.width = bw+'px'; boardEl.style.height = bh+'px';
+  boardEl.style.setProperty('--cell', cell+'px');
+
+  const doorAt = new Map(); level.doors.forEach(d=>doorAt.set(kk(d.x,d.y),d.id));
+  const plateAt = new Map(); level.plates.forEach(p=>plateAt.set(kk(p.x,p.y),p.id));
+
+  for(let y=0;y<level.h;y++){ cellEls[y]=[];
+    for(let x=0;x<level.w;x++){
+      const el=document.createElement('div');
+      el.className='cell';
+      const s=cell-4;
+      el.style.width=s+'px'; el.style.height=s+'px';
+      el.style.left=(x*cell+2)+'px'; el.style.top=(y*cell+2)+'px';
+      const isW = level.walls.has(kk(x,y));
+      const pad = level.pad&&level.pad.x===x&&level.pad.y===y;
+      const exit = level.exit&&level.exit.x===x&&level.exit.y===y;
+      const dId = doorAt.get(kk(x,y)), pId = plateAt.get(kk(x,y));
+      if(isW){ el.classList.add('wall'); }
+      else if(pad){ el.classList.add('floor','pad'); }
+      else if(exit){ el.classList.add('floor','exit'); el.innerHTML='<div class="ring"></div>'; }
+      else if(dId!==undefined){ el.classList.add('floor','door'); el.style.setProperty('--pc',PC[dId]); el.innerHTML='<div class="dr"></div>'; }
+      else { el.classList.add('floor'); }
+      if(pId!==undefined){ el.classList.add('plate'); el.style.setProperty('--pc',PC[pId]);
+        const pl=document.createElement('div'); pl.className='pl'; el.appendChild(pl); }
+      boardEl.appendChild(el); cellEls[y][x]=el;
+    }}
+  // overlay layer for trails/warnings/flash (rebuilt each draw)
+  const ov=document.createElement('div'); ov.id='ovlayer'; ov.style.position='absolute'; ov.style.inset='0'; ov.style.pointerEvents='none';
+  boardEl.appendChild(ov);
+}
+
+function tokenEl(id, cls){
+  if(tokEls[id]) return tokEls[id];
+  const el=document.createElement('div'); el.className='tok '+cls;
+  el.style.width=cell+'px'; el.style.height=cell+'px';
+  const b=document.createElement('div'); b.className='body'; el.appendChild(b);
+  boardEl.appendChild(el); tokEls[id]=el; return el;
+}
+function place(el,x,y){ const tf='translate('+(x*cell)+'px,'+(y*cell)+'px)'; el.style.setProperty('--tf',tf); el.style.transform=tf; }
+
+function draw(){
+  const st = simulate(level, input);
+
+  // terrain dynamic state
+  level.doors.forEach(d=> cellEls[d.y][d.x].classList.toggle('open', st.doorsOpen.has(d.id)));
+  const pressed = new Set();
+  level.plates.forEach(p=>{
+    const on = st.boxes.some(b=>b.x===p.x&&b.y===p.y) ||
+      st.player.x===p.x&&st.player.y===p.y ||
+      st.echoes.some(e=>e.x===p.x&&e.y===p.y);
+    cellEls[p.y][p.x].classList.toggle('on', on);
+  });
+  if(level.exit) cellEls[level.exit.y][level.exit.x].classList.toggle('sealed', st.activeEchoes>0);
+
+  // player
+  const pl = tokenEl('P','player'); pl.style.opacity=1; place(pl, st.player.x, st.player.y);
+
+  // echoes (reuse by id; hide inactive)
+  const activeIds = new Set(st.echoes.map(e=>e.id));
+  st.echoes.forEach(e=>{ const el=tokenEl('e'+e.id,'echo');
+    el.style.opacity = Math.max(.28, .82 - (e.age-1)*.22);
+    place(el, e.x, e.y); });
+  for(const id in tokEls){ if(id[0]==='e'){ const n=+id.slice(1); if(!activeIds.has(n)) tokEls[id].style.opacity=0; } }
+
+  // boxes
+  st.boxes.forEach((b,i)=>{ const el=tokenEl('b'+i,'box'); el.style.opacity=1; place(el,b.x,b.y); });
+
+  // overlays
+  const ov=$('ovlayer'); ov.innerHTML='';
+  const mk=(cls,x,y,inset)=>{ const m=document.createElement('div'); m.className='ov '+cls;
+    const s=cell-inset*2; m.style.width=s+'px'; m.style.height=s+'px';
+    m.style.left=(x*cell+inset)+'px'; m.style.top=(y*cell+inset)+'px'; ov.appendChild(m); return m; };
+  if(showTrails) st.echoes.forEach(e=> e.rest.forEach(p=>{ if(!(p.x===level.pad.x&&p.y===level.pad.y)) mk('trail',p.x,p.y,cell*0.38); }));
+  st.echoes.forEach(e=>{ if(e.next && !(e.next.x===e.x&&e.next.y===e.y)) mk('warn',e.next.x,e.next.y,3); });
+  if(st.paradox){ mk('flash', st.paradox.cell.x, st.paradox.cell.y, 2); }
+
+  // HUD
+  const ticks = input.filter(c=>c!=='Z').length;
+  $('ticks').textContent = ticks;
+  $('par').textContent = 'par '+level.par + (best[li]!=null ? ' · best '+best[li] : '');
+  $('lives').textContent = st.g+1;
+  $('echoct').textContent = st.activeEchoes;
+  const rw=$('rewind'); rw.classList.toggle('live', st.canRewind);
+
+  return st;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Input handling
+ * ------------------------------------------------------------------ */
+let busy=false;
+function banner(msg, cls){ const b=$('banner'); b.textContent=msg||''; b.className='banner'+(cls?' '+cls:''); }
+
+function act(a){
+  if(busy) return;
+  const st0 = simulate(level, input);
+  if(st0.won) return;
+  const trial = input.concat(a);
+  const st = simulate(level, trial);
+  if(st.playerIllegal){ shake(); return; }
+  if(st.paradox){
+    // paradox: do not commit (that IS the one-tick force-undo). Explain.
+    paradoxCount++;
+    input = trial; draw();                       // show the offending frame briefly
+    const e = st.paradox;
+    banner('Paradox - echo '+(e.echo+1)+' must step here on tick '+e.tick+'. Undoing.', 'para');
+    busy=true;
+    setTimeout(()=>{ input = input.slice(0,-1); busy=false; draw(); }, 620);
+    return;
+  }
+  input = trial;
+  const s = draw();
+  if(s.won) win();
+  else if(s.paradox) {} // n/a
+  else banner('');
+}
+function rewind(){ if(busy) return; const st=simulate(level,input); if(!st.canRewind){ shake(); return; }
+  input = input.concat('Z'); banner(''); draw(); }
+function undo(){ if(busy||!input.length) return; input = input.slice(0,-1); banner(''); draw(); }
+function restart(){ if(busy) return; input=[]; banner(''); draw(); }
+
+function win(){
+  banner('Loop closed. Every echo home.', 'win');
+  const ticks = input.filter(c=>c!=='Z').length;
+  solved[li]=1;
+  if(best[li]==null || ticks<best[li]) best[li]=ticks;
+  try{ localStorage.setItem('echo-solved',JSON.stringify(solved)); localStorage.setItem('echo-best',JSON.stringify(best)); }catch(e){}
+  renderDots();
+  $('next').disabled = li===LEVELS.length-1;
+}
+function shake(){ boardEl.animate([{transform:'translateX(0)'},{transform:'translateX(-5px)'},{transform:'translateX(5px)'},{transform:'translateX(0)'}],{duration:180}); }
+
+/* ------------------------------------------------------------------ *
+ *  Level nav
+ * ------------------------------------------------------------------ */
+function renderDots(){
+  const d=$('dots'); d.innerHTML='';
+  LEVELS.forEach((L,i)=>{ const el=document.createElement('div'); el.className='dot';
+    if(solved[i]) el.classList.add('solved'); if(i===li) el.classList.add('cur');
+    el.onclick=()=>loadLevel(i); d.appendChild(el); });
+}
+function loadLevel(i){
+  li=(i+LEVELS.length)%LEVELS.length;
+  level=parseLevel(LEVELS[li]); input=[]; paradoxCount=0;
+  $('lvlno').textContent=String(li+1).padStart(2,'0');
+  $('lvlname').textContent=level.name;
+  $('hint').textContent=level.hint;
+  $('prev').disabled = li===0;
+  $('next').disabled = li===LEVELS.length-1 && !solved[li];
+  banner('');
+  buildBoard(); renderDots(); draw();
+}
+
+/* wiring */
+document.querySelectorAll('.key[data-a]').forEach(k=> k.addEventListener('click',()=>act(k.dataset.a)));
+$('rewind').onclick=rewind;
+$('undo').onclick=undo;
+$('reset').onclick=restart;
+$('prev').onclick=()=>loadLevel(li-1);
+$('next').onclick=()=>loadLevel(li+1);
+$('trailtog').onclick=()=>{ showTrails=!showTrails; $('trailtog').classList.toggle('on',showTrails); draw(); };
+
+document.addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k==='ArrowUp'||k==='w') act('U');
+  else if(k==='ArrowDown'||k==='s') act('D');
+  else if(k==='ArrowLeft'||k==='a') act('L');
+  else if(k==='ArrowRight'||k==='d') act('R');
+  else if(k===' '||k==='.') { e.preventDefault(); act('W'); }
+  else if(k==='z'||k==='Enter') rewind();
+  else if(k==='u'||k==='Backspace'){ e.preventDefault(); undo(); }
+  else if(k==='r') restart();
+  else if(k==='[') loadLevel(li-1);
+  else if(k===']') loadLevel(li+1);
+  else return;
+  e.preventDefault();
+},{passive:false});
+
+// swipe on board
+let sx=0,sy=0,sw=false;
+boardEl.addEventListener('touchstart',e=>{ const t=e.touches[0]; sx=t.clientX; sy=t.clientY; sw=true; },{passive:true});
+boardEl.addEventListener('touchend',e=>{ if(!sw) return; sw=false;
+  const t=e.changedTouches[0]; const dx=t.clientX-sx, dy=t.clientY-sy;
+  if(Math.abs(dx)<18&&Math.abs(dy)<18){ act('W'); return; }   // tap = wait
+  if(Math.abs(dx)>Math.abs(dy)) act(dx>0?'R':'L'); else act(dy>0?'D':'U');
+},{passive:true});
+
+window.addEventListener('resize', ()=>{ buildBoard(); draw(); });
+loadLevel(0);
+</script>
+</body>
+</html>

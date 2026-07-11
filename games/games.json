@@ -35,6 +35,12 @@
       "name": "Loom",
       "accent": "#b98cff",
       "tagline": "Author up to three rewrite rules. The loom runs them tick by tick, leftmost match first, until the bead thread matches the target - or unravels to nothing, or grows forever. Markov algorithms wearing a bead necklace."
+    },
+    {
+      "slug": "echo",
+      "name": "Echo",
+      "accent": "#5cd6ff",
+      "tagline": "Rewind on the pad to spawn a replay of your past self. Choreograph the yous you used to be - hold each other's doors, dodge your own history - then sequence a clean shutdown where every loop closes. Recursion, written in time."
     }
   ]
 }
