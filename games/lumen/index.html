@@ -147,8 +147,8 @@
   <div class="sub">Every stone is a lamp and a wall. Light along its row &amp; column until blocked. Cells lit by only you are yours; lit by both, worthless. Most territory wins.</div>
 
   <div class="scores">
-    <div class="score b" id="sB"><div class="lbl"><span class="swatch"></span><span>Amber</span><span class="left" id="rB"></span></div><div class="num" id="nB">0</div></div>
-    <div class="score w" id="sW"><div class="lbl"><span class="swatch"></span><span>Cyan</span><span class="left" id="rW"></span></div><div class="num" id="nW">0</div></div>
+    <div class="score b" id="sB"><div class="lbl"><span class="swatch"></span><span id="labB">Amber</span><span class="left" id="rB"></span></div><div class="num" id="nB">0</div></div>
+    <div class="score w" id="sW"><div class="lbl"><span class="swatch"></span><span id="labW">Cyan</span><span class="left" id="rW"></span></div><div class="num" id="nW">0</div></div>
   </div>
 
   <div class="board-wrap"><div id="board"></div></div>
@@ -168,6 +168,16 @@
       <option value="12" selected>12 stones</option>
       <option value="16">16 stones</option>
     </select>
+    <select id="oppSel">
+      <option value="">2 players</option>
+      <option value="W" selected>vs CPU · you're Amber</option>
+      <option value="B">vs CPU · you're Cyan</option>
+    </select>
+    <select id="diffSel">
+      <option value="easy">Easy</option>
+      <option value="medium" selected>Medium</option>
+      <option value="hard">Hard</option>
+    </select>
   </div>
 
 <script>
@@ -178,18 +188,24 @@
 
   let SIZE = 7, MAX = 12;
   let grid, turn, placed, history, pieAvailable, over;
+  let aiSide = null, aiDiff = 'medium', thinking = false;
 
   function reset(){
     SIZE  = +document.getElementById('sizeSel').value;
     MAX   = +document.getElementById('countSel').value;
+    const opp = document.getElementById('oppSel').value;
+    aiSide = opp || null;                 // '' → 2 players, else AI's colour
+    aiDiff = document.getElementById('diffSel').value;
     grid  = Array.from({length:SIZE}, () => Array(SIZE).fill(null));
     turn  = 'B';
     placed = {B:0, W:0};
     history = [];
     pieAvailable = false;
     over = false;
+    thinking = false;
     buildBoard();
     render();
+    maybeAI();
   }
 
   function buildBoard(){
@@ -208,15 +224,15 @@
   }
 
   // Cast light: each stone shoots 4 rays until it hits any stone (exclusive).
-  function computeLight(){
+  function computeLightG(g){
     const lit = Array.from({length:SIZE}, () => Array.from({length:SIZE}, () => ({B:false,W:false})));
     const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
     for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
-      const col = grid[r][c];
+      const col = g[r][c];
       if(!col) continue;
       for(const [dr,dc] of dirs){
         let nr=r+dr, nc=c+dc;
-        while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !grid[nr][nc]){
+        while(nr>=0&&nr<SIZE&&nc>=0&&nc<SIZE && !g[nr][nc]){
           lit[nr][nc][col] = true;
           nr+=dr; nc+=dc;
         }
@@ -224,6 +240,7 @@
     }
     return lit;
   }
+  const computeLight = () => computeLightG(grid);
 
   function scores(lit){
     const s = {B:0, W:0, contested:0};
@@ -237,8 +254,99 @@
     return s;
   }
 
-  function play(r,c){
+  /* ---------- AI ---------- */
+  // Territory (owned by exactly one side) net, from `side`'s perspective.
+  function evalFor(g, side){
+    const lit = computeLightG(g);
+    let B=0, W=0;
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++){
+      if(g[r][c]) continue;
+      const {B:b,W:w} = lit[r][c];
+      if(b&&w) continue;
+      else if(b) B++; else if(w) W++;
+    }
+    return side==='B' ? B-W : W-B;
+  }
+
+  function candidates(g){
+    const out=[];
+    for(let r=0;r<SIZE;r++) for(let c=0;c<SIZE;c++) if(!g[r][c]) out.push([r,c]);
+    return out;
+  }
+
+  // Rank empty cells by the immediate territory swing for `side` (also the
+  // alpha-beta move ordering). Returns [{r,c,v}] sorted best-first.
+  function ranked(g, side){
+    const out = candidates(g).map(([r,c]) => {
+      g[r][c]=side; const v=evalFor(g,side); g[r][c]=null;
+      return {r,c,v};
+    });
+    out.sort((a,b)=>b.v-a.v);
+    return out;
+  }
+
+  // Negamax + alpha-beta over a beam of the K most promising moves.
+  function negamax(g, side, remB, remW, depth, alpha, beta, K){
+    if(remB+remW===0 || depth===0) return evalFor(g, side);
+    const other = side==='B'?'W':'B';
+    const moves = ranked(g, side).slice(0, K);
+    let best = -Infinity;
+    for(const {r,c} of moves){
+      g[r][c]=side;
+      const val = -negamax(g, other, side==='B'?remB-1:remB, side==='W'?remW-1:remW,
+                           depth-1, -beta, -alpha, K);
+      g[r][c]=null;
+      if(val>best) best=val;
+      if(best>alpha) alpha=best;
+      if(alpha>=beta) break;
+    }
+    return best;
+  }
+
+  function searchRoot(g, side, remB, remW, depth, K){
+    const other = side==='B'?'W':'B';
+    const moves = ranked(g, side).slice(0, K);
+    let best=-Infinity, bestMove=moves[0]&&[moves[0].r,moves[0].c], alpha=-Infinity;
+    for(const {r,c} of moves){
+      g[r][c]=side;
+      const val = -negamax(g, other, side==='B'?remB-1:remB, side==='W'?remW-1:remW,
+                           depth-1, -Infinity, -alpha, K);
+      g[r][c]=null;
+      if(val>best){ best=val; bestMove=[r,c]; }
+      if(best>alpha) alpha=best;
+    }
+    return {move:bestMove, value:best};
+  }
+
+  // Pick the AI's move for the live board. Difficulty tunes depth/beam/noise.
+  function chooseAIMove(side){
+    const g = grid.map(row=>row.slice());
+    const remB = MAX-placed.B, remW = MAX-placed.W;
+    const maxD = remB+remW;
+
+    if(aiDiff==='easy'){
+      // greedy, but wander among the top few so it's beatable
+      const top = ranked(g, side).slice(0,3);
+      return top[Math.floor(Math.random()*top.length)] || null;
+    }
+    if(aiDiff==='medium'){
+      return posFromRoot(searchRoot(g, side, remB, remW, Math.min(2,maxD), 14));
+    }
+    // hard: iterative deepening within a small time budget
+    const t0 = performance.now(), K = 12;
+    let move = searchRoot(g, side, remB, remW, Math.min(2,maxD), K).move;
+    for(let d=3; d<=maxD; d++){
+      if(performance.now()-t0 > 300) break;
+      move = searchRoot(g, side, remB, remW, d, K).move;
+      if(d>=maxD) break;
+    }
+    return move && {r:move[0], c:move[1]};
+  }
+  const posFromRoot = res => res.move && {r:res.move[0], c:res.move[1]};
+
+  function play(r,c,byAI){
     if(over || grid[r][c]) return;
+    if(!byAI && aiSide && turn===aiSide) return;   // hands off during AI's turn
     grid[r][c] = turn;
     placed[turn]++;
     history.push([r,c,turn]);
@@ -247,6 +355,30 @@
     turn = turn==='B' ? 'W' : 'B';
     if(placed.B>=MAX && placed.W>=MAX) over = true;
     render(r,c);
+    maybeAI();
+  }
+
+  // If it's the AI's move, think (async so the board can paint) then play.
+  function maybeAI(){
+    if(over || !aiSide || turn!==aiSide) return;
+    thinking = true;
+    render();
+    setTimeout(() => {
+      if(over || turn!==aiSide) { thinking=false; return; }
+      const side = aiSide;
+      // pie rule: as second player (Cyan), decide whether to swap the opener.
+      if(pieAvailable && side==='W'){
+        const g = grid.map(row=>row.slice());
+        const place = searchRoot(g, 'W', MAX-placed.B, MAX-placed.W, 2, 12).value;
+        const gs = grid.map(row=>row.slice());
+        const [fr,fc] = history[0]; gs[fr][fc]='W';
+        const swap = -searchRoot(gs, 'B', MAX, MAX-1, 2, 12).value;  // W's view
+        if(swap > place){ thinking=false; swapPie(); return; }
+      }
+      const m = chooseAIMove(side);
+      thinking = false;
+      if(m) play(m.r, m.c, true);
+    }, 60);
   }
 
   function swapPie(){
@@ -261,14 +393,18 @@
     turn = 'B';
     pieAvailable = false;
     render(r,c);
+    maybeAI();
   }
 
   function undo(){
-    if(!history.length) return;
-    const [r,c,col] = history.pop();
-    grid[r][c] = null;
-    placed[col]--;
-    turn = col;
+    if(!history.length || thinking) return;
+    do {
+      const [r,c,col] = history.pop();
+      grid[r][c] = null;
+      placed[col]--;
+      turn = col;
+      // in AI mode, keep stepping back until it's the human's turn again
+    } while(aiSide && turn===aiSide && history.length);
     over = false;
     pieAvailable = (history.length === 1);
     render();
@@ -299,7 +435,8 @@
         cell.classList.remove('filled');
         if(existing && !existing.classList.contains('ghost')) existing.remove();
         const ghost = cell.querySelector('.ghost');
-        if(over){ if(ghost) ghost.remove(); }
+        const noGhost = over || (aiSide && turn===aiSide);   // no preview on AI's turn
+        if(noGhost){ if(ghost) ghost.remove(); }
         else if(ghost){ ghost.className = 'stone ghost ' + turn.toLowerCase(); }
         else { const g=document.createElement('div'); g.className='stone ghost '+turn.toLowerCase(); cell.appendChild(g); }
       }
@@ -313,7 +450,11 @@
     document.getElementById('sB').classList.toggle('active', !over && turn==='B');
     document.getElementById('sW').classList.toggle('active', !over && turn==='W');
 
-    pieBtn.style.display = pieAvailable ? '' : 'none';
+    // pie button is for the human only; the AI decides its own swap
+    document.getElementById('labB').textContent = 'Amber' + (aiSide==='B'?' · CPU':'');
+    document.getElementById('labW').textContent = 'Cyan'  + (aiSide==='W'?' · CPU':'');
+    const aiTurn = !!aiSide && turn===aiSide;
+    pieBtn.style.display = (pieAvailable && !aiTurn) ? '' : 'none';
     pieBtn.className = 'primary' + (turn==='W'?' w':'');
 
     if(over){
@@ -322,11 +463,15 @@
       else banner.textContent = (s.B>s.W?'Amber':'Cyan') + ` wins ${Math.max(s.B,s.W)} – ${Math.min(s.B,s.W)}` +
         (s.contested?`  (${s.contested} contested)`:'');
       banner.style.color = s.B===s.W ? 'var(--ink)' : (s.B>s.W?'var(--amber)':'var(--cyan)');
+    } else if(thinking){
+      banner.className = 'banner';
+      banner.style.color = '';
+      banner.textContent = (turn==='B'?'Amber':'Cyan') + ' (CPU) is thinking…';
     } else {
       banner.className = 'banner';
       banner.style.color = '';
       banner.textContent = (turn==='B'?'Amber':'Cyan') + ' to place' +
-        (pieAvailable?' — or Cyan may swap sides.':'') +
+        (pieAvailable && !aiTurn ?' — or Cyan may swap sides.':'') +
         `   ·   ${s.contested} contested`;
     }
   }
@@ -336,6 +481,12 @@
   document.getElementById('resetBtn').onclick = reset;
   document.getElementById('sizeSel').onchange = reset;
   document.getElementById('countSel').onchange = reset;
+  const diffSel = document.getElementById('diffSel');
+  document.getElementById('oppSel').onchange = e => {
+    diffSel.style.display = e.target.value ? '' : 'none';
+    reset();
+  };
+  diffSel.onchange = reset;
   window.addEventListener('resize', () => { buildBoard(); render(); });
 
   reset();

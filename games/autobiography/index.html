@@ -126,7 +126,7 @@
   /* editors */
   .editwrap{display:flex;flex-direction:column;gap:10px;align-items:center}
 
-  /* brush tray (also the legend) */
+  /* colour picker */
   .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
   .chip{
     display:inline-flex;align-items:center;gap:7px;padding:7px 12px;
@@ -136,10 +136,7 @@
   .chip:hover{border-color:var(--line-strong);background:var(--raised)}
   .chip.armed{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 0 14px -6px var(--a)}
   .csw{width:16px;height:16px;border-radius:5px;flex:none;border:1px solid var(--line)}
-  .csw.erase{background:var(--cell);border-style:dashed;border-color:var(--line-strong)}
-  .csw.ink{background:var(--ink);border-color:var(--ink)}
-  .csw.a{box-shadow:inset 0 0 0 2px var(--a)}
-  .csw.b{box-shadow:inset 0 0 0 2px var(--b)}
+  .csw.plain{background:var(--ink);border-color:var(--ink)}
 
   .editors{display:flex;gap:16px;justify-content:center}
   .editor{display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -147,18 +144,19 @@
   .editor .elab.a{color:var(--a)}
   .editor .elab.b{color:var(--b)}
   .grid{
-    display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
-    padding:7px;border-radius:14px;background:var(--surface);border:1px solid var(--line);
-    touch-action:none;
+    display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+    padding:8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);
+    touch-action:none;user-select:none;-webkit-user-select:none;
   }
   .grid.two{grid-template-columns:repeat(2,1fr)}
   .cell{
-    width:44px;height:44px;border-radius:8px;position:relative;cursor:pointer;
+    width:56px;height:56px;border-radius:9px;position:relative;cursor:pointer;
     background:var(--cell);border:1px solid var(--line);
     display:flex;align-items:center;justify-content:center;overflow:hidden;
     transition:background .12s,border-color .12s,transform .06s;
   }
-  .grid.two .cell{width:68px;height:68px}
+  .grid.two .cell{width:74px;height:74px}
+  .editors.multi .cell{width:46px;height:46px}
   .cell:active{transform:scale(.92)}
   .cell.ink{background:var(--ink);border-color:var(--ink);box-shadow:0 0 12px -3px var(--ink)}
   .cell canvas{width:100%;height:100%;display:block;pointer-events:none}
@@ -168,7 +166,7 @@
 
   /* triangle editor */
   .trigrid{position:relative;width:162px;height:150px;background:var(--surface);
-    border:1px solid var(--line);border-radius:14px;touch-action:none}
+    border:1px solid var(--line);border-radius:14px;touch-action:none;user-select:none;-webkit-user-select:none}
   .tcell{position:absolute;width:50%;height:50%;cursor:pointer}
   .tcell canvas{width:100%;height:100%;display:block;pointer-events:none}
   .tcell.k0{left:25%;top:0}
@@ -245,11 +243,11 @@
     <div class="win-msg" id="winMsg">solved</div>
 
     <div class="editwrap">
-      <div class="tray" id="tray"></div>
+      <div class="tray colours" id="colours" hidden></div>
       <div class="editors" id="editors"></div>
       <div class="hint" id="hint"></div>
       <div class="par" id="par" hidden></div>
-      <div class="tapnote">tap to paint · drag to paint many · tap a placed self/A/B again to spin it ↻</div>
+      <div class="tapnote" id="tapnote"></div>
     </div>
   </div>
 
@@ -268,18 +266,23 @@
            propagates - Sierpiński and friends live here]
 ------------------------------------------------------------------- */
 const A=2, B=3;
-const rot=(v,r)=> v>=2 ? ((v&3) + ((((v>>2)+r)&3)*4)) : v;   // spin a reference by r quarter-turns
+/* value bits:  0-1 type (0 empty,1 ink,2 A,3 B) · 2-3 rotation · 4-5 colour (0 plain,1 R,2 G,3 B)
+   colour tints a cell and, for a reference, propagates down its whole subtree.
+   colour 0 = plain = inherit the carried colour (the theme ink at the top). */
+const rot=(v,r)=> (v&3)>=2 ? ((v&3) + ((((v>>2)+r)&3)<<2) + (((v>>4)&3)<<4)) : v;   // spin, keep colour
+const col=(v,c)=> v===0 ? 0 : ((v&15) + (c<<4));                                    // tint (keep type+rotation)
+const COLOURS=['', '#ff4d5e', '#37d67a', '#4d9bff'];   // index 0 = inherit
 const NCELLS={sq3:9, sq2:4, tri:4};
 const BASE={sq3:3, sq2:2};
 const GEOMNAME={sq3:'3×3', sq2:'2×2', tri:'triangle'};
 
 const LEVELS=[
   { name:"Solid",
-    hint:"Arm <b>ink</b> and fill all nine - a solid block.",
+    hint:"<b>Tap</b> a cell for <b>ink</b>. Fill all nine into a solid block.",
     stamps:[[1,1,1, 1,1,1, 1,1,1]] },
 
   { name:"Descent",
-    hint:"Arm <b>self</b>: a cell becomes the whole mark again, shrunk. Three on the diagonal fall forever into a line.",
+    hint:"<b>Flick</b> a cell to plant <b>self</b> - it becomes the whole mark again, shrunk. Send three down the diagonal.",
     stamps:[[A,0,0, 0,A,0, 0,0,A]] },
 
   { name:"Cantor Dust",
@@ -323,7 +326,7 @@ const LEVELS=[
     stamps:[[A,0,A, 0,A,0, 0,A,0]] },
 
   { name:"Pinwheel",
-    hint:"New trick: tap a placed <b>self</b> again to spin it a quarter-turn ↻. Four corners, each turned further than the last - a pinwheel of pinwheels.",
+    hint:"A <b>self</b> points the way you flick - its blip marks 'up'. Aim each corner a quarter-turn further (or tap a self to spin): a pinwheel of pinwheels.",
     stamps:[[rot(A,0),0,rot(A,1), 0,0,0, rot(A,3),0,rot(A,2)]] },
 
   { name:"Whirl",
@@ -331,7 +334,7 @@ const LEVELS=[
     stamps:[[0,rot(A,0),0, rot(A,3),0,rot(A,1), 0,rot(A,2),0]] },
 
   { name:"Two Minds",
-    hint:"Now two stamps. A cell can hold <b>self</b>, or the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
+    hint:"Now two stamps. <b>Flick straight</b> for self, <b>flick diagonally</b> for the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
 
@@ -370,16 +373,28 @@ const LEVELS=[
   { name:"Steeple", geom:"tri",
     hint:"A solid <b>ink</b> steeple on top; the two lower corners fall into gaskets; the inverted middle stays hollow. Ink and recursion, sharing one triangle.",
     stamps:[[1,A,A, 0]] },
+
+  { name:"Primary", colour:true,
+    hint:"Colour arrives. Pick a hue, then paint - ink and self now carry it. Send a <b>red</b>, a <b>green</b> and a <b>blue</b> self tumbling down the diagonal.",
+    stamps:[[col(A,1),0,0, 0,col(A,2),0, 0,0,col(A,3)]] },
+
+  { name:"Violet", colour:true,
+    hint:"Red self and blue self, woven into one carpet. A tinted self stains its whole descent - watch violet bloom where the two colours meet.",
+    stamps:[[col(A,1),col(A,3),col(A,1), col(A,3),0,col(A,3), col(A,1),col(A,3),col(A,1)]] },
+
+  { name:"Prism", geom:"tri", colour:true,
+    hint:"The oldest fractal, in full colour: a red corner, a green corner, a blue corner - each a gasket of its own hue.",
+    stamps:[[col(A,1),col(A,2),col(A,3), 0]] },
 ];
 
 /* ---- rendering: the fixed point ---------------------------------- */
-function drawStamp(ctx, stamps, geom, x, y, size, color){
-  if(geom==='tri') drawTri(ctx, stamps, 0, x+size/2,y, x,y+size, x+size,y+size, color);
-  else drawSq(ctx, stamps, 0, BASE[geom], x, y, size, color, 0);
+function drawStamp(ctx, stamps, geom, x, y, size, topColour){
+  if(geom==='tri') drawTri(ctx, stamps, 0, x+size/2,y, x,y+size, x+size,y+size, topColour);
+  else drawSq(ctx, stamps, 0, BASE[geom], x, y, size, topColour, 0);
 }
-function drawSq(ctx, stamps, id, base, x, y, size, color, r){
+function drawSq(ctx, stamps, id, base, x, y, size, carried, r){
   if(size < 1.15){                       // pixel limit: recurse cell = a lit dot (IFS attractor)
-    ctx.fillStyle=color; ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size)); return;
+    ctx.fillStyle=carried; ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size)); return;
   }
   const c=size/base, s=stamps[id];
   for(let k=0;k<base*base;k++){
@@ -387,14 +402,15 @@ function drawSq(ctx, stamps, id, base, x, y, size, color, r){
     let i=(k/base)|0, j=k%base;
     for(let n=0;n<r;n++){ const ni=j, nj=base-1-i; i=ni; j=nj; }   // clockwise quarter-turns
     const sx=x+j*c, sy=y+i*c;
-    if(v===1){ ctx.fillStyle=color; ctx.fillRect(sx, sy, c+0.6, c+0.6); }
-    else drawSq(ctx, stamps, (v&3)-2, base, sx, sy, c, color, ((v>>2)+r)&3);
+    const cc=(v>>4)&3, paint=cc?COLOURS[cc]:carried;               // per-cell tint, else inherit
+    if((v&3)===1){ ctx.fillStyle=paint; ctx.fillRect(sx, sy, c+0.6, c+0.6); }
+    else drawSq(ctx, stamps, (v&3)-2, base, sx, sy, c, paint, ((v>>2)+r)&3);
   }
 }
 function triPath(ctx, ax,ay,bx,by,cx,cy){ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath(); }
-function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, color){
+function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried){
   const e=Math.max(Math.hypot(bx-ax,by-ay), Math.hypot(cx-bx,cy-by), Math.hypot(ax-cx,ay-cy));
-  if(e < 2){ ctx.fillStyle=color; triPath(ctx,ax,ay,bx,by,cx,cy); ctx.fill(); return; }
+  if(e < 2){ ctx.fillStyle=carried; triPath(ctx,ax,ay,bx,by,cx,cy); ctx.fill(); return; }
   const s=stamps[id];
   const px=(ax+bx)/2, py=(ay+by)/2, qx=(ax+cx)/2, qy=(ay+cy)/2, rx=(bx+cx)/2, ry=(by+cy)/2;
   const sub=[
@@ -406,8 +422,9 @@ function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, color){
   for(let k=0;k<4;k++){
     const v=s[k]; if(!v) continue;
     const t=sub[k];
-    if(v===1){ ctx.fillStyle=color; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); }
-    else drawTri(ctx, stamps, (v&3)-2, t[0],t[1],t[2],t[3],t[4],t[5], color);
+    const cc=(v>>4)&3, paint=cc?COLOURS[cc]:carried;
+    if((v&3)===1){ ctx.fillStyle=paint; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); }
+    else drawTri(ctx, stamps, (v&3)-2, t[0],t[1],t[2],t[3],t[4],t[5], paint);
   }
 }
 function renderPic(canvas, stamps, geom){
@@ -421,10 +438,10 @@ const CMP=document.createElement('canvas'); CMP.width=CMP.height=243;
 const CMPX=CMP.getContext('2d',{willReadFrequently:true});
 function fingerprint(stamps, geom){
   CMPX.fillStyle='#000'; CMPX.fillRect(0,0,243,243);
-  drawStamp(CMPX, stamps, geom, 0, 0, 243, '#fff');
+  drawStamp(CMPX, stamps, geom, 0, 0, 243, '#fff');   // 'plain' is fixed white here -> theme-independent
   return CMPX.getImageData(0,0,243,243).data;
 }
-function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]) d++; } return d; }
+function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]||a[i+1]!==b[i+1]||a[i+2]!==b[i+2]) d++; } return d; }
 
 /* ---- state ------------------------------------------------------- */
 let mode='play';          // 'play' | 'sand' | 'random'
@@ -435,7 +452,8 @@ let baseline=[];          // starting state (blank) for reset
 let targetStamps=[];      // what the target picture shows
 let targetFP=null;
 let curPar=0;
-let armed=1;              // active brush value: 0 empty, 1 ink, 2 A/self, 3 B
+let armedColour=0;        // active colour tint: 0 plain, 1 R, 2 G, 3 B
+let colourOn=false;       // is the colour row available this level/mode?
 let prevWin=false, advTimer=null;
 let solved={};
 try{ solved=JSON.parse(localStorage.getItem('auto-solved')||'{}'); }catch(e){}
@@ -484,7 +502,7 @@ function loadLevel(i){
   stamps = baseline.map(s=>s.slice());
   targetFP = fingerprint(targetStamps, geom);
   curPar = parOf(targetStamps);
-  armed = (li===0)?1:2;
+  armedColour=0; colourOn=!!L.colour;
   renderPic($('target'), targetStamps, geom);
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
@@ -496,33 +514,40 @@ function loadLevel(i){
   $('yoursFrame').classList.remove('win','pop');
   $('winMsg').classList.remove('show');
 
-  buildTray(); buildEditors(); markDots(); update();
+  buildColours(); buildEditors(); setTapnote(); markDots(); update();
 }
 
-/* ---- brush tray -------------------------------------------------- */
-function buildTray(){
-  const host=$('tray'); host.innerHTML='';
-  const multi = stamps.length>1;
-  const chips=[{v:0,sw:'erase',label:'erase'},{v:1,sw:'ink',label:'ink'}];
-  if(multi){ chips.push({v:2,sw:'a',label:'A'},{v:3,sw:'b',label:'B'}); }
-  else chips.push({v:2,sw:'a',label:'self'});
-  chips.forEach(c=>{
-    const el=document.createElement('button');
-    el.className='chip'; el.dataset.v=c.v;
-    el.innerHTML='<span class="csw '+c.sw+'"></span>'+c.label;
-    el.onclick=()=>{ armed=c.v; markChips(); };
+/* ---- colour picker (the only on-screen control) ------------------ */
+function setTapnote(){
+  const multi=stamps.length>1;
+  let s;
+  if(geom==='tri') s='tap ▸ ink · flick ▸ self · hold ▸ erase';
+  else if(multi) s='tap ▸ ink · flick ✛ ▸ self · flick ✕ ▸ other · tap a mark ▸ spin · hold ▸ erase';
+  else s='tap ▸ ink · flick ▸ self (it points where you flick) · tap a self ▸ spin · hold ▸ erase';
+  if(colourOn) s+=' · pick a colour to tint';
+  $('tapnote').textContent=s;
+}
+function buildColours(){
+  const host=$('colours'); host.innerHTML=''; host.hidden=!colourOn;
+  if(!colourOn) return;
+  [{c:0,label:'plain'},{c:1,label:'red'},{c:2,label:'green'},{c:3,label:'blue'}].forEach(o=>{
+    const el=document.createElement('button'); el.className='chip col'; el.dataset.c=o.c;
+    const dot=document.createElement('span'); dot.className='csw';
+    if(o.c===0) dot.classList.add('plain');
+    else { dot.style.background=COLOURS[o.c]; dot.style.borderColor=COLOURS[o.c]; }
+    el.appendChild(dot); el.appendChild(document.createTextNode(o.label));
+    el.onclick=()=>{ armedColour=o.c; markColours(); };
     host.appendChild(el);
   });
-  markChips();
+  markColours();
 }
-function markChips(){
-  [...$('tray').children].forEach(el=>el.classList.toggle('armed', +el.dataset.v===armed));
-}
+function markColours(){ [...$('colours').children].forEach(el=>el.classList.toggle('armed', +el.dataset.c===armedColour)); }
 
 /* ---- editors ----------------------------------------------------- */
 function buildEditors(){
   const host=$('editors'); host.innerHTML='';
   const multi = stamps.length>1;
+  host.classList.toggle('multi', multi);
   stamps.forEach((s,si)=>{
     const ed=document.createElement('div'); ed.className='editor';
     if(multi){
@@ -554,60 +579,94 @@ function buildTriGrid(si){
   return g;
 }
 
-/* paint: tap arms-then-paints; tapping a placed reference again spins it
-   (squares only - triangles carry orientation structurally, not by hand) */
-let painting=false, lastKey=null;
-function applyBrush(cell, allowSpin){
-  const si=+cell.dataset.si, k=+cell.dataset.k, cur=stamps[si][k], b=armed;
-  const canSpin = allowSpin && geom!=='tri' && b>=2 && cur>=2 && (cur&3)===(b&3);
-  const nv = canSpin ? rot(cur,1) : b;
-  if(nv!==stamps[si][k]){ stamps[si][k]=nv; update(); }
+/* ---- editing gestures (no palette, no modes) ---------------------
+   tap        empty <-> ink      (ink takes the armed tint, in colour levels)
+   flick      self, pointing the way you flick   (flick diagonally = the other stamp)
+   tap a ref  spin 90 (squares)      hold  erase
+   The flick direction IS the rotation, so orientation costs no extra control.
+------------------------------------------------------------------- */
+const tintNow=()=> colourOn?armedColour:0;
+function haptic(){ try{ if(navigator.vibrate) navigator.vibrate(7); }catch(e){} }
+function flickResolve(dx,dy){
+  const sec=(Math.round((Math.atan2(dy,dx)+Math.PI/2)/(Math.PI/4))%8+8)%8;   // 0=up, clockwise
+  const multi=stamps.length>1;
+  if(multi && sec%2===1) return {type:3, r:(sec-1)/2};                        // diagonal -> other
+  return {type:2, r: multi ? sec/2 : Math.round(sec/2)%4};                    // cardinal -> self
 }
-function cellFromPoint(x,y){ const el=document.elementFromPoint(x,y); return el?el.closest('.cell,.tcell'):null; }
+function setCell(cell, v){ const si=+cell.dataset.si, k=+cell.dataset.k; stamps[si][k]=v; update(); haptic(); }
+function tapCell(cell){
+  const si=+cell.dataset.si, k=+cell.dataset.k, cur=stamps[si][k], t=cur&3;
+  let nv;
+  if(cur===0) nv = 1 + (tintNow()<<4);              // empty -> ink
+  else if(t===1) nv = 0;                            // ink -> empty
+  else { if(geom==='tri') return; nv = rot(cur,1); }// reference -> spin (squares only)
+  setCell(cell, nv);
+}
 function bindCell(cell){
+  let sx,sy,moved,lp,handled;
   cell.addEventListener('pointerdown', e=>{
     e.preventDefault();
-    painting=true; lastKey=cell.dataset.si+':'+cell.dataset.k;
-    applyBrush(cell, true);
+    sx=e.clientX; sy=e.clientY; moved=false; handled=false;
+    try{ cell.setPointerCapture(e.pointerId); }catch(_){}
+    lp=setTimeout(()=>{ if(!moved){ handled=true; setCell(cell,0); } }, 500);   // hold -> erase
   });
+  cell.addEventListener('pointermove', e=>{
+    if(handled) return;
+    if(!moved && Math.hypot(e.clientX-sx, e.clientY-sy)>12){ moved=true; clearTimeout(lp); }
+    if(moved){                                                                  // live preview under the finger
+      const g=flickResolve(e.clientX-sx, e.clientY-sy);
+      if(geom==='tri') paintTriCell(cell, g.type + (tintNow()<<4));
+      else paintSqCell(cell, g.type + (g.r<<2) + (tintNow()<<4));
+    }
+  });
+  cell.addEventListener('pointerup', e=>{
+    clearTimeout(lp); if(handled) return;
+    if(moved){ const g=flickResolve(e.clientX-sx, e.clientY-sy); setCell(cell, g.type + (g.r<<2) + (tintNow()<<4)); }
+    else tapCell(cell);
+  });
+  cell.addEventListener('pointercancel', ()=>{ clearTimeout(lp); if(moved) update(); });
   cell.addEventListener('contextmenu', e=>e.preventDefault());
 }
-document.addEventListener('pointermove', e=>{
-  if(!painting) return;
-  const cell=cellFromPoint(e.clientX,e.clientY); if(!cell) return;
-  const key=cell.dataset.si+':'+cell.dataset.k;
-  if(key!==lastKey){ lastKey=key; applyBrush(cell, false); }   // drag never spins
-});
-const endPaint=()=>{ painting=false; lastKey=null; };
-document.addEventListener('pointerup', endPaint);
-document.addEventListener('pointercancel', endPaint);
 
-function paintSqCell(cell){
-  const si=+cell.dataset.si, k=+cell.dataset.k, v=stamps[si][k];
-  cell.className='cell'; cell.innerHTML='';
-  if(v===1){ cell.classList.add('ink'); return; }
-  if(v>=2){
-    const refId=(v&3)-2, r=v>>2;
-    cell.classList.add(refId===0?'refa':'refb');
-    const cv=document.createElement('canvas'); cv.width=cv.height=84;
-    cell.appendChild(cv);
-    drawSq(cv.getContext('2d'), stamps, refId, BASE[geom], 0,0,84, getCss(refId===0?'--a':'--b'), r);
-    const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
-  }
+function drawNotch(ctx, size, r){                                              // the 'up' blip on a rotated cell
+  const e=size*0.135, m=size/2, p=[[m,e],[size-e,m],[m,size-e],[e,m]][r&3];
+  ctx.beginPath(); ctx.arc(p[0],p[1], size*0.058, 0, Math.PI*2);
+  ctx.fillStyle=getCss('--ink'); ctx.fill();
+  ctx.lineWidth=size*0.022; ctx.strokeStyle=getCss('--surface'); ctx.stroke();
 }
-function paintTriCell(tc){
-  const si=+tc.dataset.si, k=+tc.dataset.k, v=stamps[si][k], up=(k!==3);
+function paintSqCell(cell, ov){
+  const si=+cell.dataset.si, k=+cell.dataset.k, v=(ov==null?stamps[si][k]:ov);
+  cell.className='cell'; cell.style.cssText=''; cell.innerHTML='';
+  if(v===0) return;
+  const cc=(v>>4)&3;
+  if((v&3)===1){                                                    // ink
+    if(cc){ cell.style.background=COLOURS[cc]; cell.style.borderColor=COLOURS[cc]; cell.style.boxShadow='0 0 12px -3px '+COLOURS[cc]; }
+    else cell.classList.add('ink');
+    return;
+  }
+  const refId=(v&3)-2, r=(v>>2)&3;                                  // reference
+  cell.classList.add(refId===0?'refa':'refb');
+  const cv=document.createElement('canvas'); cv.width=cv.height=84;
+  cell.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, cc?COLOURS[cc]:getCss(refId===0?'--a':'--b'), r);
+  drawNotch(ctx, 84, r);
+  const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
+}
+function paintTriCell(tc, ov){
+  const si=+tc.dataset.si, k=+tc.dataset.k, v=(ov==null?stamps[si][k]:ov), up=(k!==3);
   tc.innerHTML='';
   const w=tc.offsetWidth||81, h=tc.offsetHeight||75;
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   const ctx=cv.getContext('2d');
   const V = up ? [w/2,0, 0,h, w,h] : [0,0, w,0, w/2,h];   // upright vs inverted, inscribed in the box
+  const cc=(v>>4)&3;
   if(v===0){ ctx.fillStyle=getCss('--cell'); triPath(ctx,...V); ctx.fill(); }
-  else if(v===1){ ctx.fillStyle=getCss('--ink'); triPath(ctx,...V); ctx.fill(); }
+  else if((v&3)===1){ ctx.fillStyle=cc?COLOURS[cc]:getCss('--ink'); triPath(ctx,...V); ctx.fill(); }
   else {
-    const refId=(v&3)-2, col=getCss(refId===0?'--a':'--b');
-    drawTri(ctx, stamps, refId, V[0],V[1],V[2],V[3],V[4],V[5], col);
-    ctx.strokeStyle=col; ctx.lineWidth=2; triPath(ctx,...V); ctx.stroke();
+    const refId=(v&3)-2, paint=cc?COLOURS[cc]:getCss(refId===0?'--a':'--b');
+    drawTri(ctx, stamps, refId, V[0],V[1],V[2],V[3],V[4],V[5], paint);
+    ctx.strokeStyle=paint; ctx.lineWidth=2; triPath(ctx,...V); ctx.stroke();
   }
   ctx.strokeStyle=getCss('--surface'); ctx.lineWidth=3; ctx.lineJoin='round';
   triPath(ctx,...V); ctx.stroke();                       // carve a gap between the tessellating triangles
@@ -615,8 +674,8 @@ function paintTriCell(tc){
 }
 
 function update(){
-  if(geom==='tri') document.querySelectorAll('.tcell').forEach(paintTriCell);
-  else document.querySelectorAll('.cell').forEach(paintSqCell);
+  if(geom==='tri') document.querySelectorAll('.tcell').forEach(c=>paintTriCell(c));
+  else document.querySelectorAll('.cell').forEach(c=>paintSqCell(c));
   renderPic($('yours'), stamps, geom);
   if(mode!=='sand'){ updatePar(); checkWin(); }
 }
@@ -663,21 +722,22 @@ function enterSandbox(){
   if(mode==='random') clearHash();
   mode='sand'; setNav('sand'); geom='sq3';
   $('lvnum').textContent=''; $('lvname').textContent='Free play';
-  $('hint').innerHTML="No target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, the <b>other</b>, and spin ↻. Try ⚄ for a surprise.";
+  $('hint').innerHTML="No target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, the <b>other</b>, spin, and colour. Try ⚄ for a surprise.";
   $('par').hidden=true;
-  armed=2;
+  colourOn=true; armedColour=0;
   stamps=[Array(9).fill(0), Array(9).fill(0)];
   baseline=stamps.map(s=>s.slice());
-  buildTray(); buildEditors(); markDots(); update();
+  buildColours(); buildEditors(); setTapnote(); markDots(); update();
 }
 function randomStamp(){
   const pool=[0,0,0,0,1,2,2,2,3,3];
   stamps=[0,1].map(()=>Array.from({length:9},()=>{
     let v=pool[Math.floor(Math.random()*pool.length)];
     if(v>=2 && Math.random()<0.5) v=rot(v, 1+Math.floor(Math.random()*3));
+    if(v>=1 && Math.random()<0.4) v=col(v, 1+Math.floor(Math.random()*3));   // a splash of colour
     return v;
   }));
-  if(!stamps.flat().some(v=>v>=2)) stamps[0][4]=2;   // never a dull static block
+  if(!stamps.flat().some(v=>(v&3)>=2)) stamps[0][4]=2;   // never a dull static block
   update();
 }
 
@@ -725,14 +785,14 @@ function enterRandom(target){
   stamps=baseline.map(s=>s.slice());
   targetFP=fingerprint(targetStamps, geom);
   curPar=parOf(targetStamps);
-  armed=2;
+  colourOn=false; armedColour=0;
   try{ history.replaceState(null,'','#p='+encodeStamps(geom,targetStamps)); }catch(e){}
   renderPic($('target'), targetStamps, geom);
   $('lvnum').textContent=''; $('lvname').textContent='Random';
   $('hint').innerHTML=`Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
   $('par').hidden=false;
   $('yoursFrame').classList.remove('win','pop'); $('winMsg').classList.remove('show');
-  buildTray(); buildEditors(); markDots(); update();
+  buildColours(); buildEditors(); setTapnote(); markDots(); update();
 }
 
 /* ---- controls ---------------------------------------------------- */
