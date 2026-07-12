@@ -18,7 +18,7 @@
 <style>
   :root{
     --accent:#57e08a;      /* seed green */
-    --on-accent:#04120b;
+    --on-accent:#04120b;   /* ink shown ON top of an accent fill */
     --sun:#ffcf5c;
     --thorn:#ff5a6e;
     --stone:#8a93a6;
@@ -61,7 +61,7 @@
   .navbtn:active{transform:translateY(0)}
   h1{margin:2px 0 0;font-weight:700;letter-spacing:.34em;font-size:21px;text-transform:uppercase}
   h1 b{color:var(--accent);text-shadow:0 0 18px var(--accent);font-weight:700}
-  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:440px}
+  .sub{opacity:.55;font-size:12px;letter-spacing:.03em;margin-top:-8px;text-align:center;max-width:440px}
 
   .wrap{width:100%;max-width:420px;display:flex;flex-direction:column;gap:12px}
 
@@ -74,13 +74,13 @@
     background:var(--surface);border:1px solid var(--line);color:var(--ink);
     border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;
   }
-  button.nb:hover{border-color:var(--line-strong);background:var(--raised)}
+  button.nb:hover{background:var(--raised);border-color:var(--line-strong)}
   button.nb:disabled{opacity:.3;cursor:default}
 
   /* garden */
   .garden{
     position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1;
-    background:radial-gradient(120% 120% at 50% 8%, var(--raised) 0%, var(--bg) 82%);
+    background:var(--raised);
     border:1px solid var(--line);
     box-shadow:0 18px 46px -22px var(--shadow), inset 0 0 0 1px var(--line);
     transition:border-color .3s, box-shadow .3s;
@@ -98,7 +98,7 @@
   .status .msg{font-weight:600}
   .status .msg.ok{color:var(--accent)}
   .status .msg.warn{color:var(--thorn)}
-  .status .suns{opacity:.8;letter-spacing:.12em}
+  .status .suns{opacity:.85;letter-spacing:.12em}
 
   /* grow controls */
   .grow{display:flex;align-items:center;justify-content:center;gap:10px}
@@ -110,60 +110,40 @@
     background:transparent;border:0;color:var(--ink);font-size:18px;width:38px;height:34px;
     cursor:pointer;border-radius:9px;transition:.12s;line-height:1;
   }
-  .step button:hover{background:var(--raised)}
+  .step button:hover{background:var(--raised);color:var(--ink)}
   .step button:disabled{opacity:.28;cursor:default}
-  .step .gen{min-width:78px;text-align:center;font-size:12px;letter-spacing:.04em}
-  .step .gen b{color:var(--accent);font-weight:700;font-size:15px}
-  .step .gen small{color:var(--muted)}
+  .step .gen{min-width:92px;text-align:center;font-size:11px;letter-spacing:.06em;opacity:.75;text-transform:uppercase}
+  .step .gen b{color:var(--accent);font-weight:700;font-size:15px;letter-spacing:0}
+  .step .gen small{opacity:.5}
   button.replay{
-    background:var(--surface);border:1px solid var(--line);color:var(--ink);
-    border-radius:12px;padding:0 14px;height:40px;font-size:13px;cursor:pointer;
-    display:flex;align-items:center;gap:7px;transition:.15s;letter-spacing:.05em;
+    background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);
+    border-radius:12px;padding:0 20px;height:40px;font-size:14px;font-weight:700;cursor:pointer;
+    display:flex;align-items:center;gap:7px;transition:.15s;letter-spacing:.06em;
+    box-shadow:0 6px 20px -8px var(--accent);
   }
-  button.replay:hover{border-color:var(--accent);background:var(--raised)}
+  button.replay:hover{filter:brightness(1.08)}
+  button.replay:active{transform:translateY(1px)}
 
-  /* DNA editor */
-  .dna{display:flex;flex-direction:column;gap:9px;background:var(--surface);
-       border:1px solid var(--line);border-radius:14px;padding:11px 12px}
-  .dnahead{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
-  .rule{display:flex;align-items:center;gap:8px;min-height:34px}
-  .rule .sym{
-    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:700;
-    width:26px;height:26px;flex:none;display:flex;align-items:center;justify-content:center;
-    border-radius:7px;background:var(--raised);border:1px solid var(--line);cursor:pointer;transition:.12s;color:var(--ink);
+  /* gene pad */
+  .gene{display:flex;flex-direction:column;gap:8px;background:var(--surface);
+        border:1px solid var(--line);border-radius:14px;padding:11px 12px 12px}
+  .genehead{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .genehead .t{font-size:10px;letter-spacing:.22em;text-transform:uppercase;opacity:.55}
+  .genehead .rule{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.4}
+  .genehead .rule b{color:var(--accent);opacity:.85}
+  .padwrap{
+    position:relative;border-radius:12px;overflow:hidden;aspect-ratio:1.5;
+    background:var(--raised);
+    border:1px solid var(--line);
   }
-  .rule .arrow{color:var(--muted);flex:none}
-  .rule.active .sym{background:var(--accent);color:var(--on-accent);border-color:transparent;box-shadow:0 0 12px -3px var(--accent)}
-  .chips{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-height:26px;align-content:center}
-  .chip{
-    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;
-    min-width:24px;height:26px;padding:0 6px;border-radius:6px;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;
-    background:var(--raised);border:1px solid var(--line);
-    color:var(--ink);transition:transform .06s, background .12s;
+  .padwrap canvas{width:100%;height:100%;display:block;touch-action:manipulation}
+  .padwrap .caption{
+    position:absolute;left:0;right:0;top:0;padding:6px 10px 0;text-align:center;
+    font-size:10.5px;letter-spacing:.05em;opacity:.5;pointer-events:none;
   }
-  .chip:active{transform:scale(.88)}
-  .chip.br{color:var(--accent)}
-  .chip.turn{color:#7b8fff}
-  .chip.x{color:#d99a1e}
-  .chips .empty{color:var(--muted);opacity:.7;font-size:12px;font-style:italic}
-
-  .palette{display:flex;gap:6px;flex-wrap:wrap;align-items:center;padding-top:2px}
-  .palette button{
-    font-family:ui-monospace,Menlo,Consolas,monospace;font-size:16px;font-weight:600;
-    min-width:38px;height:38px;border-radius:10px;cursor:pointer;transition:.12s;
-    background:var(--surface);border:1px solid var(--line);color:var(--ink);
-  }
-  .palette button:active{transform:scale(.9)}
-  .palette button.tok-br{color:var(--accent)}
-  .palette button.tok-turn{color:#7b8fff}
-  .palette button.tok-x{color:#d99a1e}
-  .palette .spacer{flex:1}
-  .palette button.util{min-width:38px;font-size:13px;color:var(--muted)}
-
-  .hint{font-size:12.5px;opacity:.66;text-align:center;line-height:1.5;min-height:34px;padding:0 4px}
-  .hint b{color:var(--accent);font-weight:600}
-  .tapnote{font-size:11px;opacity:.36;text-align:center;margin-top:-4px}
+  .padwrap .caption b{color:var(--accent);opacity:.9;font-weight:600}
+  .padnote{font-size:11px;opacity:.4;text-align:center}
+  .padnote b{color:var(--accent);opacity:.8;font-weight:600}
 
   .legend{display:flex;gap:16px;justify-content:center;font-size:11px;opacity:.7;flex-wrap:wrap}
   .legend .k{display:flex;align-items:center;gap:6px}
@@ -171,6 +151,9 @@
   .legend .d.sun{background:var(--sun);box-shadow:0 0 8px var(--sun)}
   .legend .d.thorn{background:var(--thorn);box-shadow:0 0 8px var(--thorn)}
   .legend .d.stone{background:var(--stone);border-radius:2px}
+
+  .hint{font-size:12.5px;opacity:.72;text-align:center;line-height:1.55;min-height:34px;padding:0 4px}
+  .hint b{color:var(--accent);font-weight:600}
 </style>
 </head>
 <body>
@@ -178,9 +161,8 @@
     <a class="navbtn" href="../" aria-label="All games" title="All games">&#8592;</a>
     <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
   </div>
-
   <h1>SE<b>E</b>D</h1>
-  <div class="sub">Design a plant's DNA - one rewrite rule. Grow it to light every sun, dodge the thorns, fit the cave.</div>
+  <div class="sub">Grow one little twig-shape. Every twig in the plant becomes that shape - again and again - until it fills the light.</div>
 
   <div class="wrap">
     <div class="levelbar">
@@ -203,16 +185,22 @@
     <div class="grow">
       <div class="step">
         <button id="genDown">−</button>
-        <div class="gen">gen <b id="genN">1</b><small id="genMax">/6</small></div>
+        <div class="gen">season<br><b id="genN">1</b><small id="genMax">/6</small></div>
         <button id="genUp">+</button>
       </div>
-      <button class="replay" id="replay">↺ grow</button>
+      <button class="replay" id="replay">↻ grow</button>
     </div>
 
-    <div class="dna">
-      <div class="dnahead">DNA · rewrite rules</div>
-      <div id="rules"></div>
-      <div class="palette" id="palette"></div>
+    <div class="gene">
+      <div class="genehead">
+        <span class="t">your twig</span>
+        <span class="rule" id="rule"></span>
+      </div>
+      <div class="padwrap">
+        <canvas id="gpad"></canvas>
+        <div class="caption">one twig <b>becomes</b> this shape</div>
+      </div>
+      <div class="padnote" id="padnote">tap a <b>+</b> bud to sprout · tap a twig to remove it</div>
     </div>
 
     <div class="legend">
@@ -222,101 +210,110 @@
     </div>
 
     <div class="hint" id="hint"></div>
-    <div class="tapnote">tap a token to add it · tap a chip to remove it</div>
   </div>
 
 <script>
 "use strict";
 /* ===================================================================
-   SEED - an L-system growth puzzle.
-   You author rewrite rules (the DNA). The axiom is expanded `gen`
-   times, then a turtle draws the resulting string. The environment -
-   suns to touch, thorns/rocks to avoid, cave walls to fit inside -
-   is what turns the fractal into a puzzle.
+   SEED - a visual L-system growth puzzle.
 
-   Turtle alphabet:
-     F  draw a stem segment forward
-     X  a bud: draws nothing, but gets rewritten (structure only)
-     +  turn left by the level angle
-     -  turn right by the level angle
-     [  push state (start a branch)
-     ]  pop state  (end a branch)
-   World is 0..100 on both axes, y up, base at bottom.
+   The player builds ONE small "twig-shape" (the gene) by tapping buds
+   to sprout sticks left / straight / right. That shape is compiled to
+   a single rewrite rule  F -> <shape>  and the axiom "F" is expanded
+   `season` times, then a turtle draws the result. Every stick in the
+   plant becomes a scaled copy of the gene, so branching, bending and
+   growth are all authored by direct manipulation - no bracket algebra.
+
+   Turtle alphabet (generated, never shown to the player):
+     F draw forward   + turn left   - turn right   [ push   ] pop
+   World is 0..100 on both axes, y up, base at the bottom.
 =================================================================== */
 
-const MAXLEN = 50000;   // cap expanded string length (safety / perf)
+const MAXLEN = 50000;
 
 /* ---- levels -------------------------------------------------------
-   base:[x,y] heading (deg, 90=up) angle len maxGen
-   axiom, symbols (editable rules shown in editor), tokens (palette)
-   start: rules the player begins with · sol: a known solution (self-test)
+   base:[x,y] heading(deg,90=up) angle(deg) len maxGen startGen
+   editor:{turn,branch,max}  turn=allow L/R · branch=allow >1 stick per
+   joint · max=stick budget. suns/thorns/walls define the puzzle.
 ------------------------------------------------------------------- */
 const LEVELS = [
   {
     name:"Sprout",
-    hint:"Your seed is one stem: <b>F</b>. Rewrite it - tap F twice so the rule reads <b>F→FF</b>: every stem becomes two. Then grow until you reach the sun.",
-    base:[50,3], heading:90, angle:25, len:4, maxGen:6,
-    axiom:"F", symbols:["F"], tokens:["F"],
-    suns:[{x:50,y:40,r:7}], thorns:[], walls:[],
-    start:{F:"F"}, startGen:3,
-    sol:{rules:{F:"FF"}, gen:4},
+    hint:"Tap the <b>+</b> bud to make your twig taller. Every twig becomes your shape, so a 2-tall twig <b>doubles</b> every season. Press <b>grow</b> and reach the sun.",
+    base:[50,3], heading:90, angle:25, len:5, maxGen:6, startGen:3,
+    editor:{turn:false, branch:false, max:3},
+    suns:[{x:50,y:44,r:7}], thorns:[], walls:[],
   },
   {
     name:"Lean",
-    hint:"A new sun, off to the side. <b>+</b> turns left, <b>-</b> turns right. Bake a turn into the rule so the whole plant leans as it grows.",
-    base:[50,3], heading:90, angle:10, len:4, maxGen:6,
-    axiom:"F", symbols:["F"], tokens:["F","+","-"],
-    suns:[{x:72,y:35,r:8}], thorns:[], walls:[],
-    start:{F:"F"}, startGen:4,
-    sol:{rules:{F:"FF-"}, gen:4},
+    hint:"The sun drifted to the side. Sprout your twigs <b>angled</b> - tap the slanted buds. A little bend, repeated every season, curves the whole plant over.",
+    base:[50,3], heading:90, angle:11, len:5, maxGen:6, startGen:4,
+    editor:{turn:true, branch:false, max:4},
+    suns:[{x:71,y:40,r:8}], thorns:[], walls:[],
   },
   {
     name:"Fork",
-    hint:"<b>[</b> starts a branch, <b>]</b> ends it - the stem returns to the fork and carries on. Two suns, one each side. Try <b>F[+F][-F]F</b>.",
-    base:[50,3], heading:90, angle:32, len:4, maxGen:5,
-    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
-    suns:[{x:40,y:31,r:7},{x:60,y:31,r:7}], thorns:[], walls:[],
-    start:{F:"F"}, startGen:3,
-    sol:{rules:{F:"F[+F][-F]F"}, gen:3},
+    hint:"Now a twig can <b>split</b>. On one tip, sprout a left AND a right AND a straight bud - a little Y. Two suns, one each side: let the plant branch to both.",
+    base:[50,3], heading:90, angle:33, len:5, maxGen:5, startGen:3,
+    editor:{turn:true, branch:true, max:6},
+    suns:[{x:37,y:34,r:7},{x:63,y:34,r:7}], thorns:[], walls:[],
   },
   {
     name:"Ceiling",
-    hint:"A low cave roof - grow past it and the plant fails. Doubling with <b>FF</b> leaps from too-short to too-tall in one step. You need finer control: a gentler rule, or fewer generations.",
-    base:[50,3], heading:90, angle:25, len:4, maxGen:6,
-    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
-    suns:[{x:50,y:42,r:6}], thorns:[],
-    walls:[{x1:6,y1:54,x2:94,y2:54}],
-    start:{F:"F"}, startGen:2,
-    sol:{rules:{F:"FFF"}, gen:2},
-  },
-  {
-    name:"Thicket",
-    hint:"Three suns to light at once. A bushier rule fills more space - <b>F[+F]F[-F]F</b> makes a dense, self-similar shrub. Find the generation that covers all three.",
-    base:[50,3], heading:90, angle:25, len:3.4, maxGen:5,
-    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
-    suns:[{x:36,y:54,r:8},{x:64,y:84,r:8},{x:50,y:90,r:8}], thorns:[], walls:[],
-    start:{F:"F"}, startGen:3,
-    sol:{rules:{F:"F[+F]F[-F]F"}, gen:3},
+    hint:"A low cave roof. Reach the sun but don't grow through the rock. Same shape, fewer <b>seasons</b> - dial the season down until it fits.",
+    base:[50,3], heading:90, angle:25, len:5, maxGen:6, startGen:2,
+    editor:{turn:false, branch:false, max:4},
+    suns:[{x:50,y:40,r:6}], thorns:[],
+    walls:[{x1:6,y1:52,x2:94,y2:52}],
   },
   {
     name:"Needle",
-    hint:"The sun is off to the right; a thorn lurks on the left. Branch only toward the sun - grow the other way too and you'll snag the thorn. Sometimes you must prune.",
-    base:[50,3], heading:90, angle:28, len:4, maxGen:5,
-    axiom:"F", symbols:["F"], tokens:["F","+","-","[","]"],
-    suns:[{x:60,y:33,r:6}], thorns:[{x:40,y:27,r:6}], walls:[],
-    start:{F:"F"}, startGen:3,
-    sol:{rules:{F:"F[-F]F"}, gen:3},
+    hint:"A thorn on the left, the sun on the right. Branch <b>only</b> toward the sun - sprout to the right and straight, never left. Sometimes growing well means not growing everywhere.",
+    base:[50,3], heading:90, angle:28, len:5, maxGen:5, startGen:3,
+    editor:{turn:true, branch:true, max:6},
+    suns:[{x:64,y:34,r:6}], thorns:[{x:36,y:30,r:7}], walls:[],
   },
   {
-    name:"Two Minds",
-    hint:"Now two rules. <b>X</b> is a bud: it draws nothing but rewrites into new structure, while <b>F→FF</b> lengthens every stem each generation. The classic recipe for a living plant.",
-    base:[50,3], heading:90, angle:22, len:1.2, maxGen:5,
-    axiom:"X", symbols:["F","X"], tokens:["F","X","+","-","[","]"],
-    suns:[{x:36,y:49,r:8},{x:66,y:49,r:8},{x:51,y:71,r:8}], thorns:[], walls:[],
-    start:{F:"F", X:"X"}, startGen:5,
-    sol:{rules:{F:"FF", X:"F[+X][-X]FX"}, gen:5},
+    name:"Thicket",
+    hint:"Three suns to light at once. A <b>bushy</b> twig - splits stacked on splits - fills the most space. Build a full little shape, then find the season that covers all three.",
+    base:[50,3], heading:90, angle:26, len:3.4, maxGen:5, startGen:3,
+    editor:{turn:true, branch:true, max:8},
+    suns:[{x:35,y:52,r:8},{x:65,y:52,r:8},{x:50,y:78,r:8}], thorns:[], walls:[],
   },
 ];
+
+/* ---- the gene: a tree of sticks -----------------------------------
+   node = {id, dir:'L'|'S'|'R', children:[node]}.  state.gene is the
+   base joint: {children:[...]}; its children sprout from the ground.
+   A stick's children sprout from that stick's tip.
+------------------------------------------------------------------- */
+let gid = 0;
+const stick = dir => ({id:++gid, dir, children:[]});
+const defaultGene = () => ({children:[stick('S')]});   // one straight twig
+function countSticks(node){ let n=0; for(const c of node.children) n += 1 + countSticks(c); return n; }
+function findParent(node, target){
+  for(const c of node.children){ if(c===target) return node; const r=findParent(c,target); if(r) return r; }
+  return null;
+}
+
+/* ---- compile the gene tree into a rewrite rule --------------------
+   Each stick -> (turn?) F (children). One straight child per joint is
+   the "spine" and stays unbracketed so the trunk continues; every
+   other child is wrapped in [ ] so the turtle springs back to the fork.
+------------------------------------------------------------------- */
+function compile(children){
+  if(!children.length) return "";
+  let spine = -1;
+  for(let i=0;i<children.length;i++) if(children[i].dir==='S') spine = i;
+  if(spine<0) spine = children.length-1;
+  let out = "";
+  children.forEach((c,i)=>{
+    const turn = c.dir==='L' ? '+' : c.dir==='R' ? '-' : '';
+    const body = turn + 'F' + compile(c.children);
+    out += (i===spine) ? body : ('['+body+']');
+  });
+  return out;
+}
 
 /* ---- expansion (the rewrite) ------------------------------------- */
 function expand(rules, axiom, gen){
@@ -339,8 +336,7 @@ function interpret(str, lv){
   let x = lv.base[0], y = lv.base[1];
   let a = lv.heading * Math.PI/180;
   const da = lv.angle * Math.PI/180;
-  let depth = 0;    // bracket depth -> stem thickness
-  let fd = 0;       // forward depth -> growth order
+  let depth = 0, fd = 0;
   const stack = [];
   for(let i=0;i<str.length;i++){
     const ch = str[i];
@@ -354,7 +350,6 @@ function interpret(str, lv){
     else if(ch === '-'){ a -= da; }
     else if(ch === '['){ stack.push({x,y,a,depth,fd}); depth++; }
     else if(ch === ']'){ const s = stack.pop(); if(s){ x=s.x; y=s.y; a=s.a; depth=s.depth; fd=s.fd; } }
-    // X and anything else: no-op for the turtle
   }
   return segs;
 }
@@ -395,65 +390,72 @@ function evaluate(segs, lv){
 }
 
 /* expose for dev / self-test */
-window.SEED = {LEVELS, expand, interpret, evaluate,
-  run(i, rules, gen){ const L=LEVELS[i]; return evaluate(interpret(expand(rules,L.axiom,gen),L), L); }};
+window.SEED = {LEVELS, compile, expand, interpret, evaluate,
+  run(i, gene, gen){ const L=LEVELS[i]; const r={F:compile(gene.children)||'F'};
+    return evaluate(interpret(expand(r,'F',gen),L), L); }};
 
 /* ===================================================================
-   UI / state
+   state
 =================================================================== */
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
-let W=380, H=380;                    // backing pixels (square)
-function layout(){
-  const dpr = Math.min(window.devicePixelRatio||1, 2.5);
-  const css = cv.clientWidth || 380;
-  W = H = Math.round(css*dpr);
-  cv.width = W; cv.height = H;
-  if(state) draw();
-}
+const gpad = document.getElementById('gpad');
+const gctx = gpad.getContext('2d');
+let W=380, H=380, PW=380, PH=250, DPR=1;
 
 let li = 0;
-let state = null;   // {lv, rules, gen, segs, order, maxDepth, result, active}
+let state = null;   // {lv, gene, gen, segs, order, maxDepth, result}
 let anim = {t0:0, dur:0, raf:0, on:false};
 let solved = {};
 try{ solved = JSON.parse(localStorage.getItem('seed-solved')||'{}'); }catch(e){}
+let padHits = {ghosts:[], sticks:[]};   // hit-test cache (device px)
 
-function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function cssv(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 const X = wx => wx/100*W;
 const Y = wy => (1 - wy/100)*H;
-const S = u => u/100*W;   // scalar length world->px
+const S = u => u/100*W;
+
+function layout(){
+  DPR = Math.min(window.devicePixelRatio||1, 2.5);
+  const c = cv.clientWidth || 380;
+  W = H = Math.round(c*DPR);
+  cv.width = W; cv.height = H;
+  PW = Math.round((gpad.clientWidth||380)*DPR);
+  PH = Math.round((gpad.clientHeight||250)*DPR);
+  gpad.width = PW; gpad.height = PH;
+  if(state){ draw(); renderPad(); }
+}
 
 function loadLevel(i){
   li = (i + LEVELS.length) % LEVELS.length;
   const lv = LEVELS[li];
-  state = {
-    lv,
-    rules: Object.assign({}, lv.start),
-    gen: lv.startGen,
-    active: lv.symbols[0],
-    segs:[], order:[], maxDepth:1, result:null,
-  };
+  state = { lv, gene: defaultGene(), gen: lv.startGen,
+            segs:[], order:[], maxDepth:1, result:null };
   document.getElementById('lvnum').textContent = String(li+1).padStart(2,'0');
   document.getElementById('lvname').textContent = lv.name;
   document.getElementById('genMax').textContent = '/'+lv.maxGen;
   document.getElementById('hint').innerHTML = lv.hint;
   document.getElementById('prev').disabled = li===0;
-  buildPalette();
-  buildRules();
-  recompute(true);
+  document.getElementById('padnote').innerHTML = lv.editor.branch
+    ? 'tap a <b>+</b> bud to sprout · tap a twig to remove it'
+    : (lv.editor.turn ? 'tap a slanted <b>+</b> bud to bend · tap a twig to remove'
+                      : 'tap the <b>+</b> bud to grow taller · tap a twig to remove');
+  recompute(false);
+  syncGen();
 }
 
-/* --- compute plant from current DNA + gen --- */
+/* --- compute plant from gene + season --- */
 function recompute(animate){
   const lv = state.lv;
-  const str = expand(state.rules, lv.axiom, state.gen);
-  const segs = interpret(str, lv);
+  const rules = { F: compile(state.gene.children) || 'F' };
+  const segs = interpret(expand(rules,'F',state.gen), lv);
   state.segs = segs;
   state.maxDepth = segs.reduce((m,s)=>Math.max(m,s.grow),1);
   state.order = segs.map((_,i)=>i).sort((a,b)=> segs[a].grow-segs[b].grow || a-b);
   state.result = evaluate(segs, lv);
+  document.getElementById('rule').innerHTML = 'F → <b>'+(rules.F)+'</b>';
   updateStatus();
-  buildRules();
+  renderPad();
   if(animate) startGrow(); else draw();
 }
 
@@ -474,21 +476,26 @@ function startGrow(){
 }
 const easeOut = p => 1-Math.pow(1-p,3);
 
-/* --- drawing --- */
+/* ===================================================================
+   garden drawing
+=================================================================== */
+/* the playfield is always a dark glowy "screen", regardless of page theme */
+function paintBackdrop(c, w, h, cyFrac, inner, outer){
+  const g = c.createRadialGradient(w*0.5, h*cyFrac, 0, w*0.5, h*cyFrac, Math.hypot(w,h)*0.9);
+  g.addColorStop(0, inner); g.addColorStop(0.72, outer); g.addColorStop(1, outer);
+  c.fillStyle = g; c.fillRect(0,0,w,h);
+}
 function draw(progress){
   const p = progress===undefined ? 1 : progress;
   const lv = state.lv;
-  ctx.clearRect(0,0,W,H);
+  paintBackdrop(ctx, W, H, 0.08, '#10151b', '#070a0e');
   drawGround();
   drawWalls(lv);
-  // reveal count by growth order
-  const total = state.order.length;
-  const revealF = p*(state.maxDepth);           // how many growth-layers are shown
+  const revealF = p*(state.maxDepth);
   drawPlant(revealF);
   drawThorns(lv);
   drawSuns(lv, revealF);
 }
-
 function drawGround(){
   const g = ctx.createLinearGradient(0,H*0.9,0,H);
   g.addColorStop(0,'rgba(87,224,138,0)');
@@ -498,50 +505,38 @@ function drawGround(){
   ctx.lineWidth=Math.max(1,S(0.4));
   ctx.beginPath(); ctx.moveTo(0,Y(state.lv.base[1])); ctx.lineTo(W,Y(state.lv.base[1])); ctx.stroke();
 }
-
 function drawWalls(lv){
   if(!lv.walls.length) return;
-  ctx.strokeStyle=css('--stone');
-  ctx.lineCap='round';
-  ctx.lineWidth=Math.max(3,S(2.6));
-  ctx.globalAlpha=.85;
-  for(const w of lv.walls){
-    ctx.beginPath(); ctx.moveTo(X(w.x1),Y(w.y1)); ctx.lineTo(X(w.x2),Y(w.y2)); ctx.stroke();
-  }
+  ctx.strokeStyle=cssv('--stone'); ctx.lineCap='round';
+  ctx.lineWidth=Math.max(3,S(2.6)); ctx.globalAlpha=.85;
+  for(const w of lv.walls){ ctx.beginPath(); ctx.moveTo(X(w.x1),Y(w.y1)); ctx.lineTo(X(w.x2),Y(w.y2)); ctx.stroke(); }
   ctx.globalAlpha=1;
 }
-
 function drawPlant(revealF){
   const segs = state.segs, md = state.maxDepth;
   ctx.lineCap='round'; ctx.lineJoin='round';
   for(const idx of state.order){
     const sg = segs[idx];
-    if(sg.grow-1 >= revealF) continue;           // not yet grown
-    const frac = Math.min(1, revealF-(sg.grow-1)); // partial on the frontier
+    if(sg.grow-1 >= revealF) continue;
+    const frac = Math.min(1, revealF-(sg.grow-1));
     const ex = sg.x1 + (sg.x2-sg.x1)*frac;
     const ey = sg.y1 + (sg.y2-sg.y1)*frac;
-    const t = md>1 ? (sg.grow-1)/(md-1) : 1;       // 0 base -> 1 tip
-    const hue = 96 + t*46;                          // yellow-green -> green
-    const lig = 40 + t*20;                          // capped so tips stay legible on a light stage
+    const t = md>1 ? (sg.grow-1)/(md-1) : 1;
+    const hue = 96 + t*46, lig = 40 + t*20;
     ctx.strokeStyle = `hsl(${hue} 70% ${lig}%)`;
     ctx.lineWidth = Math.max(S(0.35), S(1.5)*Math.pow(0.72, sg.depth));
-    ctx.beginPath();
-    ctx.moveTo(X(sg.x1),Y(sg.y1)); ctx.lineTo(X(ex),Y(ey));
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(sg.x1),Y(sg.y1)); ctx.lineTo(X(ex),Y(ey)); ctx.stroke();
   }
-  // buds at fully-grown tips
   const starts = new Set(segs.map(s=>s.x1.toFixed(2)+','+s.y1.toFixed(2)));
   for(const sg of segs){
     if(sg.grow-1 >= revealF-0.05) continue;
-    if(starts.has(sg.x2.toFixed(2)+','+sg.y2.toFixed(2))) continue; // continues -> not a tip
-    ctx.fillStyle='rgba(72,200,124,.95)';
+    if(starts.has(sg.x2.toFixed(2)+','+sg.y2.toFixed(2))) continue;
+    ctx.fillStyle='rgba(64,196,120,.95)';
     ctx.beginPath(); ctx.arc(X(sg.x2),Y(sg.y2), Math.max(1.4,S(0.7)), 0, 7); ctx.fill();
   }
 }
-
 function drawSuns(lv, revealF){
   for(const s of lv.suns){
-    // lit as soon as a revealed segment reaches it
     let lit=false;
     for(const sg of state.segs){ if(sg.grow-1<revealF && distSegPt(sg,s.x,s.y)<=s.r){ lit=true; break; } }
     const cx=X(s.x), cy=Y(s.y), r=S(s.r);
@@ -554,13 +549,12 @@ function drawSuns(lv, revealF){
     ctx.fillStyle = lit ? 'rgba(255,222,130,.95)' : 'rgba(255,207,92,.16)';
     ctx.fill();
     ctx.lineWidth=Math.max(1.4,S(0.6));
-    ctx.strokeStyle = lit ? css('--sun') : 'rgba(255,207,92,.6)';
+    ctx.strokeStyle = lit ? cssv('--sun') : 'rgba(255,207,92,.6)';
     ctx.stroke();
     if(lit){ ctx.strokeStyle='rgba(255,240,190,.9)'; ctx.lineWidth=Math.max(1,S(0.35));
       ctx.beginPath(); ctx.arc(cx,cy,r*0.5,0,7); ctx.stroke(); }
   }
 }
-
 function drawThorns(lv){
   for(const t of lv.thorns){
     const cx=X(t.x), cy=Y(t.y), r=S(t.r);
@@ -569,8 +563,7 @@ function drawThorns(lv){
     ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill();
     ctx.strokeStyle='rgba(255,90,110,.5)'; ctx.lineWidth=Math.max(1,S(0.4));
     ctx.setLineDash([S(1.2),S(1.2)]); ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke(); ctx.setLineDash([]);
-    // spikes
-    ctx.strokeStyle=css('--thorn'); ctx.lineWidth=Math.max(1.4,S(0.7)); ctx.lineCap='round';
+    ctx.strokeStyle=cssv('--thorn'); ctx.lineWidth=Math.max(1.4,S(0.7)); ctx.lineCap='round';
     for(let k=0;k<8;k++){ const an=k/8*Math.PI*2, ir=r*0.32, or_=r*0.7;
       ctx.beginPath(); ctx.moveTo(cx+Math.cos(an)*ir,cy+Math.sin(an)*ir);
       ctx.lineTo(cx+Math.cos(an)*or_,cy+Math.sin(an)*or_); ctx.stroke(); }
@@ -582,10 +575,8 @@ function updateStatus(){
   const r = state.result, lit = r.suns.filter(s=>s.lit).length, tot = r.suns.length;
   const msg = document.getElementById('msg');
   const garden = document.getElementById('garden');
-  document.getElementById('sunsLeft').textContent =
-    '☀ '+lit+'/'+tot;
-  garden.classList.remove('win','bad');
-  msg.className='msg';
+  document.getElementById('sunsLeft').textContent = '☀ '+lit+'/'+tot;
+  garden.classList.remove('win','bad'); msg.className='msg';
   if(r.win){
     msg.textContent='grown - beautiful'; msg.classList.add('ok'); garden.classList.add('win');
     if(!solved[li]){ solved[li]=1; try{localStorage.setItem('seed-solved',JSON.stringify(solved));}catch(e){} }
@@ -596,57 +587,112 @@ function updateStatus(){
 }
 
 /* ===================================================================
-   editor
+   gene pad - build the twig-shape by tapping buds
 =================================================================== */
-const TOK_CLASS = {'[':'br',']':'br','+':'turn','-':'turn','X':'x'};
-function tokClass(t){ return TOK_CLASS[t]||''; }
+const EANG = 27*Math.PI/180;     // schematic bend angle in the pad
 
-function buildPalette(){
-  const host=document.getElementById('palette'); host.innerHTML='';
-  for(const t of state.lv.tokens){
-    const b=document.createElement('button');
-    b.textContent=t; b.className='tok-'+(tokClass(t)||'f');
-    b.onclick=()=>addToken(t);
-    host.appendChild(b);
-  }
-  const sp=document.createElement('span'); sp.className='spacer'; host.appendChild(sp);
-  const bk=document.createElement('button'); bk.className='util'; bk.textContent='⌫'; bk.title='backspace';
-  bk.onclick=()=>{ const s=state.rules[state.active]; state.rules[state.active]=s.slice(0,-1); recompute(true); };
-  host.appendChild(bk);
-  const cl=document.createElement('button'); cl.className='util'; cl.textContent='clr';
-  cl.onclick=()=>{ state.rules[state.active]=''; recompute(true); };
-  host.appendChild(cl);
-}
-
-function addToken(t){
-  const s = state.rules[state.active] || '';
-  if(s.length>=16) return;   // keep rules authorable / bounded
-  state.rules[state.active] = s + t;
-  recompute(true);
-}
-
-function buildRules(){
-  const host=document.getElementById('rules'); host.innerHTML='';
-  for(const sym of state.lv.symbols){
-    const row=document.createElement('div');
-    row.className='rule'+(sym===state.active?' active':'');
-    const s=document.createElement('div'); s.className='sym'; s.textContent=sym;
-    s.onclick=()=>{ state.active=sym; buildRules(); };
-    const ar=document.createElement('span'); ar.className='arrow'; ar.textContent='→';
-    const chips=document.createElement('div'); chips.className='chips';
-    const rule=state.rules[sym]||'';
-    if(!rule){ const e=document.createElement('span'); e.className='empty'; e.textContent='(nothing)'; chips.appendChild(e); }
-    for(let i=0;i<rule.length;i++){
-      const c=document.createElement('div'); const ch=rule[i];
-      c.className='chip '+tokClass(ch); c.textContent=ch;
-      c.onclick=()=>{ state.active=sym;
-        state.rules[sym]=rule.slice(0,i)+rule.slice(i+1); recompute(true); };
-      chips.appendChild(c);
+/* walk the gene tree into screen-space sticks + joints (device px) */
+function geneLayout(){
+  const bx = PW*0.5, by = PH*0.88;
+  const len = PH*0.20;
+  const sticks=[], joints=[];
+  (function walk(node,x,y,heading){
+    joints.push({node,x,y,heading,base:node===state.gene});
+    for(const c of node.children){
+      const h = heading + (c.dir==='L'? EANG : c.dir==='R'? -EANG : 0);
+      const nx = x + Math.cos(h)*len, ny = y - Math.sin(h)*len;
+      sticks.push({node:c, x1:x,y1:y,x2:nx,y2:ny, dir:c.dir, depth:depthOf(node)});
+      walk(c,nx,ny,h);
     }
-    row.appendChild(s); row.appendChild(ar); row.appendChild(chips);
-    host.appendChild(row);
+  })(state.gene, bx, by, Math.PI/2);
+  return {sticks, joints, len};
+}
+function depthOf(node){ let d=0,p=findParent(state.gene,node); while(p){ d++; p=findParent(state.gene,p);} return d; }
+
+function renderPad(){
+  const lv = state.lv;
+  paintBackdrop(gctx, PW, PH, 1.0, '#0f1720', '#0a0e14');
+  // ground
+  const by = PH*0.88;
+  const gg = gctx.createLinearGradient(0,by-2,0,PH);
+  gg.addColorStop(0,'rgba(87,224,138,.10)'); gg.addColorStop(1,'rgba(87,224,138,0)');
+  gctx.fillStyle=gg; gctx.fillRect(0,by,PW,PH-by);
+  gctx.strokeStyle='rgba(87,224,138,.16)'; gctx.lineWidth=Math.max(1,DPR);
+  gctx.beginPath(); gctx.moveTo(0,by); gctx.lineTo(PW,by); gctx.stroke();
+
+  const {sticks, joints, len} = geneLayout();
+  padHits = {ghosts:[], sticks:[]};
+
+  // ghost buds (available sprouts)
+  const total = countSticks(state.gene);
+  const dirs = lv.editor.turn ? ['L','S','R'] : ['S'];
+  const canGrow = total < lv.editor.max;
+  if(canGrow){
+    for(const j of joints){
+      if(j.base) continue;                 // never sprout new trunks from the ground
+      if(!lv.editor.branch && j.node.children.length>=1) continue;
+      const used = j.node.children.map(c=>c.dir);
+      for(const d of dirs){
+        if(used.includes(d)) continue;
+        const off = d==='L'? EANG : d==='R'? -EANG : 0;
+        const h = j.heading + off, gl = len*0.5;
+        const gx = j.x + Math.cos(h)*gl, gy = j.y - Math.sin(h)*gl;
+        // faint ghost stick
+        gctx.strokeStyle='rgba(87,224,138,.18)'; gctx.lineWidth=Math.max(1.2,DPR*1.2);
+        gctx.setLineDash([DPR*2.5,DPR*2.5]); gctx.lineCap='round';
+        gctx.beginPath(); gctx.moveTo(j.x,j.y); gctx.lineTo(gx,gy); gctx.stroke(); gctx.setLineDash([]);
+        // + bud
+        const br = Math.max(7, DPR*8);
+        gctx.beginPath(); gctx.arc(gx,gy,br,0,7);
+        gctx.fillStyle='rgba(87,224,138,.16)'; gctx.fill();
+        gctx.strokeStyle='rgba(87,224,138,.65)'; gctx.lineWidth=Math.max(1.4,DPR*1.3); gctx.stroke();
+        gctx.strokeStyle='rgba(64,196,120,.95)'; gctx.lineWidth=Math.max(1.6,DPR*1.6); gctx.lineCap='round';
+        const p=br*0.5;
+        gctx.beginPath(); gctx.moveTo(gx-p,gy); gctx.lineTo(gx+p,gy);
+        gctx.moveTo(gx,gy-p); gctx.lineTo(gx,gy+p); gctx.stroke();
+        padHits.ghosts.push({x:gx,y:gy,joint:j.node,dir:d,r:br+DPR*8});
+      }
+    }
+  }
+
+  // real sticks
+  gctx.lineCap='round'; gctx.lineJoin='round';
+  for(const s of sticks){
+    gctx.strokeStyle = `hsl(${132 - s.depth*8} 62% ${58 - s.depth*4}%)`;
+    gctx.lineWidth = Math.max(DPR*2, DPR*5*Math.pow(0.74,s.depth));
+    gctx.beginPath(); gctx.moveTo(s.x1,s.y1); gctx.lineTo(s.x2,s.y2); gctx.stroke();
+    padHits.sticks.push({x1:s.x1,y1:s.y1,x2:s.x2,y2:s.y2,node:s.node});
+  }
+  // base node + leaf buds
+  gctx.fillStyle='rgba(120,150,175,.5)';
+  gctx.beginPath(); gctx.arc(PW*0.5,by,Math.max(2.5,DPR*3),0,7); gctx.fill();
+  const parents = new Set(sticks.map(s=>findParent(state.gene,s.node)));
+  for(const s of sticks){
+    if(s.node.children.length) continue;    // has children -> not a tip
+    gctx.fillStyle='rgba(64,196,120,.95)';
+    gctx.beginPath(); gctx.arc(s.x2,s.y2,Math.max(2.5,DPR*3),0,7); gctx.fill();
   }
 }
+
+function padTap(clientX, clientY){
+  const rect = gpad.getBoundingClientRect();
+  const px = (clientX-rect.left)/rect.width*PW;
+  const py = (clientY-rect.top)/rect.height*PH;
+  // ghosts win (they sit just past the tips)
+  let g=null, gd=1e9;
+  for(const h of padHits.ghosts){ const d=Math.hypot(px-h.x,py-h.y); if(d<h.r && d<gd){gd=d; g=h;} }
+  if(g){ g.joint.children.push(stick(g.dir)); recompute(true); return; }
+  // else remove a stick (and its subtree)
+  let s=null, sd=1e9;
+  for(const h of padHits.sticks){ const d=distSegPt(h,px,py); if(d<sd){sd=d; s=h;} }
+  if(s && sd < Math.max(14,DPR*15)){
+    const parent = findParent(state.gene, s.node);
+    if(parent){ parent.children = parent.children.filter(c=>c!==s.node);
+      if(countSticks(state.gene)===0) state.gene = defaultGene();
+      recompute(true); }
+  }
+}
+gpad.addEventListener('pointerdown', e=>{ e.preventDefault(); padTap(e.clientX, e.clientY); });
 
 /* ===================================================================
    controls
@@ -656,7 +702,7 @@ document.getElementById('genDown').onclick=()=>{ if(state.gen>0){ state.gen--; s
 document.getElementById('replay').onclick=()=> startGrow();
 document.getElementById('prev').onclick=()=> loadLevel(li-1);
 document.getElementById('next').onclick=()=> loadLevel(li+1);
-document.getElementById('reset').onclick=()=>{ state.rules=Object.assign({},state.lv.start); state.gen=state.lv.startGen; state.active=state.lv.symbols[0]; syncGen(); recompute(true); };
+document.getElementById('reset').onclick=()=>{ state.gene=defaultGene(); state.gen=state.lv.startGen; syncGen(); recompute(true); };
 function syncGen(){
   document.getElementById('genN').textContent=state.gen;
   document.getElementById('genUp').disabled = state.gen>=state.lv.maxGen;
@@ -664,12 +710,12 @@ function syncGen(){
 }
 
 window.addEventListener('resize', layout);
+/* repaint both canvases when the theme flips (bg tokens + stone/sun colors) */
+window.addEventListener('themechange', ()=>{ if(state){ draw(); renderPad(); } });
 loadLevel(0);
-requestAnimationFrame(()=>{ layout(); syncGen(); });
+requestAnimationFrame(()=>{ layout(); });
 
-/* repaint the canvas when the theme flips (picks up themed --stone/--thorn/--sun and stage) */
-window.addEventListener('themechange', ()=>{ if(state) draw(); });
-
+/* --- light / dark toggle --- */
 (function(){
   var btn=document.getElementById('themeToggle');
   if(!btn)return;

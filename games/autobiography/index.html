@@ -13,8 +13,8 @@
     document.documentElement.setAttribute('data-theme',t);
   }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3ES%3C/text%3E%3C/svg%3E" />
-<title>Stamp</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3EA%3C/text%3E%3C/svg%3E" />
+<title>Autobiography</title>
 <style>
   :root{
     --accent:#ff7ac2;
@@ -47,6 +47,7 @@
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;
     min-height:100%;padding:60px 12px 40px;gap:13px;
+    touch-action:manipulation;
   }
 
   .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
@@ -59,14 +60,14 @@
     box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
   .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
   .navbtn:active{transform:translateY(0)}
-  h1{margin:2px 0 0;font-weight:700;letter-spacing:.34em;font-size:21px;text-transform:uppercase}
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.22em;font-size:16px;text-transform:uppercase;text-align:center}
   h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
-  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:440px}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-6px;text-align:center;max-width:440px}
 
   .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:13px}
 
   /* level bar */
-  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px}
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
   .levelbar .name{font-weight:600;letter-spacing:.04em}
   .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
   .nav{display:flex;gap:6px}
@@ -76,7 +77,6 @@
   }
   button.nb:hover{background:var(--raised);border-color:var(--line-strong);color:var(--ink)}
   button.nb:disabled{opacity:.3;cursor:default}
-  button.nb.hl{border-color:var(--a);color:var(--ink)}
   [hidden]{display:none!important}
 
   /* dots */
@@ -124,7 +124,23 @@
   body.sand .badge,body.sand #winMsg{display:none}
 
   /* editors */
-  .editwrap{display:flex;flex-direction:column;gap:9px;align-items:center}
+  .editwrap{display:flex;flex-direction:column;gap:10px;align-items:center}
+
+  /* brush tray (also the legend) */
+  .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  .chip{
+    display:inline-flex;align-items:center;gap:7px;padding:7px 12px;
+    border-radius:11px;background:var(--surface);border:1px solid var(--line);
+    color:var(--ink);font-size:13px;cursor:pointer;transition:.14s;
+  }
+  .chip:hover{border-color:var(--line-strong);background:var(--raised)}
+  .chip.armed{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 0 14px -6px var(--a)}
+  .csw{width:16px;height:16px;border-radius:5px;flex:none;border:1px solid var(--line)}
+  .csw.erase{background:var(--cell);border-style:dashed;border-color:var(--line-strong)}
+  .csw.ink{background:var(--ink);border-color:var(--ink)}
+  .csw.a{box-shadow:inset 0 0 0 2px var(--a)}
+  .csw.b{box-shadow:inset 0 0 0 2px var(--b)}
+
   .editors{display:flex;gap:16px;justify-content:center}
   .editor{display:flex;flex-direction:column;gap:6px;align-items:center}
   .editor .elab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.65}
@@ -133,6 +149,7 @@
   .grid{
     display:grid;grid-template-columns:repeat(3,1fr);gap:5px;
     padding:7px;border-radius:14px;background:var(--surface);border:1px solid var(--line);
+    touch-action:none;
   }
   .cell{
     width:44px;height:44px;border-radius:8px;position:relative;cursor:pointer;
@@ -142,22 +159,15 @@
   }
   .cell:active{transform:scale(.92)}
   .cell.ink{background:var(--ink);border-color:var(--ink);box-shadow:0 0 12px -3px var(--ink)}
-  .cell canvas{width:100%;height:100%;display:block}
+  .cell canvas{width:100%;height:100%;display:block;pointer-events:none}
   .cell .ring{position:absolute;inset:0;border-radius:8px;pointer-events:none}
   .cell.refa .ring{box-shadow:inset 0 0 0 2px var(--a),0 0 12px -4px var(--a)}
   .cell.refb .ring{box-shadow:inset 0 0 0 2px var(--b),0 0 12px -4px var(--b)}
 
-  /* legend */
-  .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:11px;opacity:.75}
-  .legend .k{display:flex;align-items:center;gap:6px}
-  .sw{width:14px;height:14px;border-radius:4px;flex:none;border:1px solid var(--line)}
-  .sw.ink{background:var(--ink);border-color:var(--ink)}
-  .sw.a{box-shadow:inset 0 0 0 2px var(--a)}
-  .sw.b{box-shadow:inset 0 0 0 2px var(--b)}
   .hint{font-size:12.5px;opacity:.62;text-align:center;max-width:420px;min-height:34px;line-height:1.5}
   .hint b{color:var(--a);font-weight:600}
-  .tapnote{font-size:11px;opacity:.4;text-align:center}
-  .par{font-size:12px;letter-spacing:.06em;opacity:.8;text-align:center}
+  .tapnote{font-size:11px;opacity:.4;text-align:center;max-width:420px}
+  .par{font-size:12px;letter-spacing:.06em;opacity:.85;text-align:center}
   .par b{font-weight:600}
   .par .under{color:var(--ok)}
   .par .over{color:var(--b)}
@@ -174,8 +184,8 @@
     <a class="navbtn" href="../" aria-label="All games" title="All games">&#8592;</a>
     <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
   </div>
-  <h1>ST<b>A</b>MP</h1>
-  <div class="sub">Design one tiny stamp. It contains itself. Match the fractal.</div>
+  <h1><b>A</b>utobiography</h1>
+  <div class="sub">Design one tiny mark. It is made of itself. Match the fractal.</div>
 
   <div class="wrap">
     <div class="levelbar">
@@ -184,12 +194,18 @@
         <button class="nb" id="prev">‹</button>
         <button class="nb" id="reset">reset</button>
         <button class="nb" id="next">›</button>
-        <button class="nb" id="toSand">✎ play</button>
+        <button class="nb" id="toSand" title="Free play">✎</button>
+        <button class="nb" id="toDaily" title="Daily mark">◷</button>
       </div>
       <div class="nav" id="navSand" hidden>
         <button class="nb" id="rand">⚄ random</button>
         <button class="nb" id="clear">clear</button>
         <button class="nb" id="exitSand">✕ exit</button>
+      </div>
+      <div class="nav" id="navDaily" hidden>
+        <button class="nb" id="dreset">reset</button>
+        <button class="nb" id="dshare" hidden>⧉ share</button>
+        <button class="nb" id="dexit">✕ exit</button>
       </div>
     </div>
 
@@ -213,31 +229,31 @@
     <div class="win-msg" id="winMsg">solved</div>
 
     <div class="editwrap">
+      <div class="tray" id="tray"></div>
       <div class="editors" id="editors"></div>
-      <div class="legend">
-        <div class="k"><span class="sw"></span>empty</div>
-        <div class="k"><span class="sw ink"></span>ink</div>
-        <div class="k"><span class="sw a"></span>self</div>
-        <div class="k" id="legB" style="display:none"><span class="sw b"></span>other</div>
-      </div>
       <div class="hint" id="hint"></div>
       <div class="par" id="par" hidden></div>
-      <div class="tapnote">tap a cell to cycle · long-press to go back</div>
+      <div class="tapnote">tap to paint · drag to paint many · tap a placed self/A/B again to spin it ↻</div>
     </div>
   </div>
 
 <script>
 /* ---- cell values -------------------------------------------------
-   0 empty · 1 ink · 2 recurse into stamp 0 (A) · 3 recurse into stamp 1 (B)
+   0 empty · 1 ink · reference = (2=stamp A | 3=stamp B) + rot*4, rot 0..3
+   A reference recurses into that stamp, drawn rotated by `rot` quarter-turns.
+   Rotation propagates down the recursion, which is what unlocks
+   dragon/pinwheel geometry a fixed axis-aligned grid can never reach.
 ------------------------------------------------------------------- */
 const A=2, B=3;
+const rot=(v,r)=> v>=2 ? ((v&3) + ((((v>>2)+r)&3)*4)) : v;   // spin a reference by r quarter-turns
+
 const LEVELS=[
   { name:"Solid",
-    hint:"Every cell tapped once is <b>ink</b> - a solid block. Fill all nine.",
+    hint:"Arm <b>ink</b> and fill all nine - a solid block.",
     stamps:[[1,1,1, 1,1,1, 1,1,1]] },
 
   { name:"Descent",
-    hint:"Tap a cell twice for <b>self</b>: it becomes the whole stamp again, shrunk. Three self-cells on the diagonal fall forever into a line.",
+    hint:"Arm <b>self</b>: a cell becomes the whole mark again, shrunk. Three on the diagonal fall forever into a line.",
     stamps:[[A,0,0, 0,A,0, 0,0,A]] },
 
   { name:"Cantor Dust",
@@ -280,18 +296,16 @@ const LEVELS=[
     hint:"Asymmetry. Two arms reach up, one stem grows down - and each does it again.",
     stamps:[[A,0,A, 0,A,0, 0,A,0]] },
 
-  { name:"Debug: Triangle", repair:true, par:1,
-    hint:"This stamp is almost Sierpiński's triangle, but the output is wrong. Compare the two pictures and fix the one cell that's off.",
-    start: [[A,0,0, A,A,0, A,A,0]],
-    stamps:[[A,0,0, A,A,0, A,A,A]] },
+  { name:"Pinwheel",
+    hint:"New trick: tap a placed <b>self</b> again to spin it a quarter-turn ↻. Four corners, each turned further than the last - a pinwheel of pinwheels.",
+    stamps:[[rot(A,0),0,rot(A,1), 0,0,0, rot(A,3),0,rot(A,2)]] },
 
-  { name:"Debug: Carpet", repair:true, par:1,
-    hint:"One third is a solid block with no holes - it should be a smaller carpet. Find the cell that's <b>ink</b> where it should be <b>self</b>.",
-    start: [[A,A,A, A,0,A, A,1,A]],
-    stamps:[[A,A,A, A,0,A, A,A,A]] },
+  { name:"Whirl",
+    hint:"The diamond, set spinning. Each arm of <b>self</b> is turned to chase the next - lace that swirls as it falls.",
+    stamps:[[0,rot(A,0),0, rot(A,3),0,rot(A,1), 0,rot(A,2),0]] },
 
   { name:"Two Minds",
-    hint:"Now two stamps. A cell can hold <b>self</b> or the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
+    hint:"Now two stamps. A cell can hold <b>self</b>, or the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
 
@@ -314,34 +328,32 @@ const LEVELS=[
     hint:"A is a diamond of B; B is corners of A. An endless woven grid.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [B,0,B, 0,0,0, B,0,B]] },
-
-  { name:"Debug: Ouroboros", repair:true, par:1,
-    hint:"Two stamps, one bug. Stamp B's cross has lost a limb, so the whole fractal is lopsided. Repair B.",
-    start: [[B,0,B, 0,0,0, B,0,B],
-            [0,A,0, A,A,0, 0,A,0]],
-    stamps:[[B,0,B, 0,0,0, B,0,B],
-            [0,A,0, A,A,A, 0,A,0]] },
 ];
 
 /* ---- rendering: the fixed point ---------------------------------- */
-function draw(ctx, stamps, id, x, y, size, color){
+function rotPos(i,j,r){                 // clockwise quarter-turns on a 3x3
+  for(let n=0;n<r;n++){ const ni=j, nj=2-i; i=ni; j=nj; }
+  return [i,j];
+}
+function draw(ctx, stamps, id, x, y, size, color, r){
   if(size < 1.15){                       // pixel limit: recurse cell = a lit dot (IFS attractor)
     ctx.fillStyle=color;
     ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size));
     return;
   }
   const c=size/3, s=stamps[id];
-  for(let i=0;i<3;i++)for(let j=0;j<3;j++){
-    const v=s[i*3+j]; if(!v) continue;
-    const sx=x+j*c, sy=y+i*c;
-    if(v===1){ ctx.fillStyle=color; ctx.fillRect(sx, sy, c+0.6, c+0.6); }   // ink: solid, no detail
-    else draw(ctx, stamps, v-2, sx, sy, c, color);                         // recurse
+  for(let k=0;k<9;k++){
+    const v=s[k]; if(!v) continue;
+    const p=rotPos((k/3)|0, k%3, r);
+    const sx=x+p[1]*c, sy=y+p[0]*c;
+    if(v===1){ ctx.fillStyle=color; ctx.fillRect(sx, sy, c+0.6, c+0.6); }        // ink: solid, no detail
+    else draw(ctx, stamps, (v&3)-2, sx, sy, c, color, ((v>>2)+r)&3);            // recurse, carrying rotation
   }
 }
 function renderPic(canvas, stamps){
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  draw(ctx, stamps, 0, 0, 0, canvas.width, getCss('--ink'));
+  draw(ctx, stamps, 0, 0, 0, canvas.width, getCss('--ink'), 0);
 }
 
 /* ---- fingerprint for win check (deterministic, integer-aligned) --- */
@@ -349,66 +361,103 @@ const CMP=document.createElement('canvas'); CMP.width=CMP.height=243;
 const CMPX=CMP.getContext('2d',{willReadFrequently:true});
 function fingerprint(stamps){
   CMPX.fillStyle='#000'; CMPX.fillRect(0,0,243,243);
-  draw(CMPX, stamps, 0, 0, 0, 243, '#fff');
+  draw(CMPX, stamps, 0, 0, 0, 243, '#fff', 0);
   return CMPX.getImageData(0,0,243,243).data;
 }
 function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]) d++; } return d; }
 
 /* ---- state ------------------------------------------------------- */
+let mode='play';          // 'play' | 'sand' | 'daily'
 let li=0;                 // level index
 let stamps=[];            // player's working stamps
-let baseline=[];          // starting state (blank, or a repair level's broken stamp)
+let baseline=[];          // starting state (blank) for reset
+let targetStamps=[];      // what the target picture shows
 let targetFP=null;
-let sand=false;           // sandbox mode
+let curPar=0;
+let armed=1;              // active brush value: 0 empty, 1 ink, 2 A/self, 3 B
 let prevWin=false, advTimer=null;
-let solved={};
-try{ solved=JSON.parse(localStorage.getItem('stamp-solved')||'{}'); }catch(e){}
+let dailySeedVal=0;
+let solved={}, dailyDone={};
+try{ solved=JSON.parse(localStorage.getItem('auto-solved')||'{}'); }catch(e){}
+try{ dailyDone=JSON.parse(localStorage.getItem('auto-daily')||'{}'); }catch(e){}
 
 const $=id=>document.getElementById(id);
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+const cellsUsed=()=> stamps.reduce((n,s)=>n+s.filter(v=>v!==0).length,0);
+const parOf=st=> st.reduce((n,s)=>n+s.filter(v=>v!==0).length,0);
 
+/* ---- dots -------------------------------------------------------- */
 function buildDots(){
   const host=$('dots'); host.innerHTML='';
   LEVELS.forEach((L,i)=>{
     const d=document.createElement('div'); d.className='dot';
     if(solved[i]) d.classList.add('solved');
     d.title=L.name;
-    d.onclick=()=>{ if(sand) exitSandbox(); loadLevel(i); };
+    d.onclick=()=>loadLevel(i);
     host.appendChild(d);
   });
 }
 function markDots(){
   [...$('dots').children].forEach((d,i)=>{
-    d.classList.toggle('cur', !sand && i===li);
+    d.classList.toggle('cur', mode==='play' && i===li);
     d.classList.toggle('solved', !!solved[i]);
   });
 }
 
+/* ---- level / mode entry ------------------------------------------ */
+function setNav(m){
+  $('navPlay').hidden = m!=='play';
+  $('navSand').hidden = m!=='sand';
+  $('navDaily').hidden= m!=='daily';
+  document.body.classList.toggle('sand', m==='sand');
+}
+
 function loadLevel(i){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
+  mode='play'; setNav('play');
   li=(i+LEVELS.length)%LEVELS.length;
   const L=LEVELS[li];
-  baseline = (L.start||L.stamps).map(s=>L.start ? s.slice() : s.map(_=>0));
+  targetStamps=L.stamps;
+  baseline = targetStamps.map(s=>s.map(_=>0));
   stamps = baseline.map(s=>s.slice());
-  targetFP = fingerprint(L.stamps);
-  renderPic($('target'), L.stamps);
+  targetFP = fingerprint(targetStamps);
+  curPar = parOf(targetStamps);
+  armed = (li===0)?1:2;
+  renderPic($('target'), targetStamps);
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
   $('lvname').textContent=L.name;
   $('hint').innerHTML=L.hint;
-  $('legB').style.display = L.stamps.length>1 ? 'flex':'none';
-  $('par').hidden = !L.repair;
+  $('par').hidden=false;
   $('prev').disabled = li===0;
   $('next').disabled = li===LEVELS.length-1;
   $('yoursFrame').classList.remove('win','pop');
   $('winMsg').classList.remove('show');
 
-  buildEditors(); markDots(); update();
+  buildTray(); buildEditors(); markDots(); update();
 }
 
-const maxVal = ()=> stamps.length>1 ? 3 : 2;
-const allowed = ()=>{ const n=maxVal(); const a=[0,1]; for(let v=2;v<=n;v++) a.push(v); return a; };
+/* ---- brush tray -------------------------------------------------- */
+function buildTray(){
+  const host=$('tray'); host.innerHTML='';
+  const multi = stamps.length>1;
+  const chips=[{v:0,sw:'erase',label:'erase'},{v:1,sw:'ink',label:'ink'}];
+  if(multi){ chips.push({v:2,sw:'a',label:'A'},{v:3,sw:'b',label:'B'}); }
+  else chips.push({v:2,sw:'a',label:'self'});
+  chips.forEach(c=>{
+    const el=document.createElement('button');
+    el.className='chip'; el.dataset.v=c.v;
+    el.innerHTML='<span class="csw '+c.sw+'"></span>'+c.label;
+    el.onclick=()=>{ armed=c.v; markChips(); };
+    host.appendChild(el);
+  });
+  markChips();
+}
+function markChips(){
+  [...$('tray').children].forEach(el=>el.classList.toggle('armed', +el.dataset.v===armed));
+}
 
+/* ---- editors ----------------------------------------------------- */
 function buildEditors(){
   const host=$('editors'); host.innerHTML='';
   const multi = stamps.length>1;
@@ -430,31 +479,42 @@ function buildEditors(){
   });
 }
 
-function bindCell(cell){
-  let timer=null, long=false;
-  const cycle=(back)=>{
-    const si=+cell.dataset.si, k=+cell.dataset.k;
-    const list=allowed(); let idx=list.indexOf(stamps[si][k]);
-    idx=(idx + (back?-1:1) + list.length)%list.length;
-    stamps[si][k]=list[idx]; update();
-  };
-  cell.addEventListener('pointerdown',()=>{ long=false; timer=setTimeout(()=>{ long=true; cycle(true); }, 420); });
-  const clear=()=>{ if(timer){clearTimeout(timer);timer=null;} };
-  cell.addEventListener('pointerup',()=>{ clear(); if(!long) cycle(false); });
-  cell.addEventListener('pointerleave',clear);
-  cell.addEventListener('contextmenu',e=>e.preventDefault());
+/* paint: tap arms-then-paints; tapping a placed reference again spins it */
+let painting=false, lastKey=null;
+function applyBrush(cell, allowSpin){
+  const si=+cell.dataset.si, k=+cell.dataset.k, cur=stamps[si][k], b=armed;
+  const nv = (allowSpin && b>=2 && cur>=2 && (cur&3)===(b&3)) ? rot(cur,1) : b;
+  if(nv!==stamps[si][k]){ stamps[si][k]=nv; update(); }
 }
+function cellFromPoint(x,y){ const el=document.elementFromPoint(x,y); return el?el.closest('.cell'):null; }
+function bindCell(cell){
+  cell.addEventListener('pointerdown', e=>{
+    e.preventDefault();
+    painting=true; lastKey=cell.dataset.si+':'+cell.dataset.k;
+    applyBrush(cell, true);
+  });
+  cell.addEventListener('contextmenu', e=>e.preventDefault());
+}
+document.addEventListener('pointermove', e=>{
+  if(!painting) return;
+  const cell=cellFromPoint(e.clientX,e.clientY); if(!cell) return;
+  const key=cell.dataset.si+':'+cell.dataset.k;
+  if(key!==lastKey){ lastKey=key; applyBrush(cell, false); }   // drag never spins
+});
+const endPaint=()=>{ painting=false; lastKey=null; };
+document.addEventListener('pointerup', endPaint);
+document.addEventListener('pointercancel', endPaint);
 
 function paintCell(cell){
   const si=+cell.dataset.si, k=+cell.dataset.k, v=stamps[si][k];
   cell.className='cell'; cell.innerHTML='';
   if(v===1){ cell.classList.add('ink'); return; }
   if(v>=2){
-    const refId=v-2;
+    const refId=(v&3)-2, r=v>>2;
     cell.classList.add(refId===0?'refa':'refb');
     const cv=document.createElement('canvas'); cv.width=cv.height=84;
     cell.appendChild(cv);
-    draw(cv.getContext('2d'), stamps, refId, 0,0,84, getCss(refId===0?'--a':'--b'));
+    draw(cv.getContext('2d'), stamps, refId, 0,0,84, getCss(refId===0?'--a':'--b'), r);
     const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
   }
 }
@@ -462,16 +522,11 @@ function paintCell(cell){
 function update(){
   document.querySelectorAll('.cell').forEach(paintCell);
   renderPic($('yours'), stamps);
-  if(!sand && LEVELS[li].repair) updatePar();
-  if(!sand) checkWin();
-}
-
-function editsFromBaseline(){
-  let n=0; stamps.forEach((s,si)=>s.forEach((v,k)=>{ if(v!==baseline[si][k]) n++; })); return n;
+  if(mode!=='sand'){ updatePar(); checkWin(); }
 }
 function updatePar(){
-  const e=editsFromBaseline(), par=LEVELS[li].par;
-  $('par').innerHTML = `edits <b class="${e<=par?'under':'over'}">${e}</b> &nbsp;·&nbsp; par <b>${par}</b>`;
+  const n=cellsUsed();
+  $('par').innerHTML = `cells <b class="${n<=curPar?'under':'over'}">${n}</b> &nbsp;·&nbsp; par <b>${curPar}</b>`;
 }
 
 function checkWin(){
@@ -482,15 +537,23 @@ function checkWin(){
   $('winMsg').classList.toggle('show', win);
 
   if(win && !prevWin){                       // fresh solve
-    solved[li]=1;
-    try{ localStorage.setItem('stamp-solved', JSON.stringify(solved)); }catch(e){}
-    markDots();
+    const used=cellsUsed();
     celebrate();
-    const L=LEVELS[li], last = li===LEVELS.length-1;
-    let msg = last ? "every fractal solved ✦" : "solved";
-    if(L.repair && !last){ const e=editsFromBaseline(); msg = e<=L.par ? `fixed - par ${L.par}!` : `fixed in ${e} edits`; }
-    $('winMsg').textContent = msg;
-    if(!last) advTimer=setTimeout(()=>loadLevel(li+1), 1650);
+    if(mode==='play'){
+      solved[li]=1;
+      try{ localStorage.setItem('auto-solved', JSON.stringify(solved)); }catch(e){}
+      markDots();
+      const last = li===LEVELS.length-1;
+      $('winMsg').textContent = last ? "every mark solved ✦"
+        : (used<=curPar ? `solved · par ${curPar}` : `solved · ${used} cells`);
+      if(!last) advTimer=setTimeout(()=>loadLevel(li+1), 1650);
+    } else {                                 // daily
+      const best = dailyDone[dailySeedVal];
+      dailyDone[dailySeedVal] = best==null ? used : Math.min(best, used);
+      try{ localStorage.setItem('auto-daily', JSON.stringify(dailyDone)); }catch(e){}
+      $('dshare').hidden=false;
+      $('winMsg').textContent = used<=curPar ? `solved · par ${curPar} ✦` : `solved · ${used} cells`;
+    }
   }
   if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; }
   prevWin=win;
@@ -504,27 +567,69 @@ function celebrate(){
 
 /* ---- sandbox ----------------------------------------------------- */
 function enterSandbox(){
-  clearTimeout(advTimer); advTimer=null;
-  sand=true; document.body.classList.add('sand');
-  $('navPlay').hidden=true; $('navSand').hidden=false;
-  $('lvnum').textContent=''; $('lvname').textContent='Sandbox';
-  $('hint').innerHTML="Free play, no target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, or the <b>other</b>. Try ⚄ for a surprise.";
-  $('legB').style.display='flex';
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  mode='sand'; setNav('sand');
+  $('lvnum').textContent=''; $('lvname').textContent='Free play';
+  $('hint').innerHTML="No target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, the <b>other</b>, and spin ↻. Try ⚄ for a surprise.";
+  $('par').hidden=true;
+  armed=2;
   stamps=[Array(9).fill(0), Array(9).fill(0)];
-  buildEditors(); markDots(); update();
-}
-function exitSandbox(){
-  sand=false; document.body.classList.remove('sand');
-  $('navPlay').hidden=false; $('navSand').hidden=true;
-  loadLevel(li);
+  baseline=stamps.map(s=>s.slice());
+  buildTray(); buildEditors(); markDots(); update();
 }
 function randomStamp(){
-  // weighted: empty, ink, self, other -> favours recursion so it stays interesting
   const pool=[0,0,0,0,1,2,2,2,3,3];
-  stamps=[0,1].map(()=>Array.from({length:9},()=>pool[Math.floor(Math.random()*pool.length)]));
-  // guarantee at least one recursive cell so it isn't a dull static block
-  if(!stamps.flat().some(v=>v>=2)) stamps[0][4]=2;
+  stamps=[0,1].map(()=>Array.from({length:9},()=>{
+    let v=pool[Math.floor(Math.random()*pool.length)];
+    if(v>=2 && Math.random()<0.5) v=rot(v, 1+Math.floor(Math.random()*3));
+    return v;
+  }));
+  if(!stamps.flat().some(v=>v>=2)) stamps[0][4]=2;   // never a dull static block
   update();
+}
+
+/* ---- daily ------------------------------------------------------- */
+function mulberry32(a){ return function(){ a|=0;a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function todaySeed(){ const d=new Date(); return d.getFullYear()*10000 + (d.getMonth()+1)*100 + d.getDate(); }
+function dateStr(seed){ const y=(seed/10000)|0, m=((seed/100)|0)%100, dd=seed%100; return `${y}-${String(m).padStart(2,'0')}-${String(dd).padStart(2,'0')}`; }
+function makeDaily(seed){
+  const rnd=mulberry32(seed>>>0);
+  const pool=[0,0,0,1,1,2,2,2,2];              // favour recursion, a little ink
+  let s;
+  do{
+    s=Array.from({length:9},()=>{
+      let v=pool[(rnd()*pool.length)|0];
+      if(v===2 && rnd()<0.45) v=rot(2, (rnd()*4)|0);   // occasional twist
+      return v;
+    });
+    var n=s.filter(v=>v!==0).length, hasRef=s.some(v=>v>=2);
+  }while(!hasRef || n<3 || n>7);
+  return [s];
+}
+function enterDaily(){
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  mode='daily'; setNav('daily');
+  dailySeedVal=todaySeed();
+  targetStamps=makeDaily(dailySeedVal);
+  baseline=targetStamps.map(s=>s.map(_=>0));
+  stamps=baseline.map(s=>s.slice());
+  targetFP=fingerprint(targetStamps);
+  curPar=parOf(targetStamps);
+  armed=2;
+  renderPic($('target'), targetStamps);
+  $('lvnum').textContent=''; $('lvname').textContent='Daily';
+  const done=dailyDone[dailySeedVal];
+  $('hint').innerHTML=`Reverse-engineer today's mark (<b>${dateStr(dailySeedVal)}</b>). Match the target with as few cells as you can.`
+    + (done!=null ? ` <span style="opacity:.7">Best: ${done} cells.</span>` : '');
+  $('par').hidden=false;
+  $('dshare').hidden = done==null;
+  $('yoursFrame').classList.remove('win','pop');
+  $('winMsg').classList.remove('show');
+  buildTray(); buildEditors(); markDots(); update();
+}
+function shareText(){
+  const n=cellsUsed();
+  return `Autobiography ${dateStr(dailySeedVal)} · ${n} cells (par ${curPar})` + (n<=curPar?' ✦':'');
 }
 
 /* ---- controls ---------------------------------------------------- */
@@ -532,11 +637,19 @@ $('prev').onclick =()=>loadLevel(li-1);
 $('next').onclick =()=>loadLevel(li+1);
 $('reset').onclick=()=>{ stamps=baseline.map(s=>s.slice()); update(); };
 $('toSand').onclick=enterSandbox;
-$('exitSand').onclick=exitSandbox;
+$('toDaily').onclick=enterDaily;
+$('exitSand').onclick=()=>loadLevel(li);
+$('dexit').onclick=()=>loadLevel(li);
+$('dreset').onclick=()=>{ stamps=baseline.map(s=>s.slice()); update(); };
 $('clear').onclick=()=>{ stamps=stamps.map(s=>s.map(_=>0)); update(); };
 $('rand').onclick=randomStamp;
+$('dshare').onclick=()=>{
+  const t=$('dshare');
+  const done=()=>{ t.textContent='copied ✓'; setTimeout(()=>t.textContent='⧉ share',1400); };
+  try{ navigator.clipboard.writeText(shareText()).then(done, done); }catch(e){ done(); }
+};
 document.addEventListener('keydown',e=>{
-  if(sand) return;
+  if(mode!=='play') return;
   if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
   if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
 });
@@ -546,7 +659,7 @@ loadLevel(0);
 
 /* ---- theme: re-render canvases (fractal ink colour flips) --------- */
 function redrawTheme(){
-  if(!sand) renderPic($('target'), LEVELS[li].stamps);
+  if(mode!=='sand') renderPic($('target'), targetStamps);
   update();
 }
 window.addEventListener('themechange', redrawTheme);
