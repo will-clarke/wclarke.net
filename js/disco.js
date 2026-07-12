@@ -67,9 +67,11 @@
     s.e = buildEdges(s.v);
   });
 
+  // jewel tones - saturated enough to stay vivid on the dark charcoal and
+  // still read against the light paper
   var PALETTE = [
-    "#8f4222", "#8c6bd6", "#2f8f8a", "#c0435a", "#b8791f",
-    "#57e08a", "#3ad9ff", "#ff7ac2", "#ffb43a", "#b98cff",
+    "#a5502b", "#7d4bcf", "#1f8f88", "#c0435a", "#b8791f",
+    "#2fae63", "#1f9fce", "#d84f9a", "#e0912a", "#9b6be0",
   ];
 
   var canvas, ctx, raf = 0, running = false, dpr = 1;
@@ -116,8 +118,9 @@
 
   function frame(ts) {
     ctx.clearRect(0, 0, vw, vh);
-    var near = [], far = [];   // batch by depth so hidden edges draw dimmer
+    ctx.lineCap = "round";
 
+    // 1) rotate + project every solid (cache the screen points on the cell)
     for (var i = 0; i < cells.length; i++) {
       var c = cells[i];
       var ax = ts * 0.00035 * c.sx + c.phase;
@@ -125,38 +128,40 @@
       var ca = Math.cos(ax), sa = Math.sin(ax);
       var cb = Math.cos(ay), sb = Math.sin(ay);
       var v = c.solid.v, P = c.proj || (c.proj = []);
-
       for (var k = 0; k < v.length; k++) {
         var x = v[k][0], y = v[k][1], z = v[k][2];
-        var y1 = y * ca - z * sa, z1 = y * sa + z * ca;   // rotate X
+        var y1 = y * ca - z * sa, z1 = y * sa + z * ca;    // rotate X
         var x2 = x * cb + z1 * sb, z2 = -x * sb + z1 * cb; // rotate Y
         var s = 3.2 / (3.2 - z2);                          // perspective
-        P[k] = [c.cx + x2 * s * c.rad, c.cy + y1 * s * c.rad, z2];
-      }
-
-      var e = c.solid.e;
-      for (var m = 0; m < e.length; m++) {
-        var a = P[e[m][0]], b = P[e[m][1]];
-        var seg = [a[0], a[1], b[0], b[1], c.color, c.dim];
-        ((a[2] + b[2]) * 0.5 >= 0 ? near : far).push(seg);
+        var o = P[k] || (P[k] = [0, 0, 0]);
+        o[0] = c.cx + x2 * s * c.rad; o[1] = c.cy + y1 * s * c.rad; o[2] = z2;
       }
     }
 
-    stroke(far, 0.35, 1);
-    stroke(near, 1, 1.4);
-    if (running) raf = requestAnimationFrame(frame);
+    // 2) far edges (behind, dim), then 3) near edges (front, bright)
+    drawPass(0.34, 1);
+    drawPass(1, 1.4);
+    // hold still for anyone who's asked for reduced motion
+    if (running && !matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      raf = requestAnimationFrame(frame);
+    }
   }
 
-  function stroke(segs, alphaMul, width) {
+  // draw one depth layer: front=false does the hidden edges, front=true the rest
+  function drawPass(alphaMul, width) {
     ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    for (var i = 0; i < segs.length; i++) {
-      var s = segs[i];
-      ctx.globalAlpha = s[5] * alphaMul;
-      ctx.strokeStyle = s[4];
+    var front = alphaMul >= 1;
+    for (var i = 0; i < cells.length; i++) {
+      var c = cells[i], e = c.solid.e, P = c.proj;
+      ctx.strokeStyle = c.color;
+      ctx.globalAlpha = c.dim * alphaMul;
       ctx.beginPath();
-      ctx.moveTo(s[0], s[1]);
-      ctx.lineTo(s[2], s[3]);
+      for (var m = 0; m < e.length; m++) {
+        var a = P[e[m][0]], b = P[e[m][1]];
+        if (((a[2] + b[2]) * 0.5 >= 0) !== front) continue;
+        ctx.moveTo(a[0], a[1]);
+        ctx.lineTo(b[0], b[1]);
+      }
       ctx.stroke();
     }
     ctx.globalAlpha = 1;
