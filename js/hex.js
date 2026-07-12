@@ -142,36 +142,46 @@
     });
   }
 
-  // ---- enlarge: grow the focused hex, shrink its neighbours to keep the gap --
-  // The focused hex scales up; its six neighbours scale down by the matching
-  // amount (CSS), so the mortar between them stays constant and every hex keeps
-  // its regular shape. Centres never move (transform-origin is the centre).
+  // ---- enlarge: grow the focused hex, shrink neighbours toward their far side
+  // The focused hex scales up about its own centre. Each neighbour scales down
+  // about the edge that faces AWAY from the focus, so that far edge (its border
+  // with the outer ring) stays put and only the near edge recedes - which frees
+  // the most room for the least shrink.
   var NB = [[1, 0], [-1, 0], [0, -1], [0, 1], [1, -1], [-1, 1]];
+  var ORIGIN = {                    // far edge of a neighbour in each direction
+    "1,0": "100% 50%", "-1,0": "0% 50%", "0,-1": "25% 12.5%",
+    "0,1": "75% 87.5%", "1,-1": "75% 12.5%", "-1,1": "25% 87.5%",
+  };
   var focused = null, receded = [];
 
   function enlarge(el) {
     if (focused === el || dragging) return;
     shrink();
     focused = el;
+    el.style.transformOrigin = "";  // the focus grows about its own centre
     el.classList.add("enlarged");
     var q = +el.dataset.q, r = +el.dataset.r;
     NB.forEach(function (d) {
       var nb = cellByKey[(q + d[0]) + "," + (r + d[1])];
       if (!nb) return;
+      nb.style.transformOrigin = ORIGIN[d[0] + "," + d[1]];
       nb.classList.add("receded");
       receded.push(nb);
     });
   }
   function shrink() {
     if (focused) focused.classList.remove("enlarged");
-    receded.forEach(function (nb) { nb.classList.remove("receded"); });
+    receded.forEach(function (nb) {
+      nb.classList.remove("receded");
+      nb.style.transformOrigin = "";
+    });
     receded = []; focused = null;
   }
 
   // ---- panning: parallax from the mouse, plus drag -----------------------
   var pan = { x: 0, y: 0 }, target = { x: 0, y: 0 };
   var base = { x: 0, y: 0 }, par = { x: 0, y: 0 };
-  var dragging = false, dragMoved = false, dragStart = null;
+  var down = false, dragging = false, dragMoved = false, dragStart = null;
 
   function clamp(v, m) { return v < -m ? -m : v > m ? m : v; }
 
@@ -190,14 +200,18 @@
   }
 
   field.addEventListener("pointerdown", function (e) {
-    dragging = true; dragMoved = false;
-    dragStart = { x: e.clientX, y: e.clientY, bx: base.x, by: base.y };
-    field.setPointerCapture(e.pointerId);
+    down = true; dragging = false; dragMoved = false;
+    dragStart = { x: e.clientX, y: e.clientY, bx: base.x, by: base.y, id: e.pointerId };
   });
   field.addEventListener("pointermove", function (e) {
-    if (!dragging) return;
+    if (!down) return;
     var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
-    if (!dragMoved && Math.hypot(dx, dy) > 6) { dragMoved = true; field.classList.add("dragging"); shrink(); }
+    if (!dragMoved && Math.hypot(dx, dy) > 6) {
+      // only now is it a drag - capture so it keeps tracking, and stop hover
+      dragMoved = true; dragging = true;
+      field.classList.add("dragging"); shrink();
+      field.setPointerCapture(dragStart.id);
+    }
     if (dragMoved) {
       base.x = clamp(dragStart.bx + dx, panMax.x);
       base.y = clamp(dragStart.by + dy, panMax.y);
@@ -205,7 +219,7 @@
       retarget();
     }
   });
-  function endDrag() { dragging = false; field.classList.remove("dragging"); }
+  function endDrag() { down = false; dragging = false; field.classList.remove("dragging"); }
   field.addEventListener("pointerup", endDrag);
   field.addEventListener("pointercancel", endDrag);
   // a drag must never fire a link/toy click
@@ -288,11 +302,10 @@
     } else {
       fbox.style.transition = "none";
       fbox.style.transform = "translate(" + dx + "px," + dy + "px) scale(0.12)";
-      requestAnimationFrame(function () {
-        fbox.style.transition = "";
-        fbox.style.transform = "translate(0,0) scale(1)";
-        overlay.classList.add("open");
-      });
+      void fbox.offsetWidth;              // commit the start frame, so it animates
+      fbox.style.transition = "";
+      fbox.style.transform = "translate(0,0) scale(1)";
+      overlay.classList.add("open");
     }
   }
 

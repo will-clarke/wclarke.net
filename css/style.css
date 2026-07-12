@@ -401,10 +401,12 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 .hex.tile { cursor: pointer; z-index: 2; outline: none; }
 
 /* enlarge (js/hex.js): the focused hex grows and rises above its neighbours,
-   which shrink by the same amount so the mortar gap stays exactly constant
-   (0.78 = 2 - 1.22). Every hex keeps its regular shape and its centre. */
-.hex.enlarged { transform: scale(1.22); z-index: 6; }
-.hex.receded { transform: scale(0.78); }
+   which shrink toward their FAR side (transform-origin set per-neighbour in JS)
+   so their border with the outer ring holds still and the near mortar stays
+   constant. Anchoring the far side lets the focus grow big for a small shrink:
+   receded = (3 - grow) / 2, i.e. 1.5 -> 0.75. */
+.hex.enlarged { transform: scale(1.5); z-index: 6; }
+.hex.receded { transform: scale(0.75); }
 .hex.door.enlarged {
   filter: drop-shadow(0 11px 28px color-mix(in srgb, var(--hex-accent) 55%, transparent));
 }
