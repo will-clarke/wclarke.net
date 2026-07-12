@@ -51,7 +51,7 @@
     var first = xy(order[0][0], order[0][1]);
     var last = xy(order[5][0], order[5][1]);
     var dx = vw / 2 - (first.x + last.x + w) / 2;
-    var dy = vh / 2 - (first.y + last.y + h) / 2;
+    var dy = vh / 2 - (first.y + last.y + h) / 2 - h * 0.28;
 
     var cx = vw / 2, cy = vh / 2;
     var maxD = Math.hypot(vw, vh) / 2;

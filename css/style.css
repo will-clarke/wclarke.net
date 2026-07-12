@@ -384,9 +384,10 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 }
 
 .hex.door {
-  background: var(--code-bg);
+  background: color-mix(in srgb, var(--hex-accent) 16%, var(--bg));
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--hex-accent) 22%, transparent));
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, filter 0.18s ease;
   z-index: 2;
 }
 .hex.door .name {
@@ -408,7 +409,8 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 .hex.door:hover, .hex.door:focus-visible {
   background: var(--hex-accent, var(--accent));
   color: #fff;
-  transform: scale(1.05);
+  transform: scale(1.06);
+  filter: drop-shadow(0 5px 16px color-mix(in srgb, var(--hex-accent) 55%, transparent));
   outline: none;
   z-index: 3;
 }
