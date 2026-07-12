@@ -3,28 +3,66 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23b98cff'%3EL%3C/text%3E%3C/svg%3E" />
 <title>Loom</title>
 <style>
   :root{
-    --bg:#0a0c12;
-    --panel:rgba(255,255,255,.02);
-    --line:rgba(255,255,255,.07);
-    --ink:#e9f0ff;
-    --a:#b98cff;            /* Loom accent (violet thread) */
-    --ok:#b98cff;
+    /* Loom accent (violet thread) */
+    --accent:#b98cff;
+    --on-accent:#0e1116;
+    --a:var(--accent);
+    --ok:var(--accent);
     --bad:#ff6b7d;
-    /* bead colours */
-    --r:#ff5a6e; --o:#ffb43a; --g:#5cffb0; --b:#3ad9ff; --p:#ff7ac2;
+    /* bead colours - kept vivid, deepened enough to read on light surfaces too */
+    --r:#ff5a6e; --o:#f4a623; --g:#22c48a; --b:#2fa6e0; --p:#f45bb0;
+  }
+  :root[data-theme="dark"]{
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --cell:#1e2531;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --cell:#f6f8fc;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
-    background:radial-gradient(120% 120% at 50% 0%, #14121f 0%, var(--bg) 62%);
-    color:#e7ecf5;
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
     font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;
-    min-height:100%;padding:14px 12px 44px;gap:12px;
+    min-height:100%;padding:60px 12px 44px;gap:12px;
   }
+
+  /* top bar */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+    justify-content:space-between;padding:12px 14px;pointer-events:none}
+  .topbar .navbtn{pointer-events:auto}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;border-radius:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
+  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .navbtn:active{transform:translateY(0)}
   h1{margin:2px 0 0;font-weight:700;letter-spacing:.4em;font-size:21px;text-transform:uppercase}
   h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
   .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-8px;text-align:center;max-width:450px}
@@ -37,23 +75,23 @@
   .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
   .nav{display:flex;gap:6px}
   button.nb{
-    background:var(--panel);border:1px solid var(--line);color:#cfd7e6;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
     border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
   }
-  button.nb:hover{border-color:rgba(255,255,255,.22);color:#fff}
+  button.nb:hover{background:var(--raised);border-color:var(--line-strong)}
   button.nb:disabled{opacity:.3;cursor:default}
   [hidden]{display:none!important}
 
   /* progress dots */
   .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;background:rgba(255,255,255,.12);transition:.15s}
-  .dot:hover{background:rgba(255,255,255,.3)}
+  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;background:var(--line-strong);transition:.15s}
+  .dot:hover{background:var(--muted)}
   .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
   .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
 
   /* panels */
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
-  .rowlab{font-size:10px;letter-spacing:.18em;text-transform:uppercase;opacity:.5;margin-bottom:6px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:11px 12px}
+  .rowlab{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 
   /* bead rows */
   .beads{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-height:30px}
@@ -64,7 +102,7 @@
     transition:transform .12s, box-shadow .12s;
   }
   .bead.r{--c:var(--r)} .bead.o{--c:var(--o)} .bead.g{--c:var(--g)} .bead.b{--c:var(--b)} .bead.p{--c:var(--p)}
-  .empty-tag{font-size:12px;opacity:.35;letter-spacing:.12em}
+  .empty-tag{font-size:12px;color:var(--muted);letter-spacing:.12em}
 
   /* start / goal strip */
   .io{display:flex;gap:10px}
@@ -77,45 +115,45 @@
   .tape-card{position:relative;padding:15px 12px}
   .tape{display:flex;flex-wrap:wrap;gap:7px;align-items:center;justify-content:center;min-height:34px}
   .tape .bead{width:30px;height:30px}
-  .tape .bead.hit{transform:scale(1.42);box-shadow:0 0 0 3px #fff, 0 0 18px 2px var(--c);z-index:2}
+  .tape .bead.hit{transform:scale(1.42);box-shadow:0 0 0 3px var(--ink), 0 0 18px 2px var(--c);z-index:2}
   .tape .bead.neu{animation:pop .34s cubic-bezier(.3,1.7,.5,1)}
   @keyframes pop{0%{transform:scale(0);opacity:0}60%{transform:scale(1.25)}100%{transform:scale(1)}}
-  .tick{position:absolute;top:8px;right:11px;font-size:11px;letter-spacing:.12em;opacity:.4;font-variant-numeric:tabular-nums}
+  .tick{position:absolute;top:8px;right:11px;font-size:11px;letter-spacing:.12em;color:var(--muted);font-variant-numeric:tabular-nums}
   .tape-card.win{border-color:var(--ok);box-shadow:0 0 34px -8px var(--ok)}
   .tape-card.lose{animation:shake .4s}
   @keyframes shake{10%,90%{transform:translateX(-2px)}30%,70%{transform:translateX(4px)}50%{transform:translateX(-4px)}}
 
   /* status */
   .status{text-align:center;font-size:13px;letter-spacing:.03em;min-height:19px;font-weight:600;transition:.2s}
-  .status.win{color:var(--ok)} .status.lose{color:var(--bad)} .status.run{color:#9fb0c8;font-weight:400}
+  .status.win{color:var(--ok)} .status.lose{color:var(--bad)} .status.run{color:var(--muted);font-weight:400}
 
   /* rules */
   .rules{display:flex;flex-direction:column;gap:8px}
   .rule{
     display:flex;align-items:center;gap:8px;
-    background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 8px;
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:7px 8px;
   }
-  .rule .idx{font-size:10px;opacity:.35;width:12px;flex:none;text-align:center}
+  .rule .idx{font-size:10px;color:var(--muted);width:12px;flex:none;text-align:center}
   .side{
     flex:1;min-width:44px;min-height:38px;border-radius:9px;cursor:pointer;
     display:flex;flex-wrap:wrap;gap:5px;align-items:center;padding:5px 7px;
-    background:rgba(255,255,255,.025);border:1px solid rgba(255,255,255,.05);transition:.14s;
+    background:var(--cell);border:1px solid var(--line);transition:.14s;
   }
-  .side.rhs{background:rgba(255,255,255,.015)}
+  .side.rhs{background:var(--raised)}
   .side .bead{width:22px;height:22px}
   .side.active{box-shadow:inset 0 0 0 2px var(--a), 0 0 13px -4px var(--a);border-color:transparent}
-  .side .ph{font-size:11px;opacity:.3;letter-spacing:.1em}
-  .arrow{opacity:.5;font-size:16px;flex:none}
+  .side .ph{font-size:11px;color:var(--muted);letter-spacing:.1em}
+  .arrow{color:var(--muted);font-size:16px;flex:none}
   .delrule{
     flex:none;width:26px;height:26px;border-radius:8px;border:1px solid var(--line);
-    background:transparent;color:#8b93a6;font-size:15px;cursor:pointer;line-height:1;
+    background:transparent;color:var(--muted);font-size:15px;cursor:pointer;line-height:1;
   }
   .delrule:hover{color:var(--bad);border-color:var(--bad)}
   .addrule{
-    align-self:flex-start;background:transparent;border:1px dashed rgba(255,255,255,.18);
-    color:#9fb0c8;border-radius:10px;padding:6px 12px;font-size:12.5px;cursor:pointer;letter-spacing:.03em;
+    align-self:flex-start;background:transparent;border:1px dashed var(--line-strong);
+    color:var(--muted);border-radius:10px;padding:6px 12px;font-size:12.5px;cursor:pointer;letter-spacing:.03em;
   }
-  .addrule:hover{border-color:var(--a);color:#fff}
+  .addrule:hover{border-color:var(--a);color:var(--ink)}
   .addrule:disabled{opacity:.3;cursor:default}
 
   /* palette */
@@ -128,15 +166,15 @@
   }
   .pal:active{transform:scale(.88)}
   .pal.r{--c:var(--r)} .pal.o{--c:var(--o)} .pal.g{--c:var(--g)} .pal.b{--c:var(--b)} .pal.p{--c:var(--p)}
-  .pal.cut{background:rgba(255,255,255,.05);color:#9fb0c8;font-size:15px;box-shadow:inset 0 0 0 1px var(--line)}
+  .pal.cut{background:var(--surface);color:var(--muted);font-size:15px;box-shadow:inset 0 0 0 1px var(--line)}
 
   /* controls */
   .controls{display:flex;gap:9px}
   .controls button{flex:1;border-radius:11px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s;letter-spacing:.03em}
-  .run{background:var(--a);border:1px solid var(--a);color:#160a2b;box-shadow:0 0 18px -6px var(--a)}
+  .run{background:var(--a);border:1px solid var(--a);color:var(--on-accent);box-shadow:0 0 18px -6px var(--a)}
   .run.stop{background:transparent;color:var(--a)}
-  .step{background:var(--panel);border:1px solid var(--line);color:#cfd7e6;flex:0 0 92px}
-  .step:hover{border-color:rgba(255,255,255,.22);color:#fff}
+  .step{background:var(--surface);border:1px solid var(--line);color:var(--ink);flex:0 0 92px}
+  .step:hover{background:var(--raised);border-color:var(--line-strong)}
 
   .stats{display:flex;justify-content:center;gap:16px;font-size:12px;opacity:.62;font-variant-numeric:tabular-nums}
   .stats b{color:var(--a);font-weight:600}
@@ -146,6 +184,10 @@
 </style>
 </head>
 <body>
+  <div class="topbar">
+    <a class="navbtn" href="../" aria-label="All games" title="All games">&#8592;</a>
+    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
+  </div>
   <h1>LO<b>O</b>M</h1>
   <div class="sub">Author rewrite rules. The loom runs them tick by tick, leftmost match first, until the thread matches - or halts, or grows forever.</div>
 
@@ -534,6 +576,22 @@ document.addEventListener('keydown',e=>{
 
 buildDots();
 loadLevel(0);
+
+/* ---------- theme toggle ---------------------------------------------- */
+(function(){
+  var btn=document.getElementById('themeToggle');
+  if(!btn)return;
+  function glyph(){btn.textContent=
+    document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';}
+  glyph();
+  btn.addEventListener('click',function(){
+    var next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+    glyph();
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
 </script>
 </body>
 </html>

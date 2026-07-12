@@ -3,41 +3,78 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff5a6e'%3EF%3C/text%3E%3C/svg%3E" />
 <title>Fracture</title>
 <style>
   :root{
-    --bg:#0a0c12;
-    --line:rgba(255,255,255,.08);
-    --line-strong:rgba(255,255,255,.18);
+    --accent:#ff5a6e;
+    --on-accent:#0e1116;   /* text/ink shown ON top of an accent fill */
     --r:#ff5a6e;        /* player R */
     --b:#3ad9ff;        /* player B */
-    --panel:rgba(255,255,255,.025);
     --gap:2.2%;
+  }
+  :root[data-theme="dark"]{
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --cell:#1e2531;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --cell:#f6f8fc;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;height:100%}
   body{
-    background:radial-gradient(130% 120% at 50% -10%, #14171f 0%, var(--bg) 55%);
-    color:#e7ecf5;
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
     font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     display:flex;flex-direction:column;align-items:center;
-    min-height:100%;padding:14px 12px 40px;gap:12px;
+    min-height:100%;padding:60px 12px 40px;gap:12px;
   }
+
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+    justify-content:space-between;padding:12px 14px;pointer-events:none}
+  .topbar .navbtn{pointer-events:auto}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;border-radius:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
+  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .navbtn:active{transform:translateY(0)}
+
   h1{margin:0;font-weight:700;letter-spacing:.42em;font-size:22px;text-transform:uppercase}
   h1 b{color:var(--r);text-shadow:0 0 18px var(--r);font-weight:700}
-  .sub{opacity:.5;font-size:11px;letter-spacing:.03em;text-align:center;max-width:440px;margin-top:-6px}
+  .sub{color:var(--muted);font-size:11px;letter-spacing:.03em;text-align:center;max-width:440px;margin-top:-6px}
 
   /* ---- scoreboard ---- */
   .scores{display:flex;gap:10px;width:100%;max-width:460px}
   .score{
     flex:1;border:1px solid var(--line);border-radius:13px;padding:8px 13px;
-    background:var(--panel);transition:.25s;position:relative;overflow:hidden;
+    background:var(--surface);transition:.25s;position:relative;overflow:hidden;
   }
   .score.active{border-color:currentColor;box-shadow:0 0 26px -8px currentColor}
   .score.r{color:var(--r)} .score.b{color:var(--b)}
   .score .lbl{font-size:10px;letter-spacing:.14em;text-transform:uppercase;opacity:.85;
     display:flex;justify-content:space-between;align-items:center}
-  .score .num{font-size:28px;font-weight:700;color:#fff;line-height:1.1}
+  .score .num{font-size:28px;font-weight:700;color:var(--ink);line-height:1.1}
   .score .num small{font-size:11px;font-weight:500;opacity:.55;color:currentColor;margin-left:4px}
   .score .toplay{font-size:9px;letter-spacing:.12em;opacity:0;transition:.25s}
   .score.active .toplay{opacity:.9}
@@ -45,8 +82,8 @@
   /* ---- breadcrumb ---- */
   .crumbs{display:flex;flex-wrap:wrap;gap:5px;align-items:center;width:100%;max-width:460px;
     min-height:22px;font-size:11px;letter-spacing:.08em}
-  .crumb{background:var(--panel);border:1px solid var(--line);border-radius:7px;
-    padding:3px 9px;cursor:pointer;transition:.15s;color:#cfd6e4}
+  .crumb{background:var(--surface);border:1px solid var(--line);border-radius:7px;
+    padding:3px 9px;cursor:pointer;transition:.15s;color:var(--ink)}
   .crumb:hover{border-color:var(--line-strong)}
   .crumb.here{cursor:default;opacity:.55}
   .crumb .sep{opacity:.35;margin:0 1px}
@@ -58,19 +95,19 @@
     gap:var(--gap);aspect-ratio:1;width:100%;
   }
   #focus{
-    padding:9px;border-radius:16px;background:rgba(255,255,255,.02);
+    padding:9px;border-radius:16px;background:var(--surface);
     border:1px solid var(--line);animation:pop .28s ease;
   }
   @keyframes pop{from{transform:scale(.94);opacity:.35}to{transform:scale(1);opacity:1}}
 
   .cell{
-    position:relative;border-radius:12px;background:rgba(255,255,255,.028);
+    position:relative;border-radius:12px;background:var(--cell);
     border:1px solid var(--line);cursor:pointer;transition:.14s;
     display:flex;align-items:center;justify-content:center;overflow:hidden;
   }
-  .cell:hover{border-color:var(--line-strong);background:rgba(255,255,255,.05)}
+  .cell:hover{border-color:var(--line-strong);background:var(--raised)}
   .cell.locked{cursor:default}
-  .cell.locked:hover{background:rgba(255,255,255,.028);border-color:var(--line)}
+  .cell.locked:hover{background:var(--cell);border-color:var(--line)}
 
   /* stones */
   .stone{width:62%;height:62%;border-radius:50%;position:relative;animation:drop .22s ease}
@@ -84,21 +121,21 @@
   .cell.attackable .stone{cursor:crosshair}
   .cell.attackable::after{
     content:"";position:absolute;inset:6%;border-radius:12px;
-    border:2px dashed rgba(255,255,255,.28);animation:spin 9s linear infinite;
+    border:2px dashed var(--line-strong);animation:spin 9s linear infinite;
     pointer-events:none;
   }
   @keyframes spin{to{transform:rotate(360deg)}}
 
   /* sub-board previews inside a focus cell */
   .cell .board{padding:9%;gap:6%}
-  .cell.sub{background:rgba(255,255,255,.015)}
-  .mcell{border-radius:26%;background:rgba(255,255,255,.03);
+  .cell.sub{background:var(--surface)}
+  .mcell{border-radius:26%;background:var(--cell);border:1px solid var(--line);
     display:flex;align-items:center;justify-content:center}
   .dot{width:64%;height:64%;border-radius:50%}
   .dot.r{background:var(--r);box-shadow:0 0 6px -1px var(--r)}
   .dot.b{background:var(--b);box-shadow:0 0 6px -1px var(--b)}
   .deep{width:60%;height:60%;border-radius:20%;
-    background:repeating-linear-gradient(45deg,rgba(255,255,255,.13) 0 2px,transparent 2px 4px)}
+    background:repeating-linear-gradient(45deg,var(--line-strong) 0 2px,transparent 2px 4px)}
 
   /* zoom affordance on live sub-boards */
   .cell.sub .zoom{position:absolute;bottom:5px;right:7px;font-size:9px;letter-spacing:.1em;
@@ -109,7 +146,7 @@
     font-size:min(13vw,58px);font-weight:800}
   .won.r{color:var(--r);background:radial-gradient(circle,rgba(255,90,110,.16),transparent 70%)}
   .won.b{color:var(--b);background:radial-gradient(circle,rgba(58,217,255,.16),transparent 70%)}
-  .won.d{color:#8791a3;background:rgba(255,255,255,.04);font-size:min(6vw,26px);letter-spacing:.1em}
+  .won.d{color:var(--muted);background:var(--raised);font-size:min(6vw,26px);letter-spacing:.1em}
   .cell .won{border-radius:12px}
   #focus > .wonbanner{position:absolute;inset:9px;border-radius:16px;pointer-events:none;
     display:flex;align-items:center;justify-content:center;font-weight:800;font-size:64px;
@@ -117,24 +154,28 @@
 
   /* controls / help */
   .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:460px}
-  button{font:inherit;font-size:12px;letter-spacing:.06em;color:#dfe4ee;cursor:pointer;
-    background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 14px;
+  button{font:inherit;font-size:12px;letter-spacing:.06em;color:var(--ink);cursor:pointer;
+    background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:7px 14px;
     transition:.15s}
-  button:hover{border-color:var(--line-strong);background:rgba(255,255,255,.05)}
+  button:hover{border-color:var(--line-strong);background:var(--raised)}
   .opt{display:flex;align-items:center;gap:6px;font-size:12px;letter-spacing:.05em;
-    color:#dfe4ee;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;
     padding:6px 12px;cursor:pointer}
   .opt input{accent-color:var(--b)}
-  select{font:inherit;font-size:12px;color:#dfe4ee;background:var(--panel);
+  select{font:inherit;font-size:12px;color:var(--ink);background:var(--surface);
     border:1px solid var(--line);border-radius:9px;padding:6px 10px;cursor:pointer}
   .thinking{color:var(--b)!important}
-  .hint{font-size:11.5px;line-height:1.55;opacity:.6;max-width:440px;text-align:center}
+  .hint{font-size:11.5px;line-height:1.55;color:var(--muted);max-width:440px;text-align:center}
   .hint b.r{color:var(--r)} .hint b.b{color:var(--b)}
   .banner{font-size:13px;letter-spacing:.05em;text-align:center;min-height:18px;transition:.2s;
     font-weight:600}
 </style>
 </head>
 <body>
+  <div class="topbar">
+    <a class="navbtn" href="../" aria-label="All games" title="All games">&#8592;</a>
+    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
+  </div>
   <h1><b>FRAC</b>TURE</h1>
   <div class="sub">tap empty to place · tap an enemy stone to shatter it into a new war · win the line, own the cell</div>
 
@@ -424,10 +465,10 @@ function render(){
   bn.className='banner';
   if(over || ROOT.winner){
     const w=ROOT.winner;
-    bn.style.color = w==='r'?'var(--r)':w==='b'?'var(--b)':'#8791a3';
+    bn.style.color = w==='r'?'var(--r)':w==='b'?'var(--b)':'var(--muted)';
     bn.textContent = w==='d'?'The root fractured to a draw.':(w==='r'?'RED':'BLUE')+' owns the fracture. ✦';
   } else {
-    bn.style.color='#8791a3';
+    bn.style.color='var(--muted)';
     bn.textContent = focus.length? `depth ${focus.length} — fight for this cell` : 'the root board';
   }
 }
@@ -476,6 +517,21 @@ document.getElementById('btn-help').onclick=()=>{
 };
 
 init();
+
+(function(){
+  var btn=document.getElementById('themeToggle');
+  if(!btn)return;
+  function glyph(){btn.textContent=
+    document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';}
+  glyph();
+  btn.addEventListener('click',function(){
+    var next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{localStorage.setItem('theme',next);}catch(e){}
+    glyph();
+    window.dispatchEvent(new Event('themechange'));
+  });
+})();
 </script>
 </body>
 </html>

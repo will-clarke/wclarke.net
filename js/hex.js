@@ -14,41 +14,6 @@
     { name: "museum",    href: "/museum/",                        accent: "#b8791f", blurb: "sites since 2014" },
   ];
 
-  // disco palette - bright, borrowed from the door accents plus a few extra
-  var PALETTE = [
-    "#8f4222", "#8c6bd6", "#2f8f8a", "#c0435a", "#b8791f",
-    "#57e08a", "#3ad9ff", "#ff7ac2", "#ffb43a", "#b98cff",
-  ];
-
-  // points of a regular n-gon inscribed in radius r, first vertex pointing up
-  function ngon(n, r) {
-    var p = [];
-    for (var i = 0; i < n; i++) {
-      var a = -Math.PI / 2 + i * 2 * Math.PI / n;
-      p.push((Math.cos(a) * r).toFixed(1) + "," + (Math.sin(a) * r).toFixed(1));
-    }
-    return p.join(" ");
-  }
-
-  // a tumbling nested-polygon "solid" for one empty hex, dressed with random
-  // colour / axis / speed so a field of them reads as a disco of spinning shapes
-  function shapeFor(rand) {
-    var sides = 3 + Math.floor(rand() * 6);           // 3..8
-    var col = PALETTE[Math.floor(rand() * PALETTE.length)];
-    var dur = (5 + rand() * 11).toFixed(1);           // 5..16s
-    var delay = (-rand() * 16).toFixed(1);            // desync the start
-    var dir = rand() < 0.5 ? "normal" : "reverse";
-    var ax = (rand() * 2 - 1).toFixed(2);
-    var ay = (rand() * 2 - 1).toFixed(2);
-    var svg =
-      '<svg viewBox="-50 -50 100 100">' +
-      '<polygon points="' + ngon(sides, 42) + '" fill="' + col + '22" stroke="' + col + '" stroke-width="3"/>' +
-      '<polygon points="' + ngon(sides, 23) + '" fill="none" stroke="' + col + '" stroke-width="2" opacity="0.6"/>' +
-      "</svg>";
-    return '<span class="shape" style="--dur:' + dur + 's;--delay:' + delay +
-      's;--dir:' + dir + ';--ax:' + ax + ';--ay:' + ay + '">' + svg + "</span>";
-  }
-
   var field = document.getElementById("field");
 
   function build() {
@@ -116,7 +81,6 @@
           // fade cells out toward the edges so the doors stay the focus
           var d = Math.hypot(left + w / 2 - cx, top + h / 2 - cy) / maxD;
           el.style.opacity = Math.max(0.12, 0.85 - d * 1.05).toFixed(3);
-          el.innerHTML = shapeFor(Math.random);   // hidden until disco mode
         }
         frag.appendChild(el);
       }
@@ -128,12 +92,9 @@
   var t;
   window.addEventListener("resize", function () {
     clearTimeout(t);
-    t = setTimeout(build, 150);
+    t = setTimeout(function () {
+      build();
+      window.dispatchEvent(new Event("hexrebuilt"));
+    }, 150);
   });
-
-  // 🕺 disco: spin a shape inside every empty hex (CSS handles the motion)
-  window.toggleDisco = function (btn) {
-    var on = document.body.classList.toggle("disco");
-    if (btn) btn.setAttribute("aria-pressed", on ? "true" : "false");
-  };
 })();
