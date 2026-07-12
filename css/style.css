@@ -389,22 +389,26 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   color: var(--fg);
   border: 0;
   font: inherit;
+  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
+              filter 0.26s ease,
+              clip-path 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 50% 50%;
 }
 
 .hex.cell {
   background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
-/* shared tile motion */
-.hex.tile {
-  cursor: pointer;
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease;
-  z-index: 2;
+.hex.tile { cursor: pointer; z-index: 2; outline: none; }
+
+/* enlarge (js/hex.js): the focused hex grows to fill its own mortar and then
+   annex a rim; it rises above neighbours, which recede on the shared edge. */
+.hex.enlarged { transform: scale(1.24); z-index: 6; }
+.hex.door.enlarged {
+  filter: drop-shadow(0 11px 28px color-mix(in srgb, var(--hex-accent) 55%, transparent));
 }
-.hex.tile:hover, .hex.tile:focus-visible {
-  transform: scale(1.07);
-  outline: none;
-  z-index: 3;
+.hex.toy.enlarged {
+  filter: drop-shadow(0 13px 32px color-mix(in srgb, var(--hex-accent) 52%, transparent));
 }
 
 .hex .name {
@@ -492,10 +496,10 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 }
 .hexhome .mark button:hover { color: var(--accent); }
 
-/* touch: no hover, so surface blurbs by default and drop the scale jump */
+/* touch: no hover, so surface blurbs by default; give taps a quick pop */
 @media (hover: none) {
   .hex.door .blurb { opacity: 1; color: var(--muted); }
-  .hex.tile:hover { transform: none; }
+  .hex.tile:active { transform: scale(1.1); z-index: 6; }
 }
 
 /* ---- focus overlay: a toy opened into a large hex ----------------------
@@ -589,5 +593,5 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .focus-box { transition: opacity 0.2s ease; }
-  .hex.tile { transition: none; }
+  .hex { transition: none; }
 }

@@ -39,11 +39,12 @@
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
   var vw, vh, w, H, stepX, rowStep, panMax = { x: 0, y: 0 };
   var live = [];                 // toy tiles: {toy, canvas, ctx, w, h, last, accent, name}
+  var cellByKey = {};            // "q,r" -> hex element, for finding neighbours
 
   // ---- layout ----------------------------------------------------------
   function build() {
     world.textContent = "";
-    live = [];
+    live = []; cellByKey = {}; shrink();
     vw = window.innerWidth; vh = window.innerHeight;
 
     w = Math.max(112, Math.min(230, vw / 5.2));
@@ -68,20 +69,22 @@
       for (var q = Math.floor(qMid - qLim); q <= Math.ceil(qMid + qLim); q++) {
         var px = (q + r / 2) * stepX, py = r * rowStep;
         if (Math.abs(px) > HX || Math.abs(py) > HY) continue;
-        frag.appendChild(makeHex(tileAt[q + "," + r], px, py, maxR));
+        frag.appendChild(makeHex(q, r, tileAt[q + "," + r], px, py, maxR));
       }
     }
     world.appendChild(frag);
     sizeToys();
   }
 
-  function makeHex(tile, px, py, maxR) {
+  function makeHex(q, r, tile, px, py, maxR) {
     var el = document.createElement(tile ? (tile.href && !tile.toy ? "a" : "button") : "div");
     el.className = "hex";
     el.style.width = w + "px";
     el.style.height = H + "px";
     el.style.left = (vw / 2 + px - w / 2) + "px";
     el.style.top = (vh / 2 + py - H / 2) + "px";
+    el.dataset.q = q; el.dataset.r = r;
+    cellByKey[q + "," + r] = el;
 
     if (!tile) {                              // quiet texture, faded by distance
       el.className = "hex cell";
@@ -91,6 +94,10 @@
     }
 
     el.classList.add("hex", "tile");
+    el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") enlarge(el); });
+    el.addEventListener("pointerleave", function () { shrink(); });
+    el.addEventListener("focusin", function () { enlarge(el); });
+    el.addEventListener("focusout", function () { shrink(); });
     el.style.setProperty("--hex-accent", tile.accent);
     if (tile.toy) {
       el.classList.add("toy");
@@ -129,6 +136,46 @@
     });
   }
 
+  // ---- enlarge: grow the focused hex, recede its neighbours' shared edge --
+  // The six axial neighbour directions, and the clip-path vertices of the hex
+  // edge that faces each one (T, UR, LR, B, LL, UL in clip order).
+  var NB = [[1, 0], [-1, 0], [0, -1], [0, 1], [1, -1], [-1, 1]];
+  var HEXV = [[50, 0], [100, 25], [100, 75], [50, 100], [0, 75], [0, 25]];
+  var EDGE = {                       // axial dir the edge faces -> its 2 vertices
+    "1,0": [1, 2], "-1,0": [4, 5], "0,-1": [5, 0],
+    "0,1": [2, 3], "1,-1": [0, 1], "-1,1": [3, 4],
+  };
+  var DENT = 0.2;                    // how far a neighbour's shared edge recedes
+
+  function dentClip(edge) {          // pull the two facing vertices toward centre
+    var v = HEXV.map(function (p) { return [p[0], p[1]]; });
+    edge.forEach(function (i) {
+      v[i][0] += (50 - v[i][0]) * DENT;
+      v[i][1] += (50 - v[i][1]) * DENT;
+    });
+    return "polygon(" + v.map(function (p) { return p[0] + "% " + p[1] + "%"; }).join(",") + ")";
+  }
+
+  var focused = null, dented = [];
+  function enlarge(el) {
+    if (focused === el || dragging) return;
+    shrink();
+    focused = el;
+    el.classList.add("enlarged");
+    var q = +el.dataset.q, r = +el.dataset.r;
+    NB.forEach(function (d) {
+      var nb = cellByKey[(q + d[0]) + "," + (r + d[1])];
+      if (!nb) return;               // the neighbour recedes on the edge facing us
+      nb.style.clipPath = dentClip(EDGE[-d[0] + "," + -d[1]]);
+      dented.push(nb);
+    });
+  }
+  function shrink() {
+    if (focused) focused.classList.remove("enlarged");
+    dented.forEach(function (nb) { nb.style.clipPath = ""; });
+    dented = []; focused = null;
+  }
+
   // ---- panning: parallax from the mouse, plus drag -----------------------
   var pan = { x: 0, y: 0 }, target = { x: 0, y: 0 };
   var base = { x: 0, y: 0 }, par = { x: 0, y: 0 };
@@ -158,7 +205,7 @@
   field.addEventListener("pointermove", function (e) {
     if (!dragging) return;
     var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
-    if (!dragMoved && Math.hypot(dx, dy) > 6) { dragMoved = true; field.classList.add("dragging"); }
+    if (!dragMoved && Math.hypot(dx, dy) > 6) { dragMoved = true; field.classList.add("dragging"); shrink(); }
     if (dragMoved) {
       base.x = clamp(dragStart.bx + dx, panMax.x);
       base.y = clamp(dragStart.by + dy, panMax.y);
@@ -209,6 +256,7 @@
 
   function openFocus(tile, inst, el) {
     if (!overlay) buildOverlay();
+    shrink();
     focus.open = true; focus.inst = inst; focus.ptr = null;
 
     var size = Math.min(vw * 0.82, vh * 0.72, 560);
