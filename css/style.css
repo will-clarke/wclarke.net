@@ -353,10 +353,11 @@ html.trippy .trippy-toggle { color: var(--accent); }
   50%      { filter: saturate(1.18); }
 }
 
-/* ---- honeycomb homepage (js/hex.js) ------------------------------------
-   The homepage is a full-viewport field of hexagons. Six centred hexes are
-   doors (links); the rest are faint texture that fades toward the edges.
-   Positions are set inline by hex.js; this styles the cells and doors. */
+/* ---- honeycomb homepage (js/hex.js + js/toys.js) -----------------------
+   A pannable field of big hexagons. Thirteen centred hexes are special: five
+   are live "toys" that open into a large focused hex, eight are doors (links).
+   The rest are faint texture that fades toward the edges. hex.js sets every
+   position inline and translates #world to pan; this styles the pieces. */
 html:has(body.hexhome), body.hexhome { height: 100%; }
 body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 
@@ -365,6 +366,15 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   inset: 0;
   z-index: 0;
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+#field.dragging { cursor: grabbing; }
+
+#world {
+  position: absolute;
+  inset: 0;
+  will-change: transform;
 }
 
 .hex {
@@ -377,47 +387,82 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   text-align: center;
   text-decoration: none;
   color: var(--fg);
+  border: 0;
+  font: inherit;
 }
 
 .hex.cell {
   background: color-mix(in srgb, var(--fg) 6%, transparent);
 }
 
-.hex.door {
-  background: color-mix(in srgb, var(--hex-accent) 16%, var(--bg));
+/* shared tile motion */
+.hex.tile {
   cursor: pointer;
-  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--hex-accent) 22%, transparent));
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, filter 0.18s ease;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), filter 0.22s ease;
   z-index: 2;
 }
-.hex.door .name {
+.hex.tile:hover, .hex.tile:focus-visible {
+  transform: scale(1.07);
+  outline: none;
+  z-index: 3;
+}
+
+.hex .name {
   font-family: var(--mono);
-  font-size: clamp(0.52rem, 2.4vw, 0.8rem);
-  letter-spacing: 0.04em;
+  font-size: clamp(0.55rem, 1.5vw, 0.82rem);
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   font-weight: 600;
   padding: 0 6%;
 }
 .hex.door .blurb {
   font-family: var(--mono);
-  font-size: clamp(0.46rem, 1.9vw, 0.6rem);
+  font-size: clamp(0.5rem, 1.2vw, 0.62rem);
   color: var(--muted);
   margin-top: 0.35em;
   opacity: 0;
   transition: opacity 0.2s ease, color 0.18s ease;
 }
+
+/* doors: accent-tinted, fill on hover */
+.hex.door {
+  background: color-mix(in srgb, var(--hex-accent) 16%, var(--bg));
+  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--hex-accent) 22%, transparent));
+}
 .hex.door:hover, .hex.door:focus-visible {
-  background: var(--hex-accent, var(--accent));
+  background: var(--hex-accent);
   color: #fff;
-  transform: scale(1.06);
-  filter: drop-shadow(0 5px 16px color-mix(in srgb, var(--hex-accent) 55%, transparent));
-  outline: none;
-  z-index: 3;
+  filter: drop-shadow(0 6px 18px color-mix(in srgb, var(--hex-accent) 55%, transparent));
 }
 .hex.door:hover .name, .hex.door:focus-visible .name { color: #fff; }
 .hex.door:hover .blurb, .hex.door:focus-visible .blurb {
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(255, 255, 255, 0.92);
   opacity: 1;
+}
+
+/* toys: the live canvas fills the hex, name floats over a soft fade */
+.hex.toy {
+  background: color-mix(in srgb, var(--hex-accent) 9%, var(--bg));
+  padding: 0;
+  filter: drop-shadow(0 2px 6px color-mix(in srgb, var(--hex-accent) 20%, transparent));
+}
+.hex.toy .toycanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+}
+.hex.toy .name {
+  position: absolute;
+  left: 0; right: 0; bottom: 8%;
+  color: var(--fg);
+  text-shadow: 0 1px 3px var(--bg), 0 0 8px var(--bg);
+  pointer-events: none;
+  opacity: 0.72;
+  transition: opacity 0.2s ease;
+}
+.hex.toy:hover .name, .hex.toy:focus-visible .name { opacity: 1; }
+.hex.toy:hover, .hex.toy:focus-visible {
+  filter: drop-shadow(0 7px 20px color-mix(in srgb, var(--hex-accent) 50%, transparent));
 }
 
 /* wordmark + controls, pinned bottom-centre */
@@ -432,7 +477,9 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--muted);
+  pointer-events: none;
 }
+.hexhome .mark .wordmark, .hexhome .mark .controls { pointer-events: auto; }
 .hexhome .mark .wordmark { color: var(--muted); text-decoration: none; }
 .hexhome .mark .wordmark:hover { color: var(--accent); }
 .hexhome .mark .controls { display: block; margin-top: 0.7rem; letter-spacing: normal; }
@@ -443,45 +490,104 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   margin: 0 0.5em;
   color: var(--muted); cursor: pointer;
 }
-.hexhome .mark button:hover,
-.hexhome .mark button[aria-pressed="true"] { color: var(--accent); }
+.hexhome .mark button:hover { color: var(--accent); }
 
 /* touch: no hover, so surface blurbs by default and drop the scale jump */
 @media (hover: none) {
   .hex.door .blurb { opacity: 1; color: var(--muted); }
-  .hex.door:hover { transform: none; }
+  .hex.tile:hover { transform: none; }
 }
 
-/* ---- disco mode (🕺) ---------------------------------------------------
-   The 🕺 button spins a wireframe polyhedron in every empty hex. The solids
-   are drawn by js/disco.js onto one canvas that sits above the field texture
-   but below the doors. */
-#disco-canvas {
+/* ---- focus overlay: a toy opened into a large hex ----------------------
+   Built by hex.js. The box grows from the clicked hex, the backdrop blurs. */
+.hexfocus {
   position: fixed;
   inset: 0;
-  z-index: 1;
-  pointer-events: none;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.hexfocus[hidden] { display: none; }
+
+.focus-backdrop {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.hexfocus.open .focus-backdrop { opacity: 1; }
+
+.focus-box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+}
+.hexfocus.open .focus-box { opacity: 1; }
+
+.focus-canvas {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  background: color-mix(in srgb, var(--focus-accent) 10%, var(--bg));
+  filter: drop-shadow(0 14px 40px color-mix(in srgb, var(--focus-accent) 45%, transparent));
+  cursor: crosshair;
 }
 
-.disco-toggle {
-  font-size: 0.95rem;
+.focus-cap {
+  margin-top: 1.2rem;
+  text-align: center;
+  font-family: var(--mono);
+  max-width: min(90vw, 30rem);
+}
+.focus-name {
+  display: block;
+  font-size: 1.1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fg);
+}
+.focus-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 0.4rem;
+}
+.focus-visit {
+  display: inline-block;
+  margin-top: 0.9rem;
+  font-size: 0.85rem;
+  color: var(--focus-accent);
+  text-decoration: none;
+  border: 1px solid color-mix(in srgb, var(--focus-accent) 50%, transparent);
+  border-radius: 999px;
+  padding: 0.35em 1em;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+.focus-visit:hover { background: var(--focus-accent); color: var(--bg); }
+.focus-visit[hidden] { display: none; }
+
+.focus-close {
+  position: absolute;
+  top: -0.6rem; right: -0.6rem;
+  width: 2rem; height: 2rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.9rem;
   line-height: 1;
-  background: none; border: 0; padding: 0;
-  margin: 0 0.5em;
   cursor: pointer;
-  filter: grayscale(1) opacity(0.6);
-  transition: filter 0.2s ease, transform 0.2s ease;
 }
-.disco-toggle:hover { filter: grayscale(0) opacity(1); }
-.disco-toggle[aria-pressed="true"] {
-  filter: grayscale(0) opacity(1);
-  animation: boogie 0.7s ease-in-out infinite;
-}
-@keyframes boogie {
-  0%, 100% { transform: rotate(-11deg); }
-  50%      { transform: rotate(11deg); }
-}
+.focus-close:hover { color: var(--accent); border-color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) {
-  .disco-toggle[aria-pressed="true"] { animation: none; }
+  .focus-box { transition: opacity 0.2s ease; }
+  .hex.tile { transition: none; }
 }
