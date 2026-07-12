@@ -352,3 +352,100 @@ html.trippy .trippy-toggle { color: var(--accent); }
   0%, 100% { filter: saturate(1); }
   50%      { filter: saturate(1.18); }
 }
+
+/* ---- honeycomb homepage (js/hex.js) ------------------------------------
+   The homepage is a full-viewport field of hexagons. Six centred hexes are
+   doors (links); the rest are faint texture that fades toward the edges.
+   Positions are set inline by hex.js; this styles the cells and doors. */
+html:has(body.hexhome), body.hexhome { height: 100%; }
+body.hexhome { padding: 0; margin: 0; overflow: hidden; }
+
+#field {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.hex {
+  position: absolute;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  text-decoration: none;
+  color: var(--fg);
+}
+
+.hex.cell {
+  background: color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.hex.door {
+  background: var(--code-bg);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
+  z-index: 2;
+}
+.hex.door .name {
+  font-family: var(--mono);
+  font-size: clamp(0.52rem, 2.4vw, 0.8rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0 6%;
+}
+.hex.door .blurb {
+  font-family: var(--mono);
+  font-size: clamp(0.46rem, 1.9vw, 0.6rem);
+  color: var(--muted);
+  margin-top: 0.35em;
+  opacity: 0;
+  transition: opacity 0.2s ease, color 0.18s ease;
+}
+.hex.door:hover, .hex.door:focus-visible {
+  background: var(--hex-accent, var(--accent));
+  color: #fff;
+  transform: scale(1.05);
+  outline: none;
+  z-index: 3;
+}
+.hex.door:hover .name, .hex.door:focus-visible .name { color: #fff; }
+.hex.door:hover .blurb, .hex.door:focus-visible .blurb {
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 1;
+}
+
+/* wordmark + controls, pinned bottom-centre */
+.hexhome .mark {
+  position: fixed;
+  left: 0; right: 0; bottom: 1.4rem;
+  z-index: 4;
+  display: block;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hexhome .mark .wordmark { color: var(--muted); text-decoration: none; }
+.hexhome .mark .wordmark:hover { color: var(--accent); }
+.hexhome .mark .controls { display: block; margin-top: 0.7rem; letter-spacing: normal; }
+.hexhome .mark button {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  background: none; border: 0; padding: 0;
+  margin: 0 0.5em;
+  color: var(--muted); cursor: pointer;
+}
+.hexhome .mark button:hover,
+.hexhome .mark button[aria-pressed="true"] { color: var(--accent); }
+
+/* touch: no hover, so surface blurbs by default and drop the scale jump */
+@media (hover: none) {
+  .hex.door .blurb { opacity: 1; color: var(--muted); }
+  .hex.door:hover { transform: none; }
+}

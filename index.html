@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Will Clarke</title>
-  <meta name="description" content="Will Clarke - software engineer in rural Dorset. Puzzle games, emulators, and other small projects.">
+  <meta name="description" content="Small things Will Clarke makes for fun: puzzle games, toys, and experiments.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
   <script>
   (function () {
@@ -22,71 +22,19 @@
   </script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-<div class="wrap">
+<body class="hexhome">
 
-  <header class="site">
-    <span class="brand"><a href="/">Will Clarke</a></span>
-    <nav>
-      <a href="/">home</a>
-      <a href="/projects.html">projects</a>
-      <a href="/writing.html">writing</a>
-      <a href="/about.html">about</a>
-      <button class="trippy-toggle" onclick="toggleTrippy(this)" aria-pressed="false" title="grow fractals from your cursor">✦ FRACTALS</button>
-      <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
-    </nav>
-  </header>
+<div id="field"></div>
 
-  <main>
-    <h1>Hello, I'm Will</h1>
-    <p class="lede">I'm a software engineer and have been for about fifteen
-    years: backends and tooling professionally; puzzle games, emulators, and an
-    ELO ranking system for potatoes otherwise. This site collects the second
-    kind.</p>
+<nav class="mark" aria-label="site">
+  <a class="wordmark" href="/about.html">will clarke</a>
+  <span class="controls">
+    <button class="trippy-toggle" onclick="toggleTrippy(this)" aria-pressed="false" title="grow fractals from your cursor">✦ fractals</button>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </span>
+</nav>
 
-    <p>I live in rural Dorset, in a cob house, with three small children, a
-    wood fire, and a server in the shed.</p>
-
-    <h2>A few things</h2>
-    <div class="shelf">
-      <div class="card">
-        <h3><a href="/projects.html">Browser games</a></h3>
-        <span class="tag">c · wasm</span>
-        <p>Five small puzzle games, written in C, playable in the browser.
-        Boxes that contain other levels, worms that replay your inputs.</p>
-      </div>
-      <div class="card">
-        <h3><a href="/games/polyhedra/">Polyhedra playground</a></h3>
-        <span class="tag">webgl</span>
-        <p>Build polyhedra from a Platonic seed with Conway operators - truncate,
-        snub, stellate - and drag to spin. Borrowed from intuition.</p>
-      </div>
-      <div class="card">
-        <h3><a href="https://intuition-2i1.pages.dev">intuition</a></h3>
-        <span class="tag">live</span>
-        <p>Around 62 single-diagram maths proofs you can drag around and poke
-        at.</p>
-      </div>
-      <div class="card">
-        <h3><a href="https://classiccult.pages.dev/">classiccult</a></h3>
-        <span class="tag">live</span>
-        <p>Cult and classic films playing across London's cinemas, scraped into
-        one page once a day.</p>
-      </div>
-    </div>
-
-    <p><a href="/projects.html">→ all projects</a></p>
-  </main>
-
-  <footer class="site">
-    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
-    <a href="https://github.com/will-clarke">github</a> ·
-    <a href="/tags.html">tags</a> ·
-    <a href="/index.xml">rss</a>
-  </footer>
-
-</div>
-<script src="/js/life.js" defer></script>
+<script src="/js/hex.js" defer></script>
 <script src="/js/trippy.js" defer></script>
 </body>
 </html>
