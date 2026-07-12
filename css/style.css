@@ -390,8 +390,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   border: 0;
   font: inherit;
   transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
-              filter 0.26s ease,
-              clip-path 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+              filter 0.26s ease;
   transform-origin: 50% 50%;
 }
 
@@ -401,9 +400,11 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 
 .hex.tile { cursor: pointer; z-index: 2; outline: none; }
 
-/* enlarge (js/hex.js): the focused hex grows to fill its own mortar and then
-   annex a rim; it rises above neighbours, which recede on the shared edge. */
-.hex.enlarged { transform: scale(1.24); z-index: 6; }
+/* enlarge (js/hex.js): the focused hex grows and rises above its neighbours,
+   which shrink by the same amount so the mortar gap stays exactly constant
+   (0.78 = 2 - 1.22). Every hex keeps its regular shape and its centre. */
+.hex.enlarged { transform: scale(1.22); z-index: 6; }
+.hex.receded { transform: scale(0.78); }
 .hex.door.enlarged {
   filter: drop-shadow(0 11px 28px color-mix(in srgb, var(--hex-accent) 55%, transparent));
 }
@@ -532,19 +533,45 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   flex-direction: column;
   align-items: center;
   opacity: 0;
-  transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+  transition: transform 0.42s cubic-bezier(0.34, 1.32, 0.5, 1), opacity 0.3s ease;
 }
 .hexfocus.open .focus-box { opacity: 1; }
 
-.focus-canvas {
+.focus-hex {
+  position: relative;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   background: color-mix(in srgb, var(--focus-accent) 10%, var(--bg));
-  filter: drop-shadow(0 14px 40px color-mix(in srgb, var(--focus-accent) 45%, transparent));
+  filter: drop-shadow(0 18px 52px color-mix(in srgb, var(--focus-accent) 45%, transparent));
+}
+.focus-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  display: block;
   cursor: crosshair;
 }
 
+/* doors dive into a bold accent cover instead of a live toy */
+.focus-box.cover .focus-hex { background: var(--focus-accent); cursor: pointer; }
+.focus-box.cover .focus-canvas { display: none; }
+.focus-label {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: clamp(1.6rem, 6vw, 3.2rem);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+.focus-box:not(.cover) .focus-label { display: none; }
+
 .focus-cap {
-  margin-top: 1.2rem;
+  margin-top: 1.1rem;
   text-align: center;
   font-family: var(--mono);
   max-width: min(90vw, 30rem);

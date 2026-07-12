@@ -120,6 +120,12 @@
       el.href = tile.href;
       el.innerHTML = '<span class="name">' + tile.name +
         '</span><span class="blurb">' + tile.blurb + "</span>";
+      el.addEventListener("click", function (e) {
+        // plain click dives into the cover; modifier clicks keep link behaviour
+        if (dragMoved || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        e.preventDefault();
+        openFocus(tile, null, el);
+      });
     }
     return el;
   }
@@ -136,27 +142,13 @@
     });
   }
 
-  // ---- enlarge: grow the focused hex, recede its neighbours' shared edge --
-  // The six axial neighbour directions, and the clip-path vertices of the hex
-  // edge that faces each one (T, UR, LR, B, LL, UL in clip order).
+  // ---- enlarge: grow the focused hex, shrink its neighbours to keep the gap --
+  // The focused hex scales up; its six neighbours scale down by the matching
+  // amount (CSS), so the mortar between them stays constant and every hex keeps
+  // its regular shape. Centres never move (transform-origin is the centre).
   var NB = [[1, 0], [-1, 0], [0, -1], [0, 1], [1, -1], [-1, 1]];
-  var HEXV = [[50, 0], [100, 25], [100, 75], [50, 100], [0, 75], [0, 25]];
-  var EDGE = {                       // axial dir the edge faces -> its 2 vertices
-    "1,0": [1, 2], "-1,0": [4, 5], "0,-1": [5, 0],
-    "0,1": [2, 3], "1,-1": [0, 1], "-1,1": [3, 4],
-  };
-  var DENT = 0.2;                    // how far a neighbour's shared edge recedes
+  var focused = null, receded = [];
 
-  function dentClip(edge) {          // pull the two facing vertices toward centre
-    var v = HEXV.map(function (p) { return [p[0], p[1]]; });
-    edge.forEach(function (i) {
-      v[i][0] += (50 - v[i][0]) * DENT;
-      v[i][1] += (50 - v[i][1]) * DENT;
-    });
-    return "polygon(" + v.map(function (p) { return p[0] + "% " + p[1] + "%"; }).join(",") + ")";
-  }
-
-  var focused = null, dented = [];
   function enlarge(el) {
     if (focused === el || dragging) return;
     shrink();
@@ -165,15 +157,15 @@
     var q = +el.dataset.q, r = +el.dataset.r;
     NB.forEach(function (d) {
       var nb = cellByKey[(q + d[0]) + "," + (r + d[1])];
-      if (!nb) return;               // the neighbour recedes on the edge facing us
-      nb.style.clipPath = dentClip(EDGE[-d[0] + "," + -d[1]]);
-      dented.push(nb);
+      if (!nb) return;
+      nb.classList.add("receded");
+      receded.push(nb);
     });
   }
   function shrink() {
     if (focused) focused.classList.remove("enlarged");
-    dented.forEach(function (nb) { nb.style.clipPath = ""; });
-    dented = []; focused = null;
+    receded.forEach(function (nb) { nb.classList.remove("receded"); });
+    receded = []; focused = null;
   }
 
   // ---- panning: parallax from the mouse, plus drag -----------------------
@@ -221,9 +213,9 @@
     if (dragMoved) { e.preventDefault(); e.stopPropagation(); }
   }, true);
 
-  // ---- focus overlay: a toy opened large --------------------------------
+  // ---- focus overlay: a hex dived into, filling most of the screen ------
   var focus = { open: false, inst: null, ptr: null };
-  var overlay, fcanvas, fctx, fname, fhint, fvisit, fbox, fw = 0, fh = 0;
+  var overlay, fhex, fcanvas, fctx, flabel, fname, fhint, fvisit, fbox, fw = 0, fh = 0;
 
   function buildOverlay() {
     overlay = document.createElement("div");
@@ -231,15 +223,19 @@
     overlay.hidden = true;
     overlay.innerHTML =
       '<div class="focus-backdrop"></div>' +
-      '<div class="focus-box"><canvas class="focus-canvas"></canvas>' +
+      '<div class="focus-box">' +
+      '<div class="focus-hex"><canvas class="focus-canvas"></canvas>' +
+      '<span class="focus-label"></span></div>' +
       '<div class="focus-cap"><span class="focus-name"></span>' +
       '<span class="focus-hint"></span>' +
       '<a class="focus-visit" hidden>visit →</a></div>' +
       '<button class="focus-close" aria-label="close">✕</button></div>';
     document.body.appendChild(overlay);
     fbox = overlay.querySelector(".focus-box");
+    fhex = overlay.querySelector(".focus-hex");
     fcanvas = overlay.querySelector(".focus-canvas");
     fctx = fcanvas.getContext("2d");
+    flabel = overlay.querySelector(".focus-label");
     fname = overlay.querySelector(".focus-name");
     fhint = overlay.querySelector(".focus-hint");
     fvisit = overlay.querySelector(".focus-visit");
@@ -259,25 +255,31 @@
     shrink();
     focus.open = true; focus.inst = inst; focus.ptr = null;
 
-    var size = Math.min(vw * 0.82, vh * 0.72, 560);
-    fw = size; fh = size * 1.1547;
-    if (fh > vh * 0.78) { fh = vh * 0.78; fw = fh / 1.1547; }
+    // fill most of the screen, leaving room below for the caption
+    fw = Math.min(vw * 0.92, (vh - 170) / 1.1547);
+    fh = fw * 1.1547;
     fcanvas.width = Math.round(fw * dpr);
     fcanvas.height = Math.round(fh * dpr);
-    fcanvas.style.width = fw + "px";
-    fcanvas.style.height = fh + "px";
     fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fctx.clearRect(0, 0, fw, fh);
+    fhex.style.width = fw + "px";
+    fhex.style.height = fh + "px";
+    overlay.style.setProperty("--focus-accent", tile.accent);
 
-    fname.textContent = tile.name;
-    fhint.textContent = inst.hint || tile.blurb;
+    var isDoor = !inst;
+    fbox.classList.toggle("cover", isDoor);
+    flabel.textContent = isDoor ? tile.name : "";
+    fname.textContent = isDoor ? "" : tile.name;
+    fname.style.display = isDoor ? "none" : "";
+    fhint.textContent = inst ? (inst.hint || tile.blurb) : tile.blurb;
+    fhex.onclick = isDoor && tile.href ? function () { window.location = tile.href; } : null;
     if (tile.href) {
       fvisit.hidden = false; fvisit.href = tile.href;
       fvisit.textContent = "visit " + tile.name + " →";
     } else { fvisit.hidden = true; }
-    overlay.style.setProperty("--focus-accent", tile.accent);
 
     overlay.hidden = false;
-    // grow from the clicked hex
+    // dive out of the clicked hex
     var rect = el.getBoundingClientRect();
     var dx = rect.left + rect.width / 2 - vw / 2;
     var dy = rect.top + rect.height / 2 - vh / 2;
@@ -285,7 +287,7 @@
       overlay.classList.add("open");
     } else {
       fbox.style.transition = "none";
-      fbox.style.transform = "translate(" + dx + "px," + dy + "px) scale(0.18)";
+      fbox.style.transform = "translate(" + dx + "px," + dy + "px) scale(0.12)";
       requestAnimationFrame(function () {
         fbox.style.transition = "";
         fbox.style.transform = "translate(0,0) scale(1)";
