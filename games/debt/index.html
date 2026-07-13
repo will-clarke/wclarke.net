@@ -362,6 +362,32 @@ const LEVELS=[
   '##O###D##',
   '#....#KX#',
   '#########']},
+{ name:'due diligence',
+  hint:'two ways in. before you borrow, ask - what here could ever repay it?',
+  lend:['key','crate'],
+  map:[
+  '##########',
+  '#@...#...#',
+  '#....D...#',
+  '#....#.X.#',
+  '#..P.#.C.#',
+  '#....G...#',
+  '#....#..O#',
+  '##########']},
+{ name:'escrow',
+  hint:'your debt is already here. carry it with you - all the way down.',
+  lend:[],
+  map:[
+  '#########',
+  '#@......#',
+  '#.......#',
+  '###&#####',
+  '###G#####',
+  '#.......#',
+  '#....Q..#',
+  '#####H###',
+  '#####O.X#',
+  '#########']},
 ];
 /*__END_LEVELS__*/
 
@@ -379,9 +405,11 @@ function parseLevel(def){
     else if(c==='D')l.doors.push({x,y,open:false});
     else if(c==='C')l.crates.push({x,y,b:false,gone:false});
     else if(c==='%'){l.crates.push({x,y,b:true,gone:false});l.debts.push('crate');}
-    else if(c==='&'){l.plates.push({x,y});l.crates.push({x,y,b:true,gone:false});l.debts.push('crate');}
-    else if(c==='P')l.plates.push({x,y});
-    else if(c==='G')l.gates.push({x,y});
+    else if(c==='&'){l.plates.push({x,y,grp:0});l.crates.push({x,y,b:true,gone:false});l.debts.push('crate');}
+    else if(c==='P')l.plates.push({x,y,grp:0});
+    else if(c==='Q')l.plates.push({x,y,grp:1});
+    else if(c==='G')l.gates.push({x,y,grp:0});
+    else if(c==='H')l.gates.push({x,y,grp:1});
     else if(c==='~')l.pits.push({x,y,filled:false});
     else if(c==='O')l.portal={x,y};
     else if(c==='X')l.exit={x,y};
@@ -395,7 +423,8 @@ const keyAt=(x,y)=>L.keys.find(k=>!k.taken&&k.x===x&&k.y===y);
 const pitAt=(x,y)=>L.pits.find(p=>p.x===x&&p.y===y);
 const gateAt=(x,y)=>L.gates.find(g=>g.x===x&&g.y===y);
 const plateAt=(x,y)=>L.plates.find(p=>p.x===x&&p.y===y);
-const gatesOpen=()=>L.plates.length>0&&L.plates.every(p=>crateAt(p.x,p.y)||(L.px===p.x&&L.py===p.y));
+const plateFull=p=>!!crateAt(p.x,p.y)||(L.px===p.x&&L.py===p.y);
+const gateOpen=g=>{const ps=L.plates.filter(p=>p.grp===g.grp);return ps.length>0&&ps.every(plateFull);};
 
 /* ================= undo ================= */
 let undoStack=[];
@@ -418,7 +447,7 @@ function step(dx,dy){
   const nx=L.px+dx,ny=L.py+dy;
   if(isWall(nx,ny)){S.no();return false;}
   const g=gateAt(nx,ny);
-  if(g&&!gatesOpen()){S.no();msg('the gate is shut. weight opens it.');return false;}
+  if(g&&!gateOpen(g)){S.no();msg('the gate is shut. weight opens it.');return false;}
   const d=doorAt(nx,ny);
   if(d&&!d.open){
     if(L.inv>0){snap();L.inv--;d.open=true;S.unlock();movePlayer(nx,ny);return true;}
@@ -430,14 +459,14 @@ function step(dx,dy){
     const tx=nx+dx,ty=ny+dy;
     if(isWall(tx,ty)||crateAt(tx,ty)||keyAt(tx,ty)){S.no();return false;}
     const d2=doorAt(tx,ty); if(d2&&!d2.open){S.no();return false;}
-    const g2=gateAt(tx,ty); if(g2&&!gatesOpen()){S.no();return false;}
+    const g2=gateAt(tx,ty); if(g2&&!gateOpen(g2)){S.no();return false;}
     if(L.exit.x===tx&&L.exit.y===ty){S.no();msg('the exit is not storage.');return false;}
     const p2=pitAt(tx,ty);
     if(p2&&!p2.filled){snap();c.x=tx;c.y=ty;c.gone=true;p2.filled=true;S.pit();
       msg('the pit keeps it. forever.');movePlayer(nx,ny);return true;}
     if(L.portal&&L.portal.x===tx&&L.portal.y===ty){
       const di=L.debts.indexOf('crate');
-      if(di<0){S.no();msg('nothing is owed. the portal stays shut.');return false;}
+      if(di<0){S.no();msg(L.debts.length?'the ledger owes a key - a crate cannot repay it.':'nothing is owed. the portal stays shut.');return false;}
       snap();c.x=tx;c.y=ty;c.gone=true;L.debts.splice(di,1);S.repay();repayFX();
       toastOnce('rc','loop closed - the crate you sent back is the crate you borrowed.');
       movePlayer(nx,ny);return true;}
@@ -455,7 +484,8 @@ function movePlayer(nx,ny){
   if(L.portal&&L.portal.x===nx&&L.portal.y===ny){
     const di=L.debts.indexOf('key');
     if(di>=0&&L.inv>0){L.inv--;L.debts.splice(di,1);S.repay();repayFX();
-      toastOnce('rk','loop closed - the key you sent back becomes the key you borrowed.');}}
+      toastOnce('rk','loop closed - the key you sent back becomes the key you borrowed.');}
+    else if(L.debts.indexOf('crate')>=0&&L.inv>0)msg('the ledger owes a crate - a key cannot repay it.');}
   update();
 }
 
@@ -501,7 +531,7 @@ function stopWalk(){if(walkT){clearInterval(walkT);walkT=null;}walkQueue=[];}
 function passableInterior(x,y){
   if(isWall(x,y)||crateAt(x,y))return false;
   const d=doorAt(x,y); if(d&&!d.open)return false;
-  const g=gateAt(x,y); if(g&&!gatesOpen())return false;
+  const g=gateAt(x,y); if(g&&!gateOpen(g))return false;
   const p=pitAt(x,y); if(p&&!p.filled)return false;
   if(L.portal&&L.portal.x===x&&L.portal.y===y)return false;
   if(L.exit.x===x&&L.exit.y===y)return false;
@@ -589,8 +619,7 @@ function update(){
   L.keys.forEach(k=>k.el.classList.toggle('taken',k.taken));
   L.crates.forEach(c=>{pos(c.el,c.x,c.y);c.el.classList.toggle('gone',c.gone);});
   L.doors.forEach(d=>d.el.classList.toggle('open',d.open));
-  const go=gatesOpen();
-  L.gates.forEach(g=>g.el.classList.toggle('open',go));
+  L.gates.forEach(g=>g.el.classList.toggle('open',gateOpen(g)||!!crateAt(g.x,g.y)||(L.px===g.x&&L.py===g.y)));
   L.pits.forEach(p=>p.el.classList.toggle('filled',p.filled));
   L.plates.forEach(p=>p.el.classList.toggle('pressed',!!(crateAt(p.x,p.y)||(L.px===p.x&&L.py===p.y))));
   if(L.portalEl)L.portalEl.classList.toggle('armed',L.debts.length>0);

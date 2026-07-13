@@ -23,6 +23,12 @@
   })();
   </script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* zoom this page into the writing honeycomb, and back (see writing-hex.html) */
+    @view-transition { navigation: auto; }
+    .hex.portal { view-transition-name: writing-portal; }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+  </style>
 </head>
 <body class="hexhome">
 

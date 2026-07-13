@@ -389,8 +389,9 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   color: var(--fg);
   border: 0;
   font: inherit;
-  transition: transform 0.26s cubic-bezier(0.22, 1, 0.36, 1),
-              filter 0.26s ease;
+  /* a slightly bouncy bloom: the transform overshoots then settles */
+  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.5, 1),
+              filter 0.3s ease;
   transform-origin: 50% 50%;
 }
 
@@ -684,6 +685,19 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   cursor: pointer;
 }
 .focus-close:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ---- cross-document zoom (home <-> writing honeycomb) ------------------
+   The shared element is named "writing-portal" (the homepage "writing" hex on
+   one side, the whole #field on the other), so the browser morphs one into the
+   other: a zoom in on the way there, a zoom out on the way back. Opt-in lives
+   in each page's inline <style>. */
+::view-transition-group(writing-portal) {
+  animation-duration: 0.52s;
+  animation-timing-function: cubic-bezier(0.34, 1.26, 0.5, 1);   /* a gentle overshoot */
+}
+::view-transition-old(root), ::view-transition-new(root) {
+  animation-duration: 0.5s;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .focus-box { transition: opacity 0.2s ease; }

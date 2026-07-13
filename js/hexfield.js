@@ -148,6 +148,9 @@ window.HexField = function (mount, cfg) {
 
     el.addEventListener("click", function (e) {
       if (dragMoved) return;
+      // a "portal" tile (dive:false) just navigates, so a cross-document view
+      // transition can zoom it into the next page.
+      if (cell.dive === false) return;
       // modifier/middle clicks on a real link keep normal navigation
       if (cell.link && (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return;
       e.preventDefault();

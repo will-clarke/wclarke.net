@@ -126,7 +126,7 @@
   /* editors */
   .editwrap{display:flex;flex-direction:column;gap:10px;align-items:center}
 
-  /* colour picker + operator picker */
+  /* operator picker */
   .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
   .traylab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-right:2px}
   .chip{
@@ -136,8 +136,6 @@
   }
   .chip:hover{border-color:var(--line-strong);background:var(--raised)}
   .chip.armed{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 0 14px -6px var(--a)}
-  .csw{width:16px;height:16px;border-radius:5px;flex:none;border:1px solid var(--line)}
-  .csw.plain{background:var(--ink);border-color:var(--ink)}
 
   .editors{display:flex;gap:16px;justify-content:center}
   .editor{display:flex;flex-direction:column;gap:6px;align-items:center}
@@ -245,7 +243,6 @@
 
     <div class="editwrap">
       <div class="tray ops" id="ops" hidden></div>
-      <div class="tray colours" id="colours" hidden></div>
       <div class="editors" id="editors"></div>
       <div class="hint" id="hint"></div>
       <div class="par" id="par" hidden></div>
@@ -265,12 +262,8 @@
            inverted, and that flip propagates - Sierpiński and friends]
 ------------------------------------------------------------------- */
 const A=2, B=3;
-/* value bits:  0-1 type (0 empty,1 ink,2 A,3 B) · 4-5 colour (0 plain,1 R,2 G,3 B)
-   colour tints a cell and, for a reference, propagates down its whole subtree.
-   colour 0 = plain = inherit the carried colour (the theme ink at the top).
-   (bits 2-3 once held a per-cell rotation; rotation is retired for now.) */
-const col=(v,c)=> v===0 ? 0 : ((v&15) + (c<<4));                                    // tint (keep type)
-const COLOURS=['', '#ff4d5e', '#37d67a', '#4d9bff'];   // index 0 = inherit
+/* cell value = type only: 0 empty · 1 ink · 2 stamp A (self) · 3 stamp B.
+   (earlier builds packed rotation and colour into higher bits; both retired.) */
 const NCELLS={sq3:9, sq2:4, tri:4};
 const BASE={sq3:3, sq2:2};
 const GEOMNAME={sq3:'3×3', sq2:'2×2', tri:'triangle'};
@@ -361,18 +354,6 @@ const LEVELS=[
     hint:"A solid <b>ink</b> steeple on top; the two lower corners fall into gaskets; the inverted middle stays hollow. Ink and recursion, sharing one triangle.",
     stamps:[[1,A,A, 0]] },
 
-  { name:"Primary", colour:true,
-    hint:"Colour arrives. Pick a hue, then paint - ink and self now carry it. Send a <b>red</b>, a <b>green</b> and a <b>blue</b> self tumbling down the diagonal.",
-    stamps:[[col(A,1),0,0, 0,col(A,2),0, 0,0,col(A,3)]] },
-
-  { name:"Violet", colour:true,
-    hint:"Red self and blue self, woven into one carpet. A tinted self stains its whole descent - watch violet bloom where the two colours meet.",
-    stamps:[[col(A,1),col(A,3),col(A,1), col(A,3),0,col(A,3), col(A,1),col(A,3),col(A,1)]] },
-
-  { name:"Prism", geom:"tri", colour:true,
-    hint:"The oldest fractal, in full colour: a red corner, a green corner, a blue corner - each a gasket of its own hue.",
-    stamps:[[col(A,1),col(A,2),col(A,3), 0]] },
-
   /* --- Found marks: shapes discovered in free play, set as targets --- */
   { name:"Perforated",
     hint:"A near-solid field, punched through by a plus - and every plus punched with smaller plusses, all the way down.",
@@ -438,9 +419,8 @@ function drawSq(ctx, stamps, id, base, x, y, size, carried, r){
     let i=(k/base)|0, j=k%base;
     for(let n=0;n<r;n++){ const ni=j, nj=base-1-i; i=ni; j=nj; }   // clockwise quarter-turns
     const sx=x+j*c, sy=y+i*c;
-    const cc=(v>>4)&3, paint=cc?COLOURS[cc]:carried;               // per-cell tint, else inherit
-    if((v&3)===1){ ctx.fillStyle=paint; ctx.fillRect(sx, sy, c+0.6, c+0.6); }
-    else drawSq(ctx, stamps, (v&3)-2, base, sx, sy, c, paint, ((v>>2)+r)&3);
+    if(v===1){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); }
+    else drawSq(ctx, stamps, v-2, base, sx, sy, c, carried, ((v>>2)+r)&3);
   }
 }
 function triPath(ctx, ax,ay,bx,by,cx,cy){ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath(); }
@@ -458,9 +438,8 @@ function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried){
   for(let k=0;k<4;k++){
     const v=s[k]; if(!v) continue;
     const t=sub[k];
-    const cc=(v>>4)&3, paint=cc?COLOURS[cc]:carried;
-    if((v&3)===1){ ctx.fillStyle=paint; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); }
-    else drawTri(ctx, stamps, (v&3)-2, t[0],t[1],t[2],t[3],t[4],t[5], paint);
+    if(v===1){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); }
+    else drawTri(ctx, stamps, v-2, t[0],t[1],t[2],t[3],t[4],t[5], carried);
   }
 }
 function renderPic(canvas, stamps, geom){
@@ -489,8 +468,6 @@ let baseline=[];          // starting state (blank) for reset
 let targetStamps=[];      // what the target picture shows
 let targetFP=null;
 let curPar=0;
-let armedColour=0;        // active colour tint: 0 plain, 1 R, 2 G, 3 B
-let colourOn=false;       // is the colour row available this level/mode?
 let prevWin=false, advTimer=null;
 let solved={};
 try{ solved=JSON.parse(localStorage.getItem('selfie-solved')||'{}'); }catch(e){}
@@ -540,7 +517,6 @@ function loadLevel(i){
   stamps = baseline.map(s=>s.slice());
   targetFP = fingerprint(targetStamps, geom);
   curPar = parOf(targetStamps);
-  armedColour=0; colourOn=!!L.colour;
   renderPic($('target'), targetStamps, geom);
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
@@ -552,33 +528,14 @@ function loadLevel(i){
   $('yoursFrame').classList.remove('win','pop');
   $('winMsg').classList.remove('show');
 
-  buildColours(); buildEditors(); setTapnote(); markDots(); update();
+  buildEditors(); setTapnote(); markDots(); update();
 }
 
-/* ---- colour picker (the only on-screen control) ------------------ */
 function setTapnote(){
-  const multi=stamps.length>1;
-  let s = multi
+  $('tapnote').textContent = stamps.length>1
     ? 'tap a cell to cycle · empty ▸ ink ▸ self (grid 1) ▸ other (grid 2) ▸ empty'
     : 'tap a cell to cycle · empty ▸ ink ▸ self ▸ empty';
-  if(colourOn) s+=' · pick a colour to tint';
-  $('tapnote').textContent=s;
 }
-function buildColours(){
-  const host=$('colours'); host.innerHTML=''; host.hidden=!colourOn;
-  if(!colourOn) return;
-  [{c:0,label:'plain'},{c:1,label:'red'},{c:2,label:'green'},{c:3,label:'blue'}].forEach(o=>{
-    const el=document.createElement('button'); el.className='chip col'; el.dataset.c=o.c;
-    const dot=document.createElement('span'); dot.className='csw';
-    if(o.c===0) dot.classList.add('plain');
-    else { dot.style.background=COLOURS[o.c]; dot.style.borderColor=COLOURS[o.c]; }
-    el.appendChild(dot); el.appendChild(document.createTextNode(o.label));
-    el.onclick=()=>{ armedColour=o.c; markColours(); };
-    host.appendChild(el);
-  });
-  markColours();
-}
-function markColours(){ [...$('colours').children].forEach(el=>el.classList.toggle('armed', +el.dataset.c===armedColour)); }
 
 /* ---- editors ----------------------------------------------------- */
 function buildEditors(){

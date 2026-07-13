@@ -16,7 +16,7 @@
 
     { q: 1,  r: -1, name: "games",     accent: "#8f4222", href: "/games/",                       blurb: "puzzle games" },
     { q: 0,  r: -1, name: "intuition", accent: "#2f8f8a", href: "https://intuition.wclarke.net", blurb: "maths, poked" },
-    { q: 0,  r: 1,  name: "writing",   accent: "#556071", href: "/writing.html",                 blurb: "occasional notes" },
+    { q: 0,  r: 1,  name: "writing",   accent: "#556071", href: "/writing-hex.html", portal: true, blurb: "occasional notes" },
     { q: 0,  r: -2, name: "museum",    accent: "#b8791f", href: "/museum/",                       blurb: "sites since 2014" },
     { q: 2,  r: -2, name: "github",    accent: "#5a6270", href: "https://github.com/will-clarke", blurb: "the code" },
     { q: 0,  r: 2,  name: "about",     accent: "#a1633f", href: "/about.html",                    blurb: "hello" },
@@ -47,8 +47,12 @@
     }
     return {                                // a door: a link that opens a bold cover
       q: t.q, r: t.r, accent: t.accent, link: true, href: t.href,
+      // a portal door skips the cover card and just navigates, so the browser's
+      // cross-document view transition can zoom the hex into the next page.
+      dive: t.portal ? false : true,
       tile: function (el) {
         el.classList.add("door");
+        if (t.portal) el.classList.add("portal");
         el.innerHTML = '<span class="name">' + esc(t.name) +
           '</span><span class="blurb">' + esc(t.blurb) + "</span>";
       },
