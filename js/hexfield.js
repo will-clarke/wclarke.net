@@ -37,7 +37,7 @@ window.HexField = function (mount, cfg) {
   field.appendChild(world);
 
   var dpr = Math.min(window.devicePixelRatio || 1, 2);
-  var vw, vh, w, H, stepX, rowStep, panMax = { x: 0, y: 0 };
+  var vw, vh, w, H, stepX, rowStep, haloPx = Infinity, panMax = { x: 0, y: 0 };
   var live = [];                 // preview tiles: {cell, canvas, ctx, w, h, last}
   var cellByKey = {};            // "q,r" -> hex element, for finding neighbours
   var tiles = [];                // special hexes: {el, px, py} for centre auto-focus
@@ -59,13 +59,25 @@ window.HexField = function (mount, cfg) {
     stepX = w + gap;
     rowStep = H * 0.75 + gap * 0.5;
 
-    var specialAt = {}, reach = { x: 0, y: 0 };
+    var specialAt = {}, specialPts = [], reach = { x: 0, y: 0 };
     cfg.specials.forEach(function (c) {
       specialAt[c.q + "," + c.r] = c;
       var px = (c.q + c.r / 2) * stepX, py = c.r * rowStep;
+      specialPts.push({ px: px, py: py });
       reach.x = Math.max(reach.x, Math.abs(px));
       reach.y = Math.max(reach.y, Math.abs(py));
     });
+    // halo: only keep texture within this many hexes of a special, so scattered
+    // clusters read as islands (and the field stays light). Infinity = full field.
+    haloPx = cfg.halo ? cfg.halo * stepX : Infinity;
+    function nearSpecial(px, py) {
+      var m = Infinity;
+      for (var i = 0; i < specialPts.length; i++) {
+        var d = Math.hypot(specialPts[i].px - px, specialPts[i].py - py);
+        if (d < m) m = d;
+      }
+      return m;
+    }
 
     // explore: open the pan wide enough to scroll every special through the
     // centre. parallax home: a small throw, but touch still needs to reach the
@@ -86,14 +98,17 @@ window.HexField = function (mount, cfg) {
       for (var q = Math.floor(qMid - qLim); q <= Math.ceil(qMid + qLim); q++) {
         var px = (q + r / 2) * stepX, py = r * rowStep;
         if (Math.abs(px) > HX || Math.abs(py) > HY) continue;
-        frag.appendChild(makeHex(q, r, specialAt[q + "," + r], px, py, maxR));
+        var cell = specialAt[q + "," + r];
+        var near = cell ? 0 : nearSpecial(px, py);
+        if (!cell && near > haloPx) continue;       // outside every cluster halo
+        frag.appendChild(makeHex(q, r, cell, px, py, maxR, near));
       }
     }
     world.appendChild(frag);
     sizeLive();
   }
 
-  function makeHex(q, r, cell, px, py, maxR) {
+  function makeHex(q, r, cell, px, py, maxR, near) {
     var el = document.createElement(cell ? (cell.link ? "a" : "button") : "div");
     el.className = "hex";
     el.style.width = w + "px";
@@ -103,14 +118,18 @@ window.HexField = function (mount, cfg) {
     el.dataset.q = q; el.dataset.r = r;
     cellByKey[q + "," + r] = el;
 
-    if (!cell) {                              // quiet texture, faded by distance
+    if (!cell) {                              // quiet texture
       el.className = "hex cell";
-      var d = Math.hypot(px, py) / maxR;
-      el.style.opacity = Math.max(0.06, 0.8 - d * 1.0).toFixed(3);
+      // halo mode: fade out from each cluster. otherwise: fade from the centre.
+      var o = isFinite(haloPx)
+        ? 0.5 - (near / haloPx) * 0.44
+        : 0.8 - (Math.hypot(px, py) / maxR) * 1.0;
+      el.style.opacity = Math.max(0.06, o).toFixed(3);
       return el;
     }
 
     el.classList.add("hex", "tile");
+    el.__cell = cell;
     tiles.push({ el: el, px: px, py: py });
     el.style.setProperty("--hex-accent", cell.accent);
     el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") enlarge(el); });
@@ -331,6 +350,7 @@ window.HexField = function (mount, cfg) {
   function closeFocus() {
     if (!focus.open) return;
     focus.open = false; focus.live = null; focus.ptr = null;
+    lastCentre = null;               // re-announce the centre once we are back
     overlay.classList.remove("open");
     var done = function () { overlay.hidden = true; };
     if (REDUCED) { done(); }
@@ -341,18 +361,23 @@ window.HexField = function (mount, cfg) {
   }
 
   // ---- one animation loop for pan + every live preview ------------------
-  var previewDrawn = false;
+  var previewDrawn = false, lastCentre = null;
   function loop(t) {
     if (!document.hidden) {
       pan.x += (target.x - pan.x) * (REDUCED ? 1 : 0.09);
       pan.y += (target.y - pan.y) * (REDUCED ? 1 : 0.09);
       world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0)";
 
-      // touch: keep the hex under the middle of the screen bloomed open, so
-      // scrolling the honeycomb around feels like tuning a dial.
-      if (AUTO && !focus.open) {
+      // whichever special hex is under the middle of the screen is the "centred"
+      // one: touch blooms it open (its cursor), and cfg.onCentre is told so a
+      // page can react (the writing archive floats that cluster's name).
+      if (!focus.open) {
         var c = centreTile();
-        if (c && c !== focused) enlarge(c, true);
+        if (c !== lastCentre) {
+          lastCentre = c;
+          if (cfg.onCentre) cfg.onCentre(c ? c.__cell : null);
+          if (AUTO && c) enlarge(c, true);
+        }
       }
 
       if (focus.open && focus.live) {

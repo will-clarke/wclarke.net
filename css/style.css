@@ -472,6 +472,61 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   filter: drop-shadow(0 7px 20px color-mix(in srgb, var(--hex-accent) 50%, transparent));
 }
 
+/* writing archive (js/writing.js): each post/story is a small accent-tinted
+   hex that fills in when hovered or bloomed; title + year sit inside. */
+.hex.post {
+  background: color-mix(in srgb, var(--hex-accent) 15%, var(--bg));
+  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--hex-accent) 20%, transparent));
+  padding: 0 9%;
+}
+.hex.post .ptitle {
+  font-family: var(--mono);
+  font-size: clamp(0.44rem, 1.1vw, 0.64rem);
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.hex.post .pdate {
+  font-family: var(--mono);
+  font-size: clamp(0.4rem, 0.95vw, 0.54rem);
+  color: var(--muted);
+  margin-top: 0.4em;
+}
+.hex.post:hover, .hex.post:focus-visible, .hex.post.enlarged {
+  background: var(--hex-accent);
+  filter: drop-shadow(0 7px 20px color-mix(in srgb, var(--hex-accent) 55%, transparent));
+}
+.hex.post:hover .ptitle, .hex.post:focus-visible .ptitle, .hex.post.enlarged .ptitle,
+.hex.post:hover .pdate, .hex.post:focus-visible .pdate, .hex.post.enlarged .pdate {
+  color: #fff;
+}
+
+/* the floating cluster name, shown as you scroll a topic to the centre */
+.cluster-tag {
+  position: fixed;
+  top: 1.2rem; left: 50%;
+  z-index: 4;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--tag-accent, var(--muted));
+  padding: 0.42em 1.1em;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--tag-accent, var(--muted)) 13%, var(--bg));
+  border: 1px solid color-mix(in srgb, var(--tag-accent, var(--muted)) 32%, transparent);
+  opacity: 0;
+  transform: translate(-50%, -0.5rem);
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease, color 0.3s ease,
+              background 0.3s ease, border-color 0.3s ease;
+}
+.cluster-tag.show { opacity: 1; transform: translate(-50%, 0); }
+
 /* wordmark + controls, pinned bottom-centre */
 .hexhome .mark {
   position: fixed;
@@ -489,6 +544,8 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 .hexhome .mark .wordmark, .hexhome .mark .controls { pointer-events: auto; }
 .hexhome .mark .wordmark { color: var(--muted); text-decoration: none; }
 .hexhome .mark .wordmark:hover { color: var(--accent); }
+.hexhome .mark .plainlink { color: var(--muted); text-decoration: none; margin: 0 0.6em; }
+.hexhome .mark .plainlink:hover { color: var(--accent); }
 .hexhome .mark .controls { display: block; margin-top: 0.7rem; letter-spacing: normal; }
 .hexhome .mark button {
   font-family: var(--mono);
@@ -569,11 +626,13 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   align-items: center;
   justify-content: center;
   font-family: var(--mono);
-  font-size: clamp(1.6rem, 6vw, 3.2rem);
-  letter-spacing: 0.1em;
+  font-size: clamp(1.4rem, 5vw, 2.6rem);
+  line-height: 1.12;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #fff;
   text-shadow: 0 2px 14px rgba(0, 0, 0, 0.28);
+  padding: 0 8%;
   pointer-events: none;
 }
 .focus-box:not(.cover) .focus-label { display: none; }

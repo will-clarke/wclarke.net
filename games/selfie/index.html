@@ -372,6 +372,55 @@ const LEVELS=[
   { name:"Prism", geom:"tri", colour:true,
     hint:"The oldest fractal, in full colour: a red corner, a green corner, a blue corner - each a gasket of its own hue.",
     stamps:[[col(A,1),col(A,2),col(A,3), 0]] },
+
+  /* --- Found marks: shapes discovered in free play, set as targets --- */
+  { name:"Perforated",
+    hint:"A near-solid field, punched through by a plus - and every plus punched with smaller plusses, all the way down.",
+    stamps:[[A,A,A, A,B,A, A,A,A],
+            [A,0,A, 0,0,0, A,0,A]] },
+
+  { name:"Snowflake",
+    hint:"Two marks trade X's and corners: A is a saltire of B, B is corners of A. A six-armed storm that never settles.",
+    stamps:[[B,A,B, A,B,A, B,A,B],
+            [B,0,B, 0,0,0, B,0,B]] },
+
+  { name:"Foam",
+    hint:"A dense weave wrapped around a plus of hollows - bubbles inside bubbles inside bubbles.",
+    stamps:[[A,B,A, B,B,B, A,B,A],
+            [0,B,0, B,0,B, 0,B,0]] },
+
+  { name:"Kiss",
+    hint:"A saltire of self meeting corners of the other - two arms of lace crossing at the heart.",
+    stamps:[[A,B,A, B,A,B, A,B,A],
+            [A,0,A, 0,0,0, A,0,A]] },
+
+  { name:"Sieve",
+    hint:"A carpet dropped over a carpet: square voids opening at every scale.",
+    stamps:[[B,B,B, B,A,B, B,B,B],
+            [A,A,A, A,0,A, A,A,A]] },
+
+  { name:"Chainmail",
+    hint:"Two diagonal bands of self, interlocking - rings within rings, cut on the bias.",
+    stamps:[[0,A,A, A,0,A, A,A,0]] },
+
+  { name:"Wreath",
+    hint:"The two marks curl around a hollow centre - a ring woven from smaller rings.",
+    stamps:[[0,A,B, A,0,A, B,A,0],
+            [A,B,0, B,0,B, 0,B,A]] },
+
+  { name:"Hourglass",
+    hint:"A saltire of carpets, pinched at the waist: four full blocks and a knot tied in the middle.",
+    stamps:[[B,0,B, 0,B,0, B,0,B],
+            [A,B,A, B,A,B, A,B,A]] },
+
+  { name:"Drift",
+    hint:"Barely three cells of self, scattering into a slow diagonal snowfall.",
+    stamps:[[0,0,A, A,0,0, 0,0,A]] },
+
+  { name:"Bramble",
+    hint:"A saltire of self over a diamond of the other - a dense thicket knitted from both marks.",
+    stamps:[[A,B,A, B,A,B, A,B,A],
+            [0,A,0, A,B,A, 0,A,0]] },
 ];
 
 /* ---- rendering: the fixed point ---------------------------------- */
