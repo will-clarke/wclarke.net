@@ -700,6 +700,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   color: #fff;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   pointer-events: none;                     /* let hover/scroll reach the field until committed */
+  touch-action: none;                       /* a pinch-out on the page means "back", not browser zoom */
   overflow: hidden;
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
 }

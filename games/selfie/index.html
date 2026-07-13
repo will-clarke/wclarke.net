@@ -142,6 +142,13 @@
   .editor .elab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.65}
   .editor .elab.a{color:var(--a)}
   .editor .elab.b{color:var(--b)}
+  /* combine puzzles: the operator sits between the two grids, as an equation */
+  .opbadge{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    align-self:center;color:var(--a);text-shadow:0 0 14px var(--a);padding:0 2px}
+  .opbadge .sym{font-size:30px;line-height:1;font-weight:700}
+  .opbadge .lbl{font-size:9px;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+  .eqline{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.6;text-align:center;margin-top:-4px}
+  .eqline b{color:var(--a);opacity:1}
   .grid{
     display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
     padding:8px;border-radius:14px;background:var(--surface);border:1px solid var(--line);
@@ -403,6 +410,32 @@ const LEVELS=[
     hint:"A saltire of self over a diamond of the other - a dense thicket knitted from both marks.",
     stamps:[[A,B,A, B,A,B, A,B,A],
             [0,A,0, A,B,A, 0,A,0]] },
+
+  /* --- Fusions: build two independent marks; the target is grid1 <op> grid2 --- */
+  { name:"Star", op:"OR",
+    hint:"A new kind of mark: two independent grids <b>fused</b>. Here with <b>OR</b> - every cell lit by <b>either</b> grid. Overlay a plus on a saltire for a woven star of stars.",
+    stamps:[[0,A,0, A,A,A, 0,A,0],
+            [A,0,A, 0,A,0, A,0,A]] },
+
+  { name:"Rift", op:"XOR",
+    hint:"<b>XOR</b>: keep only where <b>exactly one</b> grid is lit. Set a saltire against a full carpet and the X tears self-similar rifts clean through the weave.",
+    stamps:[[A,A,A, A,0,A, A,A,A],
+            [A,0,A, 0,A,0, A,0,A]] },
+
+  { name:"Distil", op:"AND",
+    hint:"<b>AND</b> keeps only where <b>both</b> grids agree to be lit. A carpet meeting a triangle, distilled down to the gasket they share.",
+    stamps:[[A,A,A, A,0,A, A,A,A],
+            [A,0,0, A,A,0, A,A,A]] },
+
+  { name:"Ghost", op:"NAND",
+    hint:"<b>NAND</b> lights everywhere <b>except</b> where both overlap. A carpet and a plus, their shared core punched out - ghost clusters floating in a full field.",
+    stamps:[[A,A,A, A,0,A, A,A,A],
+            [0,A,0, A,A,A, 0,A,0]] },
+
+  { name:"Accord", op:"XNOR",
+    hint:"<b>XNOR</b> lights where the two grids <b>agree</b> - both on, or both off. A saltire and a plus, fused into one dense accord.",
+    stamps:[[A,0,A, 0,A,0, A,0,A],
+            [0,A,0, A,A,A, 0,A,0]] },
 ];
 
 /* ---- rendering: the fixed point ---------------------------------- */
@@ -524,6 +557,7 @@ function loadLevel(i){
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
   $('lvname').textContent=L.name;
+  $('targetPic').querySelector('.cap').textContent = levelOp ? ('G1 '+OPSYM[levelOp]+' G2') : 'Target';
   $('hint').innerHTML=L.hint;
   $('par').hidden=false;
   $('prev').disabled = li===0;
@@ -548,6 +582,11 @@ function buildEditors(){
   const multi = stamps.length>1;
   host.classList.toggle('multi', multi);
   stamps.forEach((s,si)=>{
+    if(levelOp && si===1){                              // operator sits between the two grids
+      const b=document.createElement('div'); b.className='opbadge';
+      b.innerHTML='<span class="sym">'+OPSYM[levelOp]+'</span><span class="lbl">'+levelOp+'</span>';
+      host.appendChild(b);
+    }
     const ed=document.createElement('div'); ed.className='editor';
     if(multi){
       const lab=document.createElement('div');
@@ -559,6 +598,7 @@ function buildEditors(){
     host.appendChild(ed);
   });
 }
+const OPSYM={ AND:'∧', OR:'∨', XOR:'⊕', NAND:'⊼', XNOR:'⊙' };
 function buildSqGrid(si, base){
   const grid=document.createElement('div'); grid.className='grid'+(base===2?' two':'');
   for(let k=0;k<base*base;k++){
@@ -604,7 +644,9 @@ function paintSqCell(cell){
   cell.classList.add(refId===0?'refa':'refb');
   const cv=document.createElement('canvas'); cv.width=cv.height=84;
   cell.appendChild(cv);
-  drawSq(cv.getContext('2d'), stamps, refId, BASE[geom], 0,0,84, getCss(refId===0?'--a':'--b'), 0);
+  const ctx=cv.getContext('2d');
+  if(levelOp) drawStamp(ctx, soloStamps(stamps[+cell.dataset.si]), 'sq3', 0,0,84, getCss('--a')); // each grid is its own mark
+  else drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, getCss(refId===0?'--a':'--b'), 0);
   const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
 }
 function paintTriCell(tc, ov){
@@ -629,8 +671,14 @@ function paintTriCell(tc, ov){
 function update(){
   if(geom==='tri') document.querySelectorAll('.tcell').forEach(c=>paintTriCell(c));
   else document.querySelectorAll('.cell').forEach(c=>paintSqCell(c));
-  if(mode==='sand') renderSandbox(); else renderPic($('yours'), stamps, geom);
+  if(mode==='sand') renderSandbox();
+  else if(levelOp) putCombine($('yours'), stamps, levelOp);
+  else renderPic($('yours'), stamps, geom);
   if(mode!=='sand'){ updatePar(); checkWin(); }
+}
+function renderTargetPic(){
+  if(levelOp) putCombine($('target'), targetStamps, levelOp);
+  else renderPic($('target'), targetStamps, geom);
 }
 function updatePar(){
   const n=cellsUsed();
@@ -639,7 +687,8 @@ function updatePar(){
 
 function checkWin(){
   const empty = stamps.every(s=>s.every(v=>v===0));
-  const win = !empty && pixelDiff(fingerprint(stamps, geom), targetFP)===0;
+  const fp = levelOp ? combineFP(stamps, levelOp) : fingerprint(stamps, geom);
+  const win = !empty && pixelDiff(fp, targetFP)===0;
   const frame=$('yoursFrame');
   frame.classList.toggle('win', win);
   $('winMsg').classList.toggle('show', win);
@@ -673,7 +722,7 @@ function celebrate(){
 function enterSandbox(){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
   if(mode==='random') clearHash();
-  mode='sand'; setNav('sand'); geom='sq3'; sandOp='none';
+  mode='sand'; setNav('sand'); geom='sq3'; sandOp='none'; levelOp=null;
   $('lvnum').textContent=''; $('lvname').textContent='Free play';
   $('hint').innerHTML="No target. Build two marks from <b>ink</b>, <b>self</b> and the <b>other</b> - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise.";
   $('par').hidden=true;
@@ -711,23 +760,29 @@ function markOps(){ [...$('ops').querySelectorAll('.chip')].forEach(el=>el.class
 function hexRgb(h){ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
 const soloStamps=s=> [ s.map(v=> v>=2 ? 2 : v) ];   // every ref -> self (single self-referential mark)
 const OFF=document.createElement('canvas');
-function combMask(s, W){                             // render grid solo, return on/off per pixel
+function maskAt(s, W){                                // render one grid solo, return its on/off pixels
   OFF.width=OFF.height=W;
   const ctx=OFF.getContext('2d',{willReadFrequently:true});
   ctx.clearRect(0,0,W,W);
   drawStamp(ctx, soloStamps(s), 'sq3', 0,0,W, '#fff');
   return ctx.getImageData(0,0,W,W).data;
 }
-function renderSandbox(){
-  const cv=$('yours'), W=cv.width, ctx=cv.getContext('2d');
-  if(sandOp==='none'){ renderPic(cv, stamps, geom); return; }
-  const dA=combMask(stamps[0], W), dB=combMask(stamps[1], W);
-  const out=ctx.createImageData(W,W), o=out.data, op=OPS[sandOp], ink=hexRgb(getCss('--ink'));
-  for(let i=0;i<o.length;i+=4){
-    if(!op(dA[i+3]>8, dB[i+3]>8)) continue;                      // off -> transparent
-    o[i]=ink[0]; o[i+1]=ink[1]; o[i+2]=ink[2]; o[i+3]=255;       // on -> plain ink (black/white)
-  }
+function putCombine(canvas, stamps, op){              // draw grid1 <op> grid2 onto a canvas in ink
+  const W=canvas.width, ctx=canvas.getContext('2d');
+  const a=maskAt(stamps[0], W), b=maskAt(stamps[1], W), f=OPS[op], ink=hexRgb(getCss('--ink'));
+  const out=ctx.createImageData(W,W), o=out.data;
+  for(let i=0;i<o.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ o[i]=ink[0]; o[i+1]=ink[1]; o[i+2]=ink[2]; o[i+3]=255; }
   ctx.clearRect(0,0,W,W); ctx.putImageData(out,0,0);
+}
+function combineFP(stamps, op){                       // theme-independent fingerprint for win-check
+  const W=243, a=maskAt(stamps[0],W), b=maskAt(stamps[1],W), f=OPS[op];
+  const out=new Uint8ClampedArray(W*W*4);
+  for(let i=0;i<out.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ out[i]=out[i+1]=out[i+2]=255; out[i+3]=255; }
+  return out;
+}
+function renderSandbox(){
+  if(sandOp==='none') renderPic($('yours'), stamps, geom);
+  else putCombine($('yours'), stamps, sandOp);
 }
 
 /* ---- random puzzle (solve a random mark; the URL is the puzzle) --- */
@@ -778,7 +833,7 @@ function genRandom(){ const g=GEOMS[Math.floor(Math.random()*GEOMS.length)]; ret
 
 function enterRandom(target){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
-  mode='random'; setNav('random');
+  mode='random'; setNav('random'); levelOp=null;
   geom=target.geom; targetStamps=target.stamps;
   baseline=targetStamps.map(s=>s.map(_=>0));
   stamps=baseline.map(s=>s.slice());
@@ -786,6 +841,7 @@ function enterRandom(target){
   curPar=parOf(targetStamps);
   try{ history.replaceState(null,'','#p='+encodeStamps(geom,targetStamps)); }catch(e){}
   renderPic($('target'), targetStamps, geom);
+  $('targetPic').querySelector('.cap').textContent='Target';
   $('lvnum').textContent=''; $('lvname').textContent='Random';
   $('hint').innerHTML=`Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
   $('par').hidden=false;
@@ -822,7 +878,7 @@ buildDots();
 
 /* ---- theme: re-render canvases (ink flips light/dark) ------------- */
 function redrawTheme(){
-  if(mode!=='sand') renderPic($('target'), targetStamps, geom);
+  if(mode!=='sand') renderTargetPic();
   update();
 }
 window.addEventListener('themechange', redrawTheme);
