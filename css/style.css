@@ -389,9 +389,9 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   color: var(--fg);
   border: 0;
   font: inherit;
-  /* a slightly bouncy bloom: the transform overshoots then settles */
-  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.5, 1),
-              filter 0.3s ease;
+  /* a slow, smooth bloom - eased, no overshoot */
+  transition: transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1),
+              filter 0.45s ease;
   transform-origin: 50% 50%;
 }
 
@@ -599,7 +599,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   flex-direction: column;
   align-items: center;
   opacity: 0;
-  transition: transform 0.42s cubic-bezier(0.34, 1.32, 0.5, 1), opacity 0.3s ease;
+  transition: transform 0.5s cubic-bezier(0.25, 0.9, 0.3, 1), opacity 0.35s ease;
 }
 .hexfocus.open .focus-box { opacity: 1; }
 
@@ -685,6 +685,110 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   cursor: pointer;
 }
 .focus-close:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ---- grow-to-page (js/hexfield.js grow mode) ---------------------------
+   A hex slowly swells from its spot until it fills the screen and becomes a
+   page. hexfield.js drives left/top/width/height/clip/opacity every frame;
+   this styles the panel and its demo content. */
+.hexgrow {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--grow-accent);
+  color: #fff;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  pointer-events: none;                     /* let hover/scroll reach the field until committed */
+  overflow: hidden;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
+}
+.hexgrow[hidden] { display: none; }
+.hexgrow.committed { pointer-events: auto; }
+
+.grow-name {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: clamp(0.55rem, 1.6vw, 0.9rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+}
+.grow-page {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+.grow-page-inner {
+  max-width: min(42rem, 84vw);
+  padding: 2rem;
+  text-align: center;
+}
+.grow-h {
+  font-family: var(--mono);
+  font-size: clamp(2rem, 7vw, 4rem);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0 0 0.25em;
+}
+.grow-sub {
+  font-family: var(--mono);
+  font-size: clamp(0.85rem, 2.2vw, 1.15rem);
+  opacity: 0.82;
+  margin: 0 0 1.5em;
+}
+.grow-body {
+  font-family: var(--serif);
+  font-size: clamp(1rem, 2vw, 1.25rem);
+  line-height: 1.6;
+  margin: 0 auto 1.8em;
+  max-width: 32rem;
+  opacity: 0.96;
+}
+.grow-visit {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  color: #fff;
+  text-decoration: none;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  padding: 0.5em 1.4em;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.grow-visit:hover { background: #fff; color: var(--grow-accent); }
+.grow-demo {
+  font-family: var(--mono);
+  margin-top: 2.4em;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+.grow-back {
+  position: absolute;
+  top: 1.2rem;
+  right: 1.2rem;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.12);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.3s ease, background 0.2s ease;
+}
+.grow-back:hover { background: rgba(0, 0, 0, 0.3); }
 
 /* ---- cross-document zoom (home <-> writing honeycomb) ------------------
    The shared element is named "writing-portal" (the homepage "writing" hex on

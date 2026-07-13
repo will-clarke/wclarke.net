@@ -30,6 +30,9 @@ window.HexField = function (mount, cfg) {
   var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
   // touch/coarse pointers have no hover, so they browse by scrolling the centre.
   var AUTO = matchMedia("(hover: none), (pointer: coarse)").matches && !REDUCED;
+  // grow mode: the highlighted hex slowly swells until it fills the screen and
+  // becomes a full-screen "page" (see the grow subsystem below).
+  var GROW = !!cfg.grow;
 
   var field = typeof mount === "string" ? document.getElementById(mount) : mount;
   var world = document.createElement("div");
@@ -132,10 +135,6 @@ window.HexField = function (mount, cfg) {
     el.__cell = cell;
     tiles.push({ el: el, px: px, py: py });
     el.style.setProperty("--hex-accent", cell.accent);
-    el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") enlarge(el); });
-    el.addEventListener("pointerleave", function () { shrink(); });
-    el.addEventListener("focusin", function () { enlarge(el); });
-    el.addEventListener("focusout", function () { shrink(); });
 
     if (cell.preview) {
       var canvas = document.createElement("canvas");
@@ -146,6 +145,23 @@ window.HexField = function (mount, cfg) {
     if (cell.link) el.href = cell.href;
     if (cell.tile) cell.tile(el);
 
+    if (GROW) {                                // dwell on a hex to grow it into its page
+      el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") hoverIn(el, cell); });
+      el.addEventListener("pointerleave", function () { hoverOut(); });
+      el.addEventListener("focusin", function () { hoverIn(el, cell); });
+      el.addEventListener("focusout", function () { hoverOut(); });
+      el.addEventListener("click", function (e) {
+        if (dragMoved) return;
+        e.preventDefault();
+        nudgeGrow(el, cell);                   // a click gives the growth a shove
+      });
+      return el;
+    }
+
+    el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") enlarge(el); });
+    el.addEventListener("pointerleave", function () { shrink(); });
+    el.addEventListener("focusin", function () { enlarge(el); });
+    el.addEventListener("focusout", function () { shrink(); });
     el.addEventListener("click", function (e) {
       if (dragMoved) return;
       // a "portal" tile (dive:false) just navigates, so a cross-document view
@@ -233,6 +249,7 @@ window.HexField = function (mount, cfg) {
   if (!REDUCED) {
     window.addEventListener("pointermove", function (e) {
       if (dragging || e.pointerType === "touch") return;
+      if (GROW && grow.g > 0.02) return;      // hold the field still while a hex is growing
       par.x = -(e.clientX / vw * 2 - 1) * panMax.x * 0.85;
       par.y = -(e.clientY / vh * 2 - 1) * panMax.y * 0.85;
       retarget();
@@ -363,6 +380,106 @@ window.HexField = function (mount, cfg) {
     }
   }
 
+  // ---- grow-to-page (cfg.grow) ------------------------------------------
+  // The highlighted hex slowly swells - a "grower" overlay starts exactly over
+  // the hex and, frame by frame, moves to the centre, resizes to the viewport
+  // and morphs its hexagon clip into a rectangle. Dwell long enough (g -> 1) and
+  // it commits: a full-screen page. Leave early and it retreats (g -> 0). A brief
+  // hover only nudges g up a little, so a passing cursor never enters a page.
+  var grow = { el: null, cell: null, rect: null, g: 0, locked: false, committed: false, prevT: 0 };
+  var grower, growName, growPageInner, growBack, hoverTimer;
+  var GROW_MS = 2600, SHRINK_MS = 420, LOCK = 0.5;   // past LOCK, growth completes on its own
+
+  function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }  // easeInOutCubic
+
+  function buildGrower() {
+    grower = document.createElement("div");
+    grower.className = "hexgrow";
+    grower.hidden = true;
+    grower.innerHTML =
+      '<span class="grow-name"></span>' +
+      '<div class="grow-page"><div class="grow-page-inner"></div></div>' +
+      '<button class="grow-back" aria-label="close">✕</button>';
+    document.body.appendChild(grower);
+    growName = grower.querySelector(".grow-name");
+    growPageInner = grower.querySelector(".grow-page-inner");
+    growBack = grower.querySelector(".grow-back");
+    growBack.addEventListener("click", function (e) { e.stopPropagation(); dismissGrow(); });
+    window.addEventListener("keydown", function (e) { if (e.key === "Escape") dismissGrow(); });
+  }
+
+  // hover bridge: entering the hex (or holding centre) keeps the dwell alive;
+  // a short delay on leaving lets the pointer cross gaps without cancelling.
+  function hoverIn(el, cell) { clearTimeout(hoverTimer); startGrow(el, cell); }
+  function hoverOut() {
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(function () { if (grow.g < LOCK) stopGrow(); }, 40);
+  }
+
+  function startGrow(el, cell) {
+    if (grow.committed) return;
+    if (grow.el === el) return;
+    if (grow.g >= 0.3 && grow.el) return;      // already committed to a target - don't switch
+    if (!grower) buildGrower();
+    grow.el = el; grow.cell = cell;
+    growName.textContent = (cell.page && cell.page.title) || "";
+    growPageInner.innerHTML = (cell.page && cell.page.html) || "";
+    grower.style.setProperty("--grow-accent", cell.accent);
+    grower.hidden = false;
+  }
+  function stopGrow() { if (!grow.committed) grow.el = null; }       // begin the retreat (unless locked)
+  function nudgeGrow(el, cell) { startGrow(el, cell); grow.g = Math.max(grow.g, LOCK + 0.02); grow.locked = true; }
+  function dismissGrow() {
+    if (!grow.committed && grow.g === 0) return;
+    grow.committed = false; grow.locked = false; grow.el = null;    // retreat back into the honeycomb
+    grower.classList.remove("committed");
+  }
+
+  function updateGrow(t) {
+    if (!GROW) return;
+    var dt = grow.prevT ? Math.min(50, t - grow.prevT) : 16;
+    grow.prevT = t;
+    // committed holds full-screen; otherwise grow while dwelling or locked-in,
+    // and retreat once neither is true. `locked` (set at LOCK, cleared only by
+    // dismiss) is what lets a page complete after you look away - and lets a
+    // dismiss actually retreat instead of instantly re-completing.
+    if (grow.committed) { /* hold */ }
+    else if (grow.el || grow.locked) grow.g += dt / GROW_MS;
+    else grow.g -= dt / SHRINK_MS;
+
+    if (grow.g <= 0) {
+      grow.g = 0; grow.locked = false;
+      if (grower && !grower.hidden) grower.hidden = true;
+      return;
+    }
+    if (grow.g >= LOCK && grow.el) grow.locked = true;             // past the point of no return
+    if (grow.g >= 1 && !grow.committed) {
+      grow.g = 1; grow.committed = true;
+      grower.classList.add("committed");
+    }
+    if (grow.el) grow.rect = grow.el.getBoundingClientRect();      // track the hex as the field pans
+    renderGrow();
+  }
+
+  function renderGrow() {
+    var r = grow.rect;
+    if (!r) return;
+    var e = ease(grow.g);
+    grower.style.left = (r.left + (0 - r.left) * e) + "px";
+    grower.style.top = (r.top + (0 - r.top) * e) + "px";
+    grower.style.width = (r.width + (vw - r.width) * e) + "px";
+    grower.style.height = (r.height + (vh - r.height) * e) + "px";
+    grower.style.opacity = clamp01(grow.g / 0.1);
+    // morph hexagon -> rectangle over the second half of the growth
+    var k = clamp01((grow.g - 0.45) / 0.5), a = 25 * (1 - k), b = 75 + 25 * k;
+    grower.style.clipPath = "polygon(50% 0%, 100% " + a + "%, 100% " + b +
+      "%, 50% 100%, 0% " + b + "%, 0% " + a + "%)";
+    growName.style.opacity = clamp01(1 - grow.g / 0.4);
+    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - 0.6) / 0.35);
+    growBack.style.opacity = grow.committed ? "1" : "0";
+  }
+
   // ---- one animation loop for pan + every live preview ------------------
   var previewDrawn = false, lastCentre = null;
   function loop(t) {
@@ -372,16 +489,18 @@ window.HexField = function (mount, cfg) {
       world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0)";
 
       // whichever special hex is under the middle of the screen is the "centred"
-      // one: touch blooms it open (its cursor), and cfg.onCentre is told so a
-      // page can react (the writing archive floats that cluster's name).
+      // one: touch uses it as its cursor (blooms or grows it), and cfg.onCentre
+      // is told so a page can react (the writing archive floats the cluster name).
       if (!focus.open) {
         var c = centreTile();
         if (c !== lastCentre) {
           lastCentre = c;
           if (cfg.onCentre) cfg.onCentre(c ? c.__cell : null);
-          if (AUTO && c) enlarge(c, true);
+          if (GROW && AUTO) { if (c) hoverIn(c, c.__cell); else hoverOut(); }
+          else if (AUTO && c) enlarge(c, true);
         }
       }
+      updateGrow(t);
 
       if (focus.open && focus.live) {
         fctx.clearRect(0, 0, fw, fh);
