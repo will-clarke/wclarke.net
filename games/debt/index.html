@@ -388,13 +388,88 @@ const LEVELS=[
   '#####H###',
   '#####O.X#',
   '#########']},
+{ name:'write-off',
+  hint:'the pinned crate has exactly one move left. earn the right to make it.',
+  lend:['crate'],
+  map:[
+  '#########',
+  '#@......#',
+  '#..P....#',
+  '#.......#',
+  '####C####',
+  '####O####',
+  '####G####',
+  '#...X...#',
+  '#########']},
+{ name:'grace',
+  hint:'the portal collects from whoever crosses it. time your loan.',
+  lend:['key','crate'],
+  map:[
+  '##########',
+  '#@.#...DK#',
+  '#..#...#X#',
+  '#..O....##',
+  '##########']},
+{ name:'loophole',
+  hint:'count your keys. one lock here never needs to open.',
+  lend:['key','crate'],
+  map:[
+  '##########',
+  '#@...#K..#',
+  '#..O.D.CP#',
+  '#....#####',
+  '#........#',
+  '###G##D###',
+  '#..X.....#',
+  '##########']},
+{ name:'audit',
+  hint:'both loans can be repaid. only one leaves you solvent.',
+  lend:['key','crate'],
+  map:[
+  '##########',
+  '#@..#....#',
+  '###.C..O##',
+  '#...######',
+  '#.P.....K#',
+  '####G#####',
+  '####D#####',
+  '#...X....#',
+  '##########']},
+{ name:'seniority',
+  hint:'two debts. the order you take them decides everything.',
+  lend:['key','crate'],
+  charges:2,
+  map:[
+  '###########',
+  '#@...#KK..#',
+  '#.C..D..O.#',
+  '#.###.#####',
+  '#.P.......#',
+  '####G######',
+  '####.######',
+  '####D######',
+  '#...X.....#',
+  '###########']},
+{ name:'maturity',
+  hint:'an old debt, a stuck crate, a locked answer. spend your debt wisely.',
+  lend:['key'],
+  map:[
+  '##########',
+  '#@.&....O#',
+  '##G#####.#',
+  '#....C...#',
+  '#######..#',
+  '#######D##',
+  '######XK##',
+  '##########']},
 ];
 /*__END_LEVELS__*/
 
 /* ================= parsing & state ================= */
 let L=null, idx=0, ts=44;
 function parseLevel(def){
-  const l={name:def.name,hint:def.hint,lend:def.lend.slice(),charges:def.lend.length?1:0,
+  const l={name:def.name,hint:def.hint,lend:def.lend.slice(),
+    charges:def.charges!==undefined?def.charges:(def.lend.length?1:0),
     w:def.map[0].length,h:def.map.length,walls:new Set(),
     plates:[],gates:[],pits:[],doors:[],keys:[],crates:[],portal:null,exit:null,
     px:0,py:0,inv:0,debts:[],won:false};
@@ -437,7 +512,11 @@ function restore(s){const o=JSON.parse(s);
   L.keys.forEach((k,i)=>k.taken=o.keys[i]);
   L.doors.forEach((d,i)=>d.open=o.doors[i]);
   L.pits.forEach((p,i)=>p.filled=o.pits[i]);
-  L.crates.forEach((c,i)=>{c.x=o.crates[i].x;c.y=o.crates[i].y;c.gone=o.crates[i].gone;});
+  // crate count can differ across a borrow boundary - shrink or grow to match
+  while(L.crates.length>o.crates.length){const c=L.crates.pop();if(c.el)c.el.remove();}
+  while(L.crates.length<o.crates.length){const oc=o.crates[L.crates.length];
+    const c={x:oc.x,y:oc.y,b:oc.b,gone:oc.gone};c.el=el('crate'+(c.b?' spectral':''));L.crates.push(c);}
+  L.crates.forEach((c,i)=>{const oc=o.crates[i];c.x=oc.x;c.y=oc.y;c.b=oc.b;c.gone=oc.gone;});
   L.won=false;placing=null;update();}
 function undo(){stopWalk();if(!undoStack.length){S.no();return;}restore(undoStack.pop());}
 
@@ -533,7 +612,8 @@ function passableInterior(x,y){
   const d=doorAt(x,y); if(d&&!d.open)return false;
   const g=gateAt(x,y); if(g&&!gateOpen(g))return false;
   const p=pitAt(x,y); if(p&&!p.filled)return false;
-  if(L.portal&&L.portal.x===x&&L.portal.y===y)return false;
+  // portal is only a side-effect cell (and thus avoided) when crossing it would auto-repay
+  if(L.portal&&L.portal.x===x&&L.portal.y===y&&L.debts.indexOf('key')>=0&&L.inv>0)return false;
   if(L.exit.x===x&&L.exit.y===y)return false;
   return true;
 }

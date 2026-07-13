@@ -224,6 +224,8 @@
 
     <div class="dots" id="dots"></div>
 
+    <div class="tray ops" id="ops" hidden></div>
+
     <div class="pics">
       <div class="pic" id="targetPic">
         <div class="cap">Target</div>
@@ -242,7 +244,6 @@
     <div class="win-msg" id="winMsg">solved</div>
 
     <div class="editwrap">
-      <div class="tray ops" id="ops" hidden></div>
       <div class="editors" id="editors"></div>
       <div class="hint" id="hint"></div>
       <div class="par" id="par" hidden></div>
@@ -461,6 +462,7 @@ function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]||
 /* ---- state ------------------------------------------------------- */
 let mode='play';          // 'play' | 'sand' | 'random'
 let sandOp='none';        // free-play boolean combine: none|AND|OR|XOR|NAND|XNOR
+let levelOp=null;         // combine puzzle: target = grid1 <op> grid2 (else cross-referential)
 let geom='sq3';           // geometry of the current stamps
 let li=0;                 // level index
 let stamps=[];            // player's working stamps
@@ -512,12 +514,13 @@ function loadLevel(i){
   li=(i+LEVELS.length)%LEVELS.length;
   const L=LEVELS[li];
   geom=L.geom||'sq3';
+  levelOp = L.op || null;
   targetStamps=L.stamps;
   baseline = targetStamps.map(s=>s.map(_=>0));
   stamps = baseline.map(s=>s.slice());
-  targetFP = fingerprint(targetStamps, geom);
+  targetFP = levelOp ? combineFP(targetStamps, levelOp) : fingerprint(targetStamps, geom);
   curPar = parOf(targetStamps);
-  renderPic($('target'), targetStamps, geom);
+  renderTargetPic();
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
   $('lvname').textContent=L.name;
@@ -532,9 +535,11 @@ function loadLevel(i){
 }
 
 function setTapnote(){
-  $('tapnote').textContent = stamps.length>1
-    ? 'tap a cell to cycle · empty ▸ ink ▸ self (grid 1) ▸ other (grid 2) ▸ empty'
-    : 'tap a cell to cycle · empty ▸ ink ▸ self ▸ empty';
+  let s;
+  if(levelOp) s='tap a cell to cycle · empty ▸ ink ▸ self ▸ empty · target = grid 1 '+levelOp+' grid 2';
+  else if(stamps.length>1) s='tap a cell to cycle · empty ▸ ink ▸ self (grid 1) ▸ other (grid 2) ▸ empty';
+  else s='tap a cell to cycle · empty ▸ ink ▸ self ▸ empty';
+  $('tapnote').textContent=s;
 }
 
 /* ---- editors ----------------------------------------------------- */
@@ -547,7 +552,7 @@ function buildEditors(){
     if(multi){
       const lab=document.createElement('div');
       lab.className='elab '+(si===0?'a':'b');
-      lab.textContent=si===0?'Stamp A':'Stamp B';
+      lab.textContent = levelOp ? (si===0?'Grid 1':'Grid 2') : (si===0?'Stamp A':'Stamp B');
       ed.appendChild(lab);
     }
     ed.appendChild(geom==='tri' ? buildTriGrid(si) : buildSqGrid(si, BASE[geom]));
@@ -580,8 +585,9 @@ function buildTriGrid(si){
 ------------------------------------------------------------------- */
 function haptic(){ try{ if(navigator.vibrate) navigator.vibrate(7); }catch(e){} }
 function cycle(cell){
-  const si=+cell.dataset.si, k=+cell.dataset.k, t=stamps[si][k], multi=stamps.length>1;
-  stamps[si][k] = t===0 ? 1 : t===1 ? 2 : t===2 ? (multi?3:0) : 0;   // empty>ink>self>other>empty
+  const si=+cell.dataset.si, k=+cell.dataset.k, t=stamps[si][k];
+  const other = stamps.length>1 && !levelOp;   // combine grids are independent -> no 'other' step
+  stamps[si][k] = t===0 ? 1 : t===1 ? 2 : t===2 ? (other?3:0) : 0;   // empty>ink>self>(other)>empty
   update(); haptic();
 }
 function bindCell(cell){
@@ -743,16 +749,30 @@ function fromHash(){
   if(!m) return null;
   try{ return decodeStamps(decodeURIComponent(m[1])); }catch(e){ return null; }
 }
+/* fraction of the frame the mark fills (at fingerprint resolution) - used to
+   reject degenerate random marks: thin lines/dust (too low) or blobs (too high) */
+function coverage(stamps, geom){
+  const d=fingerprint(stamps, geom); let on=0;
+  for(let i=0;i<d.length;i+=4) if(d[i]>40) on++;
+  return on/(d.length/4);
+}
 function genStamp(g){
-  const n=NCELLS[g], max = g==='sq3'?6:3;
-  const pool = g==='sq3' ? [0,0,0,1,1,2,2,2] : [0,0,1,2,2,2];
-  let s, refs, filled, tries=0;
+  const small=(g!=='sq3'), n=NCELLS[g];
+  // small (2x2 / triangle) grids: pure recursion only - a single ink cell there
+  // fills a whole quadrant and reads as a solid blob, not a fractal.
+  const pool = small ? [0,0,2,2,2] : [0,0,0,1,1,2,2,2];
+  const minRefs = small?2:1, maxFill = small?3:6, lo=0.07, hi = small?0.55:0.85;
+  let s, tries=0;
   do{
     s=Array.from({length:n},()=> pool[Math.floor(Math.random()*pool.length)]);
-    refs=s.filter(v=>v>=2).length; filled=s.filter(v=>v!==0).length;
-  }while((refs<1 || filled<2 || filled>max) && ++tries<80);
-  if(refs<1) s[0]=2;
+  }while(!goodStamp(s,g,minRefs,maxFill,lo,hi) && ++tries<200);
+  if(s.filter(v=>v>=2).length<1) s[0]=2;
   return s;
+}
+function goodStamp(s,g,minRefs,maxFill,lo,hi){
+  const refs=s.filter(v=>v>=2).length, filled=s.filter(v=>v!==0).length;
+  if(refs<minRefs || filled<2 || filled>maxFill) return false;
+  const c=coverage([s], g); return c>=lo && c<=hi;
 }
 function genRandom(){ const g=GEOMS[Math.floor(Math.random()*GEOMS.length)]; return {geom:g, stamps:[genStamp(g)]}; }
 
