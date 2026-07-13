@@ -332,15 +332,8 @@
     if(aiDiff==='medium'){
       return posFromRoot(searchRoot(g, side, remB, remW, Math.min(2,maxD), 14));
     }
-    // hard: iterative deepening within a small time budget
-    const t0 = performance.now(), K = 12;
-    let move = searchRoot(g, side, remB, remW, Math.min(2,maxD), K).move;
-    for(let d=3; d<=maxD; d++){
-      if(performance.now()-t0 > 300) break;
-      move = searchRoot(g, side, remB, remW, d, K).move;
-      if(d>=maxD) break;
-    }
-    return move && {r:move[0], c:move[1]};
+    // hard: deeper look-ahead, capped so a move never stalls (~0.1-0.25s)
+    return posFromRoot(searchRoot(g, side, remB, remW, Math.min(5,maxD), 10));
   }
   const posFromRoot = res => res.move && {r:res.move[0], c:res.move[1]};
 

@@ -499,10 +499,16 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 }
 .hexhome .mark button:hover { color: var(--accent); }
 
-/* touch: no hover, so surface blurbs by default; give taps a quick pop */
+/* touch: no hover, so the centre-of-screen tracker (js/hex.js) blooms whichever
+   hex you scroll nearest. Surface blurbs by default, make the bloomed hex read
+   clearly, and give a tap on any *other* tile a quick pop. */
 @media (hover: none) {
   .hex.door .blurb { opacity: 1; color: var(--muted); }
-  .hex.tile:active { transform: scale(1.1); z-index: 6; }
+  .hex.door.enlarged { background: var(--hex-accent); color: #fff; }
+  .hex.door.enlarged .name { color: #fff; }
+  .hex.door.enlarged .blurb { color: rgba(255, 255, 255, 0.92); }
+  .hex.toy.enlarged .name { opacity: 1; }
+  .hex.tile:not(.enlarged):active { transform: scale(1.1); z-index: 6; }
 }
 
 /* ---- focus overlay: a toy opened into a large hex ----------------------

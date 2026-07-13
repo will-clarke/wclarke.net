@@ -13,8 +13,8 @@
     document.documentElement.setAttribute('data-theme',t);
   }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3EA%3C/text%3E%3C/svg%3E" />
-<title>Autobiography</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3ES%3C/text%3E%3C/svg%3E" />
+<title>Selfie</title>
 <style>
   :root{
     --accent:#ff7ac2;
@@ -126,8 +126,9 @@
   /* editors */
   .editwrap{display:flex;flex-direction:column;gap:10px;align-items:center}
 
-  /* colour picker */
-  .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  /* colour picker + operator picker */
+  .tray{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center}
+  .traylab{font-size:10px;letter-spacing:.16em;text-transform:uppercase;opacity:.55;margin-right:2px}
   .chip{
     display:inline-flex;align-items:center;gap:7px;padding:7px 12px;
     border-radius:11px;background:var(--surface);border:1px solid var(--line);
@@ -197,7 +198,7 @@
     <a class="navbtn" href="../" aria-label="All games" title="All games">&#8592;</a>
     <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
   </div>
-  <h1><b>A</b>utobiography</h1>
+  <h1><b>S</b>elfie</h1>
   <div class="sub">Design one tiny mark. It is made of itself. Match the fractal.</div>
 
   <div class="wrap">
@@ -243,6 +244,7 @@
     <div class="win-msg" id="winMsg">solved</div>
 
     <div class="editwrap">
+      <div class="tray ops" id="ops" hidden></div>
       <div class="tray colours" id="colours" hidden></div>
       <div class="editors" id="editors"></div>
       <div class="hint" id="hint"></div>
@@ -253,24 +255,21 @@
 
 <script>
 /* ---- cell values -------------------------------------------------
-   0 empty · 1 ink · reference = (2=stamp A | 3=stamp B) + rot*4, rot 0..3
-   A reference recurses into that stamp, drawn rotated by `rot` quarter-turns.
-   Rotation propagates down the recursion, which is what unlocks
-   dragon/pinwheel geometry a fixed axis-aligned grid can never reach.
+   0 empty · 1 ink · reference = 2=stamp A (self / grid 1) | 3=stamp B (grid 2).
+   A reference recurses into that stamp, so the mark is made of itself.
 
    A stamp also has a geometry, shared by the whole fractal:
-     sq3 - 3x3 square (9 cells, 4 rotations)   [the classic]
-     sq2 - 2x2 square (4 cells, 4 rotations)   [advanced minimalism]
-     tri - triangle   (4 cells, no rotation)   [orientation instead: the
-           centre sub-triangle is inherently inverted, and that flip
-           propagates - Sierpiński and friends live here]
+     sq3 - 3x3 square (9 cells)   [the classic]
+     sq2 - 2x2 square (4 cells)   [minimalism]
+     tri - triangle   (4 cells)   [the centre sub-triangle is inherently
+           inverted, and that flip propagates - Sierpiński and friends]
 ------------------------------------------------------------------- */
 const A=2, B=3;
-/* value bits:  0-1 type (0 empty,1 ink,2 A,3 B) · 2-3 rotation · 4-5 colour (0 plain,1 R,2 G,3 B)
+/* value bits:  0-1 type (0 empty,1 ink,2 A,3 B) · 4-5 colour (0 plain,1 R,2 G,3 B)
    colour tints a cell and, for a reference, propagates down its whole subtree.
-   colour 0 = plain = inherit the carried colour (the theme ink at the top). */
-const rot=(v,r)=> (v&3)>=2 ? ((v&3) + ((((v>>2)+r)&3)<<2) + (((v>>4)&3)<<4)) : v;   // spin, keep colour
-const col=(v,c)=> v===0 ? 0 : ((v&15) + (c<<4));                                    // tint (keep type+rotation)
+   colour 0 = plain = inherit the carried colour (the theme ink at the top).
+   (bits 2-3 once held a per-cell rotation; rotation is retired for now.) */
+const col=(v,c)=> v===0 ? 0 : ((v&15) + (c<<4));                                    // tint (keep type)
 const COLOURS=['', '#ff4d5e', '#37d67a', '#4d9bff'];   // index 0 = inherit
 const NCELLS={sq3:9, sq2:4, tri:4};
 const BASE={sq3:3, sq2:2};
@@ -282,7 +281,7 @@ const LEVELS=[
     stamps:[[1,1,1, 1,1,1, 1,1,1]] },
 
   { name:"Descent",
-    hint:"<b>Flick</b> a cell to plant <b>self</b> - it becomes the whole mark again, shrunk. Send three down the diagonal.",
+    hint:"<b>Tap twice</b> to plant <b>self</b> - the cell becomes the whole mark again, shrunk. Send three down the diagonal.",
     stamps:[[A,0,0, 0,A,0, 0,0,A]] },
 
   { name:"Cantor Dust",
@@ -325,16 +324,8 @@ const LEVELS=[
     hint:"Asymmetry. Two arms reach up, one stem grows down - and each does it again.",
     stamps:[[A,0,A, 0,A,0, 0,A,0]] },
 
-  { name:"Pinwheel",
-    hint:"A <b>self</b> points the way you flick - its blip marks 'up'. Aim each corner a quarter-turn further (or tap a self to spin): a pinwheel of pinwheels.",
-    stamps:[[rot(A,0),0,rot(A,1), 0,0,0, rot(A,3),0,rot(A,2)]] },
-
-  { name:"Whirl",
-    hint:"The diamond, set spinning. Each arm of <b>self</b> is turned to chase the next - lace that swirls as it falls.",
-    stamps:[[0,rot(A,0),0, rot(A,3),0,rot(A,1), 0,rot(A,2),0]] },
-
   { name:"Two Minds",
-    hint:"Now two stamps. <b>Flick straight</b> for self, <b>flick diagonally</b> for the <b>other</b> stamp. A is a cross of B; B is corners of A. They dream each other.",
+    hint:"Now two stamps. Keep tapping a cell to reach <b>self</b> (grid 1), then the <b>other</b> stamp (grid 2). A is a cross of B; B is corners of A. They dream each other.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
 
@@ -359,15 +350,11 @@ const LEVELS=[
             [B,0,B, 0,0,0, B,0,B]] },
 
   { name:"Quarters", geom:"sq2",
-    hint:"A new world: the <b>two-by-two</b>. Four quadrants, still four rotations. Recurse three of them and leave one empty - a square Sierpiński.",
+    hint:"A new world: the <b>two-by-two</b>. Four quadrants. Recurse three of them and leave one empty - a square Sierpiński.",
     stamps:[[A,A, A,0]] },
 
-  { name:"Twist", geom:"sq2",
-    hint:"Two quadrants on the diagonal, the lower one spun half a turn ↻. Minimal parts, restless motion.",
-    stamps:[[A,0, 0,rot(A,2)]] },
-
   { name:"Sierpiński", geom:"tri",
-    hint:"The <b>triangle</b> world. It splits into four - three upright, one inverted in the middle. Recurse the three corners for the oldest fractal of all. (No spin here; the middle flips on its own.)",
+    hint:"The <b>triangle</b> world. It splits into four - three upright, one inverted in the middle. Recurse the three corners for the oldest fractal of all. (The middle flips on its own.)",
     stamps:[[A,A,A, 0]] },
 
   { name:"Steeple", geom:"tri",
@@ -445,6 +432,7 @@ function pixelDiff(a,b){ let d=0; for(let i=0;i<a.length;i+=4){ if(a[i]!==b[i]||
 
 /* ---- state ------------------------------------------------------- */
 let mode='play';          // 'play' | 'sand' | 'random'
+let sandOp='none';        // free-play boolean combine: none|AND|OR|XOR|NAND|XNOR
 let geom='sq3';           // geometry of the current stamps
 let li=0;                 // level index
 let stamps=[];            // player's working stamps
@@ -456,7 +444,7 @@ let armedColour=0;        // active colour tint: 0 plain, 1 R, 2 G, 3 B
 let colourOn=false;       // is the colour row available this level/mode?
 let prevWin=false, advTimer=null;
 let solved={};
-try{ solved=JSON.parse(localStorage.getItem('auto-solved')||'{}'); }catch(e){}
+try{ solved=JSON.parse(localStorage.getItem('selfie-solved')||'{}'); }catch(e){}
 
 const $=id=>document.getElementById(id);
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -486,6 +474,7 @@ function setNav(m){
   $('navPlay').hidden  = m!=='play';
   $('navSand').hidden  = m!=='sand';
   $('navRandom').hidden= m!=='random';
+  $('ops').hidden      = m!=='sand';
   document.body.classList.toggle('sand', m==='sand');
 }
 function clearHash(){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; } }
@@ -520,10 +509,9 @@ function loadLevel(i){
 /* ---- colour picker (the only on-screen control) ------------------ */
 function setTapnote(){
   const multi=stamps.length>1;
-  let s;
-  if(geom==='tri') s='tap ▸ ink · flick ▸ self · hold ▸ erase';
-  else if(multi) s='tap ▸ ink · flick ✛ ▸ self · flick ✕ ▸ other · tap a mark ▸ spin · hold ▸ erase';
-  else s='tap ▸ ink · flick ▸ self (it points where you flick) · tap a self ▸ spin · hold ▸ erase';
+  let s = multi
+    ? 'tap a cell to cycle · empty ▸ ink ▸ self (grid 1) ▸ other (grid 2) ▸ empty'
+    : 'tap a cell to cycle · empty ▸ ink ▸ self ▸ empty';
   if(colourOn) s+=' · pick a colour to tint';
   $('tapnote').textContent=s;
 }
@@ -579,63 +567,27 @@ function buildTriGrid(si){
   return g;
 }
 
-/* ---- editing gestures (no palette, no modes) ---------------------
-   tap        empty <-> ink      (ink takes the armed tint, in colour levels)
-   flick      self, pointing the way you flick   (flick diagonally = the other stamp)
-   tap a ref  spin 90 (squares)      hold  erase
-   The flick direction IS the rotation, so orientation costs no extra control.
+/* ---- editing gesture: tap to cycle -------------------------------
+   Every tap on a cell advances it to the next state:
+     empty ▸ ink ▸ self (grid 1) ▸ other (grid 2, two-stamp levels) ▸ empty
+   Single-stamp / triangle levels skip the 'other' step. Whatever colour is
+   armed (colour levels + free play) tints the new state. Reset clears.
 ------------------------------------------------------------------- */
 const tintNow=()=> colourOn?armedColour:0;
 function haptic(){ try{ if(navigator.vibrate) navigator.vibrate(7); }catch(e){} }
-function flickResolve(dx,dy){
-  const sec=(Math.round((Math.atan2(dy,dx)+Math.PI/2)/(Math.PI/4))%8+8)%8;   // 0=up, clockwise
-  const multi=stamps.length>1;
-  if(multi && sec%2===1) return {type:3, r:(sec-1)/2};                        // diagonal -> other
-  return {type:2, r: multi ? sec/2 : Math.round(sec/2)%4};                    // cardinal -> self
-}
-function setCell(cell, v){ const si=+cell.dataset.si, k=+cell.dataset.k; stamps[si][k]=v; update(); haptic(); }
-function tapCell(cell){
-  const si=+cell.dataset.si, k=+cell.dataset.k, cur=stamps[si][k], t=cur&3;
-  let nv;
-  if(cur===0) nv = 1 + (tintNow()<<4);              // empty -> ink
-  else if(t===1) nv = 0;                            // ink -> empty
-  else { if(geom==='tri') return; nv = rot(cur,1); }// reference -> spin (squares only)
-  setCell(cell, nv);
+function cycle(cell){
+  const si=+cell.dataset.si, k=+cell.dataset.k, t=stamps[si][k]&3, multi=stamps.length>1;
+  const nt = t===0 ? 1 : t===1 ? 2 : t===2 ? (multi?3:0) : 0;   // empty>ink>self>other>empty
+  stamps[si][k] = nt===0 ? 0 : (nt + (tintNow()<<4));
+  update(); haptic();
 }
 function bindCell(cell){
-  let sx,sy,moved,lp,handled;
-  cell.addEventListener('pointerdown', e=>{
-    e.preventDefault();
-    sx=e.clientX; sy=e.clientY; moved=false; handled=false;
-    try{ cell.setPointerCapture(e.pointerId); }catch(_){}
-    lp=setTimeout(()=>{ if(!moved){ handled=true; setCell(cell,0); } }, 500);   // hold -> erase
-  });
-  cell.addEventListener('pointermove', e=>{
-    if(handled) return;
-    if(!moved && Math.hypot(e.clientX-sx, e.clientY-sy)>12){ moved=true; clearTimeout(lp); }
-    if(moved){                                                                  // live preview under the finger
-      const g=flickResolve(e.clientX-sx, e.clientY-sy);
-      if(geom==='tri') paintTriCell(cell, g.type + (tintNow()<<4));
-      else paintSqCell(cell, g.type + (g.r<<2) + (tintNow()<<4));
-    }
-  });
-  cell.addEventListener('pointerup', e=>{
-    clearTimeout(lp); if(handled) return;
-    if(moved){ const g=flickResolve(e.clientX-sx, e.clientY-sy); setCell(cell, g.type + (g.r<<2) + (tintNow()<<4)); }
-    else tapCell(cell);
-  });
-  cell.addEventListener('pointercancel', ()=>{ clearTimeout(lp); if(moved) update(); });
+  cell.addEventListener('pointerdown', e=>{ e.preventDefault(); cycle(cell); });
   cell.addEventListener('contextmenu', e=>e.preventDefault());
 }
 
-function drawNotch(ctx, size, r){                                              // the 'up' blip on a rotated cell
-  const e=size*0.135, m=size/2, p=[[m,e],[size-e,m],[m,size-e],[e,m]][r&3];
-  ctx.beginPath(); ctx.arc(p[0],p[1], size*0.058, 0, Math.PI*2);
-  ctx.fillStyle=getCss('--ink'); ctx.fill();
-  ctx.lineWidth=size*0.022; ctx.strokeStyle=getCss('--surface'); ctx.stroke();
-}
-function paintSqCell(cell, ov){
-  const si=+cell.dataset.si, k=+cell.dataset.k, v=(ov==null?stamps[si][k]:ov);
+function paintSqCell(cell){
+  const si=+cell.dataset.si, k=+cell.dataset.k, v=stamps[si][k];
   cell.className='cell'; cell.style.cssText=''; cell.innerHTML='';
   if(v===0) return;
   const cc=(v>>4)&3;
@@ -644,13 +596,11 @@ function paintSqCell(cell, ov){
     else cell.classList.add('ink');
     return;
   }
-  const refId=(v&3)-2, r=(v>>2)&3;                                  // reference
+  const refId=(v&3)-2;                                             // reference
   cell.classList.add(refId===0?'refa':'refb');
   const cv=document.createElement('canvas'); cv.width=cv.height=84;
   cell.appendChild(cv);
-  const ctx=cv.getContext('2d');
-  drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, cc?COLOURS[cc]:getCss(refId===0?'--a':'--b'), r);
-  drawNotch(ctx, 84, r);
+  drawSq(cv.getContext('2d'), stamps, refId, BASE[geom], 0,0,84, cc?COLOURS[cc]:getCss(refId===0?'--a':'--b'), 0);
   const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
 }
 function paintTriCell(tc, ov){
@@ -676,7 +626,7 @@ function paintTriCell(tc, ov){
 function update(){
   if(geom==='tri') document.querySelectorAll('.tcell').forEach(c=>paintTriCell(c));
   else document.querySelectorAll('.cell').forEach(c=>paintSqCell(c));
-  renderPic($('yours'), stamps, geom);
+  if(mode==='sand') renderSandbox(); else renderPic($('yours'), stamps, geom);
   if(mode!=='sand'){ updatePar(); checkWin(); }
 }
 function updatePar(){
@@ -696,7 +646,7 @@ function checkWin(){
     celebrate();
     if(mode==='play'){
       solved[li]=1;
-      try{ localStorage.setItem('auto-solved', JSON.stringify(solved)); }catch(e){}
+      try{ localStorage.setItem('selfie-solved', JSON.stringify(solved)); }catch(e){}
       markDots();
       const last = li===LEVELS.length-1;
       $('winMsg').textContent = last ? "every mark solved ✦"
@@ -720,25 +670,71 @@ function celebrate(){
 function enterSandbox(){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
   if(mode==='random') clearHash();
-  mode='sand'; setNav('sand'); geom='sq3';
+  mode='sand'; setNav('sand'); geom='sq3'; sandOp='none';
   $('lvnum').textContent=''; $('lvname').textContent='Free play';
-  $('hint').innerHTML="No target. Build with two stamps at full power - <b>ink</b>, <b>self</b>, the <b>other</b>, spin, and colour. Try ⚄ for a surprise.";
+  $('hint').innerHTML="No target. Build two marks with <b>ink</b>, <b>self</b>, the <b>other</b> and colour - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise.";
   $('par').hidden=true;
   colourOn=true; armedColour=0;
   stamps=[Array(9).fill(0), Array(9).fill(0)];
   baseline=stamps.map(s=>s.slice());
-  buildColours(); buildEditors(); setTapnote(); markDots(); update();
+  buildColours(); buildOps(); buildEditors(); setTapnote(); markDots(); update();
 }
 function randomStamp(){
   const pool=[0,0,0,0,1,2,2,2,3,3];
   stamps=[0,1].map(()=>Array.from({length:9},()=>{
     let v=pool[Math.floor(Math.random()*pool.length)];
-    if(v>=2 && Math.random()<0.5) v=rot(v, 1+Math.floor(Math.random()*3));
     if(v>=1 && Math.random()<0.4) v=col(v, 1+Math.floor(Math.random()*3));   // a splash of colour
     return v;
   }));
   if(!stamps.flat().some(v=>(v&3)>=2)) stamps[0][4]=2;   // never a dull static block
   update();
+}
+
+/* ---- boolean combine (free play only) ---------------------------
+   Render grid 1 and grid 2 as two independent self-referential fractals
+   (grid 1 tinted cyan, grid 2 pink), then merge them pixel-by-pixel through
+   a boolean operator. 'none' just shows grid 1 exactly as elsewhere. */
+const OPS={ AND:(a,b)=>a&&b, OR:(a,b)=>a||b, XOR:(a,b)=>a!==b,
+            NAND:(a,b)=>!(a&&b), XNOR:(a,b)=>a===b };
+const OPLIST=['none','AND','OR','XOR','NAND','XNOR'];
+function buildOps(){
+  const host=$('ops'); host.innerHTML='';
+  const lab=document.createElement('span'); lab.className='traylab'; lab.textContent='combine'; host.appendChild(lab);
+  OPLIST.forEach(op=>{
+    const el=document.createElement('button'); el.className='chip op'; el.dataset.op=op;
+    el.textContent = op==='none' ? 'g1 only' : op;
+    el.onclick=()=>{ sandOp=op; markOps(); update(); };
+    host.appendChild(el);
+  });
+  markOps();
+}
+function markOps(){ [...$('ops').querySelectorAll('.chip')].forEach(el=>el.classList.toggle('armed', el.dataset.op===sandOp)); }
+
+function hexRgb(h){ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+const soloStamps=s=> [ s.map(v=> (v&3)>=2 ? (2 + (((v>>4)&3)<<4)) : v) ];   // every ref -> self, keep colour
+const OFF=document.createElement('canvas');
+function combBuf(s, base, W){
+  OFF.width=OFF.height=W;
+  const ctx=OFF.getContext('2d',{willReadFrequently:true});
+  ctx.clearRect(0,0,W,W);
+  drawStamp(ctx, soloStamps(s), 'sq3', 0,0,W, base);
+  return ctx.getImageData(0,0,W,W).data;
+}
+function renderSandbox(){
+  const cv=$('yours'), W=cv.width, ctx=cv.getContext('2d');
+  if(sandOp==='none'){ renderPic(cv, stamps, geom); return; }
+  const dA=combBuf(stamps[0], getCss('--a'), W), dB=combBuf(stamps[1], getCss('--b'), W);
+  const out=ctx.createImageData(W,W), o=out.data, op=OPS[sandOp], ink=hexRgb(getCss('--ink'));
+  for(let i=0;i<o.length;i+=4){
+    const aOn=dA[i+3]>8, bOn=dB[i+3]>8;
+    if(!op(aOn,bOn)) continue;                                   // off -> transparent
+    if(aOn&&bOn){ o[i]=Math.min(255,dA[i]+dB[i]); o[i+1]=Math.min(255,dA[i+1]+dB[i+1]); o[i+2]=Math.min(255,dA[i+2]+dB[i+2]); }
+    else if(aOn){ o[i]=dA[i]; o[i+1]=dA[i+1]; o[i+2]=dA[i+2]; }
+    else if(bOn){ o[i]=dB[i]; o[i+1]=dB[i+1]; o[i+2]=dB[i+2]; }
+    else { o[i]=ink[0]; o[i+1]=ink[1]; o[i+2]=ink[2]; }          // neither (NAND / XNOR fill)
+    o[i+3]=255;
+  }
+  ctx.clearRect(0,0,W,W); ctx.putImageData(out,0,0);
 }
 
 /* ---- random puzzle (solve a random mark; the URL is the puzzle) --- */
@@ -761,15 +757,11 @@ function fromHash(){
   try{ return decodeStamps(decodeURIComponent(m[1])); }catch(e){ return null; }
 }
 function genStamp(g){
-  const n=NCELLS[g], spin=(g!=='tri'), max = g==='sq3'?6:3;
+  const n=NCELLS[g], max = g==='sq3'?6:3;
   const pool = g==='sq3' ? [0,0,0,1,1,2,2,2] : [0,0,1,2,2,2];
   let s, refs, filled, tries=0;
   do{
-    s=Array.from({length:n},()=>{
-      let v=pool[Math.floor(Math.random()*pool.length)];
-      if(v===2 && spin && Math.random()<0.45) v=rot(2, 1+Math.floor(Math.random()*3));
-      return v;
-    });
+    s=Array.from({length:n},()=> pool[Math.floor(Math.random()*pool.length)]);
     refs=s.filter(v=>v>=2).length; filled=s.filter(v=>v!==0).length;
   }while((refs<1 || filled<2 || filled>max) && ++tries<80);
   if(refs<1) s[0]=2;

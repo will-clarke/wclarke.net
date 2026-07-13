@@ -19,10 +19,10 @@
       "tagline": "Tap empty to place. Tap an enemy stone to shatter it into a new war. Win the line, own the cell."
     },
     {
-      "slug": "autobiography",
-      "name": "Autobiography",
+      "slug": "selfie",
+      "name": "Selfie",
       "accent": "#ff7ac2",
-      "tagline": "Design one tiny mark that is made of itself - paint ink, self, the other stamp, and spin them. Match the fractal in as few cells as par, or reverse-engineer the daily mark."
+      "tagline": "Design one tiny mark that is made of itself - tap cells to cycle ink and self. Match the fractal in as few cells as par, reverse-engineer a random mark, or fuse two marks with a boolean operator in free play."
     },
     {
       "slug": "seed",

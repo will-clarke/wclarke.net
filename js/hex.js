@@ -1,17 +1,10 @@
 /* hex.js - the honeycomb homepage.
 
-   A pannable field of big hexagons. A cluster of thirteen special hexes sits at
-   the centre: five are live "toys" (js/toys.js) that expand into a large hex
-   when you open them; the other eight are doors (links). The rest of the field
-   is quiet texture that fades toward the edges.
-
-   The field looks around as the mouse moves (a gentle parallax) and can be
-   dragged; both just translate one #world layer, so the toys ride along without
-   redrawing. Every hex position comes from one axial-coordinate formula, so the
-   tiling is correct by construction at any size. */
+   Thirteen special hexes sit at the centre of a pannable field (js/hexfield.js):
+   five are live "toys" (js/toys.js) that open into a large hex when dived into;
+   the other eight are doors (links). Everything else is quiet texture. This file
+   just describes those thirteen hexes and hands them to HexField. */
 (function () {
-  var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
-
   // thirteen special hexes on an axial grid (q, r) centred on (0, 0):
   // the middle, its six neighbours, and six corners of the ring beyond.
   var TILES = [
@@ -31,334 +24,37 @@
     { q: -2, r: 0,  name: "projects",  accent: "#7d4bcf", href: "/projects.html",                 blurb: "the full cabinet" },
   ];
 
-  var field = document.getElementById("field");
-  var world = document.createElement("div");
-  world.id = "world";
-  field.appendChild(world);
+  function esc(s) {
+    return s.replace(/[&<>]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c];
+    });
+  }
 
-  var dpr = Math.min(window.devicePixelRatio || 1, 2);
-  var vw, vh, w, H, stepX, rowStep, panMax = { x: 0, y: 0 };
-  var live = [];                 // toy tiles: {toy, canvas, ctx, w, h, last, accent, name}
-  var cellByKey = {};            // "q,r" -> hex element, for finding neighbours
-
-  // ---- layout ----------------------------------------------------------
-  function build() {
-    world.textContent = "";
-    live = []; cellByKey = {}; shrink();
-    vw = window.innerWidth; vh = window.innerHeight;
-
-    w = Math.max(112, Math.min(230, vw / 5.2));
-    H = w * 1.1547;                          // regular pointy-top hexagon
-    var gap = w * 0.07;
-    stepX = w + gap;
-    rowStep = H * 0.75 + gap * 0.5;
-    panMax = { x: Math.min(vw * 0.2, stepX * 1.6), y: Math.min(vh * 0.2, rowStep * 2) };
-
-    var tileAt = {};
-    TILES.forEach(function (t) { tileAt[t.q + "," + t.r] = t; });
-
-    var HX = vw / 2 + panMax.x + stepX;
-    var HY = vh / 2 + panMax.y + rowStep;
-    var maxR = Math.hypot(HX, HY) * 0.92;
-    var frag = document.createDocumentFragment();
-    var rLim = Math.ceil(HY / rowStep) + 1;
-
-    for (var r = -rLim; r <= rLim; r++) {
-      var qMid = -r / 2;
-      var qLim = Math.ceil(HX / stepX) + 1;
-      for (var q = Math.floor(qMid - qLim); q <= Math.ceil(qMid + qLim); q++) {
-        var px = (q + r / 2) * stepX, py = r * rowStep;
-        if (Math.abs(px) > HX || Math.abs(py) > HY) continue;
-        frag.appendChild(makeHex(q, r, tileAt[q + "," + r], px, py, maxR));
-      }
+  var specials = TILES.map(function (t) {
+    if (t.toy) {                            // a live toy: a canvas that opens live
+      var inst = window.HexToys[t.toy](t.accent);
+      return {
+        q: t.q, r: t.r, accent: t.accent, link: false, href: t.href, fps: inst.fps,
+        preview: function (ctx, w, h, tm) { inst.draw(ctx, w, h, tm, null); },
+        live: function (ctx, w, h, tm, ptr) { inst.draw(ctx, w, h, tm, ptr); },
+        tile: function (el) {
+          el.classList.add("toy"); el.type = "button";
+          el.insertAdjacentHTML("beforeend", '<span class="name">' + esc(t.name) + "</span>");
+        },
+        focus: { cover: false, name: t.name, hint: inst.hint || t.blurb,
+          visitText: "visit " + t.name + " →" },
+      };
     }
-    world.appendChild(frag);
-    sizeToys();
-  }
-
-  function makeHex(q, r, tile, px, py, maxR) {
-    var el = document.createElement(tile ? (tile.href && !tile.toy ? "a" : "button") : "div");
-    el.className = "hex";
-    el.style.width = w + "px";
-    el.style.height = H + "px";
-    el.style.left = (vw / 2 + px - w / 2) + "px";
-    el.style.top = (vh / 2 + py - H / 2) + "px";
-    el.dataset.q = q; el.dataset.r = r;
-    cellByKey[q + "," + r] = el;
-
-    if (!tile) {                              // quiet texture, faded by distance
-      el.className = "hex cell";
-      var d = Math.hypot(px, py) / maxR;
-      el.style.opacity = Math.max(0.06, 0.8 - d * 1.0).toFixed(3);
-      return el;
-    }
-
-    el.classList.add("hex", "tile");
-    el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") enlarge(el); });
-    el.addEventListener("pointerleave", function () { shrink(); });
-    el.addEventListener("focusin", function () { enlarge(el); });
-    el.addEventListener("focusout", function () { shrink(); });
-    el.style.setProperty("--hex-accent", tile.accent);
-    if (tile.toy) {
-      el.classList.add("toy");
-      el.type = "button";
-      var canvas = document.createElement("canvas");
-      canvas.className = "toycanvas";
-      el.appendChild(canvas);
-      el.insertAdjacentHTML("beforeend", '<span class="name">' + tile.name + "</span>");
-      var inst = window.HexToys[tile.toy](tile.accent);
-      var rec = { tile: tile, canvas: canvas, ctx: canvas.getContext("2d"),
-        inst: inst, w: 0, h: 0, last: 0 };
-      live.push(rec);
-      el.addEventListener("click", function (e) {
-        if (dragMoved) return;
-        e.preventDefault();
-        openFocus(tile, inst, el);
-      });
-    } else {
-      el.classList.add("door");
-      el.href = tile.href;
-      el.innerHTML = '<span class="name">' + tile.name +
-        '</span><span class="blurb">' + tile.blurb + "</span>";
-      el.addEventListener("click", function (e) {
-        // plain click dives into the cover; modifier clicks keep link behaviour
-        if (dragMoved || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        openFocus(tile, null, el);
-      });
-    }
-    return el;
-  }
-
-  function sizeToys() {
-    live.forEach(function (rec) {
-      rec.w = w; rec.h = H;
-      rec.canvas.width = Math.round(w * dpr);
-      rec.canvas.height = Math.round(H * dpr);
-      rec.canvas.style.width = w + "px";
-      rec.canvas.style.height = H + "px";
-      rec.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      rec.last = 0;
-    });
-  }
-
-  // ---- enlarge: grow the focused hex, shrink neighbours toward their far side
-  // The focused hex scales up about its own centre. Each neighbour scales down
-  // about the edge that faces AWAY from the focus, so that far edge (its border
-  // with the outer ring) stays put and only the near edge recedes - which frees
-  // the most room for the least shrink.
-  var NB = [[1, 0], [-1, 0], [0, -1], [0, 1], [1, -1], [-1, 1]];
-  var ORIGIN = {                    // far edge of a neighbour in each direction
-    "1,0": "100% 50%", "-1,0": "0% 50%", "0,-1": "25% 12.5%",
-    "0,1": "75% 87.5%", "1,-1": "75% 12.5%", "-1,1": "25% 87.5%",
-  };
-  var focused = null, receded = [];
-
-  function enlarge(el) {
-    if (focused === el || dragging) return;
-    shrink();
-    focused = el;
-    el.style.transformOrigin = "";  // the focus grows about its own centre
-    el.classList.add("enlarged");
-    var q = +el.dataset.q, r = +el.dataset.r;
-    NB.forEach(function (d) {
-      var nb = cellByKey[(q + d[0]) + "," + (r + d[1])];
-      if (!nb) return;
-      nb.style.transformOrigin = ORIGIN[d[0] + "," + d[1]];
-      nb.classList.add("receded");
-      receded.push(nb);
-    });
-  }
-  function shrink() {
-    if (focused) focused.classList.remove("enlarged");
-    receded.forEach(function (nb) {
-      nb.classList.remove("receded");
-      nb.style.transformOrigin = "";
-    });
-    receded = []; focused = null;
-  }
-
-  // ---- panning: parallax from the mouse, plus drag -----------------------
-  var pan = { x: 0, y: 0 }, target = { x: 0, y: 0 };
-  var base = { x: 0, y: 0 }, par = { x: 0, y: 0 };
-  var down = false, dragging = false, dragMoved = false, dragStart = null;
-
-  function clamp(v, m) { return v < -m ? -m : v > m ? m : v; }
-
-  function retarget() {
-    target.x = clamp(base.x + par.x, panMax.x);
-    target.y = clamp(base.y + par.y, panMax.y);
-  }
-
-  if (!REDUCED) {
-    window.addEventListener("pointermove", function (e) {
-      if (dragging || e.pointerType === "touch") return;
-      par.x = -(e.clientX / vw * 2 - 1) * panMax.x * 0.85;
-      par.y = -(e.clientY / vh * 2 - 1) * panMax.y * 0.85;
-      retarget();
-    });
-  }
-
-  field.addEventListener("pointerdown", function (e) {
-    down = true; dragging = false; dragMoved = false;
-    dragStart = { x: e.clientX, y: e.clientY, bx: base.x, by: base.y, id: e.pointerId };
+    return {                                // a door: a link that opens a bold cover
+      q: t.q, r: t.r, accent: t.accent, link: true, href: t.href,
+      tile: function (el) {
+        el.classList.add("door");
+        el.innerHTML = '<span class="name">' + esc(t.name) +
+          '</span><span class="blurb">' + esc(t.blurb) + "</span>";
+      },
+      focus: { cover: true, label: t.name, hint: t.blurb, visitText: "visit " + t.name + " →" },
+    };
   });
-  field.addEventListener("pointermove", function (e) {
-    if (!down) return;
-    var dx = e.clientX - dragStart.x, dy = e.clientY - dragStart.y;
-    if (!dragMoved && Math.hypot(dx, dy) > 6) {
-      // only now is it a drag - capture so it keeps tracking, and stop hover
-      dragMoved = true; dragging = true;
-      field.classList.add("dragging"); shrink();
-      field.setPointerCapture(dragStart.id);
-    }
-    if (dragMoved) {
-      base.x = clamp(dragStart.bx + dx, panMax.x);
-      base.y = clamp(dragStart.by + dy, panMax.y);
-      par.x = par.y = 0;
-      retarget();
-    }
-  });
-  function endDrag() { down = false; dragging = false; field.classList.remove("dragging"); }
-  field.addEventListener("pointerup", endDrag);
-  field.addEventListener("pointercancel", endDrag);
-  // a drag must never fire a link/toy click
-  field.addEventListener("click", function (e) {
-    if (dragMoved) { e.preventDefault(); e.stopPropagation(); }
-  }, true);
 
-  // ---- focus overlay: a hex dived into, filling most of the screen ------
-  var focus = { open: false, inst: null, ptr: null };
-  var overlay, fhex, fcanvas, fctx, flabel, fname, fhint, fvisit, fbox, fw = 0, fh = 0;
-
-  function buildOverlay() {
-    overlay = document.createElement("div");
-    overlay.className = "hexfocus";
-    overlay.hidden = true;
-    overlay.innerHTML =
-      '<div class="focus-backdrop"></div>' +
-      '<div class="focus-box">' +
-      '<div class="focus-hex"><canvas class="focus-canvas"></canvas>' +
-      '<span class="focus-label"></span></div>' +
-      '<div class="focus-cap"><span class="focus-name"></span>' +
-      '<span class="focus-hint"></span>' +
-      '<a class="focus-visit" hidden>visit →</a></div>' +
-      '<button class="focus-close" aria-label="close">✕</button></div>';
-    document.body.appendChild(overlay);
-    fbox = overlay.querySelector(".focus-box");
-    fhex = overlay.querySelector(".focus-hex");
-    fcanvas = overlay.querySelector(".focus-canvas");
-    fctx = fcanvas.getContext("2d");
-    flabel = overlay.querySelector(".focus-label");
-    fname = overlay.querySelector(".focus-name");
-    fhint = overlay.querySelector(".focus-hint");
-    fvisit = overlay.querySelector(".focus-visit");
-
-    overlay.querySelector(".focus-backdrop").addEventListener("click", closeFocus);
-    overlay.querySelector(".focus-close").addEventListener("click", closeFocus);
-    fcanvas.addEventListener("pointermove", function (e) {
-      var r = fcanvas.getBoundingClientRect();
-      focus.ptr = { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height };
-    });
-    fcanvas.addEventListener("pointerleave", function () { focus.ptr = null; });
-    window.addEventListener("keydown", function (e) { if (e.key === "Escape") closeFocus(); });
-  }
-
-  function openFocus(tile, inst, el) {
-    if (!overlay) buildOverlay();
-    shrink();
-    focus.open = true; focus.inst = inst; focus.ptr = null;
-
-    // fill most of the screen, leaving room below for the caption
-    fw = Math.min(vw * 0.92, (vh - 170) / 1.1547);
-    fh = fw * 1.1547;
-    fcanvas.width = Math.round(fw * dpr);
-    fcanvas.height = Math.round(fh * dpr);
-    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    fctx.clearRect(0, 0, fw, fh);
-    fhex.style.width = fw + "px";
-    fhex.style.height = fh + "px";
-    overlay.style.setProperty("--focus-accent", tile.accent);
-
-    var isDoor = !inst;
-    fbox.classList.toggle("cover", isDoor);
-    flabel.textContent = isDoor ? tile.name : "";
-    fname.textContent = isDoor ? "" : tile.name;
-    fname.style.display = isDoor ? "none" : "";
-    fhint.textContent = inst ? (inst.hint || tile.blurb) : tile.blurb;
-    fhex.onclick = isDoor && tile.href ? function () { window.location = tile.href; } : null;
-    if (tile.href) {
-      fvisit.hidden = false; fvisit.href = tile.href;
-      fvisit.textContent = "visit " + tile.name + " →";
-    } else { fvisit.hidden = true; }
-
-    overlay.hidden = false;
-    // dive out of the clicked hex
-    var rect = el.getBoundingClientRect();
-    var dx = rect.left + rect.width / 2 - vw / 2;
-    var dy = rect.top + rect.height / 2 - vh / 2;
-    if (REDUCED) {
-      overlay.classList.add("open");
-    } else {
-      fbox.style.transition = "none";
-      fbox.style.transform = "translate(" + dx + "px," + dy + "px) scale(0.12)";
-      void fbox.offsetWidth;              // commit the start frame, so it animates
-      fbox.style.transition = "";
-      fbox.style.transform = "translate(0,0) scale(1)";
-      overlay.classList.add("open");
-    }
-  }
-
-  function closeFocus() {
-    if (!focus.open) return;
-    focus.open = false; focus.inst = null; focus.ptr = null;
-    overlay.classList.remove("open");
-    var done = function () { overlay.hidden = true; };
-    if (REDUCED) { done(); }
-    else {
-      fbox.style.transform = "scale(0.9)";
-      setTimeout(done, 240);
-    }
-  }
-
-  // ---- one animation loop for every live toy ----------------------------
-  function loop(t) {
-    if (!document.hidden) {
-      pan.x += (target.x - pan.x) * (REDUCED ? 1 : 0.09);
-      pan.y += (target.y - pan.y) * (REDUCED ? 1 : 0.09);
-      world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0)";
-
-      if (focus.open && focus.inst) {
-        fctx.clearRect(0, 0, fw, fh);
-        focus.inst.draw(fctx, fw, fh, t, focus.ptr);
-      }
-      if (!REDUCED || !previewDrawn) {
-        for (var i = 0; i < live.length; i++) {
-          var rec = live[i];
-          var fps = Math.min(rec.inst.fps || 30, 30);
-          if (t - rec.last < 1000 / fps) continue;
-          rec.last = t;
-          rec.ctx.clearRect(0, 0, rec.w, rec.h);
-          rec.inst.draw(rec.ctx, rec.w, rec.h, t, null);
-        }
-        previewDrawn = true;      // under reduced motion, a single static frame
-      }
-    }
-    requestAnimationFrame(loop);
-  }
-  var previewDrawn = false;
-
-  build();
-  requestAnimationFrame(loop);
-
-  var rt;
-  window.addEventListener("resize", function () {
-    clearTimeout(rt);
-    rt = setTimeout(function () {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      previewDrawn = false;
-      build();
-      if (focus.open) closeFocus();
-    }, 150);
-  });
+  window.HexField(document.getElementById("field"), { specials: specials });
 })();
