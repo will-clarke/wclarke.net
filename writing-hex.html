@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="darkreader-lock">
+  <title>Writing - Will Clarke</title>
+  <meta name="description" content="Will Clarke's writing as a honeycomb: technical posts and short stories, clustered by topic.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="hexhome">
+
+<div id="field"></div>
+
+<nav class="mark" aria-label="site">
+  <a class="wordmark" href="/">← will clarke</a>
+  <span class="controls">
+    <a class="plainlink" href="/writing.html">list view</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </span>
+</nav>
+
+<script src="/js/hexfield.js" defer></script>
+<script src="/js/writing.js" defer></script>
+</body>
+</html>
