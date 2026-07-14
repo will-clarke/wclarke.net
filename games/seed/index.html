@@ -233,36 +233,37 @@ const MAXLEN = 50000;
 
 /* ---- levels -------------------------------------------------------
    base:[x,y] heading(deg,90=up) angle(deg) len maxGen startGen
-   editor:{turn,branch,max}  turn=allow L/R · branch=allow >1 stick per
-   joint · max=stick budget. suns/thorns/walls define the puzzle.
+   max=stick budget for the twig. The full editor (left/straight/right
+   + branching) is always available; max is the only cap.
+   suns/thorns/walls define the puzzle.
 ------------------------------------------------------------------- */
 const LEVELS = [
   {
     name:"Sprout",
     hint:"Tap the <b>+</b> bud to make your twig taller. Every twig becomes your shape, so a 2-tall twig <b>doubles</b> every season. Press <b>grow</b> and reach the sun.",
     base:[50,3], heading:90, angle:25, len:5, maxGen:6, startGen:3,
-    editor:{turn:false, branch:false, max:3},
+    editor:{max:3},
     suns:[{x:50,y:44,r:7}], thorns:[], walls:[],
   },
   {
     name:"Lean",
     hint:"The sun drifted to the side. Sprout your twigs <b>angled</b> - tap the slanted buds. A little bend, repeated every season, curves the whole plant over.",
     base:[50,3], heading:90, angle:11, len:5, maxGen:6, startGen:4,
-    editor:{turn:true, branch:false, max:4},
+    editor:{max:4},
     suns:[{x:71,y:40,r:8}], thorns:[], walls:[],
   },
   {
     name:"Fork",
     hint:"Now a twig can <b>split</b>. On one tip, sprout a left AND a right AND a straight bud - a little Y. Two suns, one each side: let the plant branch to both.",
     base:[50,3], heading:90, angle:33, len:5, maxGen:5, startGen:3,
-    editor:{turn:true, branch:true, max:6},
+    editor:{max:6},
     suns:[{x:37,y:34,r:7},{x:63,y:34,r:7}], thorns:[], walls:[],
   },
   {
     name:"Ceiling",
     hint:"A low cave roof. Reach the sun but don't grow through the rock. Same shape, fewer <b>seasons</b> - dial the season down until it fits.",
     base:[50,3], heading:90, angle:25, len:5, maxGen:6, startGen:2,
-    editor:{turn:false, branch:false, max:4},
+    editor:{max:4},
     suns:[{x:50,y:40,r:6}], thorns:[],
     walls:[{x1:6,y1:52,x2:94,y2:52}],
   },
@@ -270,14 +271,14 @@ const LEVELS = [
     name:"Needle",
     hint:"A thorn on the left, the sun on the right. Branch <b>only</b> toward the sun - sprout to the right and straight, never left. Sometimes growing well means not growing everywhere.",
     base:[50,3], heading:90, angle:28, len:5, maxGen:5, startGen:3,
-    editor:{turn:true, branch:true, max:6},
+    editor:{max:6},
     suns:[{x:64,y:34,r:6}], thorns:[{x:36,y:30,r:7}], walls:[],
   },
   {
     name:"Thicket",
     hint:"Three suns to light at once. A <b>bushy</b> twig - splits stacked on splits - fills the most space. Build a full little shape, then find the season that covers all three.",
     base:[50,3], heading:90, angle:26, len:3.4, maxGen:5, startGen:3,
-    editor:{turn:true, branch:true, max:8},
+    editor:{max:8},
     suns:[{x:35,y:52,r:8},{x:65,y:52,r:8},{x:50,y:78,r:8}], thorns:[], walls:[],
   },
 ];
@@ -436,10 +437,8 @@ function loadLevel(i){
   document.getElementById('genMax').textContent = '/'+lv.maxGen;
   document.getElementById('hint').innerHTML = lv.hint;
   document.getElementById('prev').disabled = li===0;
-  document.getElementById('padnote').innerHTML = lv.editor.branch
-    ? 'tap a <b>+</b> bud to sprout · tap a twig to remove it'
-    : (lv.editor.turn ? 'tap a slanted <b>+</b> bud to bend · tap a twig to remove'
-                      : 'tap the <b>+</b> bud to grow taller · tap a twig to remove');
+  document.getElementById('padnote').innerHTML =
+    'tap a <b>+</b> bud to sprout left · straight · right · tap a twig to remove it';
   recompute(false);
   syncGen();
 }
@@ -625,12 +624,11 @@ function renderPad(){
 
   // ghost buds (available sprouts)
   const total = countSticks(state.gene);
-  const dirs = lv.editor.turn ? ['L','S','R'] : ['S'];
+  const dirs = ['L','S','R'];
   const canGrow = total < lv.editor.max;
   if(canGrow){
     for(const j of joints){
       if(j.base) continue;                 // never sprout new trunks from the ground
-      if(!lv.editor.branch && j.node.children.length>=1) continue;
       const used = j.node.children.map(c=>c.dir);
       for(const d of dirs){
         if(used.includes(d)) continue;
