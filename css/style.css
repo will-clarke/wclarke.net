@@ -400,6 +400,8 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 }
 
 .hex.tile { cursor: pointer; z-index: 2; outline: none; }
+/* the hex being flown into hides its own label - the page's title is the one word */
+.hex.tile.growing .name { opacity: 0; transition: opacity 0.15s ease; }
 
 /* enlarge (js/hex.js): the focused hex grows and rises above its neighbours,
    which shrink toward their FAR side (transform-origin set per-neighbour in JS)
@@ -692,6 +694,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
    this styles the panel and its demo content. */
 .hexgrow {
   position: fixed;
+  inset: 0;                                 /* full-screen page; the clip opens it from a hexagon */
   z-index: 60;
   display: flex;
   align-items: center;
@@ -702,32 +705,24 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   pointer-events: none;                     /* let hover/scroll reach the field until committed */
   touch-action: none;                       /* a pinch-out on the page means "back", not browser zoom */
   overflow: hidden;
-  box-shadow: 0 20px 70px rgba(0, 0, 0, 0.28);
 }
 .hexgrow[hidden] { display: none; }
 .hexgrow.committed { pointer-events: auto; }
 
-.grow-name {
-  /* in-flow so the grower's flex centring places it dead-centre; hexfield.js
-     scales it up (about its own centre) as the hexagon grows. */
-  position: relative;
-  font-family: var(--mono);
-  font-size: clamp(0.7rem, 2vw, 1.05rem);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  font-weight: 600;
-  color: #fff;
-  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
-  pointer-events: none;
-  will-change: transform;
-}
 .grow-page {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
+}
+/* the central title holds still; .grow-rest (everything else) rises + fades in
+   around it as you fly in (hexfield.js drives these vars). */
+.grow-h { opacity: var(--title-op, 0); }
+.grow-rest {
+  opacity: var(--body-op, 0);
+  transform: translateY(var(--body-y, 18px));
+  will-change: opacity, transform;
 }
 .grow-page-inner {
   max-width: min(42rem, 84vw);
@@ -776,11 +771,9 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   opacity: 0.6;
 }
 .grow-back {
-  /* top-centre, not the corner - the page is a hexagon and the corners are clipped. */
   position: absolute;
-  top: 1.4rem;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 1.2rem;
+  right: 1.2rem;
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 50%;

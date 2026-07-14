@@ -33,11 +33,13 @@
   }
 
   function pageHtml(t) {
-    var h = '<h1 class="grow-h">' + esc(t.name) + "</h1>" +
+    // the title is the still centre; everything else lives in .grow-rest, which
+    // hexfield.js reveals (fade + rise) around it as you fly in.
+    var h = '<h1 class="grow-h">' + esc(t.name) + "</h1>" + '<div class="grow-rest">' +
       '<p class="grow-sub">' + esc(t.blurb) + "</p>" +
       '<p class="grow-body">' + esc(t.body) + "</p>";
     if (t.href) h += '<a class="grow-visit" href="' + esc(t.href) + '">open ' + esc(t.name) + " →</a>";
-    h += '<p class="grow-demo">demo page · esc or ✕ to close</p>';
+    h += '<p class="grow-demo">demo page · esc or ✕ to close</p></div>';
     return h;
   }
 

@@ -55,7 +55,7 @@ window.HexField = function (mount, cfg) {
   function build() {
     world.textContent = "";
     live = []; cellByKey = {}; tiles = []; shrink();
-    if (grower) { performDismiss(); grow.g = 0; grower.hidden = true; }
+    if (grower) { performDismiss(); grow.g = 0; grow.el = null; grower.hidden = true; }
     vw = window.innerWidth; vh = window.innerHeight;
 
     w = hexWidth();
@@ -134,7 +134,7 @@ window.HexField = function (mount, cfg) {
     }
 
     el.classList.add("hex", "tile");
-    el.__cell = cell;
+    el.__cell = cell; el.__px = px; el.__py = py;
     tiles.push({ el: el, px: px, py: py });
     el.style.setProperty("--hex-accent", cell.accent);
 
@@ -330,7 +330,7 @@ window.HexField = function (mount, cfg) {
     setTimeout(function () { suppressClick = false; }, 350);
     if (grow.committed) return;
     if (grow.g >= LOCK) grow.opening = true;     // a decent pinch finishes opening on its own
-    else grow.el = null;                         // not enough - let it recede
+    // else: not opening, not pinching -> it flies back out (grow.el kept until g<=0)
   }
 
   window.addEventListener("pointerdown", function (e) {
@@ -447,30 +447,29 @@ window.HexField = function (mount, cfg) {
   }
 
   // ---- grow-to-page (cfg.grow) ------------------------------------------
-  // Click/tap (or pinch) opens a hex: a "grower" overlay starts exactly over the
-  // tile and scales up as one regular hexagon, drifting to the screen centre into a
-  // large hexagonal page. g runs 0..1; reach 1 and it commits. `opening` drives it
-  // to full on its own (a click, or a pinch released past halfway); a pinch sets g
-  // by hand. It never fills the whole screen and never distorts.
-  var grow = { el: null, cell: null, rect: null, g: 0,
+  // Click/tap (or pinch) flies into a hex: the honeycomb dollies in - scaling up
+  // about the tile and sliding it to the centre - while a full-screen page fades in
+  // on top, its hexagon clip opening out to a rectangle to reveal the corners and
+  // its content rising in around a still central title. g runs 0..1; reach 1 and it
+  // commits. `opening` drives it to full on its own (a click, or a pinch released
+  // past halfway); a pinch sets g by hand.
+  var grow = { el: null, cell: null, g: 0, px: 0, py: 0, pan0: { x: 0, y: 0 },
                opening: false, committed: false, pinching: false, pinchG: 0,
                pushed: false, prevT: 0 };
-  var grower, growName, growPageInner, growBack;
+  var grower, growPageInner, growBack;
   var GROW_MS = 750, SHRINK_MS = 320, LOCK = 0.5;   // open/close durations; a pinch past LOCK finishes opening
+  var FLY = 4;                                      // how far the honeycomb dollies into the hex
 
   function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
-  function ease(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }  // easeInOutCubic
 
   function buildGrower() {
     grower = document.createElement("div");
     grower.className = "hexgrow";
     grower.hidden = true;
     grower.innerHTML =
-      '<span class="grow-name"></span>' +
       '<div class="grow-page"><div class="grow-page-inner"></div></div>' +
       '<button class="grow-back" aria-label="close">✕</button>';
     document.body.appendChild(grower);
-    growName = grower.querySelector(".grow-name");
     growPageInner = grower.querySelector(".grow-page-inner");
     growBack = grower.querySelector(".grow-back");
     growBack.addEventListener("click", function (e) { e.stopPropagation(); requestDismiss(); });
@@ -481,21 +480,23 @@ window.HexField = function (mount, cfg) {
     if (grow.committed || grow.el === el) return;
     if (!grower) buildGrower();
     grow.el = el; grow.cell = cell;
-    growName.textContent = (cell.page && cell.page.title) || "";
+    el.classList.add("growing");                 // hide the tile's own label; the page title is the one stable word
+    grow.px = el.__px || 0; grow.py = el.__py || 0;
+    grow.pan0 = { x: pan.x, y: pan.y };          // freeze the camera; the fly-in starts here
     growPageInner.innerHTML = (cell.page && cell.page.html) || "";
     grower.style.setProperty("--grow-accent", cell.accent);
     grower.hidden = false;
   }
   // a click/tap opens deliberately: keep growing to full without further input.
   function commitGrow(el, cell) { startGrow(el, cell); grow.opening = true; }
-  // a click on a growing hex backs out: drop it so it recedes.
-  function cancelGrow() { grow.opening = false; grow.el = null; }
+  // a click on a growing hex backs out: stop opening so it flies back out.
+  function cancelGrow() { grow.opening = false; }
 
-  // retreat the page back into the honeycomb. Every "back" gesture funnels here:
-  // Esc, the ✕, a pinch-out and the browser/Android Back.
+  // retreat the page back into the honeycomb (the fly-in reverses as g -> 0). Every
+  // "back" gesture funnels here: Esc, the ✕, a pinch-out and the browser/Android Back.
   function performDismiss() {
     grow.pushed = false;
-    grow.committed = false; grow.opening = false; grow.pinching = false; grow.el = null;
+    grow.committed = false; grow.opening = false; grow.pinching = false;
     if (grower) grower.classList.remove("committed");
   }
   // user-initiated back: if opening the page pushed a history entry, pop it so the
@@ -522,6 +523,7 @@ window.HexField = function (mount, cfg) {
 
     if (grow.g <= 0 && !grow.pinching) {         // fully receded (and not mid-pinch) - put it away
       grow.g = 0; grow.opening = false;
+      if (grow.el) grow.el.classList.remove("growing");
       if (grower && !grower.hidden) { grower.hidden = true; grow.el = null; }
       return;
     }
@@ -531,30 +533,23 @@ window.HexField = function (mount, cfg) {
       grower.classList.add("committed");
       if (!grow.pushed) { try { history.pushState({ hexgrow: 1 }, ""); grow.pushed = true; } catch (e) {} }
     }
-    if (grow.el) grow.rect = grow.el.getBoundingClientRect();      // track the hex as the field pans
     renderGrow();
   }
 
   function renderGrow() {
-    var r = grow.rect;
-    if (!r) return;
-    var e = ease(grow.g);
-    // one regular hexagon: scale up from the tile toward a big centred hexagon
-    // (never the whole screen), drifting its centre from the tile to mid-screen.
-    var F = 1 + (0.9 * Math.min(vw / r.width, vh / r.height) - 1) * e;
-    var W = r.width * F, Hh = r.height * F;
-    var hcx = r.left + r.width / 2, hcy = r.top + r.height / 2;
-    var cx = hcx + (vw / 2 - hcx) * e, cy = hcy + (vh / 2 - hcy) * e;
-    grower.style.left = (cx - W / 2) + "px";
-    grower.style.top = (cy - Hh / 2) + "px";
-    grower.style.width = W + "px";
-    grower.style.height = Hh + "px";
-    grower.style.opacity = clamp01(grow.g / 0.1);
-    // the title rides inside the hexagon from the first frame (content in hex form),
-    // scaling up with it, then cross-fades to the full page as the hexagon fills out.
-    growName.style.transform = "scale(" + (1 + e * 2.6).toFixed(2) + ")";
-    growName.style.opacity = (clamp01(grow.g / 0.05) * clamp01((0.55 - grow.g) / 0.18)).toFixed(2);
-    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - 0.4) / 0.32).toFixed(2);
+    var g = grow.g;
+    // the accent panel fades in over the dive (you see the honeycomb fly in through
+    // it)...
+    grower.style.opacity = clamp01((g - 0.12) / 0.3).toFixed(3);
+    // ...its hexagon clip then opens out to a rectangle, revealing the four corners...
+    var k = clamp01((g - 0.4) / 0.4), a = 25 * (1 - k), b = 75 + 25 * k;
+    grower.style.clipPath = "polygon(50% 0%, 100% " + a + "%, 100% " + b +
+      "%, 50% 100%, 0% " + b + "%, 0% " + a + "%)";
+    // ...the central title settles in (and holds) while the rest rises in around it.
+    growPageInner.style.setProperty("--title-op", clamp01((g - 0.3) / 0.2).toFixed(2));
+    var bp = clamp01((g - 0.58) / 0.3);
+    growPageInner.style.setProperty("--body-op", bp.toFixed(2));
+    growPageInner.style.setProperty("--body-y", ((1 - bp) * 18).toFixed(1) + "px");
     growBack.style.opacity = grow.committed ? "1" : "0";
   }
 
@@ -567,7 +562,17 @@ window.HexField = function (mount, cfg) {
       var k = (REDUCED || dragging) ? 1 : 0.18;
       pan.x += (target.x - pan.x) * k;
       pan.y += (target.y - pan.y) * k;
-      world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0)";
+      if (GROW && grow.el && grow.g > 0.0005) {
+        // fly the camera into the target hex: scale the honeycomb up about it and
+        // slide it to the centre, so you dive in as the page forms on top. easeOut
+        // so the dive rushes in early (you actually see it before the page covers).
+        var a = 1 - (1 - grow.g) * (1 - grow.g), S = 1 + a * FLY;
+        var tx = grow.pan0.x + a * (-(1 + FLY) * grow.px - grow.pan0.x);
+        var ty = grow.pan0.y + a * (-(1 + FLY) * grow.py - grow.pan0.y);
+        world.style.transform = "translate3d(" + tx.toFixed(1) + "px," + ty.toFixed(1) + "px,0) scale(" + S.toFixed(3) + ")";
+      } else {
+        world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0)";
+      }
 
       // whichever special hex is under the middle of the screen is the "centred"
       // one: touch uses it as its cursor (blooms or grows it), and cfg.onCentre
