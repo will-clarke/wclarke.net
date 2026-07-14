@@ -458,7 +458,7 @@ window.HexField = function (mount, cfg) {
                pushed: false, prevT: 0 };
   var grower, growPageInner, growBack;
   var GROW_MS = 750, SHRINK_MS = 320, LOCK = 0.5;   // open/close durations; a pinch past LOCK finishes opening
-  var FLY = 4;                                      // how far the honeycomb dollies into the hex
+  var FLY = 3;                                      // how far the honeycomb dollies in behind the page
 
   function clamp01(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
 
@@ -466,12 +466,16 @@ window.HexField = function (mount, cfg) {
     grower = document.createElement("div");
     grower.className = "hexgrow";
     grower.hidden = true;
-    grower.innerHTML =
-      '<div class="grow-page"><div class="grow-page-inner"></div></div>' +
-      '<button class="grow-back" aria-label="close">✕</button>';
+    grower.innerHTML = '<div class="grow-page"><div class="grow-page-inner"></div></div>';
     document.body.appendChild(grower);
     growPageInner = grower.querySelector(".grow-page-inner");
-    growBack = grower.querySelector(".grow-back");
+    // the close button lives OUTSIDE the grower - the grower grows past the screen
+    // and has a filter, so a child can't be pinned to the viewport corner. This can.
+    growBack = document.createElement("button");
+    growBack.className = "grow-back";
+    growBack.setAttribute("aria-label", "close");
+    growBack.textContent = "✕";
+    document.body.appendChild(growBack);
     growBack.addEventListener("click", function (e) { e.stopPropagation(); requestDismiss(); });
     window.addEventListener("keydown", function (e) { if (e.key === "Escape") requestDismiss(); });
   }
@@ -498,6 +502,7 @@ window.HexField = function (mount, cfg) {
     grow.pushed = false;
     grow.committed = false; grow.opening = false; grow.pinching = false;
     if (grower) grower.classList.remove("committed");
+    if (growBack) { growBack.style.opacity = "0"; growBack.style.pointerEvents = "none"; }
   }
   // user-initiated back: if opening the page pushed a history entry, pop it so the
   // URL/history stays honest - that popstate then runs performDismiss once.
@@ -538,19 +543,27 @@ window.HexField = function (mount, cfg) {
 
   function renderGrow() {
     var g = grow.g;
-    // the accent panel fades in over the dive (you see the honeycomb fly in through
-    // it)...
-    grower.style.opacity = clamp01((g - 0.12) / 0.3).toFixed(3);
-    // ...its hexagon clip then opens out to a rectangle, revealing the four corners...
-    var k = clamp01((g - 0.4) / 0.4), a = 25 * (1 - k), b = 75 + 25 * k;
-    grower.style.clipPath = "polygon(50% 0%, 100% " + a + "%, 100% " + b +
-      "%, 50% 100%, 0% " + b + "%, 0% " + a + "%)";
-    // ...the central title settles in (and holds) while the rest rises in around it.
-    growPageInner.style.setProperty("--title-op", clamp01((g - 0.3) / 0.2).toFixed(2));
+    var e = 1 - (1 - g) * (1 - g);               // easeOut, matching the world dive
+    // a PERFECT regular hexagon (standard hex clip, ratio locked to 1:1.1547): scale
+    // it up from the tile until it engulfs the whole screen, drifting to centre.
+    // Because it only ever SCALES - never morphs - the angles stay a true hexagon the
+    // whole way; by the end its edges are off-screen so it reads as a full-screen page.
+    var endW = 1.06 * (0.5 * vw + 0.866 * vh);   // wide enough that the hexagon covers every corner
+    var W = w + (endW - w) * e, Hh = W * 1.1547;
+    var scx = vw / 2 + grow.px + grow.pan0.x, scy = vh / 2 + grow.py + grow.pan0.y;
+    var cx = scx + (vw / 2 - scx) * e, cy = scy + (vh / 2 - scy) * e;
+    grower.style.left = (cx - W / 2) + "px";
+    grower.style.top = (cy - Hh / 2) + "px";
+    grower.style.width = W + "px";
+    grower.style.height = Hh + "px";
+    grower.style.opacity = clamp01(g / 0.12).toFixed(3);
+    // the central title holds still; the rest rises + fades in around it.
+    growPageInner.style.setProperty("--title-op", clamp01((g - 0.35) / 0.2).toFixed(2));
     var bp = clamp01((g - 0.58) / 0.3);
     growPageInner.style.setProperty("--body-op", bp.toFixed(2));
-    growPageInner.style.setProperty("--body-y", ((1 - bp) * 18).toFixed(1) + "px");
+    growPageInner.style.setProperty("--body-y", ((1 - bp) * 16).toFixed(1) + "px");
     growBack.style.opacity = grow.committed ? "1" : "0";
+    growBack.style.pointerEvents = grow.committed ? "auto" : "none";
   }
 
   // ---- one animation loop for pan + every live preview ------------------

@@ -693,8 +693,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
    page. hexfield.js drives left/top/width/height/clip/opacity every frame;
    this styles the panel and its demo content. */
 .hexgrow {
-  position: fixed;
-  inset: 0;                                 /* full-screen page; the clip opens it from a hexagon */
+  position: fixed;                          /* hexfield.js sizes/positions it; a true regular hexagon */
   z-index: 60;
   display: flex;
   align-items: center;
@@ -702,6 +701,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   background: var(--grow-accent);
   color: #fff;
   clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  filter: drop-shadow(0 18px 50px rgba(0, 0, 0, 0.28));   /* lift it off the honeycomb */
   pointer-events: none;                     /* let hover/scroll reach the field until committed */
   touch-action: none;                       /* a pinch-out on the page means "back", not browser zoom */
   overflow: hidden;
@@ -771,9 +771,11 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   opacity: 0.6;
 }
 .grow-back {
-  position: absolute;
+  /* its own viewport-fixed element (not a grower child) so it stays in the corner. */
+  position: fixed;
   top: 1.2rem;
   right: 1.2rem;
+  z-index: 61;
   width: 2.4rem;
   height: 2.4rem;
   border-radius: 50%;
