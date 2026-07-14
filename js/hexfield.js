@@ -152,7 +152,11 @@ window.HexField = function (mount, cfg) {
       // desktop: entering stages the hex; the frame loop then grows it only while
       // the cursor stays inside the growing shape, and shrinks it the moment it
       // leaves. touch grows via pinch (see the pinch handlers). a click/tap opens.
-      el.addEventListener("pointerenter", function (e) { if (e.pointerType !== "touch") startGrow(el, cell); });
+      el.addEventListener("pointerenter", function (e) {
+        if (e.pointerType === "touch") return;
+        ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = true;   // seed the inside-test so a still cursor still grows
+        startGrow(el, cell);
+      });
       el.addEventListener("focusin", function () { grow.kbd = true; startGrow(el, cell); });
       el.addEventListener("focusout", function () { grow.kbd = false; });
       el.addEventListener("click", function (e) {
@@ -562,24 +566,45 @@ window.HexField = function (mount, cfg) {
     renderGrow();
   }
 
+  var MORPH = 0.58;   // g<MORPH: a regular hexagon zooms up. g>MORPH: it unfolds into the page.
+
   function renderGrow() {
     var r = grow.rect;
     if (!r) return;
-    var e = ease(grow.g);
-    var L = r.left + (0 - r.left) * e, T = r.top + (0 - r.top) * e;
-    var W = r.width + (vw - r.width) * e, Hh = r.height + (vh - r.height) * e;
+    var L, T, W, Hh, morph;
+    var hcx = r.left + r.width / 2, hcy = r.top + r.height / 2;   // the tile's centre
+    var F1 = Math.min(vw / r.width, vh / r.height);               // scale that just meets the nearer edges
+    if (grow.g <= MORPH) {
+      // PHASE 1 - a REGULAR hexagon (aspect locked to the tile's) scales up about
+      // the tile's OWN centre. Because W/Hh never leaves the tile's ratio, the
+      // hexagon stays regular on any screen shape - it just gets bigger. Growing
+      // in place (not toward screen centre) keeps it under the cursor/finger.
+      var e = ease(grow.g / MORPH);
+      var F = 1 + (F1 - 1) * e;
+      W = r.width * F; Hh = r.height * F;
+      L = hcx - W / 2; T = hcy - Hh / 2;
+      morph = 0;
+    } else {
+      // PHASE 2 - the big hexagon unfolds into the full-screen page: the box grows
+      // to fill the viewport and the clip melts from hexagon to rectangle.
+      var e2 = ease((grow.g - MORPH) / (1 - MORPH));
+      var W1 = r.width * F1, H1 = r.height * F1;
+      var L1 = hcx - W1 / 2, T1 = hcy - H1 / 2;
+      L = L1 * (1 - e2); T = T1 * (1 - e2);
+      W = W1 + (vw - W1) * e2; Hh = H1 + (vh - H1) * e2;
+      morph = e2;
+    }
     grow.box = { l: L, t: T, w: W, h: Hh };     // the current shape, for pointerInside()
     grower.style.left = L + "px";
     grower.style.top = T + "px";
     grower.style.width = W + "px";
     grower.style.height = Hh + "px";
     grower.style.opacity = clamp01(grow.g / 0.1);
-    // morph hexagon -> rectangle over the second half of the growth
-    var k = clamp01((grow.g - 0.45) / 0.5), a = 25 * (1 - k), b = 75 + 25 * k;
+    var a = 25 * (1 - morph), b = 75 + 25 * morph;
     grower.style.clipPath = "polygon(50% 0%, 100% " + a + "%, 100% " + b +
       "%, 50% 100%, 0% " + b + "%, 0% " + a + "%)";
     growName.style.opacity = clamp01(1 - grow.g / 0.4);
-    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - 0.6) / 0.35);
+    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - 0.62) / 0.32);
     growBack.style.opacity = grow.committed ? "1" : "0";
   }
 
@@ -587,9 +612,12 @@ window.HexField = function (mount, cfg) {
   var previewDrawn = false, lastCentre = null;
   function loop(t) {
     if (!document.hidden) {
-      pan.x += (target.x - pan.x) * (REDUCED ? 1 : 0.09);
-      pan.y += (target.y - pan.y) * (REDUCED ? 1 : 0.09);
-      zoom += (zoomTarget - zoom) * (REDUCED ? 1 : 0.15);
+      // a live drag tracks the finger 1:1 (no lag); the gentle easing is only for
+      // the mouse-parallax drift and the settle after you let go.
+      var k = (REDUCED || dragging) ? 1 : 0.18;
+      pan.x += (target.x - pan.x) * k;
+      pan.y += (target.y - pan.y) * k;
+      zoom += (zoomTarget - zoom) * (REDUCED ? 1 : 0.2);
       var wz = Math.min(zoom, Z_ENGAGE);       // magnify only to Z_ENGAGE; beyond that the grower takes over
       world.style.transform = "translate3d(" + pan.x.toFixed(1) + "px," + pan.y.toFixed(1) + "px,0) scale(" + wz.toFixed(3) + ")";
 
