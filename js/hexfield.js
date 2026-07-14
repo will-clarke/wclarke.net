@@ -162,7 +162,9 @@ window.HexField = function (mount, cfg) {
       el.addEventListener("click", function (e) {
         if (dragMoved) return;
         e.preventDefault();
-        commitGrow(el, cell);                  // a click/tap opens it outright
+        // mid-grow, a click anywhere backs out (handled by the window handler
+        // below); only a click on a resting hex opens it.
+        if (grow.g <= 0.02 || grow.committed) commitGrow(el, cell);
       });
       return el;
     }
@@ -297,6 +299,17 @@ window.HexField = function (mount, cfg) {
     if (dragMoved) { e.preventDefault(); e.stopPropagation(); }
   }, true);
 
+  // click-to-cancel: while a hex is mid-grow (not yet a committed page), a click
+  // anywhere backs it out - so poking a hex to peek never traps you. Capture phase
+  // + stopPropagation so it wins over the tile's own click. suppressClick guards
+  // against the synthetic click a finger-lift can fire at the end of a pinch.
+  var suppressClick = false;
+  window.addEventListener("click", function (e) {
+    if (suppressClick || grow.committed || grow.g <= 0.02) return;
+    e.preventDefault(); e.stopPropagation();
+    cancelGrow();
+  }, true);
+
   // ---- pinch to zoom (touch) --------------------------------------------
   // The honeycomb magnifies uniformly toward the centred hex; past Z_ENGAGE the
   // same pinch grows that hex into its page. Pinch in -> zoom into a page; pinch
@@ -311,6 +324,7 @@ window.HexField = function (mount, cfg) {
   }
   function startPinch() {
     endDrag(); down = false;                     // a second finger cancels any drag
+    grow.cancelling = false;                     // a fresh gesture overrides a prior click-cancel
     pinch = { startDist: twoDist(), startZoom: zoomTarget };
     var c = centreObj();                         // ease that hex to dead centre and zoom into it
     if (c) {
@@ -334,6 +348,9 @@ window.HexField = function (mount, cfg) {
   function endPinch() {
     pinch = null;
     grow.pinching = false;
+    // a finger-lift can synthesize a click - don't let it trip click-to-cancel.
+    suppressClick = true;
+    setTimeout(function () { suppressClick = false; }, 350);
     if (grow.committed) return;
     if (grow.g >= LOCK) grow.locked = true;      // a decent pinch: finish opening on its own
     else { stopGrow(); zoomTarget = 1; }         // not enough: settle back into the honeycomb
@@ -464,7 +481,7 @@ window.HexField = function (mount, cfg) {
   // hover only nudges g up a little, so a passing cursor never enters a page.
   var grow = { el: null, cell: null, rect: null, box: null, g: 0,
                locked: false, committed: false, pinching: false, pinchG: 0,
-               kbd: false, pushed: false, prevT: 0 };
+               kbd: false, pushed: false, cancelling: false, prevT: 0 };
   var grower, growName, growPageInner, growBack;
   var GROW_MS = 2600, SHRINK_MS = 420, LOCK = 0.5;   // a released pinch past LOCK finishes opening itself
   // pinch-zoom: the honeycomb magnifies uniformly to Z_ENGAGE (proportions kept),
@@ -504,6 +521,9 @@ window.HexField = function (mount, cfg) {
   function stopGrow() { if (!grow.committed) { grow.el = null; grow.kbd = false; } }
   // a click/tap opens deliberately: lock it so it fills the screen without a hover.
   function commitGrow(el, cell) { startGrow(el, cell); grow.locked = true; grow.g = Math.max(grow.g, LOCK); }
+  // a click on a growing hex backs out: force the retreat even if the cursor is
+  // still over it (cleared once fully shrunk, in updateGrow).
+  function cancelGrow() { grow.locked = false; grow.kbd = false; grow.cancelling = true; }
 
   // is the cursor inside the growing shape right now? (the current grower box -
   // rectangular, so it stays forgiving at the corners). This is what keeps desktop
@@ -520,7 +540,7 @@ window.HexField = function (mount, cfg) {
   function performDismiss() {
     grow.pushed = false;
     grow.committed = false; grow.locked = false; grow.pinching = false;
-    grow.el = null; grow.kbd = false;
+    grow.el = null; grow.kbd = false; grow.cancelling = false;
     if (grower) grower.classList.remove("committed");
     zoomTarget = 1;
   }
@@ -545,15 +565,16 @@ window.HexField = function (mount, cfg) {
     // dismiss actually retreat instead of instantly re-completing.
     // A pinch drives growth directly. Otherwise it advances only while genuinely
     // engaged - the cursor inside the shape, a keyboard focus, or a click/pinch
-    // that locked it open - and recedes the instant that stops being true.
-    var dwell = grow.locked || grow.kbd || (!COARSE && pointerInside());
+    // that locked it open - and recedes the instant that stops being true. A
+    // click-to-cancel (grow.cancelling) forces the retreat regardless of engagement.
+    var dwell = !grow.cancelling && (grow.locked || grow.kbd || (!COARSE && pointerInside()));
     if (grow.committed) { /* hold full screen */ }
     else if (grow.pinching) grow.g = grow.pinchG;
     else if (dwell) grow.g += dt / GROW_MS;
     else grow.g -= dt / SHRINK_MS;
 
     if (grow.g <= 0) {
-      grow.g = 0; grow.locked = false;
+      grow.g = 0; grow.locked = false; grow.cancelling = false;
       if (grower && !grower.hidden) { grower.hidden = true; grow.el = null; grow.box = null; }
       return;
     }
@@ -603,8 +624,12 @@ window.HexField = function (mount, cfg) {
     var a = 25 * (1 - morph), b = 75 + 25 * morph;
     grower.style.clipPath = "polygon(50% 0%, 100% " + a + "%, 100% " + b +
       "%, 50% 100%, 0% " + b + "%, 0% " + a + "%)";
-    growName.style.opacity = clamp01(1 - grow.g / 0.4);
-    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - 0.62) / 0.32);
+    // the title rides inside the hexagon from the moment it starts to grow (content
+    // in hex form), scaling up with it, then cross-fades out as the full page unfolds.
+    var p1 = clamp01(grow.g / MORPH);
+    growName.style.transform = "scale(" + (1 + ease(p1) * 3.2).toFixed(2) + ")";
+    growName.style.opacity = (clamp01(grow.g / 0.04) * clamp01((MORPH + 0.04 - grow.g) / 0.14)).toFixed(2);
+    grower.querySelector(".grow-page").style.opacity = clamp01((grow.g - (MORPH - 0.05)) / 0.28).toFixed(2);
     growBack.style.opacity = grow.committed ? "1" : "0";
   }
 

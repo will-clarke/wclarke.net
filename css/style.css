@@ -708,15 +708,18 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 .hexgrow.committed { pointer-events: auto; }
 
 .grow-name {
-  position: absolute;
+  /* in-flow so the grower's flex centring places it dead-centre; hexfield.js
+     scales it up (about its own centre) as the hexagon grows. */
+  position: relative;
   font-family: var(--mono);
-  font-size: clamp(0.55rem, 1.6vw, 0.9rem);
+  font-size: clamp(0.7rem, 2vw, 1.05rem);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   font-weight: 600;
   color: #fff;
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
   pointer-events: none;
+  will-change: transform;
 }
 .grow-page {
   position: absolute;
