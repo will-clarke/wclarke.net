@@ -37,7 +37,7 @@
       '<p class="grow-sub">' + esc(t.blurb) + "</p>" +
       '<p class="grow-body">' + esc(t.body) + "</p>";
     if (t.href) h += '<a class="grow-visit" href="' + esc(t.href) + '">open ' + esc(t.name) + " →</a>";
-    h += '<p class="grow-demo">demo page · esc, or move away, to go back</p>';
+    h += '<p class="grow-demo">demo page · esc or ✕ to close</p>';
     return h;
   }
 
