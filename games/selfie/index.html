@@ -118,10 +118,23 @@
   }
   @keyframes ring{from{width:14px;height:14px;opacity:.85}to{width:150%;height:150%;opacity:0}}
 
+  /* ghost overlay: the target superimposed on yours (onion skin) */
+  .ghostcv{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;
+    opacity:0;transition:opacity .25s;z-index:1}
+  body.onion .ghostcv{opacity:.45}
+  body.onion #targetPic{display:none}
+  .ghostbtn{position:absolute;top:8px;left:8px;z-index:4;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--line);
+    color:var(--muted);font-size:14px;line-height:1;cursor:pointer;transition:.15s}
+  .ghostbtn:hover{border-color:var(--line-strong)}
+  body.onion .ghostbtn{color:var(--a);border-color:var(--a);box-shadow:0 0 10px -4px var(--a)}
+
   /* sandbox: one big canvas, no target */
   body.sand #targetPic{display:none}
   body.sand #yoursPic .cap{visibility:hidden}
   body.sand .badge,body.sand #winMsg{display:none}
+  body.sand .ghostbtn,body.sand .ghostcv{display:none}
 
   /* editors */
   .editwrap{display:flex;flex-direction:column;gap:10px;align-items:center}
@@ -169,6 +182,9 @@
   .cell .ring{position:absolute;inset:0;border-radius:8px;pointer-events:none}
   .cell.refa .ring{box-shadow:inset 0 0 0 2px var(--a),0 0 12px -4px var(--a)}
   .cell.refb .ring{box-shadow:inset 0 0 0 2px var(--b),0 0 12px -4px var(--b)}
+  /* anti-reference: dashed ring instead of solid */
+  .cell.refa.anti .ring{box-shadow:0 0 12px -4px var(--a);border:2px dashed var(--a)}
+  .cell.refb.anti .ring{box-shadow:0 0 12px -4px var(--b);border:2px dashed var(--b)}
 
   /* triangle editor */
   .trigrid{position:relative;width:162px;height:150px;background:var(--surface);
@@ -211,6 +227,7 @@
       <div class="name"><small id="lvnum">01</small><span id="lvname">Solid</span></div>
       <div class="nav" id="navPlay">
         <button class="nb" id="prev">‹</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
         <button class="nb" id="reset">reset</button>
         <button class="nb" id="next">›</button>
         <button class="nb" id="toSand" title="Free play">✎</button>
@@ -218,11 +235,13 @@
       </div>
       <div class="nav" id="navSand" hidden>
         <button class="nb" id="rand">⚄ random</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
         <button class="nb" id="clear">clear</button>
         <button class="nb" id="exitSand">✕ exit</button>
       </div>
       <div class="nav" id="navRandom" hidden>
         <button class="nb" id="rnew">⚄ new</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
         <button class="nb" id="rreset">reset</button>
         <button class="nb" id="rshare">⧉ link</button>
         <button class="nb" id="rexit">✕ exit</button>
@@ -242,6 +261,8 @@
         <div class="cap">Yours</div>
         <div class="frame yours" id="yoursFrame">
           <canvas id="yours" width="486" height="486"></canvas>
+          <canvas class="ghostcv" id="ghost" width="486" height="486"></canvas>
+          <button class="ghostbtn" id="ghostBtn" type="button" title="Overlay the target as a ghost" aria-label="Toggle target overlay">◐</button>
           <div class="burst" id="burst"></div>
           <div class="badge">✓</div>
         </div>
@@ -260,7 +281,10 @@
 
 <script>
 /* ---- cell values -------------------------------------------------
-   0 empty · 1 ink · reference = 2=stamp A (self / grid 1) | 3=stamp B (grid 2).
+   0 empty · 1 ink · reference = 2=stamp A (self / grid 1) | 3=stamp B (grid 2)
+   · anti-reference = 4=anti-A | 5=anti-B: the cell holds the NEGATIVE of that
+   stamp - filled where it is empty, empty where it is filled. Negation carries
+   a parity bit down the recursion; anti inside anti is positive again.
    A reference recurses into that stamp, so the mark is made of itself.
 
    A stamp also has a geometry, shared by the whole fractal:
@@ -269,20 +293,20 @@
      tri - triangle   (4 cells)   [the centre sub-triangle is inherently
            inverted, and that flip propagates - Sierpiński and friends]
 ------------------------------------------------------------------- */
-const A=2, B=3;
-/* cell value = type only: 0 empty · 1 ink · 2 stamp A (self) · 3 stamp B.
-   (earlier builds packed rotation and colour into higher bits; both retired.) */
+const A=2, B=3, X=4;   /* X = anti-self */
+const refIdOf=v=>(v-2)%2, antiOf=v=>v>=4?1:0;
+/* (earlier builds packed rotation and colour into higher bits; both retired.) */
 const NCELLS={sq3:9, sq2:4, tri:4};
 const BASE={sq3:3, sq2:2};
 const GEOMNAME={sq3:'3×3', sq2:'2×2', tri:'triangle'};
 
 const LEVELS=[
   { name:"Solid",
-    hint:"<b>Tap</b> a cell for <b>ink</b>. Fill all nine into a solid block.",
+    hint:"<b>Tap</b> a cell to plant <b>self</b> - a copy of the whole mark, shrunk. One alone collapses to a dot… but fill all <b>nine</b>, and nine copies of everything become a solid block.",
     stamps:[[1,1,1, 1,1,1, 1,1,1]] },
 
   { name:"Descent",
-    hint:"<b>Tap twice</b> to plant <b>self</b> - the cell becomes the whole mark again, shrunk. Send three down the diagonal.",
+    hint:"Now only three <b>selves</b>, down the diagonal. Each copy holds three copies, holding three copies…",
     stamps:[[A,0,0, 0,A,0, 0,0,A]] },
 
   { name:"Cantor Dust",
@@ -310,7 +334,7 @@ const LEVELS=[
     stamps:[[A,A,A, A,0,A, A,A,A]] },
 
   { name:"Seeds",
-    hint:"Now mix them: solid <b>ink</b> in the middle, <b>self</b> in the corners. A seed inside a scatter of smaller seeds.",
+    hint:"Now mix them: <b>tap twice</b> for solid <b>ink</b> - a block that stays a block. A seed in the middle, <b>self</b> in the corners.",
     stamps:[[A,0,A, 0,1,0, A,0,A]] },
 
   { name:"Ink & Echo",
@@ -326,7 +350,7 @@ const LEVELS=[
     stamps:[[A,0,A, 0,A,0, 0,A,0]] },
 
   { name:"Two Minds",
-    hint:"Now two stamps. Keep tapping a cell to reach <b>self</b> (grid 1), then the <b>other</b> stamp (grid 2). A is a cross of B; B is corners of A. They dream each other.",
+    hint:"Now two stamps. Tap once for <b>self</b> (grid 1), twice for the <b>other</b> (grid 2). A is a cross of B; B is corners of A. They dream each other.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
 
@@ -436,31 +460,60 @@ const LEVELS=[
     hint:"<b>XNOR</b> lights where the two grids <b>agree</b> - both on, or both off. A saltire and a plus, fused into one dense accord.",
     stamps:[[A,0,A, 0,A,0, A,0,A],
             [0,A,0, A,A,A, 0,A,0]] },
+
+  /* --- The negative: anti-self (X) - the cell holds the mark's NEGATIVE --- */
+  { name:"Negative", anti:true,
+    hint:"A new power: <b>anti</b> (third tap, dashed ring). The cell holds the mark's <b>negative</b> - filled where the mark is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
+    stamps:[[1,1,1, 1,X,1, 1,1,1]] },
+
+  { name:"Cascade", anti:true,
+    hint:"Three negatives fall down the diagonal. Each block carries its own hollow, and every hollow its own block.",
+    stamps:[[X,0,0, 0,X,0, 0,0,X]] },
+
+  { name:"Ramparts", anti:true,
+    hint:"Four anti corners and nothing else. Battlements grow from the void, each tower crenellated with smaller towers.",
+    stamps:[[X,0,X, 0,0,0, X,0,X]] },
+
+  { name:"Counterpoint", anti:true,
+    hint:"A saltire of negatives. Figure and ground swap at every scale - lace woven from its own absence.",
+    stamps:[[X,0,X, 0,X,0, X,0,X]] },
+
+  { name:"Dark Heart", anti:true,
+    hint:"A saltire of self around a single anti heart: dust orbiting a dense knot of negative space.",
+    stamps:[[A,0,A, 0,X,0, A,0,A]] },
+
+  { name:"Ghost Gasket", geom:"tri", anti:true,
+    hint:"Sierpiński, cut from negatives: three anti corners. The gasket dreams itself inside-out.",
+    stamps:[[X,X,X, 0]] },
 ];
 
-/* ---- rendering: the fixed point ---------------------------------- */
-function drawStamp(ctx, stamps, geom, x, y, size, topColour){
-  if(geom==='tri') drawTri(ctx, stamps, 0, x+size/2,y, x,y+size, x+size,y+size, topColour);
-  else drawSq(ctx, stamps, 0, BASE[geom], x, y, size, topColour, 0);
+/* ---- rendering: the fixed point -----------------------------------
+   par: negation parity. Under odd parity everything inverts - empty cells
+   fill, ink cells vanish - and each anti-reference flips it again.
+   maxDepth: recursion cut-off for the bloom animation; a reference at the
+   limit renders as a solid block, so depth 1,2,3… shows the fractal grow. */
+function drawStamp(ctx, stamps, geom, x, y, size, topColour, maxDepth){
+  if(maxDepth==null) maxDepth=Infinity;
+  if(geom==='tri') drawTri(ctx, stamps, 0, x+size/2,y, x,y+size, x+size,y+size, topColour, 0, 0, maxDepth);
+  else drawSq(ctx, stamps, 0, BASE[geom], x, y, size, topColour, 0, 0, maxDepth);
 }
-function drawSq(ctx, stamps, id, base, x, y, size, carried, r){
-  if(size < 1.15){                       // pixel limit: recurse cell = a lit dot (IFS attractor)
+function drawSq(ctx, stamps, id, base, x, y, size, carried, par, depth, maxDepth){
+  if(size < 1.15 || depth>=maxDepth){    // pixel/depth limit: region = a lit block
     ctx.fillStyle=carried; ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size)); return;
   }
   const c=size/base, s=stamps[id];
   for(let k=0;k<base*base;k++){
-    const v=s[k]; if(!v) continue;
-    let i=(k/base)|0, j=k%base;
-    for(let n=0;n<r;n++){ const ni=j, nj=base-1-i; i=ni; j=nj; }   // clockwise quarter-turns
-    const sx=x+j*c, sy=y+i*c;
-    if(v===1){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); }
-    else drawSq(ctx, stamps, v-2, base, sx, sy, c, carried, ((v>>2)+r)&3);
+    const v=s[k];
+    const sx=x+(k%base)*c, sy=y+((k/base)|0)*c;
+    if(v===0){ if(par){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); } }
+    else if(v===1){ if(!par){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); } }
+    else drawSq(ctx, stamps, refIdOf(v), base, sx, sy, c, carried, par^antiOf(v), depth+1, maxDepth);
   }
 }
 function triPath(ctx, ax,ay,bx,by,cx,cy){ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath(); }
-function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried){
+function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried, par, depth, maxDepth){
   const e=Math.max(Math.hypot(bx-ax,by-ay), Math.hypot(cx-bx,cy-by), Math.hypot(ax-cx,ay-cy));
-  if(e < 2){ ctx.fillStyle=carried; triPath(ctx,ax,ay,bx,by,cx,cy); ctx.fill(); return; }
+  if(e < 2 || depth>=maxDepth){ ctx.fillStyle=carried; triPath(ctx,ax,ay,bx,by,cx,cy); ctx.fill(); return; }
   const s=stamps[id];
   const px=(ax+bx)/2, py=(ay+by)/2, qx=(ax+cx)/2, qy=(ay+cy)/2, rx=(bx+cx)/2, ry=(by+cy)/2;
   const sub=[
@@ -470,16 +523,16 @@ function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried){
     [rx,ry, qx,qy, px,py],   // 3 centre  (inverted - propagates)
   ];
   for(let k=0;k<4;k++){
-    const v=s[k]; if(!v) continue;
-    const t=sub[k];
-    if(v===1){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); }
-    else drawTri(ctx, stamps, v-2, t[0],t[1],t[2],t[3],t[4],t[5], carried);
+    const v=s[k], t=sub[k];
+    if(v===0){ if(par){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); } }
+    else if(v===1){ if(!par){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); } }
+    else drawTri(ctx, stamps, refIdOf(v), t[0],t[1],t[2],t[3],t[4],t[5], carried, par^antiOf(v), depth+1, maxDepth);
   }
 }
-function renderPic(canvas, stamps, geom){
+function renderPic(canvas, stamps, geom, colour, maxDepth){
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawStamp(ctx, stamps, geom, 0, 0, canvas.width, getCss('--ink'));
+  drawStamp(ctx, stamps, geom, 0, 0, canvas.width, colour||getCss('--ink'), maxDepth);
 }
 
 /* ---- fingerprint for win check (deterministic, integer-aligned) --- */
@@ -497,6 +550,7 @@ let mode='play';          // 'play' | 'sand' | 'random'
 let sandOp='none';        // free-play boolean combine: none|AND|OR|XOR|NAND|XNOR
 let levelOp=null;         // combine puzzle: target = grid1 <op> grid2 (else cross-referential)
 let geom='sq3';           // geometry of the current stamps
+let antiOn=false;         // whether the tap cycle includes anti-self
 let li=0;                 // level index
 let stamps=[];            // player's working stamps
 let baseline=[];          // starting state (blank) for reset
@@ -504,8 +558,11 @@ let targetStamps=[];      // what the target picture shows
 let targetFP=null;
 let curPar=0;
 let prevWin=false, advTimer=null;
+let undoStack=[];         // one snapshot per gesture (also reset / clear / random)
+let onion=false;          // ghost-overlay toggle (target superimposed on yours)
 let solved={};
 try{ solved=JSON.parse(localStorage.getItem('selfie-solved')||'{}'); }catch(e){}
+try{ onion=localStorage.getItem('selfie-onion')==='1'; }catch(e){}
 
 const $=id=>document.getElementById(id);
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -548,12 +605,13 @@ function loadLevel(i){
   const L=LEVELS[li];
   geom=L.geom||'sq3';
   levelOp = L.op || null;
+  antiOn = !!L.anti;
   targetStamps=L.stamps;
   baseline = targetStamps.map(s=>s.map(_=>0));
   stamps = baseline.map(s=>s.slice());
   targetFP = levelOp ? combineFP(targetStamps, levelOp) : fingerprint(targetStamps, geom);
   curPar = parOf(targetStamps);
-  renderTargetPic();
+  resetUndo();
 
   $('lvnum').textContent=String(li+1).padStart(2,'0');
   $('lvname').textContent=L.name;
@@ -565,14 +623,17 @@ function loadLevel(i){
   $('yoursFrame').classList.remove('win','pop');
   $('winMsg').classList.remove('show');
 
-  buildEditors(); setTapnote(); markDots(); update();
+  buildEditors(); setTapnote(); markDots(); applyOnion(); update();
+  bloomTarget();
 }
 
 function setTapnote(){
-  let s;
-  if(levelOp) s='tap a cell to cycle · empty ▸ ink ▸ self ▸ empty · target = grid 1 '+levelOp+' grid 2';
-  else if(stamps.length>1) s='tap a cell to cycle · empty ▸ ink ▸ self (grid 1) ▸ other (grid 2) ▸ empty';
-  else s='tap a cell to cycle · empty ▸ ink ▸ self ▸ empty';
+  const steps=['self'];
+  if(stamps.length>1 && !levelOp) steps.push('other');
+  steps.push('ink');
+  if(antiOn) steps.push('anti');
+  let s='tap cycles '+steps.join(' ▸ ')+' ▸ empty · drag paints · hold clears';
+  if(levelOp) s+=' · target = grid 1 '+levelOp+' grid 2';
   $('tapnote').textContent=s;
 }
 
@@ -618,35 +679,88 @@ function buildTriGrid(si){
   return g;
 }
 
-/* ---- editing gesture: tap to cycle -------------------------------
-   Every tap on a cell advances it to the next state:
-     empty ▸ ink ▸ self (grid 1) ▸ other (grid 2, two-stamp levels) ▸ empty
-   Single-stamp / triangle levels skip the 'other' step. Reset clears.
+/* ---- editing gestures ---------------------------------------------
+   Tap: cycle the cell    empty ▸ self ▸ (other) ▸ ink ▸ (anti) ▸ empty
+        ('other' only on two-stamp cross-ref levels; 'anti' when unlocked)
+   Drag: paint the value the first cell just became across other cells
+        (cycle to empty first and the drag is an eraser)
+   Hold: clear the cell.  Every gesture is one undo step.
 ------------------------------------------------------------------- */
-function haptic(){ try{ if(navigator.vibrate) navigator.vibrate(7); }catch(e){} }
-function cycle(cell){
-  const si=+cell.dataset.si, k=+cell.dataset.k, t=stamps[si][k];
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||7); }catch(e){} }
+function nextVal(t){
   const other = stamps.length>1 && !levelOp;   // combine grids are independent -> no 'other' step
-  stamps[si][k] = t===0 ? 1 : t===1 ? 2 : t===2 ? (other?3:0) : 0;   // empty>ink>self>(other)>empty
+  if(t===0) return 2;
+  if(t===2) return other?3:1;
+  if(t===3) return 1;
+  if(t===1) return antiOn?X:0;
+  return 0;                                    // anti ▸ empty
+}
+let gesture=null;   // {si,k,val,timer}
+function startGesture(cell){
+  pushUndo();
+  const si=+cell.dataset.si, k=+cell.dataset.k;
+  const val=nextVal(stamps[si][k]);
+  stamps[si][k]=val;
+  gesture={si, k, val, timer:setTimeout(holdClear, 550)};
   update(); haptic();
 }
+function holdClear(){                          // long-press: this tap becomes 'clear cell'
+  if(!gesture) return;
+  stamps[gesture.si][gesture.k]=0; gesture.val=0;
+  update(); haptic(18);
+}
+function moveGesture(e){
+  if(!gesture) return;
+  const el=document.elementFromPoint(e.clientX, e.clientY);
+  const cell=el && el.closest && el.closest('.cell,.tcell');
+  if(!cell || cell.dataset.k==null) return;
+  const si=+cell.dataset.si, k=+cell.dataset.k;
+  if(si===gesture.si && k===gesture.k) return;
+  clearTimeout(gesture.timer); gesture.timer=null;   // it's a drag - no hold-clear
+  gesture.si=si; gesture.k=k;
+  if(stamps[si][k]!==gesture.val){ stamps[si][k]=gesture.val; update(); haptic(); }
+}
+function endGesture(){
+  if(!gesture) return;
+  clearTimeout(gesture.timer);
+  const bloom = gesture.val>=2 && !prevWin;    // a win starts the zoom instead
+  gesture=null;
+  if(bloom) bloomYours();
+}
 function bindCell(cell){
-  cell.addEventListener('pointerdown', e=>{ e.preventDefault(); cycle(cell); });
+  cell.addEventListener('pointerdown', e=>{ e.preventDefault(); startGesture(cell); });
   cell.addEventListener('contextmenu', e=>e.preventDefault());
 }
+document.addEventListener('pointermove', moveGesture);
+document.addEventListener('pointerup', endGesture);
+document.addEventListener('pointercancel', endGesture);
+
+/* ---- undo ---------------------------------------------------------- */
+function pushUndo(){
+  undoStack.push(stamps.map(s=>s.slice()));
+  if(undoStack.length>80) undoStack.shift();
+  setUndoBtns();
+}
+function undo(){
+  if(!undoStack.length) return;
+  stamps=undoStack.pop(); setUndoBtns(); update();
+}
+function resetUndo(){ undoStack.length=0; setUndoBtns(); }
+function setUndoBtns(){ document.querySelectorAll('.undoB').forEach(b=>b.disabled=!undoStack.length); }
 
 function paintSqCell(cell){
   const si=+cell.dataset.si, k=+cell.dataset.k, v=stamps[si][k];
   cell.className='cell'; cell.innerHTML='';
   if(v===0) return;
   if(v===1){ cell.classList.add('ink'); return; }                 // ink
-  const refId=v-2;                                                // reference
+  const refId=refIdOf(v), anti=antiOf(v);                         // (anti-)reference
   cell.classList.add(refId===0?'refa':'refb');
+  if(anti) cell.classList.add('anti');
   const cv=document.createElement('canvas'); cv.width=cv.height=84;
   cell.appendChild(cv);
   const ctx=cv.getContext('2d');
-  if(levelOp) drawStamp(ctx, soloStamps(stamps[+cell.dataset.si]), 'sq3', 0,0,84, getCss('--a')); // each grid is its own mark
-  else drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, getCss(refId===0?'--a':'--b'), 0);
+  if(levelOp) drawSq(ctx, soloStamps(stamps[si]), 0, 3, 0,0,84, getCss('--a'), anti, 0, Infinity); // each grid is its own mark
+  else drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, getCss(refId===0?'--a':'--b'), anti, 0, Infinity);
   const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
 }
 function paintTriCell(tc, ov){
@@ -659,9 +773,11 @@ function paintTriCell(tc, ov){
   if(v===0){ ctx.fillStyle=getCss('--cell'); triPath(ctx,...V); ctx.fill(); }
   else if(v===1){ ctx.fillStyle=getCss('--ink'); triPath(ctx,...V); ctx.fill(); }
   else {
-    const refId=v-2, paint=getCss(refId===0?'--a':'--b');
-    drawTri(ctx, stamps, refId, V[0],V[1],V[2],V[3],V[4],V[5], paint);
-    ctx.strokeStyle=paint; ctx.lineWidth=2; triPath(ctx,...V); ctx.stroke();
+    const refId=refIdOf(v), anti=antiOf(v), paint=getCss(refId===0?'--a':'--b');
+    drawTri(ctx, stamps, refId, V[0],V[1],V[2],V[3],V[4],V[5], paint, anti, 0, Infinity);
+    ctx.strokeStyle=paint; ctx.lineWidth=2;
+    if(anti) ctx.setLineDash([6,5]);
+    triPath(ctx,...V); ctx.stroke(); ctx.setLineDash([]);
   }
   ctx.strokeStyle=getCss('--surface'); ctx.lineWidth=3; ctx.lineJoin='round';
   triPath(ctx,...V); ctx.stroke();                       // carve a gap between the tessellating triangles
@@ -669,16 +785,66 @@ function paintTriCell(tc, ov){
 }
 
 function update(){
+  stopBloom('yours'); stopZoom();
   if(geom==='tri') document.querySelectorAll('.tcell').forEach(c=>paintTriCell(c));
   else document.querySelectorAll('.cell').forEach(c=>paintSqCell(c));
-  if(mode==='sand') renderSandbox();
-  else if(levelOp) putCombine($('yours'), stamps, levelOp);
-  else renderPic($('yours'), stamps, geom);
+  renderYours();
   if(mode!=='sand'){ updatePar(); checkWin(); }
 }
-function renderTargetPic(){
-  if(levelOp) putCombine($('target'), targetStamps, levelOp);
-  else renderPic($('target'), targetStamps, geom);
+function renderYours(maxDepth){
+  if(mode==='sand') renderSandbox(maxDepth);
+  else if(levelOp) putCombine($('yours'), stamps, levelOp, maxDepth);
+  else renderPic($('yours'), stamps, geom, null, maxDepth);
+}
+function renderTargetPic(maxDepth){
+  if(levelOp) putCombine($('target'), targetStamps, levelOp, maxDepth);
+  else renderPic($('target'), targetStamps, geom, null, maxDepth);
+}
+
+/* ---- depth bloom: animate the recursion growing in ------------------
+   Renders the mark at depth 1,2,3… then full - each reference visibly
+   opens into the whole stamp. Runs on level load and after planting a
+   reference; any fresh edit cancels and snaps to the full render. */
+const blooms={};
+function runBloom(slot, render, ms){
+  stopBloom(slot);
+  const depths=[1,2,3,4,5];
+  let i=0;
+  const step=()=>{
+    if(i<depths.length){ render(depths[i++]); blooms[slot]=setTimeout(step, ms/(depths.length+1)); }
+    else { blooms[slot]=null; render(); }
+  };
+  step();
+}
+function stopBloom(slot){ if(blooms[slot]){ clearTimeout(blooms[slot]); blooms[slot]=null; } }
+function bloomTarget(){ runBloom('target', d=>renderTargetPic(d), 760); }
+function bloomYours(){ runBloom('yours', d=>renderYours(d), 420); }
+
+/* ---- win zoom: dive into a self cell -------------------------------
+   A cell holding pure self contains the entire mark, so zooming one
+   stamp-cell deep lands exactly where it started - a seamless loop. */
+let zoomToken=null;
+function stopZoom(){ zoomToken=null; }
+function winZoom(){
+  if(levelOp || geom==='tri') return;
+  const base=BASE[geom], sel=stamps[0].map((v,k)=>v===2?k:-1).filter(k=>k>=0);
+  if(!sel.length) return;
+  const k=sel[(sel.length-1)/2|0], cx=(k%base)/base, cy=((k/base)|0)/base;
+  const cvs=$('yours'), W=cvs.width, ctx=cvs.getContext('2d');
+  const off=document.createElement('canvas'); off.width=off.height=W*base;
+  renderPic(off, stamps, geom);
+  const t0=performance.now(), dur=1500, token=zoomToken={};
+  const step=now=>{
+    if(zoomToken!==token) return;
+    const t=Math.min(1,(now-t0)/dur);
+    const w=Math.pow(base,-t);                             // window shrinks exponentially
+    const o=(1-w)/(1-1/base);                              // 0 -> 1 : origin slides to the cell
+    ctx.clearRect(0,0,W,W);
+    ctx.drawImage(off, cx*o*W*base, cy*o*W*base, w*W*base, w*W*base, 0,0,W,W);
+    if(t<1) requestAnimationFrame(step);
+    else { zoomToken=null; renderYours(); }
+  };
+  requestAnimationFrame(step);
 }
 function updatePar(){
   const n=cellsUsed();
@@ -695,7 +861,7 @@ function checkWin(){
 
   if(win && !prevWin){                       // fresh solve
     const used=cellsUsed();
-    celebrate();
+    celebrate(); winZoom();
     if(mode==='play'){
       solved[li]=1;
       try{ localStorage.setItem('selfie-solved', JSON.stringify(solved)); }catch(e){}
@@ -722,16 +888,18 @@ function celebrate(){
 function enterSandbox(){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
   if(mode==='random') clearHash();
-  mode='sand'; setNav('sand'); geom='sq3'; sandOp='none'; levelOp=null;
+  mode='sand'; setNav('sand'); geom='sq3'; sandOp='none'; levelOp=null; antiOn=true;
   $('lvnum').textContent=''; $('lvname').textContent='Free play';
-  $('hint').innerHTML="No target. Build two marks from <b>ink</b>, <b>self</b> and the <b>other</b> - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise.";
+  $('hint').innerHTML="No target. Build two marks from <b>self</b>, the <b>other</b>, <b>ink</b> and <b>anti</b> - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise.";
   $('par').hidden=true;
   stamps=[Array(9).fill(0), Array(9).fill(0)];
   baseline=stamps.map(s=>s.slice());
-  buildOps(); buildEditors(); setTapnote(); markDots(); update();
+  resetUndo();
+  buildOps(); buildEditors(); setTapnote(); markDots(); applyOnion(); update();
 }
 function randomStamp(){
-  const pool=[0,0,0,0,1,2,2,2,3,3];
+  pushUndo();
+  const pool=[0,0,0,0,1,2,2,2,3,3,4];
   stamps=[0,1].map(()=>Array.from({length:9},()=> pool[Math.floor(Math.random()*pool.length)]));
   if(!stamps.flat().some(v=>v>=2)) stamps[0][4]=2;   // never a dull static block
   update();
@@ -758,7 +926,7 @@ function buildOps(){
 function markOps(){ [...$('ops').querySelectorAll('.chip')].forEach(el=>el.classList.toggle('armed', el.dataset.op===sandOp)); }
 
 function hexRgb(h){ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
-const soloStamps=s=> [ s.map(v=> v>=2 ? 2 : v) ];   // every ref -> self (single self-referential mark)
+const soloStamps=s=> [ s.map(v=> v<2 ? v : v>=4 ? X : 2) ];   // every ref -> self (anti kept)
 const OFF=document.createElement('canvas');
 /* Render one operand for a combine: the chosen grid as the root of its own
    fractal, with relative refs - self (A) recurses into this grid, the other (B)
@@ -766,17 +934,18 @@ const OFF=document.createElement('canvas');
    each grid's point of view, so 'the other' actually bends the mark instead of
    collapsing to self (as a flat soloStamps would). Puzzles use only A, so each
    grid stays self-referential and their fingerprints are unchanged. */
-function maskAt(stamps, root, W){                    // render grid `root` as its own mark, return on/off pixels
+function maskAt(stamps, root, W, maxDepth){          // render grid `root` as its own mark, return on/off pixels
   const ordered = root===0 ? stamps : [stamps[1], stamps[0]];
   OFF.width=OFF.height=W;
   const ctx=OFF.getContext('2d',{willReadFrequently:true});
   ctx.clearRect(0,0,W,W);
-  drawStamp(ctx, ordered, 'sq3', 0,0,W, '#fff');
+  drawStamp(ctx, ordered, 'sq3', 0,0,W, '#fff', maxDepth);
   return ctx.getImageData(0,0,W,W).data;
 }
-function putCombine(canvas, stamps, op){              // draw grid1 <op> grid2 onto a canvas in ink
+function putCombine(canvas, stamps, op, maxDepth, colour){   // draw grid1 <op> grid2 onto a canvas
   const W=canvas.width, ctx=canvas.getContext('2d');
-  const a=maskAt(stamps, 0, W), b=maskAt(stamps, 1, W), f=OPS[op], ink=hexRgb(getCss('--ink'));
+  const a=maskAt(stamps, 0, W, maxDepth), b=maskAt(stamps, 1, W, maxDepth), f=OPS[op];
+  const ink=hexRgb(colour||getCss('--ink'));
   const out=ctx.createImageData(W,W), o=out.data;
   for(let i=0;i<o.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ o[i]=ink[0]; o[i+1]=ink[1]; o[i+2]=ink[2]; o[i+3]=255; }
   ctx.clearRect(0,0,W,W); ctx.putImageData(out,0,0);
@@ -787,9 +956,9 @@ function combineFP(stamps, op){                       // theme-independent finge
   for(let i=0;i<out.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ out[i]=out[i+1]=out[i+2]=255; out[i+3]=255; }
   return out;
 }
-function renderSandbox(){
-  if(sandOp==='none') renderPic($('yours'), stamps, geom);
-  else putCombine($('yours'), stamps, sandOp);
+function renderSandbox(maxDepth){
+  if(sandOp==='none') renderPic($('yours'), stamps, geom, null, maxDepth);
+  else putCombine($('yours'), stamps, sandOp, maxDepth);
 }
 
 /* ---- random puzzle (solve a random mark; the URL is the puzzle) --- */
@@ -802,8 +971,9 @@ function decodeStamps(str){
   const parts=str.slice(1).split('.').filter(Boolean);
   if(!parts.length) return null;
   const st=parts.map(p=>[...p].map(ch=>parseInt(ch,16)));
-  const n=NCELLS[g], maxV=st.length+1;   // 0 empty, 1 ink, 2..(1+count) reference an existing stamp
-  if(st.some(s=>s.length!==n || s.some(v=>isNaN(v)||v<0||v>maxV))) return null;
+  const n=NCELLS[g], ns=st.length;   // refs 2..(1+count), anti-refs 4..(3+count)
+  const ok=v=>!isNaN(v) && (v===0||v===1 || (v>=2&&v<2+ns) || (v>=4&&v<4+ns));
+  if(st.some(s=>s.length!==n || s.some(v=>!ok(v)))) return null;
   return {geom:g, stamps:st};
 }
 function fromHash(){
@@ -822,7 +992,10 @@ function genStamp(g){
   const small=(g!=='sq3'), n=NCELLS[g];
   // small (2x2 / triangle) grids: pure recursion only - a single ink cell there
   // fills a whole quadrant and reads as a solid blob, not a fractal.
-  const pool = small ? [0,0,2,2,2] : [0,0,0,1,1,2,2,2];
+  // anti joins the pool only sometimes, so most randoms stay classic.
+  const anti=Math.random()<0.33;
+  const pool = small ? (anti?[0,0,2,2,2,4]:[0,0,2,2,2])
+                     : (anti?[0,0,0,1,1,2,2,2,4]:[0,0,0,1,1,2,2,2]);
   const minRefs = small?2:1, maxFill = small?3:6, lo=0.07, hi = small?0.55:0.85;
   let s, tries=0;
   do{
@@ -842,38 +1015,58 @@ function enterRandom(target){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
   mode='random'; setNav('random'); levelOp=null;
   geom=target.geom; targetStamps=target.stamps;
+  antiOn = targetStamps.some(s=>s.some(v=>v>=4));   // anti only in the cycle when the target needs it
   baseline=targetStamps.map(s=>s.map(_=>0));
   stamps=baseline.map(s=>s.slice());
   targetFP=fingerprint(targetStamps, geom);
   curPar=parOf(targetStamps);
+  resetUndo();
   try{ history.replaceState(null,'','#p='+encodeStamps(geom,targetStamps)); }catch(e){}
-  renderPic($('target'), targetStamps, geom);
   $('targetPic').querySelector('.cap').textContent='Target';
   $('lvnum').textContent=''; $('lvname').textContent='Random';
   $('hint').innerHTML=`Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
   $('par').hidden=false;
   $('yoursFrame').classList.remove('win','pop'); $('winMsg').classList.remove('show');
-  buildEditors(); setTapnote(); markDots(); update();
+  buildEditors(); setTapnote(); markDots(); applyOnion(); update();
+  bloomTarget();
 }
+
+/* ---- onion skin: ghost of the target over your mark --------------- */
+function renderGhost(){
+  if(levelOp) putCombine($('ghost'), targetStamps, levelOp, Infinity, getCss('--a'));
+  else renderPic($('ghost'), targetStamps, geom, getCss('--a'));
+}
+function applyOnion(){
+  const on = onion && mode!=='sand';
+  document.body.classList.toggle('onion', on);
+  if(on) renderGhost();
+}
+$('ghostBtn').onclick=()=>{
+  onion=!onion;
+  try{ localStorage.setItem('selfie-onion', onion?'1':'0'); }catch(e){}
+  applyOnion();
+};
 
 /* ---- controls ---------------------------------------------------- */
 $('prev').onclick =()=>loadLevel(li-1);
 $('next').onclick =()=>loadLevel(li+1);
-$('reset').onclick=()=>{ stamps=baseline.map(s=>s.slice()); update(); };
+$('reset').onclick=()=>{ pushUndo(); stamps=baseline.map(s=>s.slice()); update(); };
 $('toSand').onclick=enterSandbox;
 $('toRandom').onclick=()=>enterRandom(genRandom());
 $('exitSand').onclick=()=>loadLevel(li);
-$('clear').onclick=()=>{ stamps=stamps.map(s=>s.map(_=>0)); update(); };
+$('clear').onclick=()=>{ pushUndo(); stamps=stamps.map(s=>s.map(_=>0)); update(); };
 $('rand').onclick=randomStamp;
 $('rnew').onclick=()=>enterRandom(genRandom());
-$('rreset').onclick=()=>{ stamps=baseline.map(s=>s.slice()); update(); };
+$('rreset').onclick=()=>{ pushUndo(); stamps=baseline.map(s=>s.slice()); update(); };
 $('rexit').onclick=()=>loadLevel(li);
 $('rshare').onclick=()=>{
   const t=$('rshare');
   const done=()=>{ t.textContent='copied ✓'; setTimeout(()=>t.textContent='⧉ link',1400); };
   try{ navigator.clipboard.writeText(location.href).then(done, done); }catch(e){ done(); }
 };
+document.querySelectorAll('.undoB').forEach(b=>b.onclick=undo);
 document.addEventListener('keydown',e=>{
+  if(e.key==='z'||e.key==='u'){ undo(); return; }
   if(mode!=='play') return;
   if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
   if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
@@ -885,7 +1078,8 @@ buildDots();
 
 /* ---- theme: re-render canvases (ink flips light/dark) ------------- */
 function redrawTheme(){
-  if(mode!=='sand') renderTargetPic();
+  stopBloom('target');
+  if(mode!=='sand'){ renderTargetPic(); if(document.body.classList.contains('onion')) renderGhost(); }
   update();
 }
 window.addEventListener('themechange', redrawTheme);
