@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "fathom",
+      "name": "Fathom",
+      "accent": "#2fe6c9",
+      "tagline": "Lower a powered cable of stations into an ocean trench. Read the 36h threat forecast, tune your defences, and push The Line deeper. When the deep wins, scuttle and surface - your old wreck is down there waiting to be salvaged."
+    },
+    {
       "slug": "lumen",
       "name": "Lumen",
       "accent": "#ffb43a",
