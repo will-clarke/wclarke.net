@@ -21,8 +21,8 @@
     --on-accent:#0e1116;   /* text/ink shown ON top of an accent fill */
     --a:#3ad9ff;            /* stamp A / self */
     --b:#ff7ac2;            /* stamp B */
-    --xa:#ffb340;           /* anti-A: the negative of self */
-    --xb:#b98bff;           /* anti-B: the negative of the other */
+    --xa:#12507f;           /* anti-A: self's own hue, darkened (the negative) */
+    --xb:#8f2b5e;           /* anti-B: the other's own hue, darkened */
     --ok:#5cffb0;
   }
   :root[data-theme="dark"]{
@@ -465,7 +465,7 @@ const LEVELS=[
 
   /* --- The negative: anti-self (X) - the cell holds the mark's NEGATIVE --- */
   { name:"Negative",
-    hint:"A new power: <b>hold</b> a self cell to invert it into <b>anti</b> (amber, dashed) - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
+    hint:"A new power: <b>hold</b> a self cell to invert it into <b>anti</b> - the same colour gone <b>dark</b>, ringed by a dashed border - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
     stamps:[[1,1,1, 1,X,1, 1,1,1]] },
 
   { name:"Cascade",
