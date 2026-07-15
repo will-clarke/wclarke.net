@@ -148,6 +148,9 @@ window.HexField = function (mount, cfg) {
     if (cell.tile) cell.tile(el);
 
     if (GROW) {                                // click/tap opens a hex; pinch (touch) also grows it
+      // a portal tile (dive:false) skips grow entirely: it's a plain <a> that
+      // navigates, so a cross-document view transition zooms it into its page.
+      if (cell.dive === false) return el;
       el.addEventListener("click", function (e) {
         if (dragMoved) return;
         e.preventDefault();
@@ -482,6 +485,7 @@ window.HexField = function (mount, cfg) {
 
   function startGrow(el, cell) {               // stage a hex as the growth target
     if (grow.committed || grow.el === el) return;
+    if (cell.dive === false) return;             // portals navigate; never grow (e.g. a centred pinch)
     if (!grower) buildGrower();
     grow.el = el; grow.cell = cell;
     el.classList.add("growing");                 // hide the tile's own label; the page title is the one stable word

@@ -19,7 +19,7 @@
     { q: 1,  r: -1, name: "games",     accent: "#8f4222", href: "/games/",                       blurb: "puzzle games",            body: "A cabinet of small puzzle games - Sokoban variants, a paint machine and other daft little contraptions." },
     { q: 0,  r: -1, name: "intuition", accent: "#2f8f8a", href: "https://intuition.wclarke.net", blurb: "maths, poked",            body: "Interactive maths toys: poke a theorem until the intuition behind it falls out." },
     { q: 0,  r: 1,  name: "writing",   accent: "#556071", href: "/writing-hex.html",             blurb: "occasional notes",        body: "Notes on vim, unix and git, plus a handful of short stories - arranged as their own honeycomb." },
-    { q: 0,  r: -2, name: "museum",    accent: "#b8791f", href: "/museum/",                       blurb: "sites since 2014",        body: "Every version of this site since 2014, rebuilt and preserved - watch the taste change over a decade." },
+    { q: 0,  r: -2, name: "museum",    accent: "#b8791f", href: "/museum/", portal: true,          blurb: "sites since 2014",        body: "Every version of this site since 2014, rebuilt and preserved - watch the taste change over a decade." },
     { q: 2,  r: -2, name: "github",    accent: "#5a6270", href: "https://github.com/will-clarke", blurb: "the code",                body: "The source behind all of this, warts and terse commit messages included." },
     { q: 0,  r: 2,  name: "about",     accent: "#a1633f", href: "/about.html",                    blurb: "hello",                   body: "Hello - I'm Will. I build small things for fun and every so often write about them." },
     { q: -2, r: 2,  name: "cinema",    accent: "#c0435a", href: "https://classiccult.pages.dev/", blurb: "london film listings",    body: "What's on at London's repertory cinemas this week, scraped and sorted so you don't have to." },
@@ -44,6 +44,18 @@
   }
 
   var specials = TILES.map(function (t) {
+    // a portal hex doesn't grow into a demo panel; it navigates to a real page,
+    // flying INTO it via a cross-document view transition (see museum/index.html).
+    if (t.portal) {
+      return {
+        q: t.q, r: t.r, accent: t.accent, link: true, href: t.href, dive: false,
+        tile: function (el) {
+          el.classList.add("door");
+          el.style.viewTransitionName = t.name + "-portal";
+          el.innerHTML = '<span class="name">' + esc(t.name) + "</span>";
+        },
+      };
+    }
     return {
       q: t.q, r: t.r, accent: t.accent, link: false,
       tile: function (el) {

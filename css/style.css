@@ -791,12 +791,13 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 }
 .grow-back:hover { background: rgba(0, 0, 0, 0.3); }
 
-/* ---- cross-document zoom (home <-> writing honeycomb) ------------------
-   The shared element is named "writing-portal" (the homepage "writing" hex on
-   one side, the whole #field on the other), so the browser morphs one into the
-   other: a zoom in on the way there, a zoom out on the way back. Opt-in lives
-   in each page's inline <style>. */
-::view-transition-group(writing-portal) {
+/* ---- cross-document zoom (home <-> a hex's own page) -------------------
+   A shared element is named on both sides so the browser morphs one into the
+   other: a zoom in on the way there, a zoom out on the way back. "writing-portal"
+   is the homepage "writing" hex <-> the writing honeycomb; "museum-portal" is the
+   "museum" hex <-> the museum hero. Opt-in lives in each page's inline <style>. */
+::view-transition-group(writing-portal),
+::view-transition-group(museum-portal) {
   animation-duration: 0.52s;
   animation-timing-function: cubic-bezier(0.34, 1.26, 0.5, 1);   /* a gentle overshoot */
 }

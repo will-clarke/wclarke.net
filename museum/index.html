@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="darkreader-lock">
   <title>The Museum - Will Clarke</title>
-  <meta name="description" content="Every version of my personal website since 2014, restored and browsable as raw HTML.">
+  <meta name="description" content="Every version of my personal website since 2014, restored and running as live exhibits.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
   <script>
   (function () {
@@ -21,90 +23,232 @@
   })();
   </script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* Fly into this page from the homepage "museum" hex, and back out again:
+       the hero carries the same view-transition-name as that hex (js/hex.js),
+       so the browser morphs the honeycomb tile into this hero. Same accent on
+       both sides, so it reads as the hex swelling open into the room. */
+    @view-transition { navigation: auto; }
+    #hero { view-transition-name: museum-portal; }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+
+    .museum { max-width: 60rem; margin: 0 auto; position: relative; z-index: 1; }
+    .museum-nav {
+      display: flex; align-items: baseline; justify-content: space-between;
+      gap: 0.4rem 1.5rem; font-family: var(--mono); font-size: 0.8rem;
+      margin-bottom: 1.2rem;
+    }
+    .museum-nav a { color: var(--muted); text-decoration: none; }
+    .museum-nav a:hover { color: var(--accent); }
+    .museum-nav .theme-toggle { font-size: 0.95rem; }
+
+    /* the hero: a solid slab in the museum accent, the morph target for the
+       fly-in. Deep enough to feel like a room you've dropped into. */
+    :root { --museum: #b8791f; }
+    #hero {
+      background: var(--museum);
+      color: #fdf6ea;
+      border-radius: 10px;
+      padding: clamp(2rem, 7vw, 4rem) clamp(1.4rem, 5vw, 3rem);
+      box-shadow: 0 20px 50px -20px color-mix(in srgb, var(--museum) 70%, black);
+    }
+    #hero h1 {
+      font-family: var(--mono); margin: 0;
+      font-size: clamp(2rem, 8vw, 3.6rem);
+      letter-spacing: 0.02em; text-transform: uppercase; line-height: 1.05;
+    }
+    #hero .sub {
+      margin: 0.7em 0 0; max-width: 34rem;
+      font-size: clamp(1.05rem, 2.6vw, 1.35rem); line-height: 1.5;
+      color: color-mix(in srgb, #fdf6ea 88%, transparent);
+    }
+
+    .museum-intro { max-width: 40rem; margin: 2.2rem 0 0; }
+    .museum-intro p { margin: 0.8em 0; }
+
+    /* the gallery: each era a framed, living portrait beside its plaque.
+       Frames alternate side on wide screens; stack on narrow ones. */
+    .exhibits {
+      display: grid; gap: clamp(1.5rem, 4vw, 2.8rem);
+      margin: 2.6rem 0 1rem; padding: 0;
+    }
+    .exhibit {
+      display: grid; grid-template-columns: 1.15fr 1fr;
+      gap: clamp(1.2rem, 3vw, 2.2rem); align-items: center;
+      text-decoration: none; color: inherit;
+      border-top: 1px solid var(--line); padding-top: clamp(1.5rem, 4vw, 2.8rem);
+    }
+    .exhibit:first-child { border-top: 0; padding-top: 0; }
+    .exhibit:nth-child(even) .frame { order: 2; }
+
+    /* the picture on the wall: a live iframe, matted and framed, zoomed out so a
+       whole desktop layout reads at a glance. pointer-events off -> the click
+       lands on the exhibit link, not inside the old site. */
+    .frame {
+      position: relative; aspect-ratio: 16 / 10; overflow: hidden;
+      border-radius: 6px; background: var(--code-bg);
+      border: 1px solid var(--line);
+      box-shadow: 0 12px 30px -14px rgba(0,0,0,0.4);
+      transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .frame iframe {
+      position: absolute; top: 0; left: 0;
+      width: 400%; height: 400%; border: 0;
+      transform: scale(0.25); transform-origin: top left;
+      pointer-events: none; background: #fff;
+    }
+    .frame .glass {          /* a faint sheen so it reads as glazed, and catches the eye */
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.10), transparent 40%);
+    }
+    .exhibit:hover .frame,
+    .exhibit:focus-visible .frame {
+      transform: translateY(-4px);
+      border-color: var(--museum);
+      box-shadow: 0 20px 40px -16px color-mix(in srgb, var(--museum) 60%, black);
+    }
+    .exhibit:focus-visible { outline: none; }
+
+    .plaque .yr {
+      font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.16em;
+      color: var(--museum); font-weight: 600;
+    }
+    .plaque h2 { margin: 0.25em 0 0.4em; font-size: 1.35rem; }
+    .plaque .tag { margin-bottom: 0.7em; }
+    .plaque p { margin: 0 0 0.9em; font-size: 0.95rem; color: var(--muted); }
+    .plaque .step {
+      font-family: var(--mono); font-size: 0.82rem; color: var(--accent);
+      text-decoration: underline;
+      text-decoration-color: color-mix(in srgb, var(--accent) 40%, transparent);
+      text-underline-offset: 0.15em;
+    }
+    .exhibit:hover .step { text-decoration-color: var(--accent); }
+
+    .missing {
+      margin: 2.4rem 0 0.5rem; padding-top: 1.4rem;
+      border-top: 1px solid var(--line);
+      font-size: 0.92rem; color: var(--muted);
+    }
+
+    @media (max-width: 620px) {
+      .exhibit { grid-template-columns: 1fr; gap: 1rem; }
+      .exhibit:nth-child(even) .frame { order: 0; }
+      .frame { aspect-ratio: 16 / 11; }
+    }
+  </style>
 </head>
 <body>
-<div class="wrap">
+<div class="museum">
 
-  <header class="site">
-    <span class="brand"><a href="/">Will Clarke</a></span>
-    <nav>
-      <a href="/">home</a>
+  <nav class="museum-nav" aria-label="site">
+    <a href="/">&larr; will clarke</a>
+    <span>
       <a href="/projects.html">projects</a>
-      <a href="/writing.html">writing</a>
-      <a href="/about.html">about</a>
       <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
-    </nav>
+    </span>
+  </nav>
+
+  <header id="hero">
+    <h1>The Museum</h1>
+    <p class="sub">Every version of this website since 2014 - restored, and still
+    running. Real pages behind glass, not screenshots. Step inside any of them.</p>
   </header>
 
-  <main>
-    <h1>The museum</h1>
-    <p class="lede">Every version of this website since 2014, restored and
-    served exactly as it was: original markup, original stylesheets, original
-    JavaScript, no modern chrome injected. Each one replaced the one before it
-    for reasons that felt compelling at the time.</p>
+  <div class="museum-intro">
+    <p>Each one replaced the one before it for reasons that felt compelling at
+    the time. They're served exactly as they were: original markup, original
+    stylesheets, original JavaScript, no modern chrome injected.</p>
+    <p>The only edits: dead trackers removed, one phone number redacted, and
+    links rewired to point here instead of at domains I stopped paying for.</p>
+  </div>
 
-    <p>These are real pages, not screenshots - click around inside them. The
-    only edits: dead trackers removed, one phone number redacted, and links
-    rewired to point here instead of at domains I stopped paying for.</p>
+  <div class="exhibits">
 
-    <div class="shelf">
-
-      <div class="card">
-        <h3><a href="/museum/2014-rails/">wmmclarke.com</a></h3>
-        <span class="tag">2014 · rails 4 · heroku · jquery</span>
+    <a class="exhibit" href="/museum/2014-rails/">
+      <div class="frame">
+        <iframe src="/museum/2014-rails/" title="wmmclarke.com, 2014" loading="lazy"
+          sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        <span class="glass"></span>
+      </div>
+      <div class="plaque">
+        <span class="yr">2014</span>
+        <h2>wmmclarke.com</h2>
+        <span class="tag">rails 4 · heroku · jquery</span>
         <p>"Hola. This is my groovy site." A full Ruby on Rails app deployed to
         serve one homepage: animated skill percentages, an Isotope grid of
         interests (axolotls, pangolins, Hadoop), a life timeline, and a contact
-        form with a captcha that accepted "seven". Restored from an October
-        2014 Wayback Machine capture, with images recovered from the repo. The
-        Google Map died when Google started charging for maps; consider it a
-        ruin within a ruin.</p>
+        form with a captcha that accepted "seven". Restored from an October 2014
+        Wayback capture. The Google Map died when Google started charging for
+        maps - a ruin within a ruin.</p>
+        <span class="step">step inside →</span>
       </div>
+    </a>
 
-      <div class="card">
-        <h3><a href="/museum/2014-jekyll/">blog.wmmclarke.com</a></h3>
-        <span class="tag">2014 · jekyll · lanyon</span>
+    <a class="exhibit" href="/museum/2014-jekyll/">
+      <div class="frame">
+        <iframe src="/museum/2014-jekyll/" title="blog.wmmclarke.com, 2014" loading="lazy"
+          sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        <span class="glass"></span>
+      </div>
+      <div class="plaque">
+        <span class="yr">2014</span>
+        <h2>blog.wmmclarke.com</h2>
+        <span class="tag">jekyll · lanyon</span>
         <p>The vim-and-unix blog, on the Lanyon theme like everyone else's
-        vim-and-unix blog. Rebuilt from source with Jekyll. Contains "My CV...
-        in Pure Ruby", where the CV obsession started, and a tags page that
-        modern Jekyll silently inflated to 39&nbsp;MB before it was talked
-        down.</p>
+        vim-and-unix blog. Rebuilt from source with Jekyll. Contains "My CV... in
+        Pure Ruby", where the CV obsession started, and a tags page that modern
+        Jekyll silently inflated to 39&nbsp;MB before it was talked down.</p>
+        <span class="step">step inside →</span>
       </div>
+    </a>
 
-      <div class="card">
-        <h3><a href="/museum/2020-org/">the nyan era</a></h3>
-        <span class="tag">2020 · org-mode · hugo · s3</span>
-        <p>Blog posts written in one giant org-mode file, exported through
-        Hugo, deployed to S3. Best remembered for the commit "only adding a
-        bloody NYAN CAT" and its clarifying follow-up, "Rocket ships are
-        ESPECIALLY important to me". The nyan cat still works. Sound on.</p>
+    <a class="exhibit" href="/museum/2020-org/">
+      <div class="frame">
+        <iframe src="/museum/2020-org/" title="the nyan era, 2020" loading="lazy"
+          sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        <span class="glass"></span>
       </div>
+      <div class="plaque">
+        <span class="yr">2020</span>
+        <h2>the nyan era</h2>
+        <span class="tag">org-mode · hugo · s3</span>
+        <p>Blog posts written in one giant org-mode file, exported through Hugo,
+        deployed to S3. Best remembered for the commit "only adding a bloody
+        NYAN CAT" and its clarifying follow-up, "Rocket ships are ESPECIALLY
+        important to me". The nyan cat still works. Sound on, if you dare.</p>
+        <span class="step">step inside →</span>
+      </div>
+    </a>
 
-      <div class="card">
-        <h3><a href="/museum/2021-ssssg/">the ssssg era</a></h3>
-        <span class="tag">2021-2023 · 150 lines of sh · pandoc</span>
+    <a class="exhibit" href="/museum/2021-ssssg/">
+      <div class="frame">
+        <iframe src="/museum/2021-ssssg/" title="the ssssg era, 2021" loading="lazy"
+          sandbox="allow-scripts allow-same-origin" tabindex="-1" aria-hidden="true"></iframe>
+        <span class="glass"></span>
+      </div>
+      <div class="plaque">
+        <span class="yr">2021 – 2023</span>
+        <h2>the ssssg era</h2>
+        <span class="tag">150 lines of sh · pandoc</span>
         <p>The whole site generated by ssssg, a shell script whose final commit
         reads "this script has somehow grown 😱". Terminal-styled, monospaced,
-        rocket-ship favicon. Includes the full posts archive back to 2014 and
-        the short stories. This is the era today's site is quietly still built
-        on.</p>
+        rocket-ship favicon. Includes the full posts archive back to 2014 and the
+        short stories. This is the era today's site is quietly still built on.</p>
+        <span class="step">step inside →</span>
       </div>
+    </a>
 
-    </div>
+  </div>
 
-    <p class="muted">Missing exhibits: the 2024 era was the ssssg site again,
-    but served from a Dockerised nginx, so it looked identical - the only
-    artefact is a Dockerfile. And <a href="/choosetwo/">choosetwo.org</a>, a
-    separate site whose domain lapsed, lives on as a project rather than a
-    fossil.</p>
-
-    <p><a href="/projects.html">→ the story of why each one exists</a></p>
-  </main>
+  <p class="missing">Missing exhibits: the 2024 era was the ssssg site again, but
+  served from a Dockerised nginx, so it looked identical - the only artefact is a
+  Dockerfile. And <a href="/choosetwo/">choosetwo.org</a>, a separate site whose
+  domain lapsed, lives on as a project rather than a fossil.</p>
 
   <footer class="site">
     <a href="/">home</a> ·
+    <a href="/projects.html">the story behind each one</a> ·
     <a href="/stats.html">stats</a> ·
-    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
     <a href="https://github.com/will-clarke">github</a>
   </footer>
 
