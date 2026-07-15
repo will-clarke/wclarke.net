@@ -760,22 +760,29 @@ function markOps(){ [...$('ops').querySelectorAll('.chip')].forEach(el=>el.class
 function hexRgb(h){ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
 const soloStamps=s=> [ s.map(v=> v>=2 ? 2 : v) ];   // every ref -> self (single self-referential mark)
 const OFF=document.createElement('canvas');
-function maskAt(s, W){                                // render one grid solo, return its on/off pixels
+/* Render one operand for a combine: the chosen grid as the root of its own
+   fractal, with relative refs - self (A) recurses into this grid, the other (B)
+   into the sibling grid. Reordering so root=index 0 keeps A=self / B=other from
+   each grid's point of view, so 'the other' actually bends the mark instead of
+   collapsing to self (as a flat soloStamps would). Puzzles use only A, so each
+   grid stays self-referential and their fingerprints are unchanged. */
+function maskAt(stamps, root, W){                    // render grid `root` as its own mark, return on/off pixels
+  const ordered = root===0 ? stamps : [stamps[1], stamps[0]];
   OFF.width=OFF.height=W;
   const ctx=OFF.getContext('2d',{willReadFrequently:true});
   ctx.clearRect(0,0,W,W);
-  drawStamp(ctx, soloStamps(s), 'sq3', 0,0,W, '#fff');
+  drawStamp(ctx, ordered, 'sq3', 0,0,W, '#fff');
   return ctx.getImageData(0,0,W,W).data;
 }
 function putCombine(canvas, stamps, op){              // draw grid1 <op> grid2 onto a canvas in ink
   const W=canvas.width, ctx=canvas.getContext('2d');
-  const a=maskAt(stamps[0], W), b=maskAt(stamps[1], W), f=OPS[op], ink=hexRgb(getCss('--ink'));
+  const a=maskAt(stamps, 0, W), b=maskAt(stamps, 1, W), f=OPS[op], ink=hexRgb(getCss('--ink'));
   const out=ctx.createImageData(W,W), o=out.data;
   for(let i=0;i<o.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ o[i]=ink[0]; o[i+1]=ink[1]; o[i+2]=ink[2]; o[i+3]=255; }
   ctx.clearRect(0,0,W,W); ctx.putImageData(out,0,0);
 }
 function combineFP(stamps, op){                       // theme-independent fingerprint for win-check
-  const W=243, a=maskAt(stamps[0],W), b=maskAt(stamps[1],W), f=OPS[op];
+  const W=243, a=maskAt(stamps,0,W), b=maskAt(stamps,1,W), f=OPS[op];
   const out=new Uint8ClampedArray(W*W*4);
   for(let i=0;i<out.length;i+=4) if(f(a[i+3]>8, b[i+3]>8)){ out[i]=out[i+1]=out[i+2]=255; out[i+3]=255; }
   return out;
@@ -795,8 +802,8 @@ function decodeStamps(str){
   const parts=str.slice(1).split('.').filter(Boolean);
   if(!parts.length) return null;
   const st=parts.map(p=>[...p].map(ch=>parseInt(ch,16)));
-  const n=NCELLS[g];
-  if(st.some(s=>s.length!==n || s.some(v=>isNaN(v)||v<0||v>15))) return null;
+  const n=NCELLS[g], maxV=st.length+1;   // 0 empty, 1 ink, 2..(1+count) reference an existing stamp
+  if(st.some(s=>s.length!==n || s.some(v=>isNaN(v)||v<0||v>maxV))) return null;
   return {geom:g, stamps:st};
 }
 function fromHash(){
