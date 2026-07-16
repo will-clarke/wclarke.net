@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "shipshape",
+      "name": "Shipshape",
+      "accent": "#7fd4ff",
+      "tagline": "Drag salvaged blocks onto your ship while rocks rain in - no build phase, just bullet time as a piece sockets into a gap. Every block is armour, a gun, and a puzzle: pack them tight to share welds, keep turrets exposed to fire, keep the core alive. Die, bank the salvage, evolve the tech tree, dive back in."
+    },
+    {
       "slug": "fathom",
       "name": "Fathom",
       "accent": "#2fe6c9",
