@@ -23,6 +23,7 @@
   })();
   </script>
   <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/vt.js"></script>
   <style>
     /* zoom this page into the writing honeycomb, and back (see writing-hex.html) */
     @view-transition { navigation: auto; }
@@ -41,11 +42,13 @@
   </span>
 </nav>
 
-<!-- prerender the cabinet the moment a pointer lands on the games hex, so the
-     fly-in morph starts instantly instead of waiting for /games/ to load. -->
+<!-- prefetch the cabinet the moment a pointer lands on the games hex, so the
+     fly-in morph starts promptly. NB: prerender (not prefetch) would activate
+     the page without a navigation, which SKIPS the cross-document view
+     transition - so the morph is deliberately a prefetch. -->
 <script type="speculationrules">
 {
-  "prerender": [
+  "prefetch": [
     { "where": { "href_matches": "/games/" }, "eagerness": "moderate" }
   ]
 }

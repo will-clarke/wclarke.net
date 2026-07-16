@@ -853,7 +853,7 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
 ::view-transition-image-pair(*),
 ::view-transition-old(*),
 ::view-transition-new(*) {
-  animation-duration: 0.45s;
+  animation-duration: 0.5s;
   animation-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -862,6 +862,27 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   ::view-transition-old(*),
   ::view-transition-new(*) { animation-duration: 0.01s; }
 }
+
+/* zoom the whole scene, not just the gems: `root` is everything EXCEPT the
+   named gems, so scaling it makes the surrounding hexes grow and fly past as the
+   camera dives into the games hex (to-cabinet), and pulls back out on Back
+   (to-home). Directions are tagged in js/vt.js. */
+@media (prefers-reduced-motion: no-preference) {
+  :root:active-view-transition-type(to-cabinet)::view-transition-old(root) {
+    animation: vt-recede 0.5s both cubic-bezier(0.4, 0, 0.6, 1);
+  }
+  :root:active-view-transition-type(to-cabinet)::view-transition-new(root) {
+    animation: vt-emerge 0.5s both cubic-bezier(0.2, 0.6, 0.3, 1);
+  }
+  :root:active-view-transition-type(to-home)::view-transition-old(root) {
+    animation: vt-emerge 0.5s both reverse cubic-bezier(0.4, 0, 0.6, 1);
+  }
+  :root:active-view-transition-type(to-home)::view-transition-new(root) {
+    animation: vt-recede 0.5s both reverse cubic-bezier(0.2, 0.6, 0.3, 1);
+  }
+}
+@keyframes vt-recede { to { transform: scale(1.8); opacity: 0; } }
+@keyframes vt-emerge { from { transform: scale(0.6); opacity: 0; } }
 
 /* ---- cross-document zoom (home <-> a hex's own page) -------------------
    A shared element is named on both sides so the browser morphs one into the
