@@ -845,14 +845,22 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
 }
 
-/* the gem <-> cabinet-hex morph: a slow, gently-eased fly-out (and fly-in on
-   Back). `*` covers every g-<slug> group plus the root cross-fade. */
-::view-transition-group(*) {
-  animation-duration: 0.55s;
-  animation-timing-function: cubic-bezier(0.34, 1.1, 0.4, 1);
+/* the gem <-> cabinet-hex morph: a snappy, eased fly-out (and fly-in on Back).
+   `*` covers every g-<slug> group; setting the old/new layers too keeps the
+   content cross-fade in lockstep with the position/size morph (otherwise the
+   fade falls back to the browser default and finishes early). */
+::view-transition-group(*),
+::view-transition-image-pair(*),
+::view-transition-old(*),
+::view-transition-new(*) {
+  animation-duration: 0.45s;
+  animation-timing-function: cubic-bezier(0.2, 0.75, 0.25, 1);
 }
 @media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*) { animation-duration: 0.01s; }
+  ::view-transition-group(*),
+  ::view-transition-image-pair(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation-duration: 0.01s; }
 }
 
 /* ---- cross-document zoom (home <-> a hex's own page) -------------------
