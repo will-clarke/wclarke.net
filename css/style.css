@@ -508,6 +508,20 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   color: #fff;
 }
 
+/* games cabinet (js/games.js): each game is an accent-tinted hex that fills on
+   hover and, on click, flies open (grow mode) into a full-screen shot of the game
+   before landing in the game itself (the `enter` hook in hexfield.js). */
+.hex.game {
+  background: color-mix(in srgb, var(--hex-accent) 16%, var(--bg));
+  filter: drop-shadow(0 2px 5px color-mix(in srgb, var(--hex-accent) 22%, transparent));
+}
+.hex.game .name { color: var(--fg); transition: color 0.18s ease; }
+.hex.game:hover, .hex.game:focus-visible {
+  background: var(--hex-accent);
+  filter: drop-shadow(0 7px 20px color-mix(in srgb, var(--hex-accent) 55%, transparent));
+}
+.hex.game:hover .name, .hex.game:focus-visible .name { color: #fff; }
+
 /* the floating cluster name, shown as you scroll a topic to the centre */
 .cluster-tag {
   position: fixed;
@@ -790,6 +804,18 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   transition: opacity 0.3s ease, background 0.2s ease;
 }
 .grow-back:hover { background: rgba(0, 0, 0, 0.3); }
+
+/* the games dive hero (js/games.js): the game's screenshot fills the growing
+   hexagon and zooms up from the tile to full screen. position:fixed resolves to
+   the .hexgrow box (it has a filter), so the shot scales with the hexagon; when
+   it commits, hexfield navigates into the real game and the clean shot settles
+   into the live board (both dark, so the handoff reads as continuous). */
+.grow-shot-wrap { position: fixed; inset: 0; overflow: hidden; }
+.grow-shot {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: top center;
+}
 
 /* ---- cross-document zoom (home <-> a hex's own page) -------------------
    A shared element is named on both sides so the browser morphs one into the

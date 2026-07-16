@@ -12,6 +12,11 @@
 # Most games are self-contained static HTML. A few are build-based (see
 # BUILD_GAMES): `make sync` builds them in ../games and copies only their
 # built dist/ into games/<slug>/ -- never the source tree or node_modules.
+#
+# games/index.html is the honeycomb cabinet (js/games.js), a wclarke.net-native
+# page that reuses this site's hex engine (/css, /js) - so it is owned here and
+# EXCLUDED from the sync, not pulled from ../games. games/shots/ (the dive-in
+# screenshots it shows) is excluded too. games.json still syncs in as data.
 
 GAMES_SRC := ../games
 PORT      ?= 8000
@@ -56,6 +61,7 @@ sync-games:
 	  --exclude='.git' --exclude='.gitignore' --exclude='Makefile' \
 	  --exclude='*.md' --exclude='_template' --exclude='scratch-*.js' \
 	  --exclude='.playwright-mcp' --exclude='*.png' \
+	  --exclude='index.html' --exclude='shots' \
 	  $(GAMES_SRC)/ games/
 
 ## sync-built: copy each build-based game's dist/ -> games/<slug>/

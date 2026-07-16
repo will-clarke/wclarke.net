@@ -1,146 +1,42 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="color-scheme" content="light dark" />
-<script>
-  (function(){try{
-    var t=localStorage.getItem('theme');
-    if(t!=='light'&&t!=='dark'){
-      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
-    }
-    document.documentElement.setAttribute('data-theme',t);
-  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
-</script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='18' font-weight='700' text-anchor='middle' fill='%233ad9ff'%3EG%3C/text%3E%3C/svg%3E" />
-<title>Games</title>
-<style>
-  :root{
-    --accent:#3ad9ff;
-    --on-accent:#0e1116;
-  }
-  :root[data-theme="dark"]{
-    --bg:#171b23; --bg-top:#212734;
-    --surface:#232a38; --raised:#2b3342;
-    --ink:#eaeef6; --muted:#a2adc0;
-    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
-    --shadow:rgba(0,0,0,.45);
-  }
-  :root[data-theme="light"]{
-    --bg:#eef1f7; --bg-top:#ffffff;
-    --surface:#ffffff; --raised:#f3f6fb;
-    --ink:#1b2431; --muted:#5a6575;
-    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
-    --shadow:rgba(30,40,70,.16);
-  }
-  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;height:100%}
-  body{
-    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
-    color:var(--ink);
-    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-    display:flex;flex-direction:column;align-items:center;
-    min-height:100%;padding:60px 16px 64px;gap:8px;
-  }
-
-  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
-    justify-content:flex-end;padding:12px 14px;pointer-events:none}
-  .topbar .navbtn{pointer-events:auto}
-  .navbtn{display:inline-flex;align-items:center;justify-content:center;
-    width:40px;height:40px;padding:0;border-radius:11px;
-    background:var(--surface);border:1px solid var(--line);color:var(--ink);
-    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
-    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
-  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
-  .navbtn:active{transform:translateY(0)}
-
-  h1{margin:0;font-weight:700;letter-spacing:.42em;font-size:26px;text-transform:uppercase}
-  h1 b{color:var(--accent);text-shadow:0 0 18px var(--accent);font-weight:700}
-  .sub{color:var(--muted);font-size:12px;letter-spacing:.05em;margin:2px 0 26px;text-align:center;max-width:460px}
-
-  .grid{width:100%;max-width:720px;display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
-
-  .card{
-    display:block;text-decoration:none;color:inherit;
-    border:1px solid var(--line);border-radius:16px;
-    background:var(--surface);
-    padding:18px 18px 20px;
-    position:relative;overflow:hidden;
-    transition:border-color .2s,transform .2s,box-shadow .2s;
-  }
-  .card::before{
-    content:"";position:absolute;inset:0;border-radius:16px;
-    background:radial-gradient(120% 100% at 0% 0%, var(--c) 0%, transparent 45%);
-    opacity:.12;pointer-events:none;transition:opacity .2s;
-  }
-  .card:hover{border-color:var(--c);transform:translateY(-2px);box-shadow:0 10px 30px var(--shadow)}
-  .card:hover::before{opacity:.22}
-
-  .name{font-weight:700;letter-spacing:.28em;font-size:19px;text-transform:uppercase;margin:0 0 8px}
-  .name b{color:var(--c);text-shadow:0 0 16px var(--c);font-weight:700}
-  .tag{color:var(--muted);font-size:13px;margin:0}
-  .dot{
-    position:absolute;top:20px;right:20px;width:9px;height:9px;border-radius:50%;
-    background:var(--c);box-shadow:0 0 12px var(--c);
-  }
-
-  .empty{color:var(--muted);font-size:14px;text-align:center;margin-top:20px;max-width:420px}
-  .empty code{background:var(--raised);padding:2px 6px;border-radius:5px}
-  footer{color:var(--muted);opacity:.7;font-size:11px;letter-spacing:.06em;margin-top:36px;text-align:center}
-  footer code{background:var(--raised);padding:1px 5px;border-radius:4px}
-</style>
-</head>
-<body>
-  <div class="topbar">
-    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
-  </div>
-
-  <h1><b>G</b>ames</h1>
-  <p class="sub">Small, deep, beautiful abstract strategy - one file each, no build, play on a phone.</p>
-  <div class="grid" id="grid"></div>
-  <footer>drop a folder + add an entry to <code>games.json</code></footer>
-
-<script>
-  // First letter of the name is highlighted as a wordmark, matching each game's own <h1>.
-  function wordmark(name){
-    return "<b>" + name[0] + "</b>" + name.slice(1);
-  }
-
-  fetch("games.json")
-    .then(r => r.json())
-    .then(({games}) => {
-      const grid = document.getElementById("grid");
-      if(!games || !games.length){
-        grid.innerHTML = '<p class="empty">No games yet. Add one to <code>games.json</code>.</p>';
-        return;
-      }
-      grid.innerHTML = games.map(g => `
-        <a class="card" href="${g.slug}/" style="--c:${g.accent||'#3ad9ff'}">
-          <span class="dot"></span>
-          <p class="name">${wordmark(g.name)}</p>
-          <p class="tag">${g.tagline||''}</p>
-        </a>`).join("");
-    })
-    .catch(() => {
-      document.getElementById("grid").innerHTML =
-        '<p class="empty">Could not load <code>games.json</code>. Serve this folder over HTTP - run <code>make serve</code> - rather than opening the file directly.</p>';
-    });
-
-  (function(){
-    var btn=document.getElementById('themeToggle');
-    if(!btn)return;
-    function glyph(){btn.textContent=
-      document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';}
-    glyph();
-    btn.addEventListener('click',function(){
-      var next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
-      document.documentElement.setAttribute('data-theme',next);
-      try{localStorage.setItem('theme',next);}catch(e){}
-      glyph();
-      window.dispatchEvent(new Event('themechange'));
-    });
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="darkreader-lock">
+  <title>Games - Will Clarke</title>
+  <meta name="description" content="A cabinet of small, deep, beautiful abstract strategy games - one hex each, no build, play on a phone.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='18' font-weight='700' text-anchor='middle' fill='%233ad9ff'%3EG%3C/text%3E%3C/svg%3E" />
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
   })();
-</script>
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body class="hexhome">
+
+<div id="field"></div>
+
+<nav class="mark" aria-label="site">
+  <a class="wordmark" href="/">← will clarke</a>
+  <span class="controls">
+    <a class="plainlink" href="/projects.html">list view</a>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+  </span>
+</nav>
+
+<script src="/js/hexfield.js" defer></script>
+<script src="/js/games.js" defer></script>
 </body>
 </html>

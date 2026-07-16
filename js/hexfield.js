@@ -17,6 +17,8 @@
        accent,                          // --hex-accent / --focus-accent colour
        link,                            // true -> the tile is an <a> (href navigates)
        href,                            // link target + focus "visit" button
+       enter,                           // grow mode: navigate to href once the hex fills
+                                        //   the screen (the fly-in becomes the page entry)
        tile(el),                        // decorate the tile's inner (spans etc.)
        preview(ctx, w, h, t),           // optional: draw a live tile canvas (toys)
        live(ctx, w, h, t, ptr),         // optional: draw the focus canvas (toys)
@@ -153,6 +155,8 @@ window.HexField = function (mount, cfg) {
       if (cell.dive === false) return el;
       el.addEventListener("click", function (e) {
         if (dragMoved) return;
+        // modifier/middle clicks on a real link keep normal navigation (open in a tab)
+        if (cell.link && (e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) return;
         e.preventDefault();
         // open a resting hex; a click mid-grow backs out (the window handler below).
         if (grow.g <= 0.02 || grow.committed) commitGrow(el, cell);
@@ -540,6 +544,9 @@ window.HexField = function (mount, cfg) {
     if (grow.g >= 1 && !grow.committed) {
       grow.g = 1; grow.committed = true;
       grower.classList.add("committed");
+      // an `enter` tile isn't a demo page you read - the fly-in IS the transition
+      // into its own page, so once the hex fills the screen we navigate straight in.
+      if (grow.cell && grow.cell.enter && grow.cell.href) { location.href = grow.cell.href; return; }
       if (!grow.pushed) { try { history.pushState({ hexgrow: 1 }, ""); grow.pushed = true; } catch (e) {} }
     }
     renderGrow();
