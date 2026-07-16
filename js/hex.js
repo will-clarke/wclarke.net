@@ -89,14 +89,18 @@
       if (Math.abs(c.r) > maxR) maxR = Math.abs(c.r);
       return { x: x, r: c.r };
     });
-    // size each gem (fraction of tile width) so the whole cluster sits inside the
-    // hexagon with a little breathing room
-    var gw = Math.min(0.47 / (maxX + 0.5), 0.47 / (maxR * 0.75 + 0.5));
+    // lay the gems out as a faithful, scaled-down replica of the cabinet: the
+    // same column/row spacing ratios hexfield uses (stepX = 1.07w, rowStep =
+    // 0.78w-of-tile-height). Because the cluster is just the cabinet shrunk, the
+    // per-hex morph interpolates as one uniform scale-up - a zoom INTO the hex,
+    // rather than the gems fanning out to scattered positions.
+    var SX = 1.07, RY = 0.78;
+    var gw = Math.min(0.47 / (maxX * SX + 0.5), 0.47 / (maxR * RY + 0.5));
     var half = gw * 50, side = (gw * 100).toFixed(2);
     return gems.map(function (g, i) {
       var acc = g.accent || "#3ad9ff";
-      var left = (50 + pos[i].x * gw * 100 - half).toFixed(2);
-      var top = (50 + pos[i].r * 0.75 * gw * 100 - half).toFixed(2);
+      var left = (50 + pos[i].x * SX * gw * 100 - half).toFixed(2);
+      var top = (50 + pos[i].r * RY * gw * 100 - half).toFixed(2);
       var conic = "conic-gradient(from 0deg," + FACET.map(function (d, j) {
         return mix(acc, d) + " " + (j * 60) + "deg " + ((j + 1) * 60) + "deg";
       }).join(",") + ")";
