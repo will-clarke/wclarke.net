@@ -34,11 +34,11 @@
   // (and can morph on a cold Back) before games.json is fetched; the live file
   // overwrites it. Keep the slugs in step with games/games.json.
   var GAME_GEMS = [
-    { slug: "fathom", accent: "#2fe6c9" }, { slug: "lumen", accent: "#ffb43a" },
-    { slug: "cascade", accent: "#3ad9ff" }, { slug: "fracture", accent: "#ff5a6e" },
-    { slug: "selfie", accent: "#ff7ac2" }, { slug: "seed", accent: "#57e08a" },
-    { slug: "loom", accent: "#b98cff" }, { slug: "echo", accent: "#5cd6ff" },
-    { slug: "debt", accent: "#b48cff" },
+    { slug: "shipshape", accent: "#7fd4ff" }, { slug: "fathom", accent: "#2fe6c9" },
+    { slug: "lumen", accent: "#ffb43a" }, { slug: "cascade", accent: "#3ad9ff" },
+    { slug: "fracture", accent: "#ff5a6e" }, { slug: "selfie", accent: "#ff7ac2" },
+    { slug: "seed", accent: "#57e08a" }, { slug: "loom", accent: "#b98cff" },
+    { slug: "echo", accent: "#5cd6ff" }, { slug: "debt", accent: "#b48cff" },
   ];
 
   function esc(s) {
