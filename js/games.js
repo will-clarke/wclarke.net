@@ -72,9 +72,6 @@
         tile: function (el) {
           cell.el = el;                                  // kept so the fetch can refresh in place
           el.classList.add("game");
-          // pair this hex with its gem on the homepage crystal (js/hex.js): the
-          // shared name morphs one into the other across the navigation.
-          el.style.viewTransitionName = "g-" + g.slug;
           el.innerHTML = '<span class="name">' + esc(g.name) + "</span>";
         },
         page: { title: g.name, html: shotHtml(g.slug) },
