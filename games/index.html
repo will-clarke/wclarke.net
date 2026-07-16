@@ -23,6 +23,13 @@
   })();
   </script>
   <link rel="stylesheet" href="/css/style.css">
+  <style>
+    /* morph to/from the homepage "games" crystal: each cabinet hex shares its
+       gem's view-transition-name (g-<slug>, set in js/games.js + js/hex.js), so
+       the browser flies the gems out into the honeycomb and back on Back. */
+    @view-transition { navigation: auto; }
+    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+  </style>
 </head>
 <body class="hexhome">
 

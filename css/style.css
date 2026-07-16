@@ -817,6 +817,44 @@ body.hexhome { padding: 0; margin: 0; overflow: hidden; }
   object-fit: cover; object-position: top center;
 }
 
+/* the games crystal (js/hex.js): a faceted hexagon packed with one gem-hex per
+   game. It lives in the resting "games" tile AND fills the grow-page, so clicking
+   zooms that same SVG up to full screen (crisp at any scale) before handing over
+   to /games/ - hexagons opening out of a hexagon. */
+/* the games crystal (js/hex.js): a spiral of faceted gem-hexes on a soft, theme-
+   matched vignette. Each gem carries view-transition-name g-<slug>; the matching
+   cabinet hex (js/games.js) carries the same, so navigating to /games/ morphs the
+   gems out into the honeycomb, and Back reverses it. */
+:root { --cx-bg1: #fbf9f4; --cx-bg2: #e7e0d2; }
+:root[data-theme="dark"] { --cx-bg1: #141a24; --cx-bg2: #05070b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --cx-bg1: #141a24; --cx-bg2: #05070b; }
+}
+
+.hex.crystal-tile {
+  overflow: hidden;
+  background: radial-gradient(75% 75% at 42% 38%, var(--cx-bg1), var(--cx-bg2));
+}
+.cx-gem {
+  position: absolute;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.hex.crystal-tile .name {
+  position: relative; z-index: 1;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.7);
+}
+
+/* the gem <-> cabinet-hex morph: a slow, gently-eased fly-out (and fly-in on
+   Back). `*` covers every g-<slug> group plus the root cross-fade. */
+::view-transition-group(*) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.34, 1.1, 0.4, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*) { animation-duration: 0.01s; }
+}
+
 /* ---- cross-document zoom (home <-> a hex's own page) -------------------
    A shared element is named on both sides so the browser morphs one into the
    other: a zoom in on the way there, a zoom out on the way back. "writing-portal"

@@ -46,6 +46,9 @@
           link: true, href: href, enter: true,        // grow, then dive into the game
           tile: function (el) {
             el.classList.add("game");
+            // pair this hex with its gem on the homepage crystal (js/hex.js): the
+            // shared name morphs one into the other across the navigation.
+            el.style.viewTransitionName = "g-" + g.slug;
             el.innerHTML = '<span class="name">' + esc(g.name) + "</span>";
           },
           page: {
