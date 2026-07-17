@@ -1,48 +1,1389 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <meta name="darkreader-lock">
-  <title>Will Clarke</title>
-  <meta name="description" content="Small things Will Clarke makes for fun: puzzle games, toys, and experiments.">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🚀</text></svg>">
-  <script>
-  (function () {
-    var t = localStorage.getItem("theme");
-    if (t) document.documentElement.dataset.theme = t;
-    window.toggleTheme = function () {
-      var el = document.documentElement;
-      var dark = el.dataset.theme
-        ? el.dataset.theme === "dark"
-        : matchMedia("(prefers-color-scheme: dark)").matches;
-      el.dataset.theme = dark ? "light" : "dark";
-      localStorage.setItem("theme", el.dataset.theme);
-    };
-  })();
-  </script>
-  <link rel="stylesheet" href="/css/style.css">
-  <style>
-    /* zoom this page into the writing honeycomb, and back (see writing-hex.html) */
-    @view-transition { navigation: auto; }
-    .hex.portal { view-transition-name: writing-portal; }
-    @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Will Clarke</title>
+<meta name="description" content="Will Clarke's infinite honeycomb: odd puzzle games, write-ups and experiments, all nested inside one recursive hex grid.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-1.1 -1.1 2.2 2.2'%3E%3Cpath d='M0-1 .866-.5v1L0 1-.866.5v-1z' fill='none' stroke='%23e8b558' stroke-width='.14'/%3E%3C/svg%3E">
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#0b0806; }
+  body {
+    font-family: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
+    user-select:none; -webkit-user-select:none;
+  }
+  #c { position:fixed; inset:0; width:100%; height:100%; display:block; touch-action:none; }
+  #vignette {
+    position:fixed; inset:0; pointer-events:none;
+    background: radial-gradient(ellipse 90% 80% at 50% 42%, transparent 55%, rgba(0,0,0,.5) 100%);
+  }
+  #ui {
+    position:fixed; top:16px; left:18px; right:18px;
+    display:flex; align-items:baseline; gap:14px;
+    color:#d8b06a; font-size:13px; letter-spacing:.08em;
+    pointer-events:none; opacity:0; transition:opacity 1.6s ease .3s;
+  }
+  body.ready #ui { opacity:1; }
+  #crumbs { display:flex; align-items:center; flex-wrap:wrap; pointer-events:auto; }
+  #crumbs button {
+    all:unset; cursor:pointer; padding:3px 8px; border-radius:7px; color:#c49c58;
+    transition: background .18s ease, color .18s ease; font:inherit; line-height:1;
+  }
+  #crumbs button:hover { background:rgba(255,190,90,.13); color:#ffdd96; }
+  #crumbs .sep { opacity:.32; padding:0 1px; }
+  #crumbs .here { color:#ffe6ac; }
+  #depth { opacity:.45; font-size:11px; white-space:nowrap; }
+  #hint {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    color:#8f7444; font-size:12px; letter-spacing:.12em; pointer-events:none;
+    white-space:nowrap; opacity:0; transition:opacity 1.4s ease;
+  }
+  body.ready #hint { opacity:.9; }
+  body.dived #hint { opacity:0; }
+  @media (max-width:640px){ #hint { font-size:10px; } #depth { display:none; } }
+
+  /* ---- the in-comb reader: posts unfold without leaving the hive ---- */
+  #reader {
+    position:fixed; inset:0; z-index:10; display:flex;
+    align-items:center; justify-content:center; padding:4vmin;
+    background:rgba(8,5,3,.62); backdrop-filter:blur(7px) saturate(.85);
+    -webkit-backdrop-filter:blur(7px) saturate(.85);
+  }
+  #reader[hidden] { display:none; }
+  #reader-panel {
+    width:min(720px, 100%); max-height:88vh; display:flex; flex-direction:column;
+    background:#171009; border:1px solid #55401d; border-radius:16px;
+    box-shadow:0 30px 90px rgba(0,0,0,.6), 0 0 0 6px rgba(232,181,88,.05);
+    animation:reader-in .28s cubic-bezier(.2,.9,.3,1);
+  }
+  @keyframes reader-in { from { opacity:0; transform:scale(.94); } }
+  @media (prefers-reduced-motion: reduce){ #reader-panel { animation:none; } }
+  #reader-panel > header {
+    display:flex; gap:14px; align-items:center; padding:20px 24px 14px;
+    border-bottom:1px solid #33260f;
+  }
+  #reader-glyph { font-size:30px; line-height:1; }
+  #reader-panel h1 {
+    margin:0; font-size:19px; color:#ffe6ac; letter-spacing:.04em; line-height:1.3;
+  }
+  #reader-date { font-size:11px; color:#8f7444; letter-spacing:.1em; }
+  #reader-close {
+    all:unset; cursor:pointer; margin-left:auto; padding:6px 10px; border-radius:8px;
+    color:#c49c58; font-size:16px; transition:background .15s, color .15s;
+  }
+  #reader-close:hover { background:rgba(255,190,90,.13); color:#ffdd96; }
+  #reader-body {
+    overflow-y:auto; padding:6px 28px 22px; color:#d9c39a;
+    font-family:Georgia, 'Times New Roman', serif;
+    font-size:16px; line-height:1.65; overscroll-behavior:contain;
+  }
+  #reader-body h1, #reader-body h2, #reader-body h3 {
+    color:#ffe6ac; font-family:inherit; line-height:1.3;
+    font-size:1.15em; margin:1.4em 0 .5em;
+  }
+  #reader-body a { color:#ffd98a; text-decoration-color:#8f7444; }
+  #reader-body a:hover { text-decoration-color:#ffd98a; }
+  #reader-body pre, #reader-body code {
+    font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:.82em;
+    background:#0e0a06; border:1px solid #33260f; border-radius:6px; color:#e0c68d;
+  }
+  #reader-body code { padding:.1em .35em; }
+  #reader-body pre { padding:12px 14px; overflow-x:auto; }
+  #reader-body pre code { border:none; padding:0; background:none; }
+  #reader-body img { max-width:100%; border-radius:8px; }
+  #reader-body blockquote {
+    margin:1em 0; padding:.2em 1em; border-left:3px solid #55401d; color:#b8a077;
+  }
+  #reader-panel > footer {
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 24px; border-top:1px solid #33260f;
+    font-size:12px; letter-spacing:.08em;
+  }
+  #reader-panel > footer a { color:#ffd98a; text-decoration:none; }
+  #reader-panel > footer a:hover { text-decoration:underline; }
+  #reader-panel > footer .dim { color:#6b562f; }
+  @media (max-width:640px){
+    #reader { padding:0; }
+    #reader-panel { max-height:100vh; height:100%; width:100%; border-radius:0; }
+  }
+</style>
 </head>
-<body class="hexhome">
+<body>
+<canvas id="c"></canvas>
+<div id="vignette"></div>
+<div id="ui">
+  <nav id="crumbs" aria-label="depth"></nav>
+  <span id="depth"></span>
+</div>
+<div id="hint"></div>
+<noscript>
+  <p style="color:#d8b06a;padding:2em;font-family:monospace">
+    This page is an interactive honeycomb and needs JavaScript.
+    Without it: <a href="/games/" style="color:#ffd98a">games</a> ·
+    <a href="/writing.html" style="color:#ffd98a">writing</a> ·
+    <a href="/about.html" style="color:#ffd98a">about</a>
+  </p>
+</noscript>
 
-<div id="field"></div>
+<div id="reader" hidden>
+  <div id="reader-panel">
+    <header>
+      <span id="reader-glyph"></span>
+      <div>
+        <h1 id="reader-title"></h1>
+        <span id="reader-date"></span>
+      </div>
+      <button id="reader-close" aria-label="close">✕</button>
+    </header>
+    <article id="reader-body"></article>
+    <footer>
+      <a id="reader-raw" href="#">open as plain page ↗</a>
+      <span class="dim">esc closes</span>
+    </footer>
+  </div>
+</div>
 
-<nav class="mark" aria-label="site">
-  <a class="wordmark" href="/about.html">will clarke</a>
-  <span class="controls">
-    <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
-  </span>
-</nav>
+<script>
+'use strict';
 
-<script src="/js/toys.js" defer></script>
-<script src="/js/hexfield.js" defer></script>
-<script src="/js/hex.js" defer></script>
+/* ================================================================
+   recursive comb - an infinitely nested honeycomb.
+   Every "deep" cell contains a whole smaller honeycomb, forever.
+   One continuous camera; coordinates renormalize as you cross
+   levels, so the zoom never runs out of float precision.
+   ================================================================ */
+
+// ---------------- tunables ----------------
+const ZF = 6;              // zoom factor between levels (comb radius, in child-cell units)
+const RIM_INSET = 1.08;    // nested cells fit inside a hex of radius ZF - RIM_INSET
+const REVEAL_LO = 26;      // px cell radius where a nested comb starts fading in
+const REVEAL_HI = 96;      // px cell radius where it is fully revealed
+const DIVE_FRAC = 0.44;    // a clicked cell flies to this fraction of the short viewport side
+const ENTER_FRAC = 0.32;   // a cell bigger than this fraction counts as "entered"
+const INTERACT_MIN = 12;   // px cell radius below which cells ignore the pointer
+
+// Which cells contain a nested comb. `key` is the cell's path from
+// the origin comb, e.g. "2,-1|0,3|1,0"; cells above the origin get a
+// "^era|" prefix. Swap this out to hand-place nests:
+// e.g. `return key === '0,0' || key.endsWith('|1,-1');`
+function isDeep(key, q, r){
+  if (q === 0 && r === 0) return true;            // every comb centre nests
+  return (hash32(key) & 1023) / 1023 < 0.46;      // plus a scattering
+}
+
+// ---------------- boring setup ----------------
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const crumbsEl = document.getElementById('crumbs');
+const depthEl = document.getElementById('depth');
+const hintEl = document.getElementById('hint');
+const MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 1;
+const COARSE = matchMedia('(pointer: coarse)').matches;
+hintEl.textContent = COARSE
+  ? 'drag · pinch · tap a cell to dive, tap again to open'
+  : 'drag · scroll · click a cell to dive, click again to open · esc rises';
+
+let vw = 0, vh = 0, dpr = 1;
+function resize(){
+  dpr = Math.min(devicePixelRatio || 1, 2.5);
+  vw = innerWidth; vh = innerHeight;
+  canvas.width = Math.round(vw * dpr);
+  canvas.height = Math.round(vh * dpr);
+}
+addEventListener('resize', resize);
+resize();
+
+const minVp = () => Math.min(vw, vh);
+const maxVp = () => Math.max(vw, vh);
+
+// ---------------- hex geometry (pointy-top, circumradius 1) ----------------
+const SQ3 = Math.sqrt(3);
+const cellX = (q, r) => SQ3 * (q + r / 2);
+const cellY = (q, r) => 1.5 * r;
+
+function axialRound(x, y){
+  const qf = (SQ3 / 3) * x - y / 3, rf = (2 / 3) * y, sf = -qf - rf;
+  let q = Math.round(qf), r = Math.round(rf), s = Math.round(sf);
+  const dq = Math.abs(q - qf), dr = Math.abs(r - rf), ds = Math.abs(s - sf);
+  if (dq > dr && dq > ds) q = -r - s; else if (dr > ds) r = -q - s;
+  return { q, r };
+}
+
+function insideHex(x, y, rad){   // pointy-top hex, flat sides at |x| = rad*sqrt3/2
+  return Math.abs(x) <= rad * SQ3 / 2 && Math.abs(y) <= rad - Math.abs(x) / SQ3;
+}
+
+const HEX = new Path2D();
+for (let i = 0; i < 6; i++){
+  const a = (-90 + 60 * i) * Math.PI / 180;
+  const x = Math.cos(a), y = Math.sin(a);
+  i ? HEX.lineTo(x, y) : HEX.moveTo(x, y);
+}
+HEX.closePath();
+
+// the fixed cell layout of every nested comb
+const CELLS = [], CELL_SET = new Set();
+for (let q = -ZF; q <= ZF; q++) for (let r = -ZF; r <= ZF; r++){
+  if (insideHex(cellX(q, r), cellY(q, r), ZF - RIM_INSET)){
+    CELLS.push({ q, r });
+    CELL_SET.add(q + ',' + r);
+  }
+}
+
+// ---------------- infinite ancestry ----------------
+// The comb you start in is the "origin" (key ""). Zooming out
+// materializes parents on demand: ups[e] is the cell that the
+// era-(e-1) top comb occupies inside the era-e top comb. Choices are
+// hashed, so the world above never shifts between visits.
+let era = 0;
+const ups = [null];
+function ensureUp(e){
+  while (ups.length <= e){
+    const k = ups.length;
+    const cands = CELLS.filter(c => isDeep('^' + k + '|' + c.q + ',' + c.r, c.q, c.r));
+    ups.push(cands[hash32('^up' + k) % cands.length]);
+  }
+  return ups[e];
+}
+// canonical key of the comb reached from the era-e top via `cells`;
+// walking back down the up-chain collapses onto the combs it contains,
+// so "^1|<up cell>|a,b" and "a,b" are the same place
+function canonKey(e, cells){
+  let i = 0;
+  while (e > 0 && i < cells.length){
+    const u = ensureUp(e);
+    if (cells[i].q === u.q && cells[i].r === u.r){ i++; e--; } else break;
+  }
+  const tail = cells.slice(i).map(c => c.q + ',' + c.r).join('|');
+  return e > 0 ? (tail ? '^' + e + '|' + tail : '^' + e) : tail;
+}
+const eraKey = k => k === '' || (k.charCodeAt(0) === 94 && k.indexOf('|') < 0);
+
+const trCache = new Map();   // lazily computed cell traits, by canonical key
+
+// ---------------- content ----------------
+// Anything you have made lives at a fixed address in the comb.
+// A plain item is a leaf plaque (glyph -> title -> blurb + open pill as
+// you zoom); {section: true} makes a labelled deep cell whose interior
+// comb holds more items. Cells without content stay procedural honey.
+const CONTENT = new Map();
+function addContent(key, item){
+  CONTENT.set(key, item);
+  trCache.delete(key);
+}
+
+// preferred slot order inside a comb: inner ring first, then by angle
+const ORDER = CELLS
+  .filter(c => c.q || c.r)
+  .map(c => ({ q: c.q, r: c.r,
+    d: (Math.abs(c.q) + Math.abs(c.r) + Math.abs(c.q + c.r)) / 2,
+    a: Math.atan2(cellY(c.q, c.r), cellX(c.q, c.r)) }))
+  .sort((u, v) => u.d - v.d || u.a - v.a);
+
+// lay items out inside the comb at baseKey; overflow spills into a
+// "more" section at the comb's centre cell, recursively - pagination
+// through the fractal itself
+function fillSection(baseKey, items, moreTitle, moreGlyph){
+  const page = items.slice(0, ORDER.length);
+  page.forEach((it, i) => addContent(baseKey + '|' + ORDER[i].q + ',' + ORDER[i].r, it));
+  const rest = items.slice(ORDER.length);
+  if (rest.length){
+    const moreKey = baseKey + '|0,0';
+    addContent(moreKey, { section: true, glyph: moreGlyph, title: moreTitle });
+    fillSection(moreKey, rest, moreTitle, moreGlyph);
+  }
+}
+
+const SEED_CONTENT = {
+  // ---- the centre cell is me: a whole about-room, not a link ----
+  '0,0':  { section: true, glyph: '🐝', title: 'will clarke' },
+  '0,0|1,0':  { note: 'I live in Dorset. I’ve been a software engineer for a while. three kids, seven chickens.', glyph: '🐔' },
+  '0,0|0,1':  { note: 'this whole page is one infinite honeycomb. dive into any dark cell, or zoom out forever - there is no top.', glyph: '⬡' },
+  '0,0|-1,1': { note: 'the site itself is generated by 150 lines of shell script. every previous version of it lives in the museum.',
+                glyph: '🏛', href: '/museum/', act: 'visit the museum' },
+  '0,0|-1,0': { glyph: '⚙', title: 'sourcehut', act: 'visit', href: 'https://git.sr.ht/~will-clarke',
+                blurb: 'where most of my recent code lives.' },
+  '0,0|0,-1': { glyph: '✉', title: 'say hello', act: 'email', href: 'mailto:wmmclarke@gmail.com',
+                blurb: 'wmmclarke@gmail.com' },
+  '0,0|1,-1': { glyph: '📄', title: 'about, but formal', act: 'read', href: '/about.html', inline: true,
+                blurb: 'the plain-html version of this room.' },
+  '0,0|2,-1': { glyph: '💼', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
+                blurb: 'the professional mask.' },
+  '0,0|-2,1': { glyph: '📡', title: 'rss', act: 'subscribe', href: '/index.xml',
+                blurb: 'the writing, as a feed.' },
+  // ---- homelab: nested inside the about room ----
+  '0,0|0,0': { section: true, glyph: '🛖', title: 'the shed' },
+  '0,0|0,0|1,0':  { note: 'the server lives in the shed: a ryzen box with an rtx 3090 that mostly dreams of artificial life.', glyph: '🖥' },
+  '0,0|0,0|0,1':  { note: 'k3s runs the show: frigate watching the garden, immich hoarding photos, jellyfin serving films.', glyph: '☸' },
+  '0,0|0,0|-1,1': { note: 'a voron 2.4 corexy printer squirts out brackets for everything else in here.', glyph: '🖨' },
+  '0,0|0,0|-1,0': { note: 'editors: emacs → nvim → helix. currently helix. ask me again next year.', glyph: '⌨' },
+  '0,0|0,0|0,-1': { note: 'everything is cattle, except the shed server, which is a beloved pet.', glyph: '🐄' },
+  '1,0':  { section: true, glyph: '🕹', title: 'games' },
+  '-1,1': { section: true, glyph: '✍', title: 'writing' },
+  '0,-1': { section: true, glyph: '🧪', title: 'lab' },
+  '0,1':  { glyph: '📦', title: 'recursive sokoban', act: 'play', href: '/games/recursive-sokoban/',
+            blurb: 'boxes contain whole levels. push one, step inside, solve the nested puzzle, climb back out. stacks 16 deep.' },
+  '-1,0': { glyph: 'λ', title: 'functional sokoban', act: 'play', href: '/games/functional-sokoban/',
+            blurb: 'push value-boxes through function-boxes: +1, *2, NEG. then currying and composition sneak in. a visual-programming toy disguised as a puzzle.' },
+  '1,-1': { glyph: '💎', title: 'polyhedra', act: 'play', href: '/games/polyhedra/',
+            blurb: 'a conway-operator playground: dual, truncate, gyro... sculpt living solids in the browser.' },
+  '0,-1|1,0':  { glyph: '🏛', title: 'museum', act: 'visit', href: '/museum/',
+                 blurb: 'every previous incarnation of this website, lovingly embalmed.' },
+  '0,-1|0,1':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
+                 blurb: 'trilemmas as svg triangles: cap theorem, zooko, career/family/hobbies. pick any two.' },
+  '0,-1|-1,1': { glyph: '📈', title: 'stats', act: 'view', href: '/stats.html',
+                 blurb: 'numbers about this site.' },
+  '0,-1|-1,0': { glyph: '🐝', title: 'writing, but hexier', act: 'visit', href: '/writing-hex.html',
+                 blurb: 'the old hex-grid writing index that inspired this page.' },
+  '0,-1|0,-1': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
+                 blurb: 'the source of it all.' },
+};
+for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
+
+const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
+  fracture: '💥', selfie: '🪞', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸' };
+const PINNED_GAMES = [
+  { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/',
+    blurb: 'a zachtronics-style factory: emitters, colourers, cloners, portals, fans - with vcr play/step/rewind.' },
+  { glyph: '🪱', title: 'worm division', act: 'play', href: '/games/worm-division/',
+    blurb: 'a worm that divides. history with relative orientation; emergent automation. it kept mutating.' },
+  { glyph: '🟢', title: 'slime teleports', act: 'play', href: '/games/slime-teleports/',
+    blurb: 'sokoban, except the slime teleports.' },
+  { glyph: '🎐', title: 'lanternwake', act: 'play', href: '/games/lanternwake/',
+    blurb: 'a quiet one. lanterns, wakes.' },
+];
+const contentReady = Promise.allSettled([
+  fetch('/games/games.json')
+    .then(r => r.json())
+    .then(d => {
+      const items = d.games.map(g => ({
+        glyph: GAME_GLYPHS[g.slug] || '🎮', title: g.name.toLowerCase(),
+        act: 'play', href: '/games/' + g.slug + '/', accent: g.accent,
+        blurb: g.tagline,
+      }));
+      fillSection('1,0', PINNED_GAMES.concat(items), 'more games', '🕹');
+    })
+    .catch(() => fillSection('1,0', PINNED_GAMES, 'more games', '🕹')),
+  fetch('/index.xml')
+    .then(r => r.text())
+    .then(t => {
+      const doc = new DOMParser().parseFromString(t, 'text/xml');
+      const items = [...doc.querySelectorAll('item')].map(el => {
+        const g = tag => (el.querySelector(tag) || {}).textContent || '';
+        // inert parse: a live innerHTML would fetch the posts' images
+        const body = new DOMParser().parseFromString(g('description'), 'text/html').body;
+        const plain = (body.textContent || '').trim().replace(/\s+/g, ' ');
+        return { glyph: '✍', title: g('title').toLowerCase(), act: 'read', href: g('link'),
+                 inline: true,
+                 blurb: plain.length > 150 ? plain.slice(0, 147) + '…' : plain };
+      });
+      fillSection('-1,1', items, 'older posts', '✍');
+    })
+    .catch(() => {}),
+]);
+// key of cell (q,r) inside comb `ck`
+function childKey(ck, q, r){
+  if (ck && eraKey(ck)){
+    const e = +ck.slice(1), u = ensureUp(e);
+    if (q === u.q && r === u.r) return e === 1 ? '' : '^' + (e - 1);
+  }
+  return ck ? ck + '|' + q + ',' + r : q + ',' + r;
+}
+
+// ---------------- deterministic cell traits ----------------
+function hash32(str){
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++){
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = h << 13 | h >>> 19;
+  }
+  h = Math.imul(h ^ h >>> 16, 2246822507);
+  h = Math.imul(h ^ h >>> 13, 3266489909);
+  return (h ^= h >>> 16) >>> 0;
+}
+
+function traits(key, q, r){
+  let t = trCache.get(key);
+  if (t) return t;
+  const item = CONTENT.get(key);
+  if (item && !item.section){
+    const note = !!item.note;
+    t = { deep: false, kind: note ? 4 : 3, item,
+          base: note ? '#231a0e' : '#1d150c',
+          micro: note ? '#32260f' : '#2b2013', ph: 0 };
+    trCache.set(key, t);
+    return t;
+  }
+  const h = hash32(key);
+  const a = ((h >>> 10) & 1023) / 1023, b = ((h >>> 20) & 1023) / 1023;
+  const deep = !!item || eraKey(key) || isDeep(key, q, r);
+  const kind = deep ? 0 : (a < 0.68 ? 1 : 2);   // 0 deep, 1 honey, 2 empty
+  const jewel = kind === 1 && b > 0.975;
+  // hue/lum quantized so cells share baked sprites
+  const hue = 2 * Math.round((jewel ? 168 + a * 14 : 30 + (b - 0.5) * 16) / 2);
+  const lum = jewel ? 40 : 2 * Math.round((42 + (a - 0.5) * 12) / 2);
+  t = {
+    deep, kind, jewel,
+    base: kind === 0 ? '#150e07'
+        : kind === 1 ? `hsl(${hue}, ${jewel ? 52 : 64}%, ${lum}%)`
+        : `hsl(${hue}, 26%, 11%)`,
+    micro: kind === 0 ? '#1a1108'
+         : kind === 1 ? `hsl(${hue}, 55%, ${lum - 7}%)`
+         : '#1a1209',
+    ph: ((h >>> 3) & 255) / 255 * Math.PI * 2,
+    label: item || null,        // section chip drawn over the nested comb
+  };
+  if (trCache.size > 40000) trCache.clear();
+  trCache.set(key, t);
+  return t;
+}
+
+// ---------------- shared unit-space paints ----------------
+const GLOSS = ctx.createRadialGradient(-0.33, -0.38, 0.02, 0, 0, 1.25);
+GLOSS.addColorStop(0.00, 'rgba(255,241,205,0.85)');
+GLOSS.addColorStop(0.18, 'rgba(255,221,140,0.32)');
+GLOSS.addColorStop(0.46, 'rgba(255,180,70,0.04)');
+GLOSS.addColorStop(0.80, 'rgba(80,30,0,0.28)');
+GLOSS.addColorStop(1.00, 'rgba(35,10,0,0.5)');
+
+const INSET = ctx.createRadialGradient(0, 0, 0.45, 0, 0, 1.05);
+INSET.addColorStop(0, 'rgba(0,0,0,0)');
+INSET.addColorStop(1, 'rgba(0,0,0,0.6)');
+
+const DEEPGLOW = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+DEEPGLOW.addColorStop(0.0, 'rgba(255,166,58,0.13)');
+DEEPGLOW.addColorStop(0.6, 'rgba(255,166,58,0.03)');
+DEEPGLOW.addColorStop(1.0, 'rgba(255,166,58,0)');
+
+const WAX = 'hsl(40, 40%, 33%)';
+const WAX_HI = 'hsl(45, 55%, 62%)';
+const BG = '#0b0806';
+
+// ---------------- baked sprites for small cells ----------------
+// Below this screen radius, cells are stamped from a prerendered
+// bitmap instead of vector-painted; ~10x faster when zoomed out.
+const SPRITE_MAX = 64;
+const SPRITE_PAD = 1.12;
+const spriteCache = new Map();
+function cellSprite(tr){
+  const R = 72 * Math.min(dpr, 2);
+  let c = spriteCache.get(tr.base);
+  if (c && c._r === R) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = Math.ceil(R * SPRITE_PAD * 2);
+  const g = c.getContext('2d');
+  g.setTransform(R * 0.94, 0, 0, R * 0.94, c.width / 2, c.height / 2);
+  g.fillStyle = tr.base;
+  g.fill(HEX);
+  if (tr.kind === 1){
+    const gl = g.createRadialGradient(-0.33, -0.38, 0.02, 0, 0, 1.25);
+    gl.addColorStop(0.00, 'rgba(255,241,205,0.85)');
+    gl.addColorStop(0.18, 'rgba(255,221,140,0.32)');
+    gl.addColorStop(0.46, 'rgba(255,180,70,0.04)');
+    gl.addColorStop(0.80, 'rgba(80,30,0,0.28)');
+    gl.addColorStop(1.00, 'rgba(35,10,0,0.5)');
+    g.globalAlpha = 0.78;
+    g.fillStyle = gl;
+    g.fill(HEX);
+  } else if (tr.kind === 2){
+    const ins = g.createRadialGradient(0, 0, 0.45, 0, 0, 1.05);
+    ins.addColorStop(0, 'rgba(0,0,0,0)');
+    ins.addColorStop(1, 'rgba(0,0,0,0.6)');
+    g.globalAlpha = 1;
+    g.fillStyle = ins;
+    g.fill(HEX);
+  } else {
+    const dg = g.createRadialGradient(0, 0, 0, 0, 0, 1);
+    dg.addColorStop(0.0, 'rgba(255,166,58,0.13)');
+    dg.addColorStop(0.6, 'rgba(255,166,58,0.03)');
+    dg.addColorStop(1.0, 'rgba(255,166,58,0)');
+    g.globalAlpha = 1;
+    g.fillStyle = dg;
+    g.fill(HEX);
+  }
+  g.globalAlpha = 0.9;
+  g.lineWidth = 0.09;
+  g.strokeStyle = WAX;
+  g.stroke(HEX);
+  if (tr.deep){
+    g.globalAlpha = 0.34;
+    g.strokeStyle = '#e0a94f';
+    g.lineWidth = 0.05;
+    g.save(); g.scale(0.58, 0.58); g.stroke(HEX); g.restore();
+    g.globalAlpha = 0.18;
+    g.save(); g.scale(0.3, 0.3); g.stroke(HEX); g.restore();
+  }
+  c._r = R;
+  spriteCache.set(tr.base, c);
+  return c;
+}
+
+// ---------------- camera ----------------
+// `path` is the chain of deep cells we are inside; the "current space"
+// is that comb's coordinate frame, where its own cells have radius 1.
+// view/goal: x,y = world point at the viewport centre, z = px per unit.
+let path = [];
+const view = { x: 0, y: 0, z: 60 };
+const goal = { x: 0, y: 0, z: 60 };
+let anim = null;                     // {t0,dur,from:{x,y,z},to:{x,y,z}}
+let queue = null;                    // follow-up flight legs
+let inert = null;                    // {vx,vy} px/s
+
+const roomZ = () => 0.55 * minVp() / ZF;   // comb-fills-the-view zoom
+
+function camObjs(){
+  const l = [view, goal];
+  if (anim){ l.push(anim.from, anim.to); }
+  if (queue){ l.push(...queue); }
+  return l;
+}
+function pushLevel(cell){
+  path.push(cell);
+  const px = cellX(cell.q, cell.r), py = cellY(cell.q, cell.r);
+  for (const o of camObjs()){
+    o.x = (o.x - px) * ZF; o.y = (o.y - py) * ZF; o.z /= ZF;
+  }
+}
+function popLevel(){
+  const cell = path.length ? path.pop() : (era++, ensureUp(era));
+  const px = cellX(cell.q, cell.r), py = cellY(cell.q, cell.r);
+  for (const o of camObjs()){
+    o.x = px + o.x / ZF; o.y = py + o.y / ZF; o.z *= ZF;
+  }
+}
+
+function renormalize(){
+  // rise while the whole comb fits comfortably on screen
+  // (popLevel invents new ancestors once the known ones run out)
+  while (ZF * view.z < 0.6 * minVp()) popLevel();
+  // dive while the deep cell under the viewport centre swallows the screen
+  for (let guard = 0; guard < 8; guard++){
+    if (view.z <= 0.95 * maxVp()) break;
+    const cell = axialRound(view.x, view.y);
+    if (!CELL_SET.has(cell.q + ',' + cell.r)) break;
+    const key = childKey(canonKey(era, path), cell.q, cell.r);
+    if (!traits(key, cell.q, cell.r).deep) break;
+    pushLevel(cell);
+  }
+}
+
+function clampZoom(){
+  if (anim) return;
+  // over a leaf (or a wall gap) there is nothing further down: cap the zoom
+  const cell = axialRound(goal.x, goal.y);
+  const exists = CELL_SET.has(cell.q + ',' + cell.r);
+  const key = childKey(canonKey(era, path), cell.q, cell.r);
+  if (!exists || !traits(key, cell.q, cell.r).deep){
+    const cap = 1.45 * maxVp();
+    if (goal.z > cap) goal.z = cap;
+    if (view.z > cap * 1.02) view.z = cap * 1.02;
+  }
+}
+
+// ---------------- flight ----------------
+function flyTo(x, y, z, durMul = 1){
+  const levels = Math.abs(Math.log(z / view.z)) / Math.log(ZF);
+  queue = null;
+  anim = {
+    t0: nowMs,
+    dur: Math.min(2600, (500 + 330 * levels)) * MOTION * durMul,
+    from: { x: view.x, y: view.y, z: view.z },
+    to: { x, y, z },
+  };
+  inert = null;
+}
+
+function stepAnim(){
+  const u = Math.min(1, (nowMs - anim.t0) / anim.dur);
+  const e = u * u * u * (u * (u * 6 - 15) + 10);          // smootherstep
+  const { from: f, to: t } = anim;
+  const lz = Math.log(f.z), lt = Math.log(t.z);
+  const z = Math.exp(lz + (lt - lz) * e);
+  let w = e;
+  if (Math.abs(lt - lz) > 1e-4) w = (1 / f.z - 1 / z) / (1 / f.z - 1 / t.z);
+  view.x = f.x + (t.x - f.x) * w;
+  view.y = f.y + (t.y - f.y) * w;
+  view.z = z;
+  goal.x = view.x; goal.y = view.y; goal.z = view.z;
+  if (u >= 1){
+    anim = null;
+    if (queue) goHome();   // the only queued continuation: keep homing
+    else queue = null;
+  }
+}
+
+// ---------------- semantic chain ----------------
+// The renorm `path` only changes on extreme zoom; where you *are* is the
+// chain of deep cells whose interiors currently dominate the viewport.
+// Everything below is expressed in current-space coordinates.
+function virtualChain(){
+  let px = view.x, py = view.y, s = view.z;
+  let bx = 0, by = 0, f = 1;
+  let combKey = canonKey(era, path);
+  const out = [];
+  for (let d = 0; d < 26; d++){
+    if (s <= ENTER_FRAC * minVp()) break;
+    const cell = axialRound(px, py);
+    if (!CELL_SET.has(cell.q + ',' + cell.r)) break;
+    const key = childKey(combKey, cell.q, cell.r);
+    const tr = traits(key, cell.q, cell.r);
+    const cx = cellX(cell.q, cell.r), cy = cellY(cell.q, cell.r);
+    out.push({ q: cell.q, r: cell.r, x: bx + cx * f, y: by + cy * f, ru: f, key });
+    if (!tr.deep) break;                       // an entered leaf ends the chain
+    bx += cx * f; by += cy * f; f /= ZF;
+    px = (px - cx) * ZF; py = (py - cy) * ZF; s /= ZF;
+    combKey = key;
+  }
+  return out;
+}
+
+function chainAll(){   // real renorm cells + virtual cells, current-space coords
+  const n = path.length, out = [];
+  for (let i = 0; i < n; i++){
+    let px = cellX(path[i].q, path[i].r), py = cellY(path[i].q, path[i].r);
+    let ru = 1;
+    for (let j = i; j < n; j++){
+      px = (px - cellX(path[j].q, path[j].r)) * ZF;
+      py = (py - cellY(path[j].q, path[j].r)) * ZF;
+      ru *= ZF;
+    }
+    out.push({ q: path[i].q, r: path[i].r, x: px, y: py, ru,
+               key: canonKey(era, path.slice(0, i + 1)) });
+  }
+  return out.concat(virtualChain());
+}
+
+// fly to the view of room `j`: for j >= 1 the cell containing it fills
+// 55% of the screen; j = 0 shows the current camera comb whole; j < 0
+// steps out into the comb above it.
+function goRoom(j){
+  const ch = chainAll();
+  if (j >= 1 && ch.length){
+    const c = ch[Math.min(j, ch.length) - 1];
+    flyTo(c.x, c.y, 0.55 * minVp() / c.ru);
+  } else if (j >= 0){
+    flyTo(0, 0, roomZ());
+  } else {
+    flyTo(0, 0, roomZ() / ZF);
+  }
+}
+
+// fly back to the origin comb, wherever you have wandered.
+// The shared lineage prefix is cancelled symbolically first: going all
+// the way up and numerically back down would amplify float error by
+// ZF^depth and land in the wrong comb.
+function goHome(){
+  let e0 = era, i = 0;
+  while (e0 > 0 && i < path.length){
+    const u = ensureUp(e0);
+    if (path[i].q === u.q && path[i].r === u.r){ i++; e0--; } else break;
+  }
+  let ox = 0, oy = 0, s = 1;
+  for (let e = e0; e >= 1; e--){        // descend the up-chain from ^e0 to origin
+    ox += cellX(ups[e].q, ups[e].r) * s;
+    oy += cellY(ups[e].q, ups[e].r) * s;
+    s /= ZF;
+  }
+  for (let j = i; j < path.length; j++){  // rebase into the camera comb (cousin branches)
+    ox = (ox - cellX(path[j].q, path[j].r)) * ZF;
+    oy = (oy - cellY(path[j].q, path[j].r)) * ZF;
+    s *= ZF;
+  }
+  // fly in hops: a double can't hold a 20-level plunge to sub-cell
+  // precision, so each leg covers a few levels and the remainder is
+  // re-derived from the renormalized state when the leg lands
+  const zt = roomZ() / s;
+  const D = Math.hypot(ox - view.x, oy - view.y);
+  if (D * Math.min(view.z, zt) > 1.6 * maxVp()){
+    flyTo(ox, oy, Math.min(view.z, 0.5 * minVp() / D));   // rise over the target
+    queue = [{ home: true }];
+  } else if (zt > view.z * Math.pow(ZF, 7)){
+    flyTo(ox, oy, view.z * Math.pow(ZF, 6));              // plunge 6 levels
+    queue = [{ home: true }];
+  } else {
+    flyTo(ox, oy, zt);                                    // final approach
+  }
+}
+
+// ---------------- picking ----------------
+// Walk down from the rendered ancestor to the cell under a screen point.
+// Stops at the first cell that is a leaf, or a deep cell still small
+// enough to be a dive target rather than an open room.
+function pickCell(sx, sy){
+  let ax = view.x, ay = view.y, az = view.z;
+  let e2 = era;
+  const pref = path.slice(), tail = [];
+  for (let i = 0; i < 2; i++){
+    const cell = pref.length ? pref.pop() : (e2++, ensureUp(e2));
+    tail.unshift(cell);
+    ax = cellX(cell.q, cell.r) + ax / ZF;
+    ay = cellY(cell.q, cell.r) + ay / ZF;
+    az *= ZF;
+  }
+  let px = (sx - vw / 2) / az + ax, py = (sy - vh / 2) / az + ay;
+  let combKey = canonKey(e2, pref);
+  let s = az;
+  let bx = 0, by = 0, f = 1;          // picked-cell centre + radius, ancestor space
+  const descendT = ENTER_FRAC * minVp();
+  for (let d = 0; d < 26; d++){
+    const cell = axialRound(px, py);
+    if (!CELL_SET.has(cell.q + ',' + cell.r)) return null;
+    const cx = cellX(cell.q, cell.r), cy = cellY(cell.q, cell.r);
+    if (!insideHex(px - cx, py - cy, 0.94)) return null;   // wall gap
+    const key = childKey(combKey, cell.q, cell.r);
+    const tr = traits(key, cell.q, cell.r);
+    const CX = bx + cx * f, CY = by + cy * f;
+    if (!tr.deep || s <= descendT){
+      if (s < INTERACT_MIN) return null;
+      // convert centre + radius from ancestor space to current space
+      let wx = CX, wy = CY, ru = f;
+      for (const c of tail){
+        wx = (wx - cellX(c.q, c.r)) * ZF;
+        wy = (wy - cellY(c.q, c.r)) * ZF;
+        ru *= ZF;
+      }
+      return { key, tr, sr: s, wx, wy, ru };
+    }
+    // the cell is already an open room: interact with its children
+    bx = CX; by = CY; f /= ZF;
+    px = (px - cx) * ZF; py = (py - cy) * ZF;
+    s /= ZF;
+    combKey = key;
+  }
+  return null;
+}
+
+// ---------------- hover / press / pulse state ----------------
+let hoverKey = null, hovered = null;
+const hoverAmts = new Map();
+const pulses = new Map();
+let pressKey = null;
+
+// ---------------- rendering ----------------
+let nowMs = 0, drawn = 0;
+const MAX_DRAW = 9000;
+
+function render(){
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, vw, vh);
+  drawn = 0;
+
+  let ax = view.x, ay = view.y, az = view.z;
+  let e2 = era;
+  const pref = path.slice();
+  for (let i = 0; i < 2; i++){
+    const cell = pref.length ? pref.pop() : (e2++, ensureUp(e2));
+    ax = cellX(cell.q, cell.r) + ax / ZF;
+    ay = cellY(cell.q, cell.r) + ay / ZF;
+    az *= ZF;
+  }
+  drawComb(vw / 2 - ax * az, vh / 2 - ay * az, az, canonKey(e2, pref), 1);
+
+  // warm light that follows the pointer
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (mouseOn && !COARSE){
+    const g = ctx.createRadialGradient(mx, my, 0, mx, my, minVp() * 0.55);
+    g.addColorStop(0, 'rgba(255,196,96,0.075)');
+    g.addColorStop(1, 'rgba(255,196,96,0)');
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, vw, vh);
+    ctx.globalCompositeOperation = 'source-over';
+  }
+}
+
+function drawComb(ox, oy, s, combKey, alpha){
+  if (drawn > MAX_DRAW || s < 2.2) return;
+  const m = s * 1.35;
+  for (const c of CELLS){
+    const px = ox + s * cellX(c.q, c.r), py = oy + s * cellY(c.q, c.r);
+    if (px < -m || px > vw + m || py < -m || py > vh + m) continue;
+    drawn++;
+    const key = childKey(combKey, c.q, c.r);
+    const tr = traits(key, c.q, c.r);
+    drawCell(px, py, s, key, tr, alpha);
+    if (tr.deep && s > REVEAL_LO){
+      const cs = s / ZF;
+      if (cs > 2.2){
+        const t = Math.min(1, Math.max(0, (s - REVEAL_LO) / (REVEAL_HI - REVEAL_LO)));
+        const rev = t * t * (3 - 2 * t);
+        if (alpha * rev > 0.02) drawComb(px, py, cs, key, alpha * rev);
+      }
+    }
+    if (tr.label) drawSectionLabel(px, py, s, tr.label, alpha);
+  }
+}
+
+function drawCell(px, py, s, key, tr, alpha){
+  if (s < 4){
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = tr.micro;
+    const w = s * 1.55;
+    ctx.fillRect(px - w / 2, py - w / 2, w, w);
+    return;
+  }
+  const hov = hoverAmts.get(key) || 0;
+  const pu0 = pulses.get(key);
+  if (s < SPRITE_MAX && hov < 0.01 && pu0 === undefined && key !== pressKey &&
+      tr.kind < 3){
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.globalAlpha = alpha;
+    const w = s * SPRITE_PAD;
+    ctx.drawImage(cellSprite(tr), px - w, py - w, w * 2, w * 2);
+    return;
+  }
+  let sc = s * 0.94 * (1 + 0.045 * hov) * (key === pressKey ? 0.965 : 1);
+  const pu = pu0;
+  if (pu !== undefined){
+    const t = (nowMs - pu) / 450;
+    if (t >= 1) pulses.delete(key);
+    else sc *= 1 + 0.05 * Math.sin(t * Math.PI) * (1 - 0.5 * t);
+  }
+  ctx.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * px, dpr * py);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = tr.base;
+  ctx.fill(HEX);
+
+  if (tr.kind >= 3){             // content plaque or prose note
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = INSET;
+    ctx.fill(HEX);
+    const accent = tr.item.accent || '#e8b558';
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.lineWidth = 0.09;
+    ctx.strokeStyle = WAX;
+    ctx.stroke(HEX);
+    ctx.globalAlpha = alpha * (tr.kind === 4 ? 0.18 : 0.35 + 0.45 * hov);
+    ctx.lineWidth = 0.05;
+    ctx.strokeStyle = accent;
+    ctx.save(); ctx.scale(0.9, 0.9); ctx.stroke(HEX); ctx.restore();
+    if (tr.kind === 4) drawNote(px, py, s, tr.item, alpha, hov);
+    else drawPlaque(px, py, s, tr.item, alpha, hov);
+    if (hov > 0.01){
+      ctx.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * px, dpr * py);
+      ctx.globalAlpha = alpha * hov * 0.06;
+      ctx.fillStyle = '#fff';
+      ctx.fill(HEX);
+    }
+    return;
+  }
+  if (s > 7){
+    if (tr.kind === 1){          // honey: glossy overlay with a slow shimmer
+      const tw = MOTION < 1 ? 0 : 0.12 * Math.sin(nowMs * 0.0011 + tr.ph);
+      ctx.globalAlpha = alpha * (0.78 + tw);
+      ctx.fillStyle = GLOSS;
+      ctx.fill(HEX);
+    } else if (tr.kind === 2){   // empty: recessed
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = INSET;
+      ctx.fill(HEX);
+    } else {                     // deep: faint warmth from below
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = DEEPGLOW;
+      ctx.fill(HEX);
+    }
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.lineWidth = 0.09;
+    ctx.strokeStyle = WAX;
+    ctx.stroke(HEX);
+    if (s > 15){
+      ctx.save();
+      ctx.scale(0.9, 0.9);
+      ctx.globalAlpha = alpha * 0.16;
+      ctx.lineWidth = 0.045;
+      ctx.strokeStyle = WAX_HI;
+      ctx.stroke(HEX);
+      ctx.restore();
+    }
+  }
+
+  if (tr.deep && s > 8){
+    const t = Math.min(1, Math.max(0, (s - REVEAL_LO) / (REVEAL_HI - REVEAL_LO)));
+    if (t < 1){                  // depth hint: nested rings before the comb resolves
+      ctx.globalAlpha = alpha * (1 - t) * 0.34;
+      ctx.strokeStyle = '#e0a94f';
+      ctx.lineWidth = 0.05;
+      ctx.save(); ctx.scale(0.58, 0.58); ctx.stroke(HEX); ctx.restore();
+      ctx.globalAlpha = alpha * (1 - t) * 0.18;
+      ctx.save(); ctx.scale(0.3, 0.3); ctx.stroke(HEX); ctx.restore();
+    }
+  }
+
+  if (hov > 0.01){
+    ctx.globalAlpha = alpha * hov * 0.9;
+    ctx.shadowColor = 'rgba(255,190,80,0.9)';
+    ctx.shadowBlur = 24 * dpr * hov;
+    ctx.lineWidth = 0.1;
+    ctx.strokeStyle = '#ffd98a';
+    ctx.stroke(HEX);
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = alpha * hov * 0.06;
+    ctx.fillStyle = '#fff';
+    ctx.fill(HEX);
+  }
+}
+
+// ---------------- content text ----------------
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+const EMOJI = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+function wrapText(text, maxW, maxLines){
+  const words = text.split(' '), lines = [];
+  let line = '';
+  for (const w of words){
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width <= maxW || !line){ line = t; continue; }
+    lines.push(line); line = w;
+    if (lines.length === maxLines){ break; }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  else if (line) lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, '') + ' …';
+  return lines;
+}
+
+// glyph -> + title -> + blurb & open pill, as the cell grows
+function drawPlaque(px, py, s, item, alpha, hov){
+  const t1 = clamp01((s - 16) / 12);            // glyph
+  const t2 = clamp01((s - 58) / 34);            // title
+  let t3 = clamp01((s - 0.3 * minVp()) / (0.15 * minVp()));   // blurb + pill
+  // details belong to the focused plaque only: a big plaque far from
+  // the viewport centre is a neighbour of the room you are in
+  if (t3 > 0){
+    const cd = Math.hypot(px - vw / 2, py - vh / 2);
+    t3 *= 1 - clamp01((cd - 0.3 * minVp()) / (0.45 * minVp()));
+  }
+  if (t1 <= 0) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const gy = py - s * (0.24 * t2 + 0.16 * t3);
+  const gs = s * (0.46 - 0.16 * t2 - 0.08 * t3);
+  ctx.globalAlpha = alpha * t1;
+  ctx.font = gs.toFixed(1) + 'px ' + EMOJI;
+  ctx.fillText(item.glyph, px, gy);
+
+  if (t2 > 0){
+    const ts = Math.min(26, Math.max(9, s * 0.115));
+    ctx.globalAlpha = alpha * t2;
+    ctx.fillStyle = '#ffe6ac';
+    ctx.font = '600 ' + ts.toFixed(1) + 'px ' + MONO;
+    const lines = wrapText(item.title, s * 1.3, 2);
+    const ty = py + s * (0.14 - 0.32 * t3);
+    lines.forEach((l, i) => ctx.fillText(l, px, ty + i * ts * 1.25));
+  }
+  if (t3 > 0 && item.blurb){
+    const bs = Math.min(17, Math.max(11, s * 0.052));
+    ctx.globalAlpha = alpha * t3 * 0.9;
+    ctx.fillStyle = '#c9a86e';
+    ctx.font = bs.toFixed(1) + 'px ' + MONO;
+    const lines = wrapText(item.blurb, s * 1.25, 5);
+    lines.forEach((l, i) => ctx.fillText(l, px, py - s * 0.02 + i * bs * 1.45));
+  }
+  if (t3 > 0 && item.href){
+    const ps = Math.min(16, Math.max(11, s * 0.055));
+    ctx.font = '600 ' + ps.toFixed(1) + 'px ' + MONO;
+    const label = (item.act || 'open') + ' ↗';
+    const w = ctx.measureText(label).width + ps * 1.8, h = ps * 2.1;
+    const yy = py + s * 0.52;
+    const accent = item.accent || '#e8b558';
+    ctx.globalAlpha = alpha * t3 * (0.16 + 0.2 * hov);
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.fill();
+    ctx.globalAlpha = alpha * t3;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.stroke();
+    ctx.fillStyle = '#ffe6ac';
+    ctx.fillText(label, px, yy + 0.5);
+  }
+}
+
+// a prose note: the text IS the cell. Readable at comb scale, roomier
+// when focused, with an optional link pill.
+function drawNote(px, py, s, item, alpha, hov){
+  const t1 = clamp01((s - 34) / 26);
+  if (t1 <= 0) return;
+  let t3 = clamp01((s - 0.3 * minVp()) / (0.15 * minVp()));
+  if (t3 > 0){
+    const cd = Math.hypot(px - vw / 2, py - vh / 2);
+    t3 *= 1 - clamp01((cd - 0.3 * minVp()) / (0.45 * minVp()));
+  }
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  if (item.glyph){
+    ctx.globalAlpha = alpha * t1;
+    ctx.font = (s * 0.22).toFixed(1) + 'px ' + EMOJI;
+    ctx.fillText(item.glyph, px, py - s * 0.52);
+  }
+  const fs = Math.min(19, Math.max(8.5, s * (0.082 - 0.022 * t3)));
+  ctx.globalAlpha = alpha * t1;
+  ctx.fillStyle = '#e6d0a2';
+  ctx.font = fs.toFixed(1) + 'px ' + MONO;
+  const maxLines = t3 > 0.5 ? 10 : 7;
+  const lines = wrapText(item.note, s * (1.28 + 0.2 * t3), maxLines);
+  const lh = fs * 1.45;
+  const y0 = py - ((lines.length - 1) / 2) * lh - s * 0.06;
+  lines.forEach((l, i) => ctx.fillText(l, px, y0 + i * lh));
+  if (t3 > 0 && item.href){
+    const ps = Math.min(15, Math.max(11, s * 0.05));
+    ctx.font = '600 ' + ps.toFixed(1) + 'px ' + MONO;
+    const label = (item.act || 'open') + ' ↗';
+    const w = ctx.measureText(label).width + ps * 1.8, h = ps * 2.1;
+    const yy = py + s * 0.56;
+    ctx.globalAlpha = alpha * t3 * (0.16 + 0.2 * hov);
+    ctx.fillStyle = '#e8b558';
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.fill();
+    ctx.globalAlpha = alpha * t3;
+    ctx.strokeStyle = '#e8b558';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.stroke();
+    ctx.fillStyle = '#ffe6ac';
+    ctx.fillText(label, px, yy + 0.5);
+  }
+}
+
+// section name floating over its nested comb; fades away once entered
+function drawSectionLabel(px, py, s, item, alpha){
+  const t = clamp01((s - 30) / 18) * (1 - clamp01((s - 0.3 * minVp()) / (0.12 * minVp())));
+  if (t <= 0) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const fs = Math.min(24, Math.max(10, s * 0.105));
+  ctx.font = '600 ' + fs.toFixed(1) + 'px ' + MONO;
+  const label = item.glyph + ' ' + item.title;
+  const w = ctx.measureText(label).width + fs * 1.6, h = fs * 1.9;
+  ctx.globalAlpha = alpha * t * 0.72;
+  ctx.fillStyle = '#0d0906';
+  ctx.beginPath(); ctx.roundRect(px - w / 2, py - h / 2, w, h, h / 2); ctx.fill();
+  ctx.globalAlpha = alpha * t;
+  ctx.fillStyle = '#ffd98a';
+  ctx.fillText(label, px, py + 0.5);
+}
+
+// ---------------- breadcrumbs ----------------
+let semKey = null;
+function crumbLabel(c){
+  if (c.key === '') return 'origin';
+  if (c.key !== undefined && eraKey(c.key)) return '↑' + c.key.slice(1);
+  const it = c.key !== undefined && CONTENT.get(c.key);
+  if (it){
+    const t = it.title || (it.note ? it.note.split(' ').slice(0, 3).join(' ') + '…' : '');
+    if (t) return t.length > 20 ? t.slice(0, 19) + '…' : t;
+  }
+  return c.q + ',' + c.r;
+}
+function refreshCrumbs(ch){
+  crumbsEl.replaceChildren();
+  const home = document.createElement('button');
+  home.textContent = '⬡';
+  home.title = 'origin';
+  home.addEventListener('click', goHome);
+  crumbsEl.appendChild(home);
+  const first = Math.max(0, ch.length - 4);
+  if (first > 0){
+    const dots = document.createElement('span');
+    dots.className = 'sep';
+    dots.textContent = ' … ';
+    crumbsEl.appendChild(dots);
+  }
+  ch.slice(first).forEach((c, i) => {
+    const sep = document.createElement('span');
+    sep.className = 'sep';
+    sep.textContent = '›';
+    crumbsEl.appendChild(sep);
+    const b = document.createElement('button');
+    b.textContent = crumbLabel(c);
+    const j = first + i;
+    if (j === ch.length - 1) b.classList.add('here');
+    b.addEventListener('click', () => goRoom(j + 1));
+    crumbsEl.appendChild(b);
+  });
+  const d = ch.length - era;   // depth relative to the origin comb
+  depthEl.textContent = d === 0 ? 'origin' : 'depth ' + d;
+}
+
+// ---------------- input ----------------
+let mx = vw / 2, my = vh / 2, mouseOn = false;
+const pointers = new Map();
+let dragging = false, downAt = null, vx = 0, vy = 0, lastMoveT = 0;
+let pinchPrev = null;
+
+canvas.addEventListener('pointerdown', e => {
+  canvas.setPointerCapture(e.pointerId);
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  anim = null; queue = null; inert = null;
+  if (pointers.size === 1){
+    downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
+    dragging = false; vx = 0; vy = 0; lastMoveT = performance.now();
+    const p = pickCell(e.clientX, e.clientY);
+    pressKey = p ? p.key : null;
+  } else {
+    downAt = null; pressKey = null; dragging = false;
+    pinchPrev = null;
+  }
+});
+
+canvas.addEventListener('pointermove', e => {
+  mx = e.clientX; my = e.clientY; mouseOn = true;
+  const pt = pointers.get(e.pointerId);
+  if (!pt) return;
+  const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
+  pt.x = e.clientX; pt.y = e.clientY;
+
+  if (pointers.size === 1){
+    if (downAt && !dragging &&
+        Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 5){
+      dragging = true; pressKey = null; hoverKey = null;
+    }
+    if (dragging){
+      view.x -= dx / view.z; view.y -= dy / view.z;
+      goal.x = view.x; goal.y = view.y;
+      const t = performance.now(), dt = Math.max(1, t - lastMoveT);
+      vx = 0.75 * vx + 0.25 * (dx / dt * 1000);
+      vy = 0.75 * vy + 0.25 * (dy / dt * 1000);
+      lastMoveT = t;
+    }
+  } else if (pointers.size === 2){
+    const ps = [...pointers.values()];
+    const cur = {
+      x: (ps[0].x + ps[1].x) / 2, y: (ps[0].y + ps[1].y) / 2,
+      d: Math.hypot(ps[0].x - ps[1].x, ps[0].y - ps[1].y),
+    };
+    if (pinchPrev){
+      const f = pinchPrev.d > 0 ? cur.d / pinchPrev.d : 1;
+      const wxp = (cur.x - vw / 2) / view.z + view.x;
+      const wyp = (cur.y - vh / 2) / view.z + view.y;
+      view.z *= f;
+      view.x = wxp - (cur.x - vw / 2) / view.z;
+      view.y = wyp - (cur.y - vh / 2) / view.z;
+      view.x -= (cur.x - pinchPrev.x) / view.z;
+      view.y -= (cur.y - pinchPrev.y) / view.z;
+      goal.x = view.x; goal.y = view.y; goal.z = view.z;
+    }
+    pinchPrev = cur;
+  }
+});
+
+canvas.addEventListener('pointerup', e => {
+  pointers.delete(e.pointerId);
+  pinchPrev = null;
+  if (dragging){
+    if (Math.hypot(vx, vy) > 60) inert = { vx, vy };
+    dragging = false;
+  } else if (downAt && performance.now() - downAt.t < 500){
+    handleTap(e.clientX, e.clientY);
+  }
+  downAt = null; pressKey = null;
+});
+canvas.addEventListener('pointercancel', e => {
+  pointers.delete(e.pointerId);
+  pinchPrev = null; dragging = false; downAt = null; pressKey = null;
+});
+canvas.addEventListener('pointerleave', () => { mouseOn = false; });
+
+// ---------------- the in-comb reader ----------------
+// Long-form pages unfold inside the hive instead of navigating away.
+const readerEl = document.getElementById('reader');
+const readerCache = new Map();
+let readerOpen = false;
+
+function openReader(it){
+  const url = new URL(it.href, location.origin);
+  document.getElementById('reader-glyph').textContent = it.glyph || '✍';
+  document.getElementById('reader-title').textContent = it.title;
+  document.getElementById('reader-date').textContent = '';
+  document.getElementById('reader-raw').href = url.pathname;
+  const body = document.getElementById('reader-body');
+  body.innerHTML = '<p style="color:#8f7444">fetching…</p>';
+  readerEl.hidden = false;
+  readerOpen = true;
+  hoverKey = null; hovered = null;
+  const fill = doc => {
+    const main = doc.querySelector('main') || doc.body;
+    const tb = main.querySelector('#title-block-header');
+    if (tb){
+      const d = tb.querySelector('.date');
+      if (d) document.getElementById('reader-date').textContent = d.textContent;
+      tb.remove();
+    }
+    for (const a of main.querySelectorAll('a[href^="http"]')){
+      if (!a.href.includes(location.host)) { a.target = '_blank'; a.rel = 'noopener'; }
+    }
+    body.replaceChildren(...main.children);
+    body.scrollTop = 0;
+  };
+  if (readerCache.has(url.pathname)){ fill(readerCache.get(url.pathname).cloneNode(true)); return; }
+  fetch(url.pathname)
+    .then(r => { if (!r.ok) throw 0; return r.text(); })
+    .then(t => {
+      const doc = new DOMParser().parseFromString(t, 'text/html');
+      readerCache.set(url.pathname, doc.cloneNode(true));
+      fill(doc);
+    })
+    .catch(() => { closeReader(); location.href = url.pathname; });
+}
+function closeReader(){
+  readerEl.hidden = true;
+  readerOpen = false;
+}
+document.getElementById('reader-close').addEventListener('click', closeReader);
+readerEl.addEventListener('click', e => { if (e.target === readerEl) closeReader(); });
+
+function openItem(it){
+  const url = new URL(it.href, location.origin);
+  const same = url.origin === location.origin || url.hostname.endsWith('wclarke.net');
+  if (it.inline && same){ openReader(it); return; }
+  if (!same) window.open(it.href, '_blank', 'noopener');
+  else location.href = url.pathname;
+}
+
+function handleTap(sx, sy){
+  const p = pickCell(sx, sy);
+  if (!p) return;
+  if (p.tr.kind >= 3){
+    // first tap zooms the plaque up; a tap on the zoomed plaque opens it
+    if (p.sr > 0.5 * minVp()){
+      if (p.tr.item.href) openItem(p.tr.item);
+      else pulses.set(p.key, nowMs);
+    } else flyTo(p.wx, p.wy, 0.62 * minVp() / p.ru);
+  } else if (p.tr.deep){
+    flyTo(p.wx, p.wy, DIVE_FRAC * minVp() / p.ru);
+  } else {
+    pulses.set(p.key, nowMs);
+  }
+}
+
+canvas.addEventListener('wheel', e => {
+  e.preventDefault();
+  anim = null; queue = null; inert = null;
+  const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.0085 : 0.0016));
+  const wxp = (e.clientX - vw / 2) / goal.z + goal.x;
+  const wyp = (e.clientY - vh / 2) / goal.z + goal.y;
+  goal.z *= f;
+  goal.x = wxp - (e.clientX - vw / 2) / goal.z;
+  goal.y = wyp - (e.clientY - vh / 2) / goal.z;
+}, { passive: false });
+
+function riseOne(){
+  goRoom(chainAll().length - 1);
+}
+canvas.addEventListener('contextmenu', e => {
+  e.preventDefault();
+  riseOne();
+});
+
+addEventListener('keydown', e => {
+  if (e.key === 'Escape' || e.key === 'Backspace'){
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    e.preventDefault();
+    if (readerOpen) closeReader();
+    else riseOne();
+  }
+});
+
+// ---------------- main loop ----------------
+let lastT = performance.now();
+function frame(t){
+  nowMs = t;
+  const dt = Math.min(0.05, (t - lastT) / 1000);
+  lastT = t;
+
+  if (anim){
+    stepAnim();
+  } else {
+    if (inert){
+      goal.x -= inert.vx * dt / view.z;
+      goal.y -= inert.vy * dt / view.z;
+      const k = Math.exp(-dt * 3.2);
+      inert.vx *= k; inert.vy *= k;
+      if (Math.hypot(inert.vx, inert.vy) < 25) inert = null;
+    }
+    const a = 1 - Math.exp(-dt * 14);
+    view.z = Math.exp(Math.log(view.z) + (Math.log(goal.z) - Math.log(view.z)) * a);
+    view.x += (goal.x - view.x) * a;
+    view.y += (goal.y - view.y) * a;
+  }
+
+  renormalize();
+  clampZoom();
+
+  const ch = chainAll();
+  const key = era + ':' + ch.map(c => c.q + ',' + c.r).join('|');
+  if (key !== semKey){
+    semKey = key;
+    refreshCrumbs(ch);
+    // shareable address for any room on the origin branch
+    const deep = ch.length ? ch[ch.length - 1].key : '';
+    const hash = deep && deep[0] !== '^' ? '#' + deep.replaceAll('|', '/') : '';
+    history.replaceState(null, '', location.pathname + location.search + hash);
+  }
+  if (ch.length || era) document.body.classList.add('dived');
+
+  // hover
+  if (!dragging && !COARSE && mouseOn && pointers.size === 0){
+    hovered = pickCell(mx, my);
+    hoverKey = hovered ? hovered.key : null;
+  } else if (dragging || pointers.size){
+    hovered = null; hoverKey = null;
+  }
+  canvas.style.cursor = dragging ? 'grabbing'
+                      : hovered && (hovered.tr.deep || hovered.tr.kind >= 3)
+                        ? 'pointer' : 'default';
+  if (hoverKey && !hoverAmts.has(hoverKey)) hoverAmts.set(hoverKey, 0);
+  for (const [k, v] of hoverAmts){
+    const target = k === hoverKey ? 1 : 0;
+    const nv = v + (target - v) * (1 - Math.exp(-dt * 13));
+    if (target === 0 && nv < 0.006) hoverAmts.delete(k);
+    else hoverAmts.set(k, nv);
+  }
+
+  render();
+  requestAnimationFrame(frame);
+}
+
+// ---------------- go ----------------
+// stop iOS Safari pinch-zooming the page instead of the comb
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend'])
+  document.addEventListener(ev, e => e.preventDefault());
+
+refreshCrumbs([]);
+
+// deep link: #q,r/q,r/... drops you straight into that room (resolved
+// once the async sections have landed, so plaque links work too)
+contentReady.then(() => {
+  let introTarget = { x: 0, y: 0, z: roomZ() };
+  const hashCells = decodeURIComponent(location.hash.slice(1))
+    .split('/').filter(Boolean)
+    .map(s => { const [q, r] = s.split(',').map(Number); return { q, r }; });
+  if (hashCells.length && hashCells.every(c => CELL_SET.has(c.q + ',' + c.r))){
+    const last = hashCells[hashCells.length - 1];
+    const lastKey = hashCells.map(c => c.q + ',' + c.r).join('|');
+    const it = CONTENT.get(lastKey);
+    if (it && !it.section){          // land on the plaque itself
+      path = hashCells.slice(0, -1);
+      introTarget = { x: cellX(last.q, last.r), y: cellY(last.q, last.r), z: 0.62 * minVp() };
+    } else {                         // land inside the room
+      path = hashCells;
+      introTarget = { x: 0, y: 0, z: roomZ() };
+    }
+  }
+  view.x = introTarget.x; view.y = introTarget.y;
+  view.z = introTarget.z * 0.42;
+  goal.x = view.x; goal.y = view.y; goal.z = view.z;
+  requestAnimationFrame(t => {
+    nowMs = t; lastT = t;
+    flyTo(introTarget.x, introTarget.y, introTarget.z, 1.9);
+    document.body.classList.add('ready');
+    requestAnimationFrame(frame);
+  });
+});
+</script>
 </body>
 </html>
