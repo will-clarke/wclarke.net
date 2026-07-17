@@ -10,13 +10,15 @@ I've no idea what I write here. Or why. ¯\_(ツ)_/¯
 ## Layout
 
 ```
-index.html        landing (intro + featured); hosts the "✦ FRACTALS" button
+index.html        THE HONEYCOMB: the whole homepage is one self-contained
+                  canvas app - an infinitely recursive hex grid with the
+                  site's content embedded in it (see section below)
 projects.html     the cabinet (games, live toys, meta, website history)
 about.html
 404.html
 css/style.css     one shared, restyleable stylesheet
-js/trippy.js      cursor-driven recursive-fractal canvas (homepage only)
-writing.html      hub linking both posts and stories (in the top nav)
+writing.html      hub linking both posts and stories
+writing-hex.html  the old hex-grid writing index (kept; linked from the lab)
 posts/            the blog
 posts.html        blog index (still live; not in nav - reached via writing.html)
 stories/          short fiction (indexed from writing.html)
@@ -29,6 +31,49 @@ museum/           every dead version of this site since 2014, raw HTML
 stats.html        commit stats
 index.xml sitemap.txt robots.txt
 ```
+
+## The honeycomb homepage (index.html)
+
+The homepage is a single self-contained file: an infinite recursive
+honeycomb (zoom in forever, zoom out forever) with the site's content
+living at fixed cell addresses. No dependencies, no build.
+
+**How content works.** Everything is in the `CONTENT` registry near the
+top of the `<script>`. Keys are cell paths from the origin comb:
+`'1,0'` is a cell of the home comb, `'1,0|0,1'` is a cell inside that
+cell's comb, and so on. Three item shapes:
+
+```js
+// a labelled room whose interior comb holds more items
+'0,-1|2,0': { section: true, glyph: '🎬', title: 'films' },
+// a plaque: glyph -> title -> blurb + pill as you zoom; click-click opens href
+'0,-1|2,0|0,1': { glyph: '🎞', title: 'classiccult', act: 'visit',
+                  href: 'https://…', blurb: 'one line about it.' },
+// a prose note: the text IS the cell (href/act optional)
+'0,-1|2,0|1,0': { note: 'a short fact rendered right in the grid.', glyph: '🍿' },
+```
+
+Add entries to `SEED_CONTENT` (three lines = a new room). Any same-site
+`href` with `inline: true` opens in the in-comb reader overlay instead
+of navigating (it fetches the page and renders its `<main>`). Cells
+without content stay procedural honey - leave gaps on purpose.
+
+**Data sources.** At load it fetches `/games/games.json` (games room)
+and `/index.xml` (writing room; every RSS item becomes a plaque).
+`fillSection(baseKey, items, …)` lays a list out in a comb and spills
+overflow into a recursive "more" room at the comb's centre - that is
+how 64 posts paginate through the fractal.
+
+**Navigation contract.** Every room is a hash URL (`/#0,0/0,0` is the
+homelab). Dives push history entries, so the browser back button is
+undo-dive; the in-comb reader pushes one entry, so back folds it away
+first. Esc rises a level (or closes the reader). The ⬡ crumb flies
+home from any depth.
+
+**Useful cells to know.** `'0,0'` = the about room (with `'0,0|0,0'` =
+the shed/homelab inside it); `'1,0'` games; `'-1,1'` writing; `'0,-1'`
+lab. Tunables (`ZF`, `DIVE_FRAC`, easing rates) sit at the top of the
+script. Test with `make serve` - content fetches need http, not file://.
 
 ## Run it locally
 

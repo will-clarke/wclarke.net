@@ -607,8 +607,12 @@ function stepAnim(){
   goal.x = view.x; goal.y = view.y; goal.z = view.z;
   if (u >= 1){
     anim = null;
-    if (queue) goHome();   // the only queued continuation: keep homing
-    else queue = null;
+    if (queue && queue.length){
+      const leg = queue.shift(), tail = queue;
+      if (leg.home) goHome(); else navigateToChain(leg.cells);
+      queue = (queue && queue.length ? queue : []).concat(tail);
+      if (!queue.length) queue = null;
+    } else queue = null;
   }
 }
 
@@ -702,6 +706,54 @@ function goHome(){
     queue = [{ home: true }];
   } else {
     flyTo(ox, oy, zt);                                    // final approach
+  }
+}
+
+// fly to an origin-relative chain of cells (back/forward navigation)
+function navigateToChain(cells){
+  if (!cells.length){ goHome(); return; }
+  const key = cells.map(c => c.q + ',' + c.r).join('|');
+  // the target contains the current view: plain rise
+  const ch = chainAll();
+  for (let i = ch.length - 1; i >= 0; i--){
+    if (ch[i].key === key){ goRoom(i + 1); return; }
+  }
+  // the current camera comb lies on the target's lineage: descend
+  let e0 = era, i = 0;
+  while (e0 > 0 && i < path.length){
+    const u = ensureUp(e0);
+    if (path[i].q === u.q && path[i].r === u.r){ i++; e0--; } else break;
+  }
+  const pc = path.slice(i);
+  let rest = null;
+  if (e0 === 0 && pc.length <= cells.length &&
+      pc.every((c, j) => c.q === cells[j].q && c.r === cells[j].r)){
+    rest = cells.slice(pc.length);
+  } else if (pc.length === 0){
+    // camera sits above the origin: descend the up-chain first
+    const down = [];
+    for (let e = e0; e >= 1; e--) down.push(ensureUp(e));
+    rest = down.concat(cells);
+  }
+  if (rest){
+    const hop = rest.slice(0, 6);
+    let ox = 0, oy = 0, s = 1;
+    for (const c of hop){
+      ox += cellX(c.q, c.r) * s;
+      oy += cellY(c.q, c.r) * s;
+      s /= ZF;
+    }
+    if (rest.length > 6){
+      flyTo(ox, oy, 0.55 * minVp() / (s * ZF));   // partway; renorm resets precision
+      queue = [{ cells }];
+    } else {
+      const it = CONTENT.get(key);
+      const leaf = it && !it.section;
+      flyTo(ox, oy, (leaf ? 0.62 : 0.55) * minVp() / (s * ZF));
+    }
+  } else {
+    goHome();                                      // wherever we are: home, then down
+    queue = (queue || []).concat([{ cells }]);
   }
 }
 
@@ -1069,6 +1121,7 @@ function drawSectionLabel(px, py, s, item, alpha){
 
 // ---------------- breadcrumbs ----------------
 let semKey = null;
+let histLock = false;   // true while a popstate-driven flight is in progress
 function crumbLabel(c){
   if (c.key === '') return 'origin';
   if (c.key !== undefined && eraKey(c.key)) return '↑' + c.key.slice(1);
@@ -1118,7 +1171,7 @@ let pinchPrev = null;
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-  anim = null; queue = null; inert = null;
+  anim = null; queue = null; inert = null; histLock = false;
   if (pointers.size === 1){
     downAt = { x: e.clientX, y: e.clientY, t: performance.now() };
     dragging = false; vx = 0; vy = 0; lastMoveT = performance.now();
@@ -1204,6 +1257,7 @@ function openReader(it){
   body.innerHTML = '<p style="color:#8f7444">fetching…</p>';
   readerEl.hidden = false;
   readerOpen = true;
+  history.pushState({ reader: 1 }, '');   // back button folds the reader away
   hoverKey = null; hovered = null;
   const fill = doc => {
     const main = doc.querySelector('main') || doc.body;
@@ -1227,17 +1281,38 @@ function openReader(it){
       readerCache.set(url.pathname, doc.cloneNode(true));
       fill(doc);
     })
-    .catch(() => { closeReader(); location.href = url.pathname; });
+    .catch(() => { closeReaderNow(); location.href = url.pathname; });
 }
-function closeReader(){
+function closeReaderNow(){
   readerEl.hidden = true;
   readerOpen = false;
+}
+// closing goes through history so the reader entry is consumed
+function closeReader(){
+  if (history.state && history.state.reader) history.back();
+  else closeReaderNow();
 }
 document.getElementById('reader-close').addEventListener('click', closeReader);
 readerEl.addEventListener('click', e => { if (e.target === readerEl) closeReader(); });
 
+// browser back: first fold the reader away, then retrace rooms
+function parseHashCells(h){
+  const cells = decodeURIComponent(h.replace(/^#/, ''))
+    .split('/').filter(Boolean)
+    .map(s => { const [q, r] = s.split(',').map(Number); return { q, r }; });
+  return cells.every(c => CELL_SET.has(c.q + ',' + c.r)) ? cells : null;
+}
+addEventListener('popstate', () => {
+  if (readerOpen){ closeReaderNow(); return; }
+  const cells = parseHashCells(location.hash);
+  if (cells === null) return;
+  histLock = true;
+  navigateToChain(cells);
+});
+
 function openItem(it){
   const url = new URL(it.href, location.origin);
+  if (url.protocol === 'mailto:'){ location.href = it.href; return; }
   const same = url.origin === location.origin || url.hostname.endsWith('wclarke.net');
   if (it.inline && same){ openReader(it); return; }
   if (!same) window.open(it.href, '_blank', 'noopener');
@@ -1262,7 +1337,7 @@ function handleTap(sx, sy){
 
 canvas.addEventListener('wheel', e => {
   e.preventDefault();
-  anim = null; queue = null; inert = null;
+  anim = null; queue = null; inert = null; histLock = false;
   const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.0085 : 0.0016));
   const wxp = (e.clientX - vw / 2) / goal.z + goal.x;
   const wyp = (e.clientY - vh / 2) / goal.z + goal.y;
@@ -1319,10 +1394,17 @@ function frame(t){
   if (key !== semKey){
     semKey = key;
     refreshCrumbs(ch);
-    // shareable address for any room on the origin branch
+    // shareable address for any room on the origin branch. Each dive
+    // pushes one history entry, so the back button is undo-dive;
+    // rising replaces, so esc never spams the stack.
     const deep = ch.length ? ch[ch.length - 1].key : '';
     const hash = deep && deep[0] !== '^' ? '#' + deep.replaceAll('|', '/') : '';
-    history.replaceState(null, '', location.pathname + location.search + hash);
+    if (hash !== location.hash){
+      const segs = h => h ? h.slice(1).split('/').length : 0;
+      const url = location.pathname + location.search + (hash || '');
+      if (segs(hash) > segs(location.hash) && !histLock) history.pushState(null, '', url);
+      else history.replaceState(null, '', url);
+    } else histLock = false;   // arrived where history pointed
   }
   if (ch.length || era) document.body.classList.add('dived');
 
@@ -1359,10 +1441,8 @@ refreshCrumbs([]);
 // once the async sections have landed, so plaque links work too)
 contentReady.then(() => {
   let introTarget = { x: 0, y: 0, z: roomZ() };
-  const hashCells = decodeURIComponent(location.hash.slice(1))
-    .split('/').filter(Boolean)
-    .map(s => { const [q, r] = s.split(',').map(Number); return { q, r }; });
-  if (hashCells.length && hashCells.every(c => CELL_SET.has(c.q + ',' + c.r))){
+  const hashCells = parseHashCells(location.hash) || [];
+  if (hashCells.length){
     const last = hashCells[hashCells.length - 1];
     const lastKey = hashCells.map(c => c.q + ',' + c.r).join('|');
     const it = CONTENT.get(lastKey);
