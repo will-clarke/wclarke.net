@@ -71,9 +71,17 @@ first. Esc rises a level (or closes the reader). The ⬡ crumb flies
 home from any depth.
 
 **Useful cells to know.** `'0,0'` = the about room (with `'0,0|0,0'` =
-the shed/homelab inside it); `'1,0'` games; `'-1,1'` writing; `'0,-1'`
-lab. Tunables (`ZF`, `DIVE_FRAC`, easing rates) sit at the top of the
-script. Test with `make serve` - content fetches need http, not file://.
+the shed/homelab and `'0,0|1,1'` = the CV inside it); `'1,0'` games;
+`'-1,1'` writing; `'0,-1'` lab; top-level features: `'0,1'` intuition,
+`'-1,0'` paint machine, `'1,-1'` shipshape. Tunables (`ZF`, `DIVE_FRAC`,
+easing rates) sit at the top of the script. Test with `make serve` -
+content fetches need http, not file://.
+
+**Party mode.** The 🕺 button (bottom right) drops a mirror ball into
+the hive on a chain; the synthesized disco loop (WebAudio, four bars of
+Dm7-G7-Cmaj7-Am7) starts the frame the ball first lands. Beams, sweep
+dots and confetti all render on the main canvas; the same 🕺 winds it
+all back up. No assets, no libraries.
 
 ## Run it locally
 

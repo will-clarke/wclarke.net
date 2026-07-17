@@ -24,10 +24,10 @@
   </script>
   <link rel="stylesheet" href="/css/style.css">
   <style>
-    /* Fly into this page from the homepage "museum" hex, and back out again:
-       the hero carries the same view-transition-name as that hex (js/hex.js),
-       so the browser morphs the honeycomb tile into this hero. Same accent on
-       both sides, so it reads as the hex swelling open into the room. */
+    /* Fly into this page from a "museum" hex, and back out again: the hero
+       carries a shared view-transition-name, so the browser morphs the
+       honeycomb tile into this hero. Same accent on both sides, so it reads
+       as the hex swelling open into the room. */
     @view-transition { navigation: auto; }
     #hero { view-transition-name: museum-portal; }
     @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }

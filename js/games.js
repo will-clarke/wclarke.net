@@ -9,10 +9,10 @@
 
    The cabinet is built SYNCHRONOUSLY from the fallback below, then refreshed
    from games.json. Building up front (rather than inside the fetch) matters for
-   the fly-in from the homepage crystal (js/hex.js): a cross-document view
-   transition captures /games/ the instant it renders, so the g-<slug> hexes must
-   already exist or there is nothing for the gems to morph into. Keep FALLBACK in
-   step with games.json (same order); the fetch corrects any drift in place. */
+   cross-document view transitions: they capture /games/ the instant it renders,
+   so the g-<slug> hexes must already exist or there is nothing to morph into.
+   Keep FALLBACK in step with games.json (same order); the fetch corrects any
+   drift in place. */
 (function () {
   // mirrors games.json (order matters - it drives the spiral). The fetch below
   // refreshes accents/names in place, so this only needs to be roughly current.
