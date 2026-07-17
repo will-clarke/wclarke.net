@@ -88,8 +88,8 @@ const hintEl = document.getElementById('hint');
 const MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.25 : 1;
 const COARSE = matchMedia('(pointer: coarse)').matches;
 hintEl.textContent = COARSE
-  ? 'drag to pan · pinch to zoom · tap a dark cell to dive'
-  : 'drag to pan · scroll to zoom · click a dark cell to dive · esc rises';
+  ? 'drag · pinch · tap a cell to dive, tap again to open'
+  : 'drag · scroll · click a cell to dive, click again to open · esc rises';
 
 let vw = 0, vh = 0, dpr = 1;
 function resize(){
@@ -166,6 +166,107 @@ function canonKey(e, cells){
   return e > 0 ? (tail ? '^' + e + '|' + tail : '^' + e) : tail;
 }
 const eraKey = k => k === '' || (k.charCodeAt(0) === 94 && k.indexOf('|') < 0);
+
+const trCache = new Map();   // lazily computed cell traits, by canonical key
+
+// ---------------- content ----------------
+// Anything you have made lives at a fixed address in the comb.
+// A plain item is a leaf plaque (glyph -> title -> blurb + open pill as
+// you zoom); {section: true} makes a labelled deep cell whose interior
+// comb holds more items. Cells without content stay procedural honey.
+const CONTENT = new Map();
+function addContent(key, item){
+  CONTENT.set(key, item);
+  trCache.delete(key);
+}
+
+// preferred slot order inside a comb: inner ring first, then by angle
+const ORDER = CELLS
+  .filter(c => c.q || c.r)
+  .map(c => ({ q: c.q, r: c.r,
+    d: (Math.abs(c.q) + Math.abs(c.r) + Math.abs(c.q + c.r)) / 2,
+    a: Math.atan2(cellY(c.q, c.r), cellX(c.q, c.r)) }))
+  .sort((u, v) => u.d - v.d || u.a - v.a);
+
+// lay items out inside the comb at baseKey; overflow spills into a
+// "more" section at the comb's centre cell, recursively - pagination
+// through the fractal itself
+function fillSection(baseKey, items, moreTitle, moreGlyph){
+  const page = items.slice(0, ORDER.length);
+  page.forEach((it, i) => addContent(baseKey + '|' + ORDER[i].q + ',' + ORDER[i].r, it));
+  const rest = items.slice(ORDER.length);
+  if (rest.length){
+    const moreKey = baseKey + '|0,0';
+    addContent(moreKey, { section: true, glyph: moreGlyph, title: moreTitle });
+    fillSection(moreKey, rest, moreTitle, moreGlyph);
+  }
+}
+
+const SEED_CONTENT = {
+  '0,0':  { glyph: '🐝', title: 'will clarke', act: 'about me', href: '/about.html',
+            blurb: 'I make odd games, puzzles and write-ups. This whole page is one infinite honeycomb - dive into any dark cell, or zoom out forever.' },
+  '1,0':  { section: true, glyph: '🕹', title: 'games' },
+  '-1,1': { section: true, glyph: '✍', title: 'writing' },
+  '0,-1': { section: true, glyph: '🧪', title: 'lab' },
+  '0,1':  { glyph: '📦', title: 'recursive sokoban', act: 'play', href: '/games/recursive-sokoban/',
+            blurb: 'boxes contain whole levels. push one, step inside, solve the nested puzzle, climb back out. stacks 16 deep.' },
+  '-1,0': { glyph: 'λ', title: 'functional sokoban', act: 'play', href: '/games/functional-sokoban/',
+            blurb: 'push value-boxes through function-boxes: +1, *2, NEG. then currying and composition sneak in. a visual-programming toy disguised as a puzzle.' },
+  '1,-1': { glyph: '💎', title: 'polyhedra', act: 'play', href: '/games/polyhedra/',
+            blurb: 'a conway-operator playground: dual, truncate, gyro... sculpt living solids in the browser.' },
+  '0,-1|1,0':  { glyph: '🏛', title: 'museum', act: 'visit', href: '/museum/',
+                 blurb: 'every previous incarnation of this website, lovingly embalmed.' },
+  '0,-1|0,1':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
+                 blurb: 'trilemmas as svg triangles: cap theorem, zooko, career/family/hobbies. pick any two.' },
+  '0,-1|-1,1': { glyph: '📈', title: 'stats', act: 'view', href: '/stats.html',
+                 blurb: 'numbers about this site.' },
+  '0,-1|-1,0': { glyph: '🐝', title: 'writing, but hexier', act: 'visit', href: '/writing-hex.html',
+                 blurb: 'the old hex-grid writing index that inspired this page.' },
+  '0,-1|0,-1': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
+                 blurb: 'the source of it all.' },
+};
+for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
+
+const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
+  fracture: '💥', selfie: '🪞', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸' };
+const PINNED_GAMES = [
+  { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/',
+    blurb: 'a zachtronics-style factory: emitters, colourers, cloners, portals, fans - with vcr play/step/rewind.' },
+  { glyph: '🪱', title: 'worm division', act: 'play', href: '/games/worm-division/',
+    blurb: 'a worm that divides. history with relative orientation; emergent automation. it kept mutating.' },
+  { glyph: '🟢', title: 'slime teleports', act: 'play', href: '/games/slime-teleports/',
+    blurb: 'sokoban, except the slime teleports.' },
+  { glyph: '🎐', title: 'lanternwake', act: 'play', href: '/games/lanternwake/',
+    blurb: 'a quiet one. lanterns, wakes.' },
+];
+const contentReady = Promise.allSettled([
+  fetch('../games/games.json')
+    .then(r => r.json())
+    .then(d => {
+      const items = d.games.map(g => ({
+        glyph: GAME_GLYPHS[g.slug] || '🎮', title: g.name.toLowerCase(),
+        act: 'play', href: '/games/' + g.slug + '/', accent: g.accent,
+        blurb: g.tagline,
+      }));
+      fillSection('1,0', PINNED_GAMES.concat(items), 'more games', '🕹');
+    })
+    .catch(() => fillSection('1,0', PINNED_GAMES, 'more games', '🕹')),
+  fetch('../index.xml')
+    .then(r => r.text())
+    .then(t => {
+      const doc = new DOMParser().parseFromString(t, 'text/xml');
+      const items = [...doc.querySelectorAll('item')].map(el => {
+        const g = tag => (el.querySelector(tag) || {}).textContent || '';
+        // inert parse: a live innerHTML would fetch the posts' images
+        const body = new DOMParser().parseFromString(g('description'), 'text/html').body;
+        const plain = (body.textContent || '').trim().replace(/\s+/g, ' ');
+        return { glyph: '✍', title: g('title').toLowerCase(), act: 'read', href: g('link'),
+                 blurb: plain.length > 150 ? plain.slice(0, 147) + '…' : plain };
+      });
+      fillSection('-1,1', items, 'older posts', '✍');
+    })
+    .catch(() => {}),
+]);
 // key of cell (q,r) inside comb `ck`
 function childKey(ck, q, r){
   if (ck && eraKey(ck)){
@@ -187,13 +288,19 @@ function hash32(str){
   return (h ^= h >>> 16) >>> 0;
 }
 
-const trCache = new Map();
 function traits(key, q, r){
   let t = trCache.get(key);
   if (t) return t;
+  const item = CONTENT.get(key);
+  if (item && !item.section){
+    t = { deep: false, kind: 3, item, base: '#1d150c', micro: '#2b2013',
+          ph: 0 };
+    trCache.set(key, t);
+    return t;
+  }
   const h = hash32(key);
   const a = ((h >>> 10) & 1023) / 1023, b = ((h >>> 20) & 1023) / 1023;
-  const deep = eraKey(key) || isDeep(key, q, r);   // era tops contain the world below
+  const deep = !!item || eraKey(key) || isDeep(key, q, r);
   const kind = deep ? 0 : (a < 0.68 ? 1 : 2);   // 0 deep, 1 honey, 2 empty
   const jewel = kind === 1 && b > 0.975;
   // hue/lum quantized so cells share baked sprites
@@ -208,6 +315,7 @@ function traits(key, q, r){
          : kind === 1 ? `hsl(${hue}, 55%, ${lum - 7}%)`
          : '#1a1209',
     ph: ((h >>> 3) & 255) / 255 * Math.PI * 2,
+    label: item || null,        // section chip drawn over the nested comb
   };
   if (trCache.size > 40000) trCache.clear();
   trCache.set(key, t);
@@ -588,6 +696,7 @@ function drawComb(ox, oy, s, combKey, alpha){
         if (alpha * rev > 0.02) drawComb(px, py, cs, key, alpha * rev);
       }
     }
+    if (tr.label) drawSectionLabel(px, py, s, tr.label, alpha);
   }
 }
 
@@ -602,7 +711,8 @@ function drawCell(px, py, s, key, tr, alpha){
   }
   const hov = hoverAmts.get(key) || 0;
   const pu0 = pulses.get(key);
-  if (s < SPRITE_MAX && hov < 0.01 && pu0 === undefined && key !== pressKey){
+  if (s < SPRITE_MAX && hov < 0.01 && pu0 === undefined && key !== pressKey &&
+      tr.kind !== 3){
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.globalAlpha = alpha;
     const w = s * SPRITE_PAD;
@@ -621,6 +731,28 @@ function drawCell(px, py, s, key, tr, alpha){
   ctx.fillStyle = tr.base;
   ctx.fill(HEX);
 
+  if (tr.kind === 3){            // content plaque
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = INSET;
+    ctx.fill(HEX);
+    const accent = tr.item.accent || '#e8b558';
+    ctx.globalAlpha = alpha * 0.9;
+    ctx.lineWidth = 0.09;
+    ctx.strokeStyle = WAX;
+    ctx.stroke(HEX);
+    ctx.globalAlpha = alpha * (0.35 + 0.45 * hov);
+    ctx.lineWidth = 0.05;
+    ctx.strokeStyle = accent;
+    ctx.save(); ctx.scale(0.9, 0.9); ctx.stroke(HEX); ctx.restore();
+    drawPlaque(px, py, s, tr.item, alpha, hov);
+    if (hov > 0.01){
+      ctx.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * px, dpr * py);
+      ctx.globalAlpha = alpha * hov * 0.06;
+      ctx.fillStyle = '#fff';
+      ctx.fill(HEX);
+    }
+    return;
+  }
   if (s > 7){
     if (tr.kind === 1){          // honey: glossy overlay with a slow shimmer
       const tw = MOTION < 1 ? 0 : 0.12 * Math.sin(nowMs * 0.0011 + tr.ph);
@@ -677,9 +809,111 @@ function drawCell(px, py, s, key, tr, alpha){
   }
 }
 
+// ---------------- content text ----------------
+const MONO = 'ui-monospace, SFMono-Regular, Menlo, Consolas, monospace';
+const EMOJI = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+const clamp01 = v => v < 0 ? 0 : v > 1 ? 1 : v;
+
+function wrapText(text, maxW, maxLines){
+  const words = text.split(' '), lines = [];
+  let line = '';
+  for (const w of words){
+    const t = line ? line + ' ' + w : w;
+    if (ctx.measureText(t).width <= maxW || !line){ line = t; continue; }
+    lines.push(line); line = w;
+    if (lines.length === maxLines){ break; }
+  }
+  if (lines.length < maxLines && line) lines.push(line);
+  else if (line) lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, '') + ' …';
+  return lines;
+}
+
+// glyph -> + title -> + blurb & open pill, as the cell grows
+function drawPlaque(px, py, s, item, alpha, hov){
+  const t1 = clamp01((s - 16) / 12);            // glyph
+  const t2 = clamp01((s - 58) / 34);            // title
+  let t3 = clamp01((s - 0.3 * minVp()) / (0.15 * minVp()));   // blurb + pill
+  // details belong to the focused plaque only: a big plaque far from
+  // the viewport centre is a neighbour of the room you are in
+  if (t3 > 0){
+    const cd = Math.hypot(px - vw / 2, py - vh / 2);
+    t3 *= 1 - clamp01((cd - 0.3 * minVp()) / (0.45 * minVp()));
+  }
+  if (t1 <= 0) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const gy = py - s * (0.24 * t2 + 0.16 * t3);
+  const gs = s * (0.46 - 0.16 * t2 - 0.08 * t3);
+  ctx.globalAlpha = alpha * t1;
+  ctx.font = gs.toFixed(1) + 'px ' + EMOJI;
+  ctx.fillText(item.glyph, px, gy);
+
+  if (t2 > 0){
+    const ts = Math.min(26, Math.max(9, s * 0.115));
+    ctx.globalAlpha = alpha * t2;
+    ctx.fillStyle = '#ffe6ac';
+    ctx.font = '600 ' + ts.toFixed(1) + 'px ' + MONO;
+    const lines = wrapText(item.title, s * 1.3, 2);
+    const ty = py + s * (0.14 - 0.32 * t3);
+    lines.forEach((l, i) => ctx.fillText(l, px, ty + i * ts * 1.25));
+  }
+  if (t3 > 0 && item.blurb){
+    const bs = Math.min(17, Math.max(11, s * 0.052));
+    ctx.globalAlpha = alpha * t3 * 0.9;
+    ctx.fillStyle = '#c9a86e';
+    ctx.font = bs.toFixed(1) + 'px ' + MONO;
+    const lines = wrapText(item.blurb, s * 1.25, 5);
+    lines.forEach((l, i) => ctx.fillText(l, px, py - s * 0.02 + i * bs * 1.45));
+  }
+  if (t3 > 0 && item.href){
+    const ps = Math.min(16, Math.max(11, s * 0.055));
+    ctx.font = '600 ' + ps.toFixed(1) + 'px ' + MONO;
+    const label = (item.act || 'open') + ' ↗';
+    const w = ctx.measureText(label).width + ps * 1.8, h = ps * 2.1;
+    const yy = py + s * 0.52;
+    const accent = item.accent || '#e8b558';
+    ctx.globalAlpha = alpha * t3 * (0.16 + 0.2 * hov);
+    ctx.fillStyle = accent;
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.fill();
+    ctx.globalAlpha = alpha * t3;
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.roundRect(px - w / 2, yy - h / 2, w, h, h / 2); ctx.stroke();
+    ctx.fillStyle = '#ffe6ac';
+    ctx.fillText(label, px, yy + 0.5);
+  }
+}
+
+// section name floating over its nested comb; fades away once entered
+function drawSectionLabel(px, py, s, item, alpha){
+  const t = clamp01((s - 30) / 18) * (1 - clamp01((s - 0.3 * minVp()) / (0.12 * minVp())));
+  if (t <= 0) return;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const fs = Math.min(24, Math.max(10, s * 0.105));
+  ctx.font = '600 ' + fs.toFixed(1) + 'px ' + MONO;
+  const label = item.glyph + ' ' + item.title;
+  const w = ctx.measureText(label).width + fs * 1.6, h = fs * 1.9;
+  ctx.globalAlpha = alpha * t * 0.72;
+  ctx.fillStyle = '#0d0906';
+  ctx.beginPath(); ctx.roundRect(px - w / 2, py - h / 2, w, h, h / 2); ctx.fill();
+  ctx.globalAlpha = alpha * t;
+  ctx.fillStyle = '#ffd98a';
+  ctx.fillText(label, px, py + 0.5);
+}
+
 // ---------------- breadcrumbs ----------------
 let semKey = null;
-function crumbLabel(c){ return c.q + ',' + c.r; }
+function crumbLabel(c){
+  if (c.key === '') return 'origin';
+  if (c.key !== undefined && eraKey(c.key)) return '↑' + c.key.slice(1);
+  const it = c.key !== undefined && CONTENT.get(c.key);
+  if (it && it.title) return it.title.length > 20 ? it.title.slice(0, 19) + '…' : it.title;
+  return c.q + ',' + c.r;
+}
 function refreshCrumbs(ch){
   crumbsEl.replaceChildren();
   const home = document.createElement('button');
@@ -789,10 +1023,20 @@ canvas.addEventListener('pointercancel', e => {
 });
 canvas.addEventListener('pointerleave', () => { mouseOn = false; });
 
+function openItem(it){
+  const ext = /^https?:/.test(it.href) && !it.href.includes('wclarke.net');
+  if (ext) window.open(it.href, '_blank', 'noopener');
+  else location.href = it.href;
+}
+
 function handleTap(sx, sy){
   const p = pickCell(sx, sy);
   if (!p) return;
-  if (p.tr.deep){
+  if (p.tr.kind === 3){
+    // first tap zooms the plaque up; a tap on the zoomed plaque opens it
+    if (p.sr > 0.5 * minVp() && p.tr.item.href) openItem(p.tr.item);
+    else flyTo(p.wx, p.wy, 0.62 * minVp() / p.ru);
+  } else if (p.tr.deep){
     flyTo(p.wx, p.wy, DIVE_FRAC * minVp() / p.ru);
   } else {
     pulses.set(p.key, nowMs);
@@ -853,7 +1097,14 @@ function frame(t){
 
   const ch = chainAll();
   const key = era + ':' + ch.map(c => c.q + ',' + c.r).join('|');
-  if (key !== semKey){ semKey = key; refreshCrumbs(ch); }
+  if (key !== semKey){
+    semKey = key;
+    refreshCrumbs(ch);
+    // shareable address for any room on the origin branch
+    const deep = ch.length ? ch[ch.length - 1].key : '';
+    const hash = deep && deep[0] !== '^' ? '#' + deep.replaceAll('|', '/') : '';
+    history.replaceState(null, '', location.pathname + location.search + hash);
+  }
   if (ch.length || era) document.body.classList.add('dived');
 
   // hover
@@ -864,7 +1115,8 @@ function frame(t){
     hovered = null; hoverKey = null;
   }
   canvas.style.cursor = dragging ? 'grabbing'
-                      : hovered && hovered.tr.deep ? 'pointer' : 'default';
+                      : hovered && (hovered.tr.deep || hovered.tr.kind === 3)
+                        ? 'pointer' : 'default';
   if (hoverKey && !hoverAmts.has(hoverKey)) hoverAmts.set(hoverKey, 0);
   for (const [k, v] of hoverAmts){
     const target = k === hoverKey ? 1 : 0;
@@ -883,12 +1135,35 @@ for (const ev of ['gesturestart', 'gesturechange', 'gestureend'])
   document.addEventListener(ev, e => e.preventDefault());
 
 refreshCrumbs([]);
-view.z = roomZ() * 0.42; goal.z = view.z;
-requestAnimationFrame(t => {
-  nowMs = t; lastT = t;
-  flyTo(0, 0, roomZ(), 1.9);
-  document.body.classList.add('ready');
-  requestAnimationFrame(frame);
+
+// deep link: #q,r/q,r/... drops you straight into that room (resolved
+// once the async sections have landed, so plaque links work too)
+contentReady.then(() => {
+  let introTarget = { x: 0, y: 0, z: roomZ() };
+  const hashCells = decodeURIComponent(location.hash.slice(1))
+    .split('/').filter(Boolean)
+    .map(s => { const [q, r] = s.split(',').map(Number); return { q, r }; });
+  if (hashCells.length && hashCells.every(c => CELL_SET.has(c.q + ',' + c.r))){
+    const last = hashCells[hashCells.length - 1];
+    const lastKey = hashCells.map(c => c.q + ',' + c.r).join('|');
+    const it = CONTENT.get(lastKey);
+    if (it && !it.section){          // land on the plaque itself
+      path = hashCells.slice(0, -1);
+      introTarget = { x: cellX(last.q, last.r), y: cellY(last.q, last.r), z: 0.62 * minVp() };
+    } else {                         // land inside the room
+      path = hashCells;
+      introTarget = { x: 0, y: 0, z: roomZ() };
+    }
+  }
+  view.x = introTarget.x; view.y = introTarget.y;
+  view.z = introTarget.z * 0.42;
+  goal.x = view.x; goal.y = view.y; goal.z = view.z;
+  requestAnimationFrame(t => {
+    nowMs = t; lastT = t;
+    flyTo(introTarget.x, introTarget.y, introTarget.z, 1.9);
+    document.body.classList.add('ready');
+    requestAnimationFrame(frame);
+  });
 });
 </script>
 </body>
