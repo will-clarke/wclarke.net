@@ -327,14 +327,12 @@ const SEED_CONTENT = {
                 blurb: 'where most of my recent code lives.' },
   '0,0|0,-1': { glyph: '✉', title: 'say hello', act: 'email', href: 'mailto:wmmclarke@gmail.com',
                 blurb: 'wmmclarke@gmail.com' },
-  '0,0|1,-1': { glyph: '📄', title: 'about, but formal', act: 'read', href: '/about.html', inline: true,
-                blurb: 'the plain-html version of this room.' },
   '0,0|2,-1': { glyph: '💼', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
                 blurb: 'the professional mask.' },
   '0,0|-2,1': { glyph: '📡', title: 'rss', act: 'subscribe', href: '/index.xml',
                 blurb: 'the writing, as a feed.' },
-  // ---- the cv: a decade of employers, one hex each ----
-  '0,0|1,1': { section: true, glyph: '💼', title: 'the cv' },
+  // ---- a decade of employers, one hex each ----
+  '0,0|1,1': { section: true, glyph: '💼', title: 'cool places i’ve worked' },
   '0,0|1,1|1,0':  { note: 'now: blacklane. i work on the dispatching engine - matching rides to chauffeurs across every timezone.', glyph: '🚘' },
   '0,0|1,1|0,1':  { note: 'infosum (2022): privacy-first data collaboration in go. instigated explicit system-wide api levels: public, bounded, internal.', glyph: '🔒' },
   '0,0|1,1|-1,1': { note: 'river island (2020-2022): engineer, then tech lead. integrated a whole new warehouse into the business - the keystone logistics project.', glyph: '👕' },
@@ -357,11 +355,14 @@ const SEED_CONTENT = {
   '0,0|0,0|1,1':  { note: 'the cloud is just the shed: vaultwarden for passwords, memos for notes, karakeep for bookmarks, navidrome and audiobookshelf for the ears.', glyph: '☁' },
   '0,0|0,0|2,-1': { note: 'the 3090 moonlights as an ai lab: comfyui, ollama, and an artificial-life sandbox with no fitness function.', glyph: '🧠' },
   '0,0|0,0|-2,1': { note: '*.home.wclarke.net only resolves indoors: adguard dns, one wildcard cert, grafana graphing the lot.', glyph: '🔐' },
+  '0,0|0,0|2,0':  { note: 'home assistant runs the house; the ring cameras are smuggled out of their cloud over mqtt. the family dashboard has exactly one user.', glyph: '🏠' },
+  '0,0|0,0|0,2':  { note: 'paperless-ngx eats the post: every letter scanned, ocr’d, searchable. the filing cabinet is a search box now.', glyph: '📬' },
+  '0,0|0,0|-1,-1': { note: 'the long tail: searxng for search, forgejo mirroring git, atuin syncing shell history, ntfy pinging my phone whenever anything sulks.', glyph: '🔎' },
+  '0,0|0,0|0,-2': { note: 'borg ships backups out nightly; prometheus and grafana watch everything. the shed complains to my phone before i notice.', glyph: '💾' },
   '1,0':  { section: true, glyph: '🕹', title: 'games' },
   '-1,1': { section: true, glyph: '✍', title: 'writing' },
   '0,-1': { section: true, glyph: '🧪', title: 'lab' },
-  '0,1':  { glyph: '📐', title: 'intuition', act: 'explore', href: 'https://intuition.wclarke.net', accent: '#8be9fd',
-            blurb: 'maths you can feel: dozens of interactive, draggable diagrams that make proofs feel obvious. the centrepiece of this whole site.' },
+  '0,1':  { section: true, glyph: '📐', title: 'intuition' },
   '-1,0': { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/', accent: '#ff9a3a',
             blurb: 'a zachtronics-style factory: emitters, colourers, cloners, portals, fans - with vcr play/step/rewind. 30 levels.' },
   '1,-1': { glyph: '🚢', title: 'shipshape', act: 'play', href: '/games/shipshape/', accent: '#7fd4ff',
@@ -376,6 +377,18 @@ const SEED_CONTENT = {
                  blurb: 'the old hex-grid writing index that inspired this page.' },
   '0,-1|0,-1': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
                  blurb: 'the source of it all.' },
+  // ---- easter eggs: unmarked cells in the procedural wilds. every
+  // ancestor on each path is hash-verified deep, so a curious diver
+  // can genuinely stumble onto them. no map. ----
+  '2,0|0,-2|0,0':  { note: 'a wild cell. real bees build their comb in total darkness, measuring the 120° angles with their own bodies.', glyph: '🐝' },
+  '-2,2|2,0|-2,0': { note: 'the closed end of a real honeycomb cell is three rhombi - half a rhombic dodecahedron. bees found the shape before we named it.',
+                     glyph: '💠', href: '/games/polyhedra/', act: 'sculpt one' },
+  '-1,-1|1,0|2,-2': { note: 'a rubber duck. explain your problem to it. it has heard worse.', glyph: '🦆' },
+  '0,-2|2,-2|0,2': { note: 'the answer. you found it. now, what was the question?', glyph: '42' },
+  '2,-2|-1,-1|2,-1': { note: 'one of the seven chickens. she gets everywhere. please don’t tell her about the others.', glyph: '🐔' },
+  '-2,0|1,1|-1,2': { note: 'a tardigrade. it can survive vacuum, radiation, and being three levels deep in an imaginary honeycomb.', glyph: '🦠' },
+  '2,0|1,1|0,-2':  { note: 'an easter egg. literally.', glyph: '🥚' },
+  '-1,-1|0,1|-1,-1|0,0|0,0': { note: 'five levels down. the honey is denser here. esc still works. probably.', glyph: '🕳' },
 };
 for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
 
@@ -395,6 +408,16 @@ const PINNED_GAMES = [
 ];
 // featured at the top level of the comb, so not repeated in the games room
 const FEATURED_SLUGS = ['shipshape'];
+// first matching pattern names a post's glyph; ✍ is the fallback
+const POST_GLYPHS = [
+  [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],
+  [/shell|bash/i, '🐚'], [/audio/i, '🔊'], [/bsd|linux/i, '🐧'],
+  [/ssh|gpg|sudo|root/i, '🔐'], [/aws|s3/i, '☁'], [/chatgpt|\bai\b/i, '🤖'],
+  [/lisp|composition/i, 'λ'], [/twitter/i, '🐦'], [/cron/i, '⏰'],
+  [/automat/i, '⚙'], [/sql|rows|table/i, '🗄'], [/\bjq\b/i, '🔧'],
+  [/team|communicat|question|simplic|perfect|picture|enjoy|boring|document|defaults|done/i, '💭'],
+];
+const postGlyph = t => (POST_GLYPHS.find(p => p[0].test(t)) || [0, '✍'])[1];
 const contentReady = Promise.allSettled([
   fetch('/games/games.json')
     .then(r => r.json())
@@ -416,11 +439,25 @@ const contentReady = Promise.allSettled([
         // inert parse: a live innerHTML would fetch the posts' images
         const body = new DOMParser().parseFromString(g('description'), 'text/html').body;
         const plain = (body.textContent || '').trim().replace(/\s+/g, ' ');
-        return { glyph: '✍', title: g('title').toLowerCase(), act: 'read', href: g('link'),
-                 inline: true,
+        const title = g('title');
+        return { glyph: postGlyph(title), title: title.toLowerCase(), act: 'read',
+                 href: g('link'), inline: true,
                  blurb: plain.length > 150 ? plain.slice(0, 147) + '…' : plain };
       });
       fillSection('-1,1', items, 'older posts', '✍');
+    })
+    .catch(() => {}),
+  fetch('/intuition.json')
+    .then(r => r.json())
+    .then(d => {
+      const items = d.posts.map(p => ({
+        glyph: p.glyph, title: p.title.toLowerCase(), act: 'explore',
+        href: d.base + '/posts/' + p.slug,
+        blurb: p.blurb.length > 150 ? p.blurb.slice(0, 147) + '…' : p.blurb,
+      }));
+      items.unshift({ glyph: '📐', title: 'the whole site', act: 'visit', href: d.base,
+        blurb: 'maths you can feel: every post is one interactive diagram - drag it until the proof feels obvious.' });
+      fillSection('0,1', items, 'more intuition', '📐');
     })
     .catch(() => {}),
 ]);

@@ -25,8 +25,12 @@ Quick reference for adding content (in `SEED_CONTENT`, top of the script):
 Keys are cell paths from the origin comb (`q,r` axial coords joined by
 `|`). Existing rooms: `0,0` about (contains `0,0|0,0` homelab), `1,0`
 games (auto-filled from `/games/games.json`), `-1,1` writing
-(auto-filled from `/index.xml`), `0,-1` lab. `inline: true` on same-site
-hrefs opens the page in the in-comb reader instead of navigating.
+(auto-filled from `/index.xml`), `0,-1` lab, `0,1` intuition
+(auto-filled from `/intuition.json`; regenerate with `make
+sync-intuition`). Easter-egg cells hide at the end of `SEED_CONTENT` -
+their paths are hash-verified deep, so don't move them casually.
+`inline: true` on same-site hrefs opens the page in the in-comb reader
+instead of navigating.
 
 ## Working on it
 

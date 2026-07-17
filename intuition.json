@@ -1,0 +1,439 @@
+{
+ "base": "https://intuition-2i1.pages.dev",
+ "posts": [
+  {
+   "slug": "paper-fold",
+   "title": "Fold a sheet of paper 42 times and it touches the Moon",
+   "blurb": "Fold a sheet in half: 0.2mm. Again: 0.4mm. Seven folds in it's a centimetre and physically unfoldable - but mathematics doesn't feel thickness. Keep pressing fold and watch the universe fail to zoom out fast enough: Everest at 27, the Moon at 42, no universe left at 103.",
+   "date": "2026-07-08",
+   "glyph": "🌕"
+  },
+  {
+   "slug": "bayes",
+   "title": "Why a 99% accurate test can be wrong half the time",
+   "blurb": "You test positive on a 99% accurate test for a rare disease. How worried should you be? Draw all 10,000 people as one square, area-true, and the answer is two slivers: the sick the test caught, and the healthy it flagged by mistake. The second sliver is just as big. Bayes' theorem is comparing them.",
+   "date": "2026-07-07",
+   "glyph": "🩺"
+  },
+  {
+   "slug": "monty-hall",
+   "title": "Every Monty Hall game, played at once",
+   "blurb": "Three doors, one car, and a host who knows too much. Instead of agonising over one game, play 180 at once: you pick door 1 in every universe, the host opens a goat, and one toggle - stay or switch - recolours the wall. Switch wins two worlds out of three, and you can count them.",
+   "date": "2026-07-07",
+   "glyph": "🚪"
+  },
+  {
+   "slug": "fourier",
+   "title": "Circles riding circles can draw anything",
+   "blurb": "One spinning arm draws a sine wave. Bolt a smaller, faster arm to its tip, and another, and another - and the pen traces a square wave: flat, cliff, flat. Any repeating signal is secretly a stack of pure rotations. That is Fourier's idea, drawn.",
+   "date": "2026-07-07",
+   "glyph": "🌀"
+  },
+  {
+   "slug": "soccer-ball",
+   "title": "A football is a truncated icosahedron",
+   "blurb": "A classic football is 12 pentagons and 20 hexagons - exactly what you get by slicing the 12 corners off an icosahedron. The same shape is C60, the buckyball molecule. Slide the other dual pair, dodecahedron to icosahedron, and the football is the stop three-quarters along.",
+   "date": "2026-06-09",
+   "glyph": "⚽"
+  },
+  {
+   "slug": "tetra-octa",
+   "title": "Slice a tetrahedron's corners and an octahedron appears",
+   "blurb": "The tetrahedron is its own dual, so truncating it ought to give back a tetrahedron. It doesn't. Cut the corners to the edge midpoints and the four faces and four corners become eight equal triangles - a regular octahedron. The midpoint of a tetrahedron's truncation is a different solid entirely.",
+   "date": "2026-06-09",
+   "glyph": "🔻"
+  },
+  {
+   "slug": "platonic-five",
+   "title": "Why there are exactly five Platonic solids",
+   "blurb": "Every face the same regular polygon, every corner identical - and only five shapes can pull it off. The reason is at a single corner: the meeting angles must add to less than 360° to leave room to fold into 3D. Step through the polygons and count the survivors: three from triangles, one from squares, one from pentagons, nothing after.",
+   "date": "2026-06-09",
+   "glyph": "🎲"
+  },
+  {
+   "slug": "truncate",
+   "title": "Shave a cube's corners and you get an octahedron",
+   "blurb": "A cube and an octahedron are duals - and also the two ends of one slide. Start slicing off the cube's eight corners: square faces shrink, triangles grow, and at the exact midpoint every edge is equal - the cuboctahedron. Keep going and the squares vanish, leaving the octahedron. The corners you shaved became the faces you end with.",
+   "date": "2026-06-09",
+   "glyph": "🔪"
+  },
+  {
+   "slug": "hilbert",
+   "title": "A line that fills a square",
+   "blurb": "A line is one-dimensional, a square is two - yet one unbroken line, folded by recursion, threads through every part of a square without crossing itself. Each level is four shrunk, rotated copies of the last. And points near each other on the line stay near each other in the square, which is why this is how flat data gets folded into one dimension.",
+   "date": "2026-06-09",
+   "glyph": "🧶"
+  },
+  {
+   "slug": "dragon",
+   "title": "Fold paper in half forever and you get a dragon",
+   "blurb": "Fold a strip of paper in half, again, again; unfold every crease to a right angle and look at the edge. It's a fractal - the dragon curve. Each fold lays a quarter-turned copy of everything so far on top of itself, the same recursion that builds the curve, done with your hands.",
+   "date": "2026-06-09",
+   "glyph": "🐉"
+  },
+  {
+   "slug": "dandelin",
+   "title": "Why a sliced cone is an ellipse with two foci",
+   "blurb": "Slice a cone and you get an ellipse. Pin two foci and pull a loop of string and you get an ellipse too. Why the same curve - and where are the foci hiding in the cone? Drop two spheres into the cone. Each kisses the cutting plane at exactly one point, and those two points are the foci. The proof is one tangent length, seen twice.",
+   "date": "2026-06-09",
+   "glyph": "🍦"
+  },
+  {
+   "slug": "duals",
+   "title": "Every Platonic solid is hiding its opposite inside",
+   "blurb": "Put a dot at the centre of every face and join the neighbours. A second Platonic solid falls out, with faces and corners swapped. The cube becomes an octahedron, the dodecahedron becomes the icosahedron, and the tetrahedron becomes itself. Do it twice and you are back where you began.",
+   "date": "2026-06-09",
+   "glyph": "🔄"
+  },
+  {
+   "slug": "eratosthenes",
+   "title": "How a shadow measured the Earth",
+   "blurb": "Around 240 BC, with two sticks, two cities, and one shadow, Eratosthenes worked out the size of the whole planet - and got it almost exactly right. The trick is that the shadow's angle is the same as the angle between the cities seen from the Earth's centre. Drag a city, and the planet stays exactly the same size.",
+   "date": "2026-06-05",
+   "glyph": "🌍"
+  },
+  {
+   "slug": "medians",
+   "title": "Why the three medians always meet at one point",
+   "blurb": "From each corner of a triangle, draw a line to the middle of the opposite side. You get three lines - and they always cross at a single point, no matter how you stretch the triangle. That point is the balance point, and it sits exactly two-thirds of the way down every line.",
+   "date": "2026-06-05",
+   "glyph": "⚖"
+  },
+  {
+   "slug": "brachistochrone",
+   "title": "The quickest way down is not a straight line",
+   "blurb": "Release three beads from rest down three frictionless tracks from A to B - a straight line, a circular arc, and a cycloid. The cycloid wins, even though it is the longest track and dips below the finish before climbing back up to it. The fastest path trades distance for early speed.",
+   "date": "2026-06-03",
+   "glyph": "🛝"
+  },
+  {
+   "slug": "catenary",
+   "title": "The shape a hanging chain refuses to be",
+   "blurb": "A chain hung from two pins looks like a parabola. It isn't. Pull the pins wide and the two curves are indistinguishable; bring them close and the chain bellies out past the parabola sitting inside it. Gravity draws a cosh, not an x squared - and you can watch the difference appear.",
+   "date": "2026-06-03",
+   "glyph": "⛓"
+  },
+  {
+   "slug": "gears",
+   "title": "When two gears agree to meet again",
+   "blurb": "Mark one tooth on each of two meshing gears and line the marks up. Spin them. The marks drift apart and reunite only after a whole number of turns of both gears - every LCM of the two tooth counts. Small whole-number ratios click back at once; coprime counts take an age.",
+   "date": "2026-06-03",
+   "glyph": "⚙"
+  },
+  {
+   "slug": "doppler",
+   "title": "Why an ambulance changes pitch as it passes",
+   "blurb": "A siren coming toward you sounds higher; receding, lower. The siren didn't change. Each wavefront, once emitted, expands from where the siren was - so they pile up in front and spread out behind. Drag the dot. Cross wave speed and watch a Mach cone snap into place.",
+   "date": "2026-05-20",
+   "glyph": "🚑"
+  },
+  {
+   "slug": "bezier",
+   "title": "A curve drawn by points sliding on points sliding on points",
+   "blurb": "Every letterform, every vector illustration, every animator's smooth bend is a Bezier curve. And a Bezier curve isn't drawn pixel by pixel - it's the trace of a single point sliding on lines that are themselves sliding.",
+   "date": "2026-05-20",
+   "glyph": "✏"
+  },
+  {
+   "slug": "lissajous",
+   "title": "The shapes hiding between two sine waves",
+   "blurb": "Two sine waves at right angles drive a pen. Rational frequency ratios trace tidy pretzels and figure-eights. Irrational ratios never close - the curve fills its own box forever.",
+   "date": "2026-05-20",
+   "glyph": "〰"
+  },
+  {
+   "slug": "pendulum-wave",
+   "title": "Fifteen pendulums that agree to disagree",
+   "blurb": "Fifteen pendulums hang from one beam, each a touch shorter than the last. Released together they ripple into snake-waves, scatter into apparent chaos, and snap back into unison every thirty seconds. The chaos was never chaos. It was integer arithmetic.",
+   "date": "2026-05-20",
+   "glyph": "🕰"
+  },
+  {
+   "slug": "reuleaux",
+   "title": "Why a triangle can roll like a circle",
+   "blurb": "Pin three arcs to the corners of an equilateral triangle. Spin it between two parallel rails. The rails never gap. The triangle has the same width in every direction - just like a circle - and the proof is one dashed line. Currencies mint it. Drills cut square holes with it.",
+   "date": "2026-05-13",
+   "glyph": "🪙"
+  },
+  {
+   "slug": "viviani",
+   "title": "Why three perpendiculars always sum to the same height",
+   "blurb": "Stand anywhere inside an equilateral triangle and drop a perpendicular to each side. The three lengths flux as you wander - but their sum is always exactly the triangle's height. Three small triangles have to add up to the big one. The proof is a single equation.",
+   "date": "2026-05-13",
+   "glyph": "📏"
+  },
+  {
+   "slug": "koch-snowflake",
+   "title": "Why a snowflake has an infinite edge",
+   "blurb": "Start with a triangle. Replace the middle third of every edge with a smaller triangular bump. Repeat. The shape stays inside the same circle forever, so the area can't escape - but the edge gets longer by a third with every step.",
+   "date": "2026-05-13",
+   "glyph": "❄"
+  },
+  {
+   "slug": "chaos-game",
+   "title": "How random midpoints draw a fractal",
+   "blurb": "Three corners. A wandering point. Pick a random corner, move halfway toward it, drop a dot. Repeat forever. The dots don't fill the triangle. They draw a Sierpinski - a perfect fractal, holes inside holes, out of pure randomness.",
+   "date": "2026-05-13",
+   "glyph": "🎰"
+  },
+  {
+   "slug": "galton",
+   "title": "How random bounces add up to a bell",
+   "blurb": "Drop a thousand balls through a triangular grid of pegs. Each ball flips a coin at every row, left or right, half each. The heap at the bottom isn't random. It is row N of Pascal's triangle, drawn one ball at a time.",
+   "date": "2026-05-13",
+   "glyph": "🫘"
+  },
+  {
+   "slug": "stella-octangula",
+   "title": "Two tetrahedra weave a cube and an octahedron",
+   "blurb": "A cube's eight corners split by parity into two regular tetrahedra. Put both back together and three Platonic solids hide in one figure: the two tetrahedra, the cube their outer points trace, and the octahedron at their crossings.",
+   "date": "2026-05-13",
+   "glyph": "✴"
+  },
+  {
+   "slug": "five-cubes",
+   "title": "Five cubes hide inside a dodecahedron",
+   "blurb": "A dodecahedron has twenty corners. The right eight of them form a cube. There are exactly five ways to pick them, and the five cubes share every vertex twice over. Drag the figure and watch the five-fold dance.",
+   "date": "2026-05-13",
+   "glyph": "🖐"
+  },
+  {
+   "slug": "golden-icosa",
+   "title": "An icosahedron is three golden rectangles",
+   "blurb": "Take three identical golden rectangles. Stab them through each other at the centre, each perpendicular to the other two. Their twelve corners are exactly the twelve vertices of a regular icosahedron. The d20 hiding in any dice bag was secretly the golden ratio all along.",
+   "date": "2026-05-13",
+   "glyph": "💛"
+  },
+  {
+   "slug": "cardioid",
+   "title": "How a rolling coin draws a heart",
+   "blurb": "Roll one coin around another coin of the same size. A single dot on the rim traces a perfect heart - a cardioid. And the rolling coin spins twice for every one trip around. Two surprises, one diagram.",
+   "date": "2026-05-13",
+   "glyph": "❤"
+  },
+  {
+   "slug": "morley",
+   "title": "The equilateral triangle hiding in every triangle's trisectors",
+   "blurb": "Trisect each angle of any triangle. Take the trisecting ray nearest each side from both of its endpoints. Those pairs meet at three points. Those three points form a perfect equilateral triangle. The Greeks missed it for two thousand years; Morley spotted it in 1899.",
+   "date": "2026-05-13",
+   "glyph": "🔱"
+  },
+  {
+   "slug": "napoleon",
+   "title": "The triangle hiding inside every triangle",
+   "blurb": "Take any triangle. Build an equilateral triangle outward on each of its three sides. Connect the three centres. What you get is itself a perfect equilateral triangle. Always. Drag any vertex and watch the lopsided outer shape morph while the inner triangle refuses to be anything but equilateral.",
+   "date": "2026-05-13",
+   "glyph": "🎩"
+  },
+  {
+   "slug": "triangle-angles",
+   "title": "Why a triangle's angles sum to 180°",
+   "blurb": "Drag the three vertices anywhere. The corners change shape but their sum doesn't. Press fold and watch the three angles come down to the baseline and tile a perfect half-disc - the same straight line, every time.",
+   "date": "2026-05-13",
+   "glyph": "📐"
+  },
+  {
+   "slug": "inscribed-angle",
+   "title": "Why every inscribed angle is the same",
+   "blurb": "Pin two points on a circle. From anywhere on the far arc, the angle they make is the same number - always. Drag P around and watch the rays swing wildly while the angle between them refuses to budge. The central angle, naturally, is twice it.",
+   "date": "2026-05-12",
+   "glyph": "∠"
+  },
+  {
+   "slug": "pythagoras-leonardo",
+   "title": "Pythagoras by Leonardo's symmetry",
+   "blurb": "Build the right triangle, its three squares, and the little gap-triangle between the leg-squares. The whole upper half rotates 180° around the centre of the hypotenuse-square and lands on its mirror. The figure cannot be anything but the theorem.",
+   "date": "2026-05-11",
+   "glyph": "🎨"
+  },
+  {
+   "slug": "pythagoras-perigal",
+   "title": "Pythagoras by Perigal's dissection",
+   "blurb": "Cut the larger leg-square with two lines through its centre, parallel and perpendicular to the hypotenuse. Four pinwheel pieces. Add the smaller leg-square whole. Five pieces slide - no rotation, no flipping - into the hypotenuse-square. They fit. That is the proof.",
+   "date": "2026-05-11",
+   "glyph": "🧩"
+  },
+  {
+   "slug": "pythagoras-similar",
+   "title": "Pythagoras by similar triangles",
+   "blurb": "Drop the altitude from the right-angle vertex. The triangle splits into two smaller copies of itself - same shape, three sizes. Their areas scale as the square of any side, so adding them up writes a² + b² = c² in one line. Einstein's favourite proof.",
+   "date": "2026-05-11",
+   "glyph": "🪞"
+  },
+  {
+   "slug": "pythagoras-windmill",
+   "title": "Pythagoras by Euclid's windmill",
+   "blurb": "Draw squares on every side of a right triangle. The two leg-squares morph downward into rectangles that tile the hypotenuse-square exactly. This is Proposition I.47 - the proof the western world has been teaching for 2,300 years.",
+   "date": "2026-05-11",
+   "glyph": "🌬"
+  },
+  {
+   "slug": "pythagoras-garfield",
+   "title": "Pythagoras by Garfield's trapezoid",
+   "blurb": "Two right triangles meet at a corner. Their hypotenuses lock at 90°. The outline is a trapezoid. Compute its area two ways - once as a trapezoid, once as three triangles - and the 2ab cross-terms cancel. What's left is a² + b² = c². The only proof of Pythagoras authored by a US president.",
+   "date": "2026-05-11",
+   "glyph": "🐱"
+  },
+  {
+   "slug": "pascal",
+   "title": "Where Fibonacci hides in Pascal's triangle",
+   "blurb": "Pascal's triangle was built with no Fibonacci rule in sight. But cut a band of cells at a shallow tilt and sum each band, and the Fibonacci numbers come walking out: 1, 1, 2, 3, 5, 8, 13, 21, ...",
+   "date": "2026-05-08",
+   "glyph": "🔺"
+  },
+  {
+   "slug": "fibonacci",
+   "title": "How Fibonacci stumbles onto φ",
+   "blurb": "Add 1+1, then 1+2, then 2+3 - and divide each Fibonacci number by the one before it. The ratios bounce: above the line, below the line, above, below. Twelve steps in, all four leading digits agree on φ.",
+   "date": "2026-05-08",
+   "glyph": "🐚"
+  },
+  {
+   "slug": "missing-square",
+   "title": "The chessboard that gains a square",
+   "blurb": "Cut an 8×8 chessboard into four pieces. Rearrange them into a 5×13 rectangle. The square had 64 cells. The rectangle has 65. The pieces did not change. The Fibonacci numbers 3, 5, 8, 13 stole a cell out of nowhere.",
+   "date": "2026-05-08",
+   "glyph": "🕳"
+  },
+  {
+   "slug": "golden-cut",
+   "title": "What the golden ratio actually is",
+   "blurb": "Cut a line in two. There is exactly one place to cut where the larger piece is itself a perfect smaller copy of the whole. That cut is the golden ratio - and the line that comes out of it contains a smaller golden line, which contains a smaller one, forever.",
+   "date": "2026-05-07",
+   "glyph": "✂"
+  },
+  {
+   "slug": "pentagrams",
+   "title": "How a pentagon contains itself forever",
+   "blurb": "Draw a pentagon, draw its diagonals, and a smaller pentagon falls out. Do it again and again. The ratio of any diagonal to any side is the same number every time - the golden ratio.",
+   "date": "2026-05-07",
+   "glyph": "⭐"
+  },
+  {
+   "slug": "negatives",
+   "title": "Why negative numbers are reflections",
+   "blurb": "Negative numbers don't live anywhere new. Every negative is a positive viewed through a mirror at zero - and multiplying by minus one is literally a half-turn around it.",
+   "date": "2026-05-07",
+   "glyph": "➖"
+  },
+  {
+   "slug": "automaton",
+   "title": "How one tiny rule makes endless complexity",
+   "blurb": "Three cells in. One cell out. Repeat. With the right eight bits of rule, the pattern that grows is genuinely indistinguishable from random - even though every step is fully determined.",
+   "date": "2026-05-06",
+   "glyph": "🤖"
+  },
+  {
+   "slug": "tree",
+   "title": "How a tree builds itself from one rule",
+   "blurb": "A trunk. Two branches. Each branch is a smaller copy of the tree below it. That single rule, applied to itself, builds every fractal tree you have ever seen.",
+   "date": "2026-05-06",
+   "glyph": "🌳"
+  },
+  {
+   "slug": "tile",
+   "title": "Why pentagons can't tile",
+   "blurb": "Three regular shapes tile the plane: triangles, squares, hexagons. Pentagons don't. Three of them meet at a vertex, stop short, and leave a tell-tale 36° gap. The reason hides inside one number: 360.",
+   "date": "2026-05-06",
+   "glyph": "⬠"
+  },
+  {
+   "slug": "sieve",
+   "title": "How Eratosthenes catches every prime",
+   "blurb": "Primes feel like a separate species. They aren't. Lay out the first 100 numbers, cross out every multiple of 2, then 3, then 5, then 7. The 25 numbers still standing are the primes - all of them.",
+   "date": "2026-05-06",
+   "glyph": "🧮"
+  },
+  {
+   "slug": "sin-cos",
+   "title": "Why sin and cos chase each other",
+   "blurb": "Sin and cos aren't weird ratios from a textbook. They're the height and the width of a point going round a circle. Drag the angle and watch the two waves write themselves out, one a quarter-turn behind the other.",
+   "date": "2026-05-06",
+   "glyph": "🌊"
+  },
+  {
+   "slug": "circle-area",
+   "title": "Why a circle's area is π·r²",
+   "blurb": "Cut the disc into wedges. Lay them out tip-up, tip-down, side by side. You have a rectangle of π·r by r - whose area is the area of the disc, just rearranged to where you can see it.",
+   "date": "2026-05-05",
+   "glyph": "⭕"
+  },
+  {
+   "slug": "paper-sizes",
+   "title": "The only paper that keeps its shape when halved",
+   "blurb": "A4 has a peculiar aspect ratio - 1.414 to 1. Fold it in half and you get A5: same shape, half the area. Only one number on Earth makes that work, and it isn't a coincidence the printers chose it.",
+   "date": "2026-05-05",
+   "glyph": "📄"
+  },
+  {
+   "slug": "monte-carlo",
+   "title": "Why π falls out of random throws",
+   "blurb": "Every standard way to compute π begins with a circle being measured. This one doesn't. Throw darts at a board. Don't aim. Count what fell under the curve and multiply by four.",
+   "date": "2026-05-05",
+   "glyph": "🎯"
+  },
+  {
+   "slug": "continued-fractions",
+   "title": "Why φ is the most irrational number",
+   "blurb": "Every irrational has a fingerprint - the count of squares you cut from a rectangle of that aspect ratio, level after level. φ's fingerprint is all 1s. The smallest possible. The hardest to approximate.",
+   "date": "2026-05-05",
+   "glyph": "🪜"
+  },
+  {
+   "slug": "phyllotaxis",
+   "title": "The angle every sunflower agrees on",
+   "blurb": "Drop seeds onto a disc, each a small turn from the last. At one angle - and only one - the seeds pack into a perfect sunflower. At every other angle, the magic dies. The angle is 137.508°.",
+   "date": "2026-05-02",
+   "glyph": "🌻"
+  },
+  {
+   "slug": "cubed",
+   "title": "Why a cube is literally a cube",
+   "blurb": "A cubed number is n stacked floors of n² cells each. Pull the floors apart and the third dimension stops being a trick of the projection - it's the stack itself.",
+   "date": "2026-05-02",
+   "glyph": "🧊"
+  },
+  {
+   "slug": "bases",
+   "title": "What '42' actually means",
+   "blurb": "A number is just a count of things. The digits are an artefact of which base you happened to grow up counting in. Slide the base, watch the bricks regroup.",
+   "date": "2026-05-02",
+   "glyph": "🔢"
+  },
+  {
+   "slug": "golden",
+   "title": "Why φ keeps showing up",
+   "blurb": "The golden ratio is the unique aspect ratio that survives a square cut. Watch the spiral come together at exactly one number.",
+   "date": "2026-05-01",
+   "glyph": "✨"
+  },
+  {
+   "slug": "stretch",
+   "title": "Why multiplication is a stretch",
+   "blurb": "Multiplication isn't really repeated addition. It's stretching the number line. Drag the slider and watch.",
+   "date": "2026-05-01",
+   "glyph": "↔"
+  },
+  {
+   "slug": "pi",
+   "title": "Why π is what it is",
+   "blurb": "Roll a circle along a number line. It always lands on π, no matter the size. The ratio is the point.",
+   "date": "2026-05-01",
+   "glyph": "🥧"
+  },
+  {
+   "slug": "odd-squares",
+   "title": "Why 1 + 3 + 5 + ... = n²",
+   "blurb": "The sum of the first n odd numbers is always a perfect square. Watch the L-shaped layers add up.",
+   "date": "2026-05-01",
+   "glyph": "🔳"
+  },
+  {
+   "slug": "pythagoras",
+   "title": "Why a² + b² = c²",
+   "blurb": "A visual proof of Pythagoras' theorem you can scrub through.",
+   "date": "2026-05-01",
+   "glyph": "a²"
+  }
+ ]
+}

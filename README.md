@@ -58,8 +58,10 @@ Add entries to `SEED_CONTENT` (three lines = a new room). Any same-site
 of navigating (it fetches the page and renders its `<main>`). Cells
 without content stay procedural honey - leave gaps on purpose.
 
-**Data sources.** At load it fetches `/games/games.json` (games room)
-and `/index.xml` (writing room; every RSS item becomes a plaque).
+**Data sources.** At load it fetches `/games/games.json` (games room),
+`/index.xml` (writing room; every RSS item becomes a plaque, with a
+glyph picked from its title by `POST_GLYPHS`) and `/intuition.json`
+(intuition room; regenerate with `make sync-intuition`).
 `fillSection(baseKey, items, …)` lays a list out in a comb and spills
 overflow into a recursive "more" room at the comb's centre - that is
 how 64 posts paginate through the fractal.
@@ -71,9 +73,12 @@ first. Esc rises a level (or closes the reader). The ⬡ crumb flies
 home from any depth.
 
 **Useful cells to know.** `'0,0'` = the about room (with `'0,0|0,0'` =
-the shed/homelab and `'0,0|1,1'` = the CV inside it); `'1,0'` games;
-`'-1,1'` writing; `'0,-1'` lab; top-level features: `'0,1'` intuition,
-`'-1,0'` paint machine, `'1,-1'` shipshape. Tunables (`ZF`, `DIVE_FRAC`,
+the shed/homelab and `'0,0|1,1'` = the employers room inside it);
+`'1,0'` games; `'-1,1'` writing; `'0,-1'` lab; `'0,1'` intuition (every
+post from the sibling repo, via `/intuition.json`); top-level features:
+`'-1,0'` paint machine, `'1,-1'` shipshape. A handful of easter-egg
+cells hide in the procedural wilds (end of `SEED_CONTENT`); their
+ancestor paths are hash-verified deep, so don't rename them casually. Tunables (`ZF`, `DIVE_FRAC`,
 easing rates) sit at the top of the script. Test with `make serve` -
 content fetches need http, not file://.
 
@@ -115,8 +120,11 @@ into the tree; you then review the diff and commit to deploy.
   `make sync PULL=0` skips the `git pull` of the source repo.
 - **intuition** is *not* synced. It hand-codes absolute (`/…`) links, so it
   can't be served under a subpath; it runs as its own Cloudflare Pages project
-  (built from the `intuition` repo) at **intuition.wclarke.net**, linked from
-  `projects.html`.
+  (built from the `intuition` repo) at **https://intuition-2i1.pages.dev**
+  (the `intuition.wclarke.net` custom domain was never wired up in
+  Cloudflare). Its post list *is* imported: `make sync-intuition` runs
+  `tools/sync-intuition.mjs`, which rebuilds `/intuition.json` from the
+  source repo's `src/pages/index.astro`.
 
 ## The games
 

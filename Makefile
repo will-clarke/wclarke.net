@@ -7,7 +7,9 @@
 # Only ../games is synced here: its games use relative links, so they drop
 # straight into /games/. Intuition is NOT synced -- it hand-codes absolute
 # links, so it lives as its own Cloudflare Pages project at
-# intuition.wclarke.net (linked from the site, not copied in).
+# https://intuition-2i1.pages.dev (linked from the site, not copied in).
+# `make sync-intuition` regenerates /intuition.json (the honeycomb's
+# intuition room) from ../intuition's post index.
 #
 # Most games are self-contained static HTML. A few are build-based (see
 # BUILD_GAMES): `make sync` builds them in ../games and copies only their
@@ -71,6 +73,10 @@ sync-built:
 	  rsync -a --delete $(GAMES_SRC)/$$g/dist/ games/$$g/; \
 	done
 
+## sync-intuition: regenerate intuition.json from ../intuition's post index
+sync-intuition:
+	@node tools/sync-intuition.mjs
+
 ## serve: preview the site locally at http://localhost:$(PORT)
 serve:
 	@echo "Serving wclarke.net at http://localhost:$(PORT)  (Ctrl-C to stop)"
@@ -80,4 +86,4 @@ serve:
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
-.PHONY: sync pull build sync-games sync-built serve help
+.PHONY: sync pull build sync-games sync-built sync-intuition serve help
