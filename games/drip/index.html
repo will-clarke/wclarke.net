@@ -246,6 +246,8 @@ const DRIP = (() => {
   // ramp); at zero charges a portal is inert and drops fall straight through.
   // A cycle dye paints like a dye but advances one step along CYCLE_SEQ after
   // every coat. Both track their run state locally - machines never mutate.
+  // A sieve passes only drops of its own colour (one beat, like a dye); any
+  // other drop treats it as a wall and rests on top - a player-made blocker.
   const TICK_CAP = 300;
 
   function simulate(level, machines) {
@@ -300,6 +302,7 @@ const DRIP = (() => {
         if (isWall(d.x, ny) || isEmit(d.x, ny) || dropAt(d.x, ny)) return false;
         const m = machAt(d.x, ny);
         if (m) {
+          if (m.type === 'sieve' && d.c !== m.color) return false; // wrong colour: the mesh is a wall
           d.y = ny; d.in = m.type; d.act = t + 2; // dwell one tick inside
           if (m.type === 'dye') {
             d.c = mix(d.c, m.color);
@@ -312,6 +315,8 @@ const DRIP = (() => {
             d.c = mix(d.c, CYCLE_SEQ[ci % 6]);
             cycIdx.set(m, ci + 1);
             events.push({ k: 'cycle', id: d.id, x: d.x, y: ny, c: d.c, next: CYCLE_SEQ[(ci + 1) % 6] });
+          } else if (m.type === 'sieve') {
+            events.push({ k: 'sieve', id: d.id, x: d.x, y: ny, c: d.c });
           } else {
             events.push({ k: 'enter', id: d.id, x: d.x, y: ny });
           }
@@ -693,6 +698,215 @@ const DRIP = (() => {
       ],
       target: [['R'], ['O'], ['Y'], ['G'], ['B'], ['P']],
       solution: [['s', 2, -1, 0], ['s', 3, -1, 0], ['s', 4, -1, 0]]
+    },
+    {
+      id: 'strain', name: 'Strain', par: 1,
+      hint: 'The sieve passes its own colour only. Everything else just sits there.',
+      w: 7, h: 9,
+      walls: [[4, 5]],
+      emitters: [{ x: 3, y: 0, count: 2, every: 4 }],
+      machines: [
+        { type: 'cycle', x: 3, y: 2, start: 0, fixed: true },
+        { type: 'sieve', color: 'R', x: 0, y: 5 }
+      ],
+      target: [['R']],
+      solution: [['s', 1, 1, 0]]
+    },
+    {
+      id: 'reject-pile', name: 'Reject Pile', par: 2,
+      hint: 'A sieve that matches nothing is a bin.',
+      w: 7, h: 9,
+      walls: [[3, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 3, fixed: true },
+        { type: 'sieve', color: 'B', x: 2, y: 0 },
+        { type: 'dye', color: 'R', x: 6, y: 6 }
+      ],
+      target: [['R']],
+      solution: [['s', 1, 0, 1], ['s', 2, -1, 0]]
+    },
+    {
+      id: 'ghost', name: 'Ghost', par: 1,
+      hint: 'Blank is a colour too. Bleach on a blank drop changes nothing - but costs a beat.',
+      w: 7, h: 9,
+      walls: [[2, 6]],
+      emitters: [{ x: 1, y: 0 }, { x: 5, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'R', x: 5, y: 4, fixed: true },
+        { type: 'bleach', x: 0, y: 6 }
+      ],
+      target: [['X', 'R']],
+      solution: [['s', 1, 1, 0]]
+    },
+    {
+      id: 'echo', name: 'Echo', par: 1,
+      hint: 'Red on red does nothing. Doing nothing takes a beat.',
+      w: 7, h: 9,
+      walls: [[1, 7]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 2, fixed: true },
+        { type: 'dye', color: 'R', x: 2, y: 5, fixed: true },
+        { type: 'bleach', x: 4, y: 4, fixed: true },
+        { type: 'dye', color: 'B', x: 4, y: 6, fixed: true },
+        { type: 'dye', color: 'R', x: 6, y: 7 },
+        { type: 'dye', color: 'Y', x: 6, y: 3 }
+      ],
+      target: [['R', 'B']],
+      solution: [['s', 4, -1, 0]]
+    },
+    {
+      id: 'second-opinion', name: 'Second Opinion', par: 2,
+      hint: 'Two prisms, two starting colours. Read the rings.',
+      w: 7, h: 9,
+      walls: [[4, 3], [2, 5]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'cycle', x: 0, y: 3, start: 0 },
+        { type: 'cycle', x: 6, y: 5, start: 4 }
+      ],
+      target: [['P']],
+      solution: [['s', 0, 1, 0], ['s', 1, -1, 0]]
+    },
+    {
+      id: 'spent', name: 'Spent', par: 2,
+      hint: 'One pip. The wormhole won\'t take everyone.',
+      w: 7, h: 9,
+      walls: [[6, 2], [0, 7]],
+      emitters: [{ x: 1, y: 0, count: 2, every: 4 }],
+      machines: [
+        { type: 'portal', x: 1, y: 4, fixed: true, uses: 1 },
+        { type: 'portal', x: 3, y: 2 },
+        { type: 'dye', color: 'B', x: 5, y: 6, fixed: true },
+        { type: 'dye', color: 'R', x: 4, y: 7 }
+      ],
+      target: [['B'], ['R']],
+      solution: [['s', 1, 1, 0], ['s', 3, -1, 0]]
+    },
+    {
+      id: 'production-line', name: 'Production Line', par: 2,
+      hint: 'The prism paints the copies. The bin eats the blanks.',
+      w: 7, h: 9,
+      walls: [[3, 4]],
+      emitters: [{ x: 3, y: 0, count: 3, every: 4 }],
+      machines: [
+        { type: 'split', x: 3, y: 2, fixed: true },
+        { type: 'cycle', x: 6, y: 4, start: 0 },
+        { type: 'sieve', color: 'G', x: 2, y: 0 }
+      ],
+      target: [['R'], ['O'], ['Y']],
+      solution: [['s', 1, -1, 0], ['s', 2, 0, 1]]
+    },
+    {
+      id: 'overtaken', name: 'Overtaken', par: 1,
+      hint: 'First through the prism, last into the vial.',
+      w: 7, h: 9,
+      walls: [],
+      emitters: [{ x: 3, y: 0, count: 2, every: 4 }],
+      machines: [
+        { type: 'cycle', x: 3, y: 3, start: 0, fixed: true },
+        { type: 'portal', x: 3, y: 6, fixed: true, uses: 1 },
+        { type: 'portal', x: 6, y: 5 }
+      ],
+      target: [['O'], ['R']],
+      solution: [['s', 2, 0, -1]]
+    },
+    {
+      id: 'warts-and-all', name: 'Warts and All', par: 2,
+      hint: 'The middle drop is doomed. Let it be mud.',
+      w: 7, h: 9,
+      walls: [[4, 3], [2, 6]],
+      emitters: [{ x: 3, y: 0, count: 3, every: 4 }],
+      machines: [
+        { type: 'cycle', x: 0, y: 3, start: 0 },
+        { type: 'dye', color: 'B', x: 6, y: 6 }
+      ],
+      target: [['P'], ['M'], ['G']],
+      solution: [['s', 0, 1, 0], ['s', 1, -1, 0]]
+    },
+    {
+      id: 'thirds', name: 'Thirds', par: 2,
+      hint: 'A chute costs two beats - same as a splitter. Only drops that land together share a band.',
+      w: 7, h: 9,
+      walls: [[4, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 1, fixed: true },
+        { type: 'split', x: 2, y: 3, fixed: true },
+        { type: 'dye', color: 'R', x: 1, y: 6, fixed: true },
+        { type: 'dye', color: 'R', x: 3, y: 6, fixed: true },
+        { type: 'ramp', dir: -1, x: 4, y: 4 },
+        { type: 'dye', color: 'B', x: 6, y: 6 }
+      ],
+      target: [['R', 'R', 'B']],
+      solution: [['r', 4], ['s', 5, -1, 0]]
+    },
+    {
+      id: 'deadweight', name: 'Deadweight', par: 1,
+      hint: 'You can\'t hurry a drop. You can stop slowing it down.',
+      w: 7, h: 9,
+      walls: [],
+      emitters: [{ x: 2, y: 0 }, { x: 4, y: 0 }],
+      machines: [
+        { type: 'bleach', x: 2, y: 1, fixed: true },
+        { type: 'ramp', dir: 1, x: 2, y: 5, fixed: true },
+        { type: 'dye', color: 'R', x: 4, y: 2, fixed: true },
+        { type: 'ramp', dir: -1, x: 4, y: 4, fixed: true },
+        { type: 'sieve', color: 'X', x: 3, y: 7, fixed: true },
+        { type: 'bleach', x: 2, y: 3 }
+      ],
+      target: [['X']],
+      solution: [['s', 5, 1, 0]]
+    },
+    {
+      id: 'countdown', name: 'Countdown', par: 3,
+      hint: 'Five pips, five coats. The only way out is through a dead wormhole.',
+      w: 7, h: 9, maxTicks: 120,
+      walls: [[3, 1], [3, 3], [3, 5]],
+      emitters: [{ x: 5, y: 0 }],
+      machines: [
+        { type: 'ramp', dir: 1, x: 4, y: 6, fixed: true },
+        { type: 'portal', x: 5, y: 7, fixed: true, uses: 5 },
+        { type: 'portal', x: 6, y: 1 },
+        { type: 'bleach', x: 6, y: 3 },
+        { type: 'cycle', x: 6, y: 5, start: 0 }
+      ],
+      target: [['B']],
+      solution: [['s', 2, -1, 0], ['s', 3, -1, 0], ['s', 4, -1, 0]]
+    },
+    {
+      id: 'scaffold', name: 'Scaffold', par: 5,
+      hint: 'Tear the tower down. Every block rests on the one before.',
+      w: 7, h: 9,
+      walls: [[4, 8]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'Y', x: 0, y: 5 },
+        { type: 'dye', color: 'B', x: 0, y: 6 },
+        { type: 'bleach', x: 4, y: 2 },
+        { type: 'sieve', color: 'P', x: 4, y: 1 },
+        { type: 'dye', color: 'R', x: 4, y: 0 }
+      ],
+      target: [['G']],
+      solution: [['s', 2, 0, 1], ['s', 3, 0, 1], ['s', 1, 1, 0], ['s', 4, 0, 1], ['s', 0, 1, 0]]
+    },
+    {
+      id: 'alchemy', name: 'Alchemy', par: 4,
+      hint: 'Dye the whole rainbow blue. Keep whatever survives.',
+      w: 7, h: 9, maxTicks: 130,
+      walls: [[3, 1], [3, 3], [3, 5], [5, 8], [4, 7]],
+      emitters: [{ x: 5, y: 0 }],
+      machines: [
+        { type: 'split', x: 4, y: 6, fixed: true },
+        { type: 'portal', x: 5, y: 7, fixed: true, uses: 6 },
+        { type: 'portal', x: 6, y: 1 },
+        { type: 'bleach', x: 6, y: 3 },
+        { type: 'cycle', x: 6, y: 5, start: 0 },
+        { type: 'dye', color: 'B', x: 0, y: 7 }
+      ],
+      target: [['P'], ['M'], ['G'], ['M'], ['B'], ['M']],
+      solution: [['s', 2, -1, 0], ['s', 3, -1, 0], ['s', 4, -1, 0], ['s', 5, 1, 0]]
     }
   ];
 
@@ -918,6 +1132,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
       if (ev.k === 'dye') { SND.pop(); ring(ev.x, ev.y, CLR[ev.c]); }
       else if (ev.k === 'bleach') { SND.pop(); ring(ev.x, ev.y, CLR.X); }
       else if (ev.k === 'cycle') { SND.cycleS(); ring(ev.x, ev.y, CLR[ev.c]); }
+      else if (ev.k === 'sieve') { SND.click(); ring(ev.x, ev.y, CLR[ev.c]); }
       else if (ev.k === 'warp') { SND.warp(); ring(ev.x, ev.y, PORTAL_CLR); ring(ev.tx, ev.ty, PORTAL_CLR); }
       else if (ev.k === 'split') { SND.splitS(); ring(ev.x, ev.y, CLR[ev.c]); }
       else if (ev.k === 'exit') { SND.pour(); }
@@ -1193,6 +1408,22 @@ if (typeof module !== 'undefined') module.exports = DRIP;
       }
       ctx.globalAlpha = alpha == null ? 1 : alpha;
       drawDroplet(cx, cy + s * .04, s * .22, CLR[cur]);
+    } else if (m.type === 'sieve') {
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.fillStyle = CLR[m.color] + '1c'; ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : CLR[m.color];
+      ctx.lineWidth = 1.8; ctx.stroke();
+      // a rejected drop rests on the mesh...
+      ctx.save(); ctx.globalAlpha *= .4;
+      drawDroplet(cx - s * .2, cy - s * .22, s * .11, css('--ink'));
+      ctx.restore();
+      // ...the mesh itself...
+      ctx.strokeStyle = CLR[m.color]; ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.setLineDash([s * .1, s * .12]);
+      ctx.beginPath(); ctx.moveTo(lx + s * .12, cy - s * .02); ctx.lineTo(lx + s * .88, cy - s * .02); ctx.stroke();
+      ctx.setLineDash([]);
+      // ...and the right colour slips through
+      drawDroplet(cx + s * .12, cy + s * .3, s * .15, CLR[m.color]);
     }
     // bolts on fixed machines
     if (m.fixed) {

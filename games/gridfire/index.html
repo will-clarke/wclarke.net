@@ -63,15 +63,21 @@
   button{font:inherit}
 
   /* block inspector: lives inside the tray row, never overlays the grid */
-  #blockBar{display:none;flex:1;min-height:76px;align-items:center;gap:10px;
+  #blockBar{display:none;flex:1;min-height:76px;align-items:center;gap:10px;flex-wrap:wrap;
     border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);padding:8px 14px}
   #blockBar .bbInfo{flex:1;min-width:0}
   #blockBar .bbTitle{font-weight:700}
   #blockBar .bbSub{color:var(--muted);font-size:12px;margin-top:3px}
-  #blockBar .row{display:flex;gap:8px;flex:0 0 auto}
+  #blockBar .row{display:flex;gap:8px;flex:1 1 auto;flex-wrap:wrap;justify-content:flex-end}
   #blockBar button{padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);
     background:var(--raised);color:var(--ink);cursor:pointer;font-weight:600}
   #blockBar #sellBtn{color:var(--gold)}
+  #blockBar #upgradeBtn{color:#8affc0;border-color:#2e6b4d}
+  #blockBar .specBtn{display:none;flex-direction:column;align-items:flex-start;gap:1px;
+    padding:7px 11px;line-height:1.1;color:#cfe6ff;border-color:#3a5170}
+  #blockBar .specBtn b{font-size:13px}
+  #blockBar .specBtn small{color:var(--muted);font-weight:500;font-size:10px}
+  #blockBar button:disabled{opacity:.4;cursor:default}
   #tray.inspect .slot, #tray.inspect #reroll, #tray.inspect #go{display:none}
   #tray.inspect #blockBar{display:flex}
 
@@ -115,6 +121,9 @@
         <div class="bbSub" id="ipSub"></div>
       </div>
       <div class="row">
+        <button id="upgradeBtn">Upgrade</button>
+        <button id="spec0" class="specBtn"></button>
+        <button id="spec1" class="specBtn"></button>
         <button id="sellBtn">Sell</button>
         <button id="ipClose">Close</button>
       </div>
@@ -169,6 +178,21 @@ const ELEMS={ // dmg tuned in T4: volt has no status utility so it carries via r
   volt: {name:'Volt',  color:'#ffe066', cost:12, dmg:10},
 };
 const SLOW_F=0.26, SLOW_DUR=2.8; // strong slow is the maze enabler (long path compounds it)
+// Kingdom-Rush tiers 1-3 (T5). dmg x1.5/tier; tier 3 also stretches geometry.
+// mult/r3Radius bumped from the spec's 1.5/0.5 guesses so I5 holds (2 tier-3 ~= 8 tier-1 same spend).
+const TIER={mult:1.6, r3Radius:1.0, r3Range:2, r3Depth:1, slowPerTier:0.3};
+// Tier-4 specialisations (T6): at tier 3, pick 1 of 2 per element. Cost 3x base.
+// Deterministic-only: freeze/overcharge use per-block hit/shot counters, never Math.random.
+const SPECS={
+  frost:[{key:'deepfreeze',name:'Deep Freeze',fx:'every 5th hit freezes 0.8s'},
+         {key:'permafrost',name:'Permafrost',fx:'leaves icy slow-fields'}],
+  fire: [{key:'wildfire',  name:'Wildfire',  fx:'burn spreads on kill'},
+         {key:'napalm',    name:'Napalm',    fx:'2x burn + 15% slow'}],
+  volt: [{key:'overcharge',name:'Overcharge',fx:'every 4th shot x3'},
+         {key:'static',    name:'Static',    fx:'each hit stuns 0.25s'}],
+};
+const SPEC={freezeEvery:5, freezeDur:0.8, freezeCd:3, fieldDur:2.5, wildfireR:1.2,
+  napalmBurnMult:2, napalmSlowF:0.85, overEvery:4, overMult:3, staticDur:0.25, staticCd:2};
 // shop element odds (no gale): plain .34, frost .24, volt .22, fire .20
 const ELEM_ODDS=[['plain',.34],['frost',.24],['volt',.22],['fire',.20]];
 
@@ -202,7 +226,7 @@ function newState(){
     selected:null,
     path:[],                 // current spawn->goal path (cells)
     wavePath:null,           // with off-grid entry/exit, used for spawning
-    enemies:[], queue:[], waveT:0,
+    enemies:[], queue:[], waveT:0, fields:[],   // fields: Permafrost icy ground slow-tiles
     kills:0, dealtTotal:0,
     speed:1,                 // wave speed 1x/2x/3x, persists across the run
     goalDist:null, goalDistVer:-1,   // dist-to-goal field, cached per structVer (targeting)
@@ -340,8 +364,8 @@ function placePiece(shape,elem,cost,x,y,rot){
   const o=orient(shape,rot);
   const cells=o.cells.map(([cx,cy])=>[x+cx,y+cy]);
   const id=S.nextId++;
-  const b={id, shape, elem, cells, cost, em:o.em, dir:o.dir, fresh:S.phase==='build', dealt:0,
-    cd:0, flash:0, kind:null, center:[0,0], coverage:[], radius:0, role:'wall'};
+  const b={id, shape, elem, cells, cost, invested:cost, tier:1, spec:null, hitN:0, shots:0, em:o.em, dir:o.dir,
+    fresh:S.phase==='build', dealt:0, cd:0, flash:0, kind:null, center:[0,0], coverage:[], radius:0, role:'wall'};
   for(const [cx,cy] of cells) S.grid[idx(cx,cy)]=id;
   S.blocks.set(id,b);
   S.structVer++;
@@ -349,9 +373,25 @@ function placePiece(shape,elem,cost,x,y,rot){
   if(S.phase==='wave') repathEnemies();
   return b;
 }
+function tierMult(b){return Math.pow(TIER.mult,b.tier-1);}
+function upgradeCost(b){return b.tier===1?b.cost:b.tier===2?b.cost*2:Infinity;} // t2=base, t3=2x base
+function upgradeBlock(id){
+  const b=S.blocks.get(id); if(!b||b.elem==='plain'||b.tier>=3) return;
+  const c=upgradeCost(b); if(S.gold<c) return;
+  S.gold-=c; b.tier++; b.invested+=c;
+  recomputeTowers(); syncUI();
+}
+function specCost(b){return b.cost*3;} // tier-4 specialisation
+function chooseSpec(id,key){
+  const b=S.blocks.get(id); if(!b||b.tier!==3||b.spec) return;
+  const opts=SPECS[b.elem]; if(!opts||!opts.some(o=>o.key===key)) return;
+  const c=specCost(b); if(S.gold<c) return;
+  S.gold-=c; b.spec=key; b.invested+=c;
+  recomputeTowers(); syncUI();
+}
 function sellBlock(id){
   const b=S.blocks.get(id); if(!b) return;
-  S.gold+=b.fresh?b.cost:Math.floor(b.cost/2);
+  S.gold+=b.fresh?b.invested:Math.floor(b.invested/2);
   for(const [x,y] of b.cells) S.grid[idx(x,y)]=null;
   S.blocks.delete(id);
   S.selected=null;
@@ -390,16 +430,16 @@ function coneCellsAbs(emCell,dir,depth,own){ // 3-wide blast out the front, skip
 function recomputeTowers(){
   for(const b of S.blocks.values()){
     if(b.elem==='plain'){b.role='wall';continue;}
-    const P=PATTERNS[b.shape];
+    const P=PATTERNS[b.shape], t3=b.tier>=3; // tier 3 stretches range/radius/depth
     b.kind=P.kind; b.center=bboxCenter(b.cells);
     if(P.kind==='lane'){
-      b.coverage=traceBeam(b,P.range).cells; b.radius=0;
+      b.coverage=traceBeam(b,P.range+(t3?TIER.r3Range:0)).cells; b.radius=0;
       b.role=b.coverage.length?'tower':'idle';   // only lanes can be walled off
     }else if(P.kind==='cone'){
-      b.coverage=coneCellsAbs(b.cells[b.em],b.dir,P.depth,new Set(b.cells.map(([x,y])=>x+','+y)));
+      b.coverage=coneCellsAbs(b.cells[b.em],b.dir,P.depth+(t3?TIER.r3Depth:0),new Set(b.cells.map(([x,y])=>x+','+y)));
       b.radius=0; b.role='tower';                 // cone is never idle
     }else{ // nova / turret / mortar: radius from centre, shoots over walls
-      b.coverage=[]; b.radius=P.radius; b.role='tower';
+      b.coverage=[]; b.radius=P.radius+(t3?TIER.r3Radius:0); b.role='tower';
     }
   }
   S.goalDist=distFromGoal(null); S.goalDistVer=S.structVer;
@@ -428,7 +468,8 @@ function hpScale(){return Math.pow(1.115,S.wave);} // T4-tuned: gentle curve kee
 function spawnEnemy(type){
   const base=ENEMY_TYPES[type];
   S.enemies.push({type, hp:base.hp*hpScale(), maxhp:base.hp*hpScale(),
-    path:S.wavePath, prog:0, slowT:0, slowF:1, burnT:0, burnDps:0, alive:true, hitFx:0});
+    path:S.wavePath, prog:0, slowT:0, slowF:1, burnT:0, burnDps:0, alive:true, hitFx:0,
+    stopT:0, freezeCd:0, stunCd:0, wildfire:false});
   syncUI();
 }
 function enemyPos(e){
@@ -461,6 +502,13 @@ function damage(e,amt,src){
     const g=ENEMY_TYPES[e.type].gold;
     S.gold+=g;
     const [x,y]=enemyPos(e);
+    if(e.wildfire&&e.burnT>0){ // Wildfire: burn jumps to nearby enemies on death
+      const r2=SPEC.wildfireR*SPEC.wildfireR;
+      for(const o of S.enemies){ if(!o.alive||o===e) continue;
+        const [ox,oy]=enemyPos(o);
+        if((ox-x)*(ox-x)+(oy-y)*(oy-y)<=r2){o.burnDps=Math.max(o.burnDps,e.burnDps);o.burnT=Math.max(o.burnT,ELEMS.fire.burnDur);o.wildfire=true;}
+      }
+    }
     addFloater(x,y,'+'+g,'#ffd166');
     burst(x,y,ENEMY_TYPES[e.type].col,e.type==='brute'?26:12);
     syncUI();
@@ -470,13 +518,23 @@ function applySlow(e,dur){
   const f=e.type==='skitter'?(1+SLOW_F)/2:SLOW_F; // skitters shrug off half the slow
   e.slowF=Math.min(e.slowF,f); e.slowT=Math.max(e.slowT,dur);
 }
-function applyElem(b,e,dmg){ // one hit: armor + element status
+function stopEnemy(e,dur){e.stopT=Math.max(e.stopT,dur);} // freeze/stun: hard halt
+function applyElem(b,e,dmg){ // one hit: armor + element status + tier-4 spec
   const armor=ENEMY_TYPES[e.type].armor||0;
   if(armor&&b.elem!=='volt') dmg=Math.max(0.4,dmg-armor); // volt ignores armor
   damage(e,dmg,b);
   if(!e.alive) return;
-  if(b.elem==='frost') applySlow(e,SLOW_DUR);
-  if(b.elem==='fire'){e.burnDps=Math.max(e.burnDps,ELEMS.fire.burnDps);e.burnT=ELEMS.fire.burnDur;}
+  if(b.elem==='frost'){
+    applySlow(e,SLOW_DUR+TIER.slowPerTier*(b.tier-1));
+    if(b.spec==='deepfreeze'&&(++b.hitN)%SPEC.freezeEvery===0&&e.freezeCd<=0){stopEnemy(e,SPEC.freezeDur);e.freezeCd=SPEC.freezeCd;}
+  }
+  if(b.elem==='fire'){
+    const bm=b.spec==='napalm'?SPEC.napalmBurnMult:1;
+    e.burnDps=Math.max(e.burnDps,ELEMS.fire.burnDps*tierMult(b)*bm); e.burnT=ELEMS.fire.burnDur;
+    if(b.spec==='wildfire') e.wildfire=true;
+    if(b.spec==='napalm'){e.slowF=Math.min(e.slowF,SPEC.napalmSlowF);e.slowT=Math.max(e.slowT,ELEMS.fire.burnDur);}
+  }
+  if(b.elem==='volt'&&b.spec==='static'&&e.stunCd<=0){stopEnemy(e,SPEC.staticDur);e.stunCd=SPEC.staticCd;}
   const [x,y]=enemyPos(e);
   burst(x,y,ELEMS[b.elem].color,3);
 }
@@ -505,35 +563,49 @@ function firstToGoal(list){ // 'first' targeting: enemy nearest the goal by the 
   }
   return best;
 }
+function addField(x,y){ // Permafrost: icy slow-tile, refreshed if already there
+  if(!inGrid(x,y)) return;
+  const f=S.fields.find(f=>f.x===x&&f.y===y);
+  if(f) f.t=Math.max(f.t,SPEC.fieldDur); else S.fields.push({x,y,t:SPEC.fieldDur});
+}
 function fireTower(b){ // dispatch on kind; returns true if it hit something
-  const P=PATTERNS[b.shape], dmg=ELEMS[b.elem].dmg*P.mult;
+  const P=PATTERNS[b.shape]; let dmg=ELEMS[b.elem].dmg*P.mult*tierMult(b), hit;
   if(b.kind==='nova'||b.kind==='lane'||b.kind==='cone'){
     const list=b.kind==='nova'?enemiesInRadius(b.center,b.radius):enemiesInCells(b.coverage);
     if(!list.length) return false;
+    if(b.spec==='overcharge'&&(++b.shots)%SPEC.overEvery===0) dmg*=SPEC.overMult;
     for(const e of list) applyElem(b,e,dmg);   // hit all
-    return true;
-  }
-  // turret / mortar: single first-target
-  const t=firstToGoal(enemiesInRadius(b.center,b.radius));
-  if(!t) return false;
-  applyElem(b,t,dmg);
-  if(b.kind==='mortar'){
-    const [tx,ty]=enemyPos(t), sp2=P.splash*P.splash;
-    for(const e of S.enemies){ if(!e.alive||e===t) continue;
-      const [x,y]=enemyPos(e);
-      if((x-tx)*(x-tx)+(y-ty)*(y-ty)<=sp2) applyElem(b,e,dmg*0.6);
+    hit=list;
+  }else{ // turret / mortar: single first-target
+    const t=firstToGoal(enemiesInRadius(b.center,b.radius));
+    if(!t) return false;
+    if(b.spec==='overcharge'&&(++b.shots)%SPEC.overEvery===0) dmg*=SPEC.overMult;
+    applyElem(b,t,dmg); hit=[t];
+    if(b.kind==='mortar'){
+      const [tx,ty]=enemyPos(t), sp2=P.splash*P.splash;
+      for(const e of S.enemies){ if(!e.alive||e===t) continue;
+        const [x,y]=enemyPos(e);
+        if((x-tx)*(x-tx)+(y-ty)*(y-ty)<=sp2){applyElem(b,e,dmg*0.6); hit.push(e);}
+      }
     }
   }
+  if(b.spec==='permafrost') for(const e of hit){const [x,y]=enemyPos(e); addField(Math.round(x),Math.round(y));}
   return true;
 }
 function simTick(dt){
   S.waveT+=dt;
   while(S.queue.length&&S.queue[0].t<=S.waveT){spawnEnemy(S.queue.shift().type);}
+  for(let i=S.fields.length-1;i>=0;i--){if((S.fields[i].t-=dt)<=0)S.fields.splice(i,1);}
   for(const e of S.enemies){
     if(!e.alive) continue;
+    if(e.freezeCd>0)e.freezeCd-=dt;
+    if(e.stunCd>0)e.stunCd-=dt;
     if(e.slowT>0){e.slowT-=dt;if(e.slowT<=0)e.slowF=1;}
     if(e.burnT>0){e.burnT-=dt;damage(e,e.burnDps*dt,null);if(!e.alive)continue;}
     e.hitFx=Math.max(0,e.hitFx-dt);
+    if(e.stopT>0){e.stopT-=dt;continue;}   // frozen / stunned: no movement this tick
+    const [ex,ey]=enemyPos(e);
+    if(S.fields.length&&S.fields.some(f=>f.x===Math.round(ex)&&f.y===Math.round(ey))) applySlow(e,0.3);
     e.prog+=ENEMY_TYPES[e.type].sp*e.slowF*dt;
     if(e.prog>=e.path.length-1){
       e.alive=false; S.lives--;
@@ -620,6 +692,11 @@ function render(dt){
   const g=drag&&drag.active?dragGhost():null;
   const previewPath=g?(bfsPath(g.cellsAbs)||null):(S.path.length?S.path:null);
   if(previewPath) drawPath(previewPath, g?0.85:(S.phase==='wave'?0.14:0.35));
+  // permafrost icy fields
+  for(const f of S.fields){
+    ctx.fillStyle=hexA('#63d7f2',0.14*Math.min(1,f.t/SPEC.fieldDur));
+    ctx.fillRect(padX+f.x*cell+1,padY+f.y*cell+1,cell-2,cell-2);
+  }
   // coverage preview for the selected tower
   if(S.selected!==null&&!g){
     const sb=S.blocks.get(S.selected);
@@ -673,7 +750,8 @@ function drawEnemy(e){
   ctx.save();
   if(e.slowF<1){ctx.shadowColor='#63d7f2';ctx.shadowBlur=8;}
   if(e.burnT>0){ctx.shadowColor='#ff7a45';ctx.shadowBlur=10;}
-  ctx.fillStyle=e.hitFx>0?'#ffffff':base.col;
+  if(e.stopT>0){ctx.shadowColor='#bfefff';ctx.shadowBlur=13;} // frozen / stunned
+  ctx.fillStyle=e.hitFx>0?'#ffffff':(e.stopT>0?'#cdeeff':base.col);
   ctx.beginPath();
   if(e.type==='skitter'){ // triangle
     ctx.moveTo(exx,eyy-r*1.2);ctx.lineTo(exx+r*1.1,eyy+r*0.9);ctx.lineTo(exx-r*1.1,eyy+r*0.9);ctx.closePath();
@@ -760,6 +838,13 @@ function drawBlock(b,alpha,selected){
       ctx.strokeStyle='rgba(255,93,143,.85)';ctx.lineWidth=2;
       ctx.beginPath();ctx.moveTo(bx-4,by-4);ctx.lineTo(bx+4,by+4);
       ctx.moveTo(bx+4,by-4);ctx.lineTo(bx-4,by+4);ctx.stroke();
+    }
+  }
+  if(b.elem!=='plain'&&b.tier>1){ // tier pips: 0-2 dots in the first cell's corner
+    const [fx,fy]=b.cells[0];
+    ctx.fillStyle=el.color;
+    for(let i=0;i<b.tier-1;i++){
+      ctx.beginPath();ctx.arc(padX+fx*cell+9+i*8,padY+fy*cell+9,2.6,0,7);ctx.fill();
     }
   }
   ctx.restore();
@@ -1002,16 +1087,29 @@ function syncUI(){
   tray.classList.toggle('inspect',inspecting);
   if(inspecting){
     const b=S.blocks.get(S.selected), el=ELEMS[b.elem];
-    document.getElementById('ipTitle').textContent=el.name+' '+b.shape;
+    document.getElementById('ipTitle').textContent=el.name+' '+b.shape+(b.tier>1?' '+'★'.repeat(b.tier-1):'');
+    const opts=SPECS[b.elem], specName=b.spec&&opts?opts.find(o=>o.key===b.spec).name:null;
     let sub;
     if(b.elem==='plain') sub='Wall.';
     else if(b.role==='tower'){
-      sub=el.name+' · '+el.dmg+' dmg';
+      sub='Tier '+b.tier+(specName?' · '+specName:'')+' · '+Math.round(ELEMS[b.elem].dmg*PATTERNS[b.shape].mult*tierMult(b))+' dmg';
       if(b.dealt) sub+=' · '+Math.round(b.dealt)+' dealt';
     }
     else sub='Beam blocked - aim it somewhere useful.';
     document.getElementById('ipSub').textContent=sub;
-    document.getElementById('sellBtn').textContent='Sell ◆'+(b.fresh?b.cost:Math.floor(b.cost/2));
+    const upBtn=document.getElementById('upgradeBtn'), s0=document.getElementById('spec0'), s1=document.getElementById('spec1');
+    if(b.elem!=='plain'&&b.tier<3){                    // upgradeable
+      const c=upgradeCost(b);
+      upBtn.style.display=''; upBtn.disabled=S.gold<c; upBtn.textContent='Upgrade ◆'+c;
+      s0.style.display=s1.style.display='none';
+    }else if(b.tier===3&&!b.spec&&opts){               // pick a tier-4 specialisation
+      upBtn.style.display='none';
+      const c=specCost(b);
+      [s0,s1].forEach((btn,i)=>{const o=opts[i];
+        btn.style.display='flex'; btn.disabled=S.gold<c; btn.dataset.key=o.key;
+        btn.innerHTML='<b>'+o.name+' ◆'+c+'</b><small>'+o.fx+'</small>';});
+    }else{ upBtn.style.display='none'; s0.style.display=s1.style.display='none'; }
+    document.getElementById('sellBtn').textContent='Sell ◆'+(b.fresh?b.invested:Math.floor(b.invested/2));
   }
 }
 function drawSlots(){
@@ -1061,6 +1159,9 @@ document.getElementById('go').addEventListener('click',()=>{
   if(S.phase==='build') startWave();
   else if(S.phase==='wave'){S.speed=S.speed%3+1; syncUI();}
 });
+document.getElementById('upgradeBtn').addEventListener('click',()=>upgradeBlock(S.selected));
+document.getElementById('spec0').addEventListener('click',e=>chooseSpec(S.selected,e.currentTarget.dataset.key));
+document.getElementById('spec1').addEventListener('click',e=>chooseSpec(S.selected,e.currentTarget.dataset.key));
 document.getElementById('sellBtn').addEventListener('click',()=>sellBlock(S.selected));
 document.getElementById('ipClose').addEventListener('click',()=>{S.selected=null;syncUI();});
 document.getElementById('restart').addEventListener('click',()=>{
@@ -1101,57 +1202,75 @@ function pathAdjFree(){ // free cells adjacent to the current path, deterministi
   }
   return out;
 }
-function placeMonoPebble(elem){ // one P[elem] on the first free path-adjacent cell; false if broke/no room
+function placeMonoPebble(elem){ // one P[elem] on the first free path-adjacent cell; null if broke/no room
   const cost=SHAPES.P.cost+ELEMS[elem].cost;
-  if(S.gold<cost) return false;
+  if(S.gold<cost) return null;
   for(const [x,y] of pathAdjFree()){
     if(bfsPath([[x,y]])===null) continue;
-    S.gold-=cost; placePiece('P',elem,cost,x,y,0); return true;
+    S.gold-=cost; return placePiece('P',elem,cost,x,y,0);
   }
-  return false;
+  return null;
+}
+function pebbleToTierCost(elem,tier){ // total upgrade gold to lift a P[elem] from tier 1 to `tier`
+  const base=SHAPES.P.cost+ELEMS[elem].cost; let c=0;
+  for(let t=1;t<tier;t++) c+=t===1?base:base*2;   // t2=base, t3=2x base
+  return c;
 }
 function reinvestSpend(){ // spend current gold, cycling frost/volt/fire, until no element fits
   let ci=0, misses=0;
   while(misses<3){ if(placeMonoPebble(['frost','volt','fire'][ci%3])) misses=0; else misses++; ci++; }
 }
-// spec -> {entries, mono?:{elem,n}, reinvest?}
+// spec -> {entries, fill?:{elem,n,tier?}, reinvest?}. fill = greedy path-adjacent P pebbles,
+// optionally upgraded to `tier`. mazeUpgraded (2 tier-3) & mazeSprawl (8 tier-1) cost the same 104g.
 function benchSpec(name){
   if(name==='open'||name==='maze') return {entries:BUILDS[name]};
   if(name==='mazeReinvest') return {entries:BUILDS.maze, reinvest:true};
-  if(name==='mazeFrost') return {entries:mazeWalls(), mono:{elem:'frost',n:MONO_N.frost}};
-  if(name==='mazeVolt')  return {entries:mazeWalls(), mono:{elem:'volt', n:MONO_N.volt}};
-  if(name==='mazeFire')  return {entries:mazeWalls(), mono:{elem:'fire', n:MONO_N.fire}};
+  if(name==='mazeFrost') return {entries:mazeWalls(), fill:{elem:'frost',n:MONO_N.frost}};
+  if(name==='mazeVolt')  return {entries:mazeWalls(), fill:{elem:'volt', n:MONO_N.volt}};
+  if(name==='mazeFire')  return {entries:mazeWalls(), fill:{elem:'fire', n:MONO_N.fire}};
+  if(name==='mazeUpgraded') return {entries:mazeWalls(), fill:{elem:'frost',n:2,tier:3}}; // 2*(13+39)=104
+  if(name==='mazeSprawl')   return {entries:mazeWalls(), fill:{elem:'frost',n:8}};         // 8*13=104
   throw new Error('bench: unknown build '+name);
 }
 function runBench(name){
   const spec=benchSpec(name);
   S=newState(); placeCache=null;
   const wallCost=buildCost(spec.entries);
-  const monoCost=spec.mono?spec.mono.n*(SHAPES.P.cost+ELEMS[spec.mono.elem].cost):0;
-  S.gold=wallCost+monoCost;
+  let fillCost=0;
+  if(spec.fill){
+    const pebble=SHAPES.P.cost+ELEMS[spec.fill.elem].cost;
+    fillCost=spec.fill.n*(pebble+(spec.fill.tier?pebbleToTierCost(spec.fill.elem,spec.fill.tier):0));
+  }
+  S.gold=wallCost+fillCost;
   for(const [sh,el,x,y,rot] of spec.entries) benchPlace(sh,el,x,y,rot);
-  if(spec.mono){
-    for(let i=0;i<spec.mono.n;i++) if(!placeMonoPebble(spec.mono.elem)) throw new Error('bench: no room for mono '+name+' #'+i);
+  if(spec.fill){
+    for(let i=0;i<spec.fill.n;i++){
+      const b=placeMonoPebble(spec.fill.elem);
+      if(!b) throw new Error('bench: no room for fill '+name+' #'+i);
+      if(spec.fill.tier) while(b.tier<spec.fill.tier) upgradeBlock(b.id);
+    }
   }
   refreshPath();
   const path=S.path.length;
   if(name==='open' && path>14) throw new Error('bench: open path too long ('+path+') - constants drifted');
   if(name.startsWith('maze') && path<26) throw new Error('bench: maze path too short ('+path+') - constants drifted');
-  if(spec.mono) S.gold=0; // spent to build; no reinvestment
+  if(spec.fill) S.gold=0; // spent to build; no reinvestment
   let guard=0;
   while(S.phase!=='over' && guard++<5000){
     if(S.phase==='build'){ if(spec.reinvest) reinvestSpend(); startWave(); if(S.phase!=='wave') break; }
     for(let i=0;i<18000 && S.phase==='wave';i++) simTick(STEP);
   }
   const won=S.wave>=N_WAVES;
-  return {died:won?N_WAVES+1:S.wave+1, won, path, spent:wallCost+monoCost, kills:S.kills};
+  return {died:won?N_WAVES+1:S.wave+1, won, path, spent:wallCost+fillCost, kills:S.kills};
 }
-const BENCH_NAMES=['open','maze','mazeReinvest','mazeFrost','mazeVolt','mazeFire'];
+const BENCH_NAMES=['open','maze','mazeReinvest','mazeFrost','mazeVolt','mazeFire','mazeUpgraded','mazeSprawl'];
 
 /* ---------------- debug hook ---------------- */
 window.__dbg={
   get s(){return S;},
   place(shape,elem,x,y,rot){placePiece(shape,elem,0,x,y,rot||0);syncUI();return S.grid[idx(x,y)];},
+  upgrade(id){upgradeBlock(id);},
+  spec(id,key){chooseSpec(id,key);},
   gold(n){S.gold=n;syncUI();},
   go(){startWave();},
   tick(sec){for(let i=0;i<sec*60&&S.phase==='wave';i++)simTick(STEP);syncUI();},
@@ -1185,6 +1304,7 @@ window.__dbg={
       I2_anchor:      R('maze')>=10 && R('maze')<=14,               // maze falls wave 10-14
       I3_winnable:    rows.mazeReinvest.won || R('mazeReinvest')>=18,// reinvest reaches wave 18+
       I4_noDeadElem:  mono.every(x=>x>=8) && mono.every(x=>x-R('maze')<=2),
+      I5_neitherDom:  Math.abs(R('mazeUpgraded')-R('mazeSprawl'))<=2, // 2 tier-3 ~= 8 tier-1, same spend
     };
     console.table(rows); console.table(inv);
     S=newState(); placeCache=null; refreshPath(); syncUI();
