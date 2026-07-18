@@ -205,11 +205,26 @@ const ENEMY_TYPES={
 const TYPE_LABEL={runt:'runts',skitter:'skitters',shell:'shells',brute:'brutes'};
 // spawn cadence per type: [interval, startOffset]
 const CADENCE={runt:[0.55,0], skitter:[0.38,0.8], shell:[2.4,1.2], brute:[3.2,2]};
+// T7 themed beats: every ~5 waves spikes a new threat that a specific answer solves.
+// runt floods want nova/cone AoE; shell convoys want volt (armor-pierce);
+// skitter rushes want frost (slow); brute columns want fire DoT + a long path.
 const WAVES=[
-  {runt:8},{runt:12},{runt:10,brute:2},{runt:8,skitter:4},{runt:14,brute:3},
-  {skitter:10,brute:2},{runt:16,shell:3},{runt:12,skitter:8,brute:3},{shell:6,skitter:6},{runt:20,brute:6},
-  {runt:16,skitter:10,shell:4},{brute:8,shell:6},{runt:24,skitter:12},{shell:10,brute:6},{runt:20,skitter:14,brute:6},
-  {runt:26,shell:8,brute:6},{skitter:20,shell:8},{runt:30,brute:10,skitter:10},{shell:12,brute:10,runt:20},{runt:30,skitter:16,shell:10,brute:12},
+  // CALM (1-4): learn placement on a growing runt trickle, first taste of speed.
+  {runt:6},{runt:10},{runt:14},{runt:12,skitter:4},
+  // FLOOD (5): the runt flood - AoE or drown.
+  {runt:24,skitter:6},
+  // ARMOR (6-9): shell convoys + brute columns arrive; volt & fire earn their keep.
+  {runt:8,shell:5},{runt:10,brute:4},{skitter:8,shell:7},{shell:6,brute:6},
+  // ARMOR spike (10): the convoy peak.
+  {runt:10,shell:9,brute:5},
+  // RUSH (11-14): skitter rushes dominate; frost is the answer.
+  {runt:10,skitter:18},{brute:4,skitter:22},{runt:12,skitter:16,shell:6},{brute:6,skitter:26},
+  // RUSH spike (15): fast wall with armour mixed in.
+  {runt:14,skitter:24,shell:8},
+  // MIXED escalation (16-19): every threat ramps together.
+  {runt:24,shell:8,brute:6},{skitter:22,shell:10,brute:5},{runt:28,skitter:16,brute:8},{runt:18,shell:12,brute:10},
+  // FINALE (20): all four, at full weight.
+  {runt:30,skitter:18,shell:12,brute:12},
 ];
 
 /* ---------------- state ---------------- */
@@ -464,7 +479,7 @@ function startWave(){
   for(const b of S.blocks.values()){b.fresh=false;b.cd=0;}
   S.phase='wave'; syncUI();
 }
-function hpScale(){return Math.pow(1.115,S.wave);} // T4-tuned: gentle curve keeps waves 10-14 reachable
+function hpScale(){return Math.pow(1.13,S.wave);} // T7: 1.115->1.13 restores maze anchor to 13 under the gentler themed early waves
 function spawnEnemy(type){
   const base=ENEMY_TYPES[type];
   S.enemies.push({type, hp:base.hp*hpScale(), maxhp:base.hp*hpScale(),
