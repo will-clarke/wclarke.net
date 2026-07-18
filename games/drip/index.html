@@ -192,6 +192,7 @@ const DRIP = (() => {
   // ---- colours ----
   // X blank, R red, Y yellow, B blue, O orange, G green, P purple, M mud
   const MIXT = { BR: 'P', BY: 'G', RY: 'O' };
+  const CYCLE_SEQ = ['R', 'O', 'Y', 'G', 'B', 'P'];
   function mix(drop, dye) {
     if (drop === 'X') return dye;
     if (drop === dye) return drop;
@@ -240,12 +241,20 @@ const DRIP = (() => {
   // rule runs. So a dye costs one extra beat, ramps and splitters cost two.
   // Machines accept drops from above only; ramp exits and splitter copies need
   // an EMPTY cell (a plugged splitter side simply produces no copy).
+  // Portals come in one pair per level sharing `uses` charges: a drop entering
+  // either end reappears inside the other (portal costs two beats, like a
+  // ramp); at zero charges a portal is inert and drops fall straight through.
+  // A cycle dye paints like a dye but advances one step along CYCLE_SEQ after
+  // every coat. Both track their run state locally - machines never mutate.
   const TICK_CAP = 300;
 
   function simulate(level, machines) {
     const W = level.w, H = level.h;
     const wallSet = new Set(level.walls.map(([x, y]) => x + ',' + y));
     const machMap = new Map(machines.map(m => [m.x + ',' + m.y, m]));
+    const portals = machines.filter(m => m.type === 'portal');
+    let charges = portals.length ? (portals[0].uses != null ? portals[0].uses : 99) : 0;
+    const cycIdx = new Map(machines.filter(m => m.type === 'cycle').map(m => [m, m.start || 0]));
     const emitters = level.emitters.map(e => ({
       x: e.x, y: e.y, count: e.count || 1, every: e.every || 4, spawned: 0
     }));
@@ -298,6 +307,11 @@ const DRIP = (() => {
           } else if (m.type === 'bleach') {
             d.c = 'X';
             events.push({ k: 'bleach', id: d.id, x: d.x, y: ny });
+          } else if (m.type === 'cycle') {
+            const ci = cycIdx.get(m);
+            d.c = mix(d.c, CYCLE_SEQ[ci % 6]);
+            cycIdx.set(m, ci + 1);
+            events.push({ k: 'cycle', id: d.id, x: d.x, y: ny, c: d.c, next: CYCLE_SEQ[(ci + 1) % 6] });
           } else {
             events.push({ k: 'enter', id: d.id, x: d.x, y: ny });
           }
@@ -311,6 +325,21 @@ const DRIP = (() => {
       const order = drops.filter(d => !d.dead).sort((a, b) => b.y - a.y || a.x - b.x);
       for (const d of order) {
         if (d.act > t) continue; // dwelling / just created
+        if (d.in === 'portal') {
+          const here = machAt(d.x, d.y);
+          const other = portals.find(p => p !== here);
+          if (charges > 0 && other) {
+            if (!dropAt(other.x, other.y)) {
+              charges--;
+              events.push({ k: 'warp', id: d.id, x: d.x, y: d.y, tx: other.x, ty: other.y, left: charges });
+              d.x = other.x; d.y = other.y; d.in = 'warped'; d.act = t + 1;
+              moved = true;
+            }
+            continue; // other end occupied: wait
+          }
+          if (descend(d)) moved = true; // inert portal: fall straight through
+          continue;
+        }
         if (d.in === 'split') {
           const sides = [[d.x - 1, d.y], [d.x + 1, d.y]].filter(([sx, sy]) => cellFree(sx, sy));
           if (sides.length) {
@@ -524,10 +553,150 @@ const DRIP = (() => {
       ],
       target: [['P'], ['O'], ['B', 'B', 'Y']],
       solution: [['s', 0, -1, 0], ['s', 1, -1, 0], ['s', 2, 1, 0]]
+    },
+    {
+      id: 'roadblock', name: 'Roadblock', par: 2,
+      hint: 'Nothing stops the dye on that row. Park something in its path first.',
+      w: 7, h: 9,
+      walls: [[4, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'bleach', x: 4, y: 1 },
+        { type: 'dye', color: 'R', x: 0, y: 5 }
+      ],
+      target: [['R']],
+      solution: [['s', 0, 0, 1], ['s', 1, 1, 0]]
+    },
+    {
+      id: 'domino', name: 'Domino', par: 3,
+      hint: 'One block parks another. Order matters.',
+      w: 7, h: 9,
+      walls: [[4, 2], [4, 7]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'Y', x: 0, y: 2 },
+        { type: 'bleach', x: 4, y: 3 },
+        { type: 'dye', color: 'B', x: 0, y: 6 }
+      ],
+      target: [['G']],
+      solution: [['s', 0, 1, 0], ['s', 1, 0, 1], ['s', 2, 1, 0]]
+    },
+    {
+      id: 'wormhole', name: 'Wormhole', par: 1,
+      hint: 'The wormhole pulls a drop through to its twin. Charges are limited.',
+      w: 7, h: 9,
+      walls: [[0, 4], [1, 4], [2, 4], [3, 4], [4, 4], [5, 4], [6, 4], [6, 7]],
+      emitters: [{ x: 1, y: 0 }],
+      machines: [
+        { type: 'portal', x: 1, y: 3, fixed: true, uses: 3 },
+        { type: 'portal', x: 5, y: 5, fixed: true, uses: 3 },
+        { type: 'dye', color: 'R', x: 2, y: 7 }
+      ],
+      target: [['R']],
+      solution: [['s', 2, 1, 0]]
+    },
+    {
+      id: 'exit-strategy', name: 'Exit Strategy', par: 1,
+      hint: 'The far end of the wormhole slides too. Aim it.',
+      w: 7, h: 9,
+      walls: [[6, 5]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'portal', x: 3, y: 3, fixed: true, uses: 1 },
+        { type: 'portal', x: 0, y: 5 },
+        { type: 'dye', color: 'R', x: 5, y: 7, fixed: true }
+      ],
+      target: [['R']],
+      solution: [['s', 1, 1, 0]]
+    },
+    {
+      id: 'prism', name: 'Prism', par: 1,
+      hint: 'The prism shifts to its next colour after every coat.',
+      w: 7, h: 9,
+      walls: [[4, 4]],
+      emitters: [{ x: 3, y: 0, count: 2, every: 4 }],
+      machines: [
+        { type: 'cycle', x: 0, y: 4, start: 0 }
+      ],
+      target: [['R'], ['O']],
+      solution: [['s', 0, 1, 0]]
+    },
+    {
+      id: 'repaint', name: 'Repaint', par: 3,
+      hint: 'Painted red? Wipe it off - then paint over it. Order matters.',
+      w: 7, h: 9,
+      walls: [[2, 3], [2, 6], [5, 7]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'R', x: 3, y: 2, fixed: true },
+        { type: 'bleach', x: 5, y: 3 },
+        { type: 'dye', color: 'B', x: 5, y: 2 }
+      ],
+      target: [['B']],
+      solution: [['s', 1, -1, 0], ['s', 2, 0, 1], ['s', 2, -1, 0]]
+    },
+    {
+      id: 'detour', name: 'Detour', par: 2,
+      hint: 'A wormhole is a shortcut through time. Land together.',
+      w: 7, h: 9,
+      walls: [[0, 2], [1, 5]],
+      emitters: [{ x: 1, y: 0 }, { x: 5, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'R', x: 6, y: 2 },
+        { type: 'portal', x: 1, y: 3, fixed: true, uses: 1 },
+        { type: 'portal', x: 6, y: 5 },
+        { type: 'dye', color: 'B', x: 5, y: 6, fixed: true }
+      ],
+      target: [['R', 'B']],
+      solution: [['s', 0, -1, 0], ['s', 2, -1, 0]]
+    },
+    {
+      id: 'mudlark', name: 'Mudlark', par: 2,
+      hint: 'The prism\'s second colour will not mix so cleanly.',
+      w: 7, h: 9,
+      walls: [[4, 3], [4, 6]],
+      emitters: [{ x: 3, y: 0, count: 2, every: 4 }],
+      machines: [
+        { type: 'cycle', x: 0, y: 3, start: 0 },
+        { type: 'dye', color: 'B', x: 0, y: 6 }
+      ],
+      target: [['P'], ['M']],
+      solution: [['s', 0, 1, 0], ['s', 1, 1, 0]]
+    },
+    {
+      id: 'copy-loop', name: 'Copy Loop', par: 2,
+      hint: 'A drop can loop around and paint again - while the charges last.',
+      w: 7, h: 9, maxTicks: 90,
+      walls: [[1, 1], [1, 3], [3, 8]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 2, y: 5, fixed: true },
+        { type: 'portal', x: 3, y: 7, fixed: true, uses: 3 },
+        { type: 'portal', x: 6, y: 1 },
+        { type: 'dye', color: 'R', x: 6, y: 3 }
+      ],
+      target: [['R'], ['R'], ['R']],
+      solution: [['s', 3, -1, 0], ['s', 2, -1, 0]]
+    },
+    {
+      id: 'rainbow', name: 'Rainbow', par: 3,
+      hint: 'One drop. Six colours. Build the loop.',
+      w: 7, h: 9, maxTicks: 120,
+      walls: [[3, 1], [3, 3], [3, 5], [5, 8]],
+      emitters: [{ x: 5, y: 0 }],
+      machines: [
+        { type: 'split', x: 4, y: 6, fixed: true },
+        { type: 'portal', x: 5, y: 7, fixed: true, uses: 6 },
+        { type: 'portal', x: 6, y: 1 },
+        { type: 'bleach', x: 6, y: 3 },
+        { type: 'cycle', x: 6, y: 5, start: 0 }
+      ],
+      target: [['R'], ['O'], ['Y'], ['G'], ['B'], ['P']],
+      solution: [['s', 2, -1, 0], ['s', 3, -1, 0], ['s', 4, -1, 0]]
     }
   ];
 
-  return { mix, cloneMachines, slideDest, applySlide, applyRotate, simulate, segs, layersMatch, LEVELS };
+  return { mix, cloneMachines, slideDest, applySlide, applyRotate, simulate, segs, layersMatch, LEVELS, CYCLE_SEQ };
 })();
 if (typeof module !== 'undefined') module.exports = DRIP;
 /* ================= DRIP CORE END ================= */
@@ -538,6 +707,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
     X: '#c3cbdb', R: '#ff5964', Y: '#ffd23f', B: '#4b8dff',
     O: '#ff9838', G: '#3fd98c', P: '#a06bff', M: '#8f6b50'
   };
+  const PORTAL_CLR = '#2fd7c4';
   const NAME = { X: 'blank', R: 'red', Y: 'yellow', B: 'blue', O: 'orange', G: 'green', P: 'purple', M: 'mud' };
 
   const $ = id => document.getElementById(id);
@@ -592,6 +762,8 @@ if (typeof module !== 'undefined') module.exports = DRIP;
       pop() { tone(280, 720, .13, 'sine', .13); },
       splitS() { tone(420, 300, .08, 'triangle', .1); setTimeout(() => tone(420, 560, .09, 'triangle', .1), 45); },
       pour() { noise(.22, .16, 1500); },
+      warp() { tone(900, 180, .11, 'sine', .1); setTimeout(() => tone(200, 950, .13, 'sine', .1), 70); },
+      cycleS() { tone(500, 780, .07, 'triangle', .09); setTimeout(() => tone(780, 1100, .07, 'triangle', .07), 55); },
       deny() { tone(150, 90, .13, 'sawtooth', .07); },
       win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, f, .22, 'sine', .12), i * 95)); },
       fail() { tone(230, 130, .4, 'sine', .1); },
@@ -606,6 +778,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
   let sim = null, play = null, lastResult = null;
   let drag = null, slideAnim = null, wiggle = null;
   let particles = [];
+  let runVis = null; // during/after a run: {cyc: Map 'x,y'->next colour, pips: charges left}
   let cell = 40, ox = 0, oy = 0, dpr = 1;
 
   const progress = (() => { try { return JSON.parse(ls('drip_progress') || '{}'); } catch (e) { return {}; } })();
@@ -666,7 +839,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
     machines = DRIP.cloneMachines(level);
     moves = 0; undoStack = []; selected = -1;
     mode = 'build'; play = null; sim = null; lastResult = null;
-    drag = null; slideAnim = null; particles = [];
+    drag = null; slideAnim = null; particles = []; runVis = null;
     lvlTitle.textContent = (levelIndex + 1) + ' · ' + level.name;
     hintEl.textContent = level.hint;
     renderVial(vialTarget, level.target);
@@ -728,6 +901,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
     snaps.forEach(s => { s.byId = {}; s.drops.forEach(d => { s.byId[d.id] = d; }); });
     play = { snaps, pos: 0, fired: -1, fast: false, t: performance.now() };
     mode = 'running'; selected = -1; drag = null;
+    runVis = { cyc: new Map(), pips: null };
     renderVial(vialLive, []); hideBanner(); setRunBtn(); updateChip();
     if (instant) {
       for (const s of snaps) fireTick(s, true);
@@ -738,9 +912,13 @@ if (typeof module !== 'undefined') module.exports = DRIP;
 
   function fireTick(snap, silent) {
     for (const ev of snap.events) {
+      if (ev.k === 'cycle' && runVis) runVis.cyc.set(ev.x + ',' + ev.y, ev.next);
+      else if (ev.k === 'warp' && runVis) runVis.pips = ev.left;
       if (silent) continue;
       if (ev.k === 'dye') { SND.pop(); ring(ev.x, ev.y, CLR[ev.c]); }
       else if (ev.k === 'bleach') { SND.pop(); ring(ev.x, ev.y, CLR.X); }
+      else if (ev.k === 'cycle') { SND.cycleS(); ring(ev.x, ev.y, CLR[ev.c]); }
+      else if (ev.k === 'warp') { SND.warp(); ring(ev.x, ev.y, PORTAL_CLR); ring(ev.tx, ev.ty, PORTAL_CLR); }
       else if (ev.k === 'split') { SND.splitS(); ring(ev.x, ev.y, CLR[ev.c]); }
       else if (ev.k === 'exit') { SND.pour(); }
       else if (ev.k === 'chute') SND.click();
@@ -783,7 +961,7 @@ if (typeof module !== 'undefined') module.exports = DRIP;
   }
 
   function clearResult() {
-    mode = 'build'; lastResult = null; sim = null; play = null;
+    mode = 'build'; lastResult = null; sim = null; play = null; runVis = null;
     renderVial(vialLive, []); hideBanner(); setRunBtn(); updateChip();
   }
 
@@ -952,19 +1130,69 @@ if (typeof module !== 'undefined') module.exports = DRIP;
       ctx.fillStyle = css('--raised'); ctx.fill();
       ctx.strokeStyle = m.fixed ? css('--line-strong') : css('--accent');
       ctx.lineWidth = 1.8; ctx.stroke();
-      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
-      ctx.beginPath();
-      ctx.moveTo(cx, cy - s * .28); ctx.lineTo(cx, cy);
-      ctx.moveTo(cx, cy); ctx.lineTo(cx - s * .28, cy + s * .18);
-      ctx.moveTo(cx, cy); ctx.lineTo(cx + s * .28, cy + s * .18);
-      ctx.stroke();
+      // one drop falls in...
+      ctx.save(); ctx.globalAlpha *= .45;
+      drawDroplet(cx, ly + s * .3, s * .11, css('--ink'));
+      ctx.restore();
+      // ...meets the wedge...
       ctx.fillStyle = css('--ink');
-      [[-1, 1], [1, 1]].forEach(([sx]) => {
-        const axx = cx + sx * s * .28, ayy = cy + s * .18;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - s * .04);
+      ctx.lineTo(cx + s * .13, cy + s * .2); ctx.lineTo(cx - s * .13, cy + s * .2);
+      ctx.closePath(); ctx.fill();
+      // ...and flies out both sides
+      drawDroplet(cx - s * .28, cy + s * .1, s * .12, css('--ink'));
+      drawDroplet(cx + s * .28, cy + s * .1, s * .12, css('--ink'));
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 1.8; ctx.lineCap = 'round';
+      [[-1, 0], [1, 0]].forEach(([sx]) => {
+        const axx = cx + sx * s * .42, ayy = cy + s * .1;
         ctx.beginPath();
-        ctx.moveTo(axx, ayy + 4); ctx.lineTo(axx - 4 * sx, ayy - 1); ctx.lineTo(axx + 1 * sx, ayy - 4);
-        ctx.closePath(); ctx.fill();
+        ctx.moveTo(axx - sx * 3.5, ayy - 3.5); ctx.lineTo(axx, ayy); ctx.lineTo(axx - sx * 3.5, ayy + 3.5);
+        ctx.stroke();
       });
+    } else if (m.type === 'portal') {
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : PORTAL_CLR;
+      ctx.lineWidth = 1.8; ctx.stroke();
+      // swirling vortex ring
+      const R = s * .28, spin = performance.now() / 900;
+      ctx.save();
+      ctx.strokeStyle = PORTAL_CLR; ctx.lineCap = 'round';
+      ctx.shadowColor = PORTAL_CLR; ctx.shadowBlur = 8;
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.arc(cx, cy, R, spin, spin + 4.4); ctx.stroke();
+      ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(cx, cy, R * .55, -spin * 1.6, -spin * 1.6 + 3.8); ctx.stroke();
+      ctx.restore();
+      // charge pips
+      if (m.uses != null) {
+        const left = runVis && runVis.pips != null ? runVis.pips : m.uses;
+        const n = m.uses, pw = Math.min(6, (s - 8) / n);
+        for (let i = 0; i < n; i++) {
+          const bx2 = cx - (n - 1) * pw / 2 + i * pw;
+          ctx.beginPath(); ctx.arc(bx2, ly + s - 4.5, 1.7, 0, 7);
+          if (i < left) { ctx.fillStyle = PORTAL_CLR; ctx.fill(); }
+          else { ctx.strokeStyle = css('--line-strong'); ctx.lineWidth = 1; ctx.stroke(); }
+        }
+      }
+    } else if (m.type === 'cycle') {
+      const cur = (runVis && runVis.cyc.get(m.x + ',' + m.y)) || DRIP.CYCLE_SEQ[(m.start || 0) % 6];
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.fillStyle = CLR[cur] + '24'; ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : CLR[cur];
+      ctx.lineWidth = 1.8; ctx.stroke();
+      // ring of coming colours, current at the top
+      const ci = DRIP.CYCLE_SEQ.indexOf(cur);
+      for (let i = 0; i < 6; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 3;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(a) * s * .34, cy + Math.sin(a) * s * .34, i === 0 ? 2.6 : 1.7, 0, 7);
+        ctx.fillStyle = CLR[DRIP.CYCLE_SEQ[(ci + i) % 6]];
+        ctx.globalAlpha = (alpha == null ? 1 : alpha) * (i === 0 ? 1 : .55);
+        ctx.fill();
+      }
+      ctx.globalAlpha = alpha == null ? 1 : alpha;
+      drawDroplet(cx, cy + s * .04, s * .22, CLR[cur]);
     }
     // bolts on fixed machines
     if (m.fixed) {
@@ -995,17 +1223,19 @@ if (typeof module !== 'undefined') module.exports = DRIP;
     drawDroplet(x + cell / 2, ly + s * .84, s * .1, css('--accent'));
   }
 
-  function drawDrop(x, y, c, r, alpha) {
+  function drawDrop(x, y, c, r, alpha, sqx, sqy) {
     ctx.save();
     ctx.globalAlpha = alpha == null ? 1 : alpha;
+    ctx.translate(x, y);
+    ctx.scale(sqx || 1, sqy || 1);
     const col = CLR[c];
-    const g = ctx.createRadialGradient(x - r * .35, y - r * .4, r * .15, x, y, r * 1.15);
+    const g = ctx.createRadialGradient(-r * .35, -r * .4, r * .15, 0, 0, r * 1.15);
     g.addColorStop(0, '#ffffff');
     g.addColorStop(.25, col);
     g.addColorStop(1, col);
     ctx.fillStyle = g;
     ctx.shadowColor = col; ctx.shadowBlur = r * .9;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
     ctx.restore();
   }
 
@@ -1058,6 +1288,34 @@ if (typeof module !== 'undefined') module.exports = DRIP;
       }
       const sel = i === selected && mode === 'build';
       drawMachine(m, px(m.x) + wob, py(m.y), sel ? 1.04 : 1);
+      // slide nubs: a movable machine wears little arrows on every open side
+      if (mode === 'build' && !m.fixed) {
+        ctx.save();
+        ctx.globalAlpha = (sel ? .55 : .3) + .18 * Math.sin(now / 320 + i);
+        ctx.fillStyle = css('--accent');
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          if (!DRIP.slideDest(level, machines, i, dx, dy)) continue;
+          const bx = px(m.x) + cell / 2 + dx * cell * .46;
+          const by = py(m.y) + cell / 2 + dy * cell * .46;
+          ctx.beginPath();
+          ctx.moveTo(bx + dx * 4.5, by + dy * 4.5);
+          ctx.lineTo(bx - dy * 4, by + dx * 4);
+          ctx.lineTo(bx + dy * 4, by - dx * 4);
+          ctx.closePath(); ctx.fill();
+        }
+        if (m.type === 'ramp') {
+          // rotate hint in the wedge's empty corner
+          const s = cell * .86, cx2 = px(m.x) + cell / 2, ly2 = py(m.y) + cell / 2 - s / 2;
+          const gx = cx2 - m.dir * s * .3, gy = ly2 + s * .22;
+          ctx.strokeStyle = css('--muted'); ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.arc(gx, gy, 4, -.6, 3.6); ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(gx + 1.2, gy - 5.8); ctx.lineTo(gx + 3.8, gy - 3.4); ctx.lineTo(gx + .2, gy - 2.2);
+          ctx.closePath();
+          ctx.fillStyle = css('--muted'); ctx.fill();
+        }
+        ctx.restore();
+      }
     });
 
     // slide animation
@@ -1097,17 +1355,44 @@ if (typeof module !== 'undefined') module.exports = DRIP;
         const k = Math.min(Math.floor(play.pos), maxPos);
         const cur = play.snaps[k], nxt = play.snaps[Math.min(k + 1, maxPos)];
         const f = easeIO(Math.min(1, play.pos - k));
+        // a drop dwelling in a ramp rolls into the wedge's pocket
+        const pocket = st => {
+          if (st && st.in === 'ramp') {
+            const mm = machines.find(m2 => m2.type === 'ramp' && m2.x === st.x && m2.y === st.y);
+            if (mm) return [mm.dir * cell * .15, cell * .12];
+          }
+          return [0, 0];
+        };
         // drops present in nxt: tween from cur position
         for (const d of nxt.drops) {
           const p = cur.byId[d.id];
-          const fx = p ? p.x : d.x, fy = p ? p.y : d.y;
-          const X = px(fx + (d.x - fx) * f) + cell / 2;
-          const Y = py(fy + (d.y - fy) * f) + cell / 2;
           const c = (p && f < .7) ? p.c : d.c;
-          const inM = d.in && d.id in cur.byId && cur.byId[d.id].in === d.in;
+          const warp = p && (p.x !== d.x || p.y !== d.y)
+            ? nxt.events.find(ev => ev.k === 'warp' && ev.id === d.id) : null;
+          const born = !p ? nxt.events.find(ev => ev.k === 'split' && ev.tx === d.x && ev.ty === d.y) : null;
+          if (warp) {
+            // swallowed by one portal, spat out of the other
+            if (f < .5) drawDrop(px(warp.x) + cell / 2, py(warp.y) + cell / 2, c, cell * .28 * (1 - f * 2) + 1.5, 1);
+            else drawDrop(px(warp.tx) + cell / 2, py(warp.ty) + cell / 2, c, cell * .28 * ((f - .5) * 2) + 1.5, 1);
+            continue;
+          }
+          if (born) {
+            // clone hops out of the splitter
+            const X = px(born.x + (d.x - born.x) * f) + cell / 2;
+            const Y = py(born.y) + cell / 2 - Math.sin(f * Math.PI) * cell * .45;
+            drawDrop(X, Y, born.c, cell * .3 * (.35 + .65 * f), Math.min(1, .3 + f));
+            continue;
+          }
+          const [sox, soy] = pocket(p), [tox, toy] = pocket(d);
+          const fx = p ? p.x : d.x, fy = p ? p.y : d.y;
+          let X = px(fx + (d.x - fx) * f) + cell / 2 + sox + (tox - sox) * f;
+          let Y = py(fy + (d.y - fy) * f) + cell / 2 + soy + (toy - soy) * f;
+          if (p && p.y === d.y && p.x !== d.x) Y -= Math.sin(f * Math.PI) * cell * .3; // chute hop
+          const inM = d.in && p && p.in === d.in;
+          const squash = d.in === 'split' && p && p.in === 'split';
           const r = cell * (inM ? .24 : .3);
           const ap = p ? 1 : Math.min(1, f * 2);
-          drawDrop(X, Y, c, r * (p ? 1 : (.4 + .6 * f)), ap);
+          drawDrop(X, Y, c, r * (p ? 1 : (.4 + .6 * f)), ap, squash ? 1.22 : 1, squash ? .76 : 1);
         }
         // drops that exited between cur and nxt: continue past the bottom
         for (const d of cur.drops) {

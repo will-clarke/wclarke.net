@@ -62,15 +62,18 @@
   #go:disabled{opacity:.45;cursor:default}
   button{font:inherit}
 
-  #infoPanel{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);
-    display:none;z-index:20;background:var(--raised);border:1px solid var(--line-strong);
-    border-radius:14px;padding:10px 14px;min-width:230px;max-width:320px;box-shadow:0 6px 24px rgba(0,0,0,.6)}
-  #infoPanel .ttl{font-weight:700;margin-bottom:2px}
-  #infoPanel .sub2{color:var(--muted);font-size:12px;margin-bottom:8px}
-  #infoPanel .row{display:flex;gap:8px}
-  #infoPanel button{flex:1;padding:8px 0;border-radius:10px;border:1px solid var(--line-strong);
-    background:var(--surface);color:var(--ink);cursor:pointer;font-weight:600}
-  #infoPanel #sellBtn{color:var(--gold)}
+  /* block inspector: lives inside the tray row, never overlays the grid */
+  #blockBar{display:none;flex:1;min-height:76px;align-items:center;gap:10px;
+    border-radius:12px;background:var(--surface);border:1px solid var(--line-strong);padding:8px 14px}
+  #blockBar .bbInfo{flex:1;min-width:0}
+  #blockBar .bbTitle{font-weight:700}
+  #blockBar .bbSub{color:var(--muted);font-size:12px;margin-top:3px}
+  #blockBar .row{display:flex;gap:8px;flex:0 0 auto}
+  #blockBar button{padding:10px 16px;border-radius:10px;border:1px solid var(--line-strong);
+    background:var(--raised);color:var(--ink);cursor:pointer;font-weight:600}
+  #blockBar #sellBtn{color:var(--gold)}
+  #tray.inspect .slot, #tray.inspect #reroll, #tray.inspect #go{display:none}
+  #tray.inspect #blockBar{display:flex}
 
   #overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
     background:rgba(10,13,20,.82);backdrop-filter:blur(4px);z-index:50}
@@ -96,14 +99,6 @@
 
   <div id="wrap">
     <canvas id="game"></canvas>
-    <div id="infoPanel">
-      <div class="ttl" id="ipTitle">Block</div>
-      <div class="sub2" id="ipSub"></div>
-      <div class="row">
-        <button id="sellBtn">Sell</button>
-        <button id="ipClose">Close</button>
-      </div>
-    </div>
   </div>
 
   <div id="preview"></div>
@@ -114,6 +109,16 @@
     <div class="slot" data-i="2"><canvas width="104" height="96"></canvas><span class="cost"></span></div>
     <button id="reroll">&#8634;<small id="rerollCost">5</small></button>
     <button id="go">Go</button>
+    <div id="blockBar">
+      <div class="bbInfo">
+        <div class="bbTitle" id="ipTitle">Block</div>
+        <div class="bbSub" id="ipSub"></div>
+      </div>
+      <div class="row">
+        <button id="sellBtn">Sell</button>
+        <button id="ipClose">Close</button>
+      </div>
+    </div>
   </div>
 
   <div id="overlay"><div class="card">
@@ -130,42 +135,48 @@ const SPAWN={x:3,y:0}, GOAL={x:4,y:11};
 const STEP=1/60;
 const START_GOLD=50, START_LIVES=10;
 const N_WAVES=20;
-const CHAIN_MULT=1.4, BASE_RANGE=4;
 const GHOST_OFFSET=80;      // px the drag ghost floats above the finger
 const SNAP_R2=2.4*2.4;      // snap radius², in cells
 const BULLET_TIME=0.15;     // sim speed while dragging during a wave
 
 const DIRS=[[0,-1],[1,0],[0,1],[-1,0]]; // up right down left
 
-const SHAPES={
+const SHAPES={ // dir0: base firing dir at rot 0; only I & T are directional
   P:{cells:[[0,0]],em:0,cost:5},
-  I:{cells:[[0,0],[1,0],[2,0],[3,0]],em:3,cost:12},
+  I:{cells:[[0,0],[1,0],[2,0],[3,0]],em:3,cost:12,dir0:1},        // fires right out of the end cell
   O:{cells:[[0,0],[1,0],[0,1],[1,1]],em:1,cost:12},
-  T:{cells:[[0,0],[1,0],[2,0],[1,1]],em:3,cost:12},
+  T:{cells:[[0,0],[1,0],[2,0],[1,1]],em:1,cost:12,dir0:0},        // em = bar middle, fires up (opposite the stem)
   L:{cells:[[0,0],[0,1],[0,2],[1,2]],em:3,cost:12},
   J:{cells:[[1,0],[1,1],[1,2],[0,2]],em:3,cost:12},
   S:{cells:[[1,0],[2,0],[0,1],[1,1]],em:0,cost:12},
   Z:{cells:[[0,0],[1,0],[1,1],[2,1]],em:1,cost:12},
 };
-const ELEMS={
+// shape = HOW a tower attacks (element = damage type). all numbers are T4-tunable.
+const PATTERNS={
+  P:{kind:'nova',   radius:1.5,             cd:1.6, mult:1.1}, // pulse around itself, hits all in radius
+  O:{kind:'mortar', radius:3.0, splash:1.2, cd:2.8, mult:1.6}, // lobbed AoE shell at the first target
+  I:{kind:'lane',   range:6,                cd:2.2, mult:1.3}, // piercing shot along its axis, hits all in the lane
+  T:{kind:'cone',   depth:2, width:3,       cd:1.9, mult:1.2}, // blast out the front
+  L:{kind:'turret', radius:2.2,             cd:0.9, mult:0.8}, // fast single-target
+  J:{kind:'turret', radius:2.2,             cd:0.9, mult:0.8},
+  S:{kind:'turret', radius:2.2,             cd:0.9, mult:0.8},
+  Z:{kind:'turret', radius:2.2,             cd:0.9, mult:0.8},
+};
+const ELEMS={ // dmg tuned in T4: volt has no status utility so it carries via raw punch
   plain:{name:'Stone', color:'#6b7689', cost:0},
-  frost:{name:'Frost', color:'#63d7f2', cost:8,  cd:1.0, dmg:3},
-  gale: {name:'Gale',  color:'#a8f06e', cost:8,  cd:1.2, dmg:1, kb:1.5},
-  fire: {name:'Fire',  color:'#ff7a45', cost:15, cd:3.0, dmg:2, burnDps:5, burnDur:4},
-  volt: {name:'Volt',  color:'#ffe066', cost:12, cd:1.6, dmg:3, arcR:2.2, arcN:3},
+  frost:{name:'Frost', color:'#63d7f2', cost:8,  dmg:4},
+  fire: {name:'Fire',  color:'#ff7a45', cost:15, dmg:2, burnDps:6, burnDur:4},
+  volt: {name:'Volt',  color:'#ffe066', cost:12, dmg:10},
 };
-const SLOW_F=0.45, SLOW_DUR=1.6;
-const COMBOS={ // pair key -> name (both orders)
-  'fire|gale':'Firestorm','fire|frost':'Thermal Shock','fire|volt':'Plasma',
-  'frost|gale':'Blizzard','frost|volt':'Superconduct','gale|volt':'Storm',
-};
-function comboKey(a,b){return a<b?a+'|'+b:b+'|'+a;}
+const SLOW_F=0.26, SLOW_DUR=2.8; // strong slow is the maze enabler (long path compounds it)
+// shop element odds (no gale): plain .34, frost .24, volt .22, fire .20
+const ELEM_ODDS=[['plain',.34],['frost',.24],['volt',.22],['fire',.20]];
 
 const ENEMY_TYPES={
-  runt:   {hp:8,  sp:2.2, r:0.17, gold:1, col:'#ff5d8f', resist:'fire',  weak:'gale'},
-  skitter:{hp:6,  sp:3.4, r:0.14, gold:1, col:'#ff5dde', resist:'frost', weak:'volt'},
-  shell:  {hp:26, sp:1.0, r:0.24, gold:3, col:'#5c7cfa', resist:'volt',  weak:'frost', armor:2},
-  brute:  {hp:46, sp:0.85,r:0.30, gold:4, col:'#c084fc', resist:'gale',  weak:'fire', kbImmune:true},
+  runt:   {hp:8,  sp:2.2, r:0.17, gold:1, col:'#ff5d8f'},
+  skitter:{hp:6,  sp:3.4, r:0.14, gold:1, col:'#ff5dde'},
+  shell:  {hp:26, sp:1.0, r:0.24, gold:3, col:'#5c7cfa', armor:2},
+  brute:  {hp:46, sp:0.85,r:0.30, gold:4, col:'#c084fc'},
 };
 const TYPE_LABEL={runt:'runts',skitter:'skitters',shell:'shells',brute:'brutes'};
 // spawn cadence per type: [interval, startOffset]
@@ -193,17 +204,23 @@ function newState(){
     wavePath:null,           // with off-grid entry/exit, used for spawning
     enemies:[], queue:[], waveT:0,
     kills:0, dealtTotal:0,
+    speed:1,                 // wave speed 1x/2x/3x, persists across the run
+    goalDist:null, goalDistVer:-1,   // dist-to-goal field, cached per structVer (targeting)
   };
 }
 function idx(x,y){return y*COLS+x;}
 function inGrid(x,y){return x>=0&&x<COLS&&y>=0&&y<ROWS;}
 
 /* ---------------- shop ---------------- */
+function rollElem(){
+  const r=Math.random(); let acc=0;
+  for(const [el,p] of ELEM_ODDS){acc+=p;if(r<acc)return el;}
+  return ELEM_ODDS[ELEM_ODDS.length-1][0];
+}
 function rollPiece(){
   const shapeKeys=Object.keys(SHAPES);
   const shape=Math.random()<0.15?'P':shapeKeys[1+Math.floor(Math.random()*(shapeKeys.length-1))];
-  const r=Math.random();
-  const elem=r<0.34?'plain':r<0.52?'frost':r<0.70?'gale':r<0.85?'volt':'fire';
+  const elem=rollElem();
   return {shape, elem, rot:0, cost:SHAPES[shape].cost+ELEMS[elem].cost};
 }
 function rerollCost(){return 5+5*S.rerolls;}
@@ -219,7 +236,7 @@ function rotOnce(cells,em){ // rotate CW, normalized; emitter index follows its 
 function orient(shape,rot){ // shape key + rotation count -> {cells, em, dir}
   let cells=SHAPES[shape].cells.map(c=>c.slice()), em=SHAPES[shape].em;
   for(let i=0;i<(rot%4+4)%4;i++){const r=rotOnce(cells,em);cells=r.cells;em=r.em;}
-  return {cells, em, dir:(rot%4+4)%4};
+  return {cells, em, dir:(((SHAPES[shape].dir0||0)+rot)%4+4)%4};
 }
 
 /* ---------------- pathfinding ---------------- */
@@ -324,12 +341,11 @@ function placePiece(shape,elem,cost,x,y,rot){
   const cells=o.cells.map(([cx,cy])=>[x+cx,y+cy]);
   const id=S.nextId++;
   const b={id, shape, elem, cells, cost, em:o.em, dir:o.dir, fresh:S.phase==='build', dealt:0,
-    cd:0, flash:0, link:null, linkCell:null, beam:[], power:1, range:BASE_RANGE,
-    elems:[elem], role:'wall'};
+    cd:0, flash:0, kind:null, center:[0,0], coverage:[], radius:0, role:'wall'};
   for(const [cx,cy] of cells) S.grid[idx(cx,cy)]=id;
   S.blocks.set(id,b);
   S.structVer++;
-  recomputeChains(); refreshPath();
+  recomputeTowers(); refreshPath();
   if(S.phase==='wave') repathEnemies();
   return b;
 }
@@ -340,7 +356,7 @@ function sellBlock(id){
   S.blocks.delete(id);
   S.selected=null;
   S.structVer++;
-  recomputeChains(); refreshPath();
+  recomputeTowers(); refreshPath();
   if(S.phase==='wave') repathEnemies();
   syncUI();
 }
@@ -355,44 +371,38 @@ function traceBeam(b,maxLen){
   }
   return {cells, hit:null, hitCell:null};
 }
-function recomputeChains(){
-  const els=[...S.blocks.values()].filter(b=>b.elem!=='plain');
-  for(const b of els){b.link=null;b.linkCell=null;b.beam=[];b.power=1;b.range=BASE_RANGE;b.role='idle';b.elems=[b.elem];}
-  for(const b of els){
-    const t=traceBeam(b,COLS+ROWS);
-    if(t.hit&&t.hit.elem!=='plain'){b.link=t.hit.id;b.linkCell=t.hitCell;b.role='feeder';}
-  }
-  const inflow=new Map(), feedElems=new Map();
-  for(const b of els){inflow.set(b.id,0);feedElems.set(b.id,[]);}
-  for(const b of els){
-    if(b.link===null) continue;
-    let cur=b, seen=new Set([b.id]);
-    while(cur.link!==null){
-      cur=S.blocks.get(cur.link);
-      if(seen.has(cur.id)){cur=null;break;}
-      seen.add(cur.id);
-    }
-    if(cur){inflow.set(cur.id,inflow.get(cur.id)+1);feedElems.get(cur.id).push(b.elem);}
-    else b.role='cycle';
-  }
-  for(const b of els){
-    if(b.link!==null) continue;
-    b.role='terminal';
-    const up=inflow.get(b.id)||0;
-    b.power=Math.pow(CHAIN_MULT,Math.min(up,4)); // chain cap: 5 links total
-    b.range=BASE_RANGE+up;
-    b.elems=[b.elem,...feedElems.get(b.id)];
-    const t=traceBeam(b,b.range);
-    b.beam=t.cells;
-    if(b.beam.length===0) b.role='idle';
-  }
+function bboxCenter(cells){ // geometric centre in enemyPos/px cell-units
+  const xs=cells.map(c=>c[0]), ys=cells.map(c=>c[1]);
+  return [(Math.min(...xs)+Math.max(...xs))/2, (Math.min(...ys)+Math.max(...ys))/2];
 }
-function comboNames(elems){
-  const u=[...new Set(elems)], names=[];
-  for(let i=0;i<u.length;i++)for(let j=i+1;j<u.length;j++){
-    const n=COMBOS[comboKey(u[i],u[j])]; if(n) names.push(n);
+function coneCellsAbs(emCell,dir,depth,own){ // 3-wide blast out the front, skipping own/blocked cells
+  const [ex,ey]=emCell, [dx,dy]=DIRS[dir], pdx=-dy, pdy=dx;
+  const out=[];
+  for(let d=1;d<=depth;d++)for(let o=-1;o<=1;o++){
+    const x=ex+dx*d+pdx*o, y=ey+dy*d+pdy*o;
+    if(!inGrid(x,y)) continue;
+    if(own.has(x+','+y)) continue;
+    if(S.grid[idx(x,y)]!==null) continue;
+    out.push([x,y]);
   }
-  return names;
+  return out;
+}
+function recomputeTowers(){
+  for(const b of S.blocks.values()){
+    if(b.elem==='plain'){b.role='wall';continue;}
+    const P=PATTERNS[b.shape];
+    b.kind=P.kind; b.center=bboxCenter(b.cells);
+    if(P.kind==='lane'){
+      b.coverage=traceBeam(b,P.range).cells; b.radius=0;
+      b.role=b.coverage.length?'tower':'idle';   // only lanes can be walled off
+    }else if(P.kind==='cone'){
+      b.coverage=coneCellsAbs(b.cells[b.em],b.dir,P.depth,new Set(b.cells.map(([x,y])=>x+','+y)));
+      b.radius=0; b.role='tower';                 // cone is never idle
+    }else{ // nova / turret / mortar: radius from centre, shoots over walls
+      b.coverage=[]; b.radius=P.radius; b.role='tower';
+    }
+  }
+  S.goalDist=distFromGoal(null); S.goalDistVer=S.structVer;
 }
 
 /* ---------------- waves & enemies ---------------- */
@@ -414,11 +424,11 @@ function startWave(){
   for(const b of S.blocks.values()){b.fresh=false;b.cd=0;}
   S.phase='wave'; syncUI();
 }
-function hpScale(){return Math.pow(1.15,S.wave);}
+function hpScale(){return Math.pow(1.115,S.wave);} // T4-tuned: gentle curve keeps waves 10-14 reachable
 function spawnEnemy(type){
   const base=ENEMY_TYPES[type];
   S.enemies.push({type, hp:base.hp*hpScale(), maxhp:base.hp*hpScale(),
-    path:S.wavePath, prog:0, slowT:0, slowF:1, burnT:0, burnDps:0, kbFactor:1, alive:true, hitFx:0});
+    path:S.wavePath, prog:0, slowT:0, slowF:1, burnT:0, burnDps:0, alive:true, hitFx:0});
   syncUI();
 }
 function enemyPos(e){
@@ -443,10 +453,6 @@ function repathEnemies(){ // after a mid-wave placement/sale
     e.prog=0;
   }
 }
-function resistMod(e,el){
-  const base=ENEMY_TYPES[e.type];
-  return el===base.resist?0.5:el===base.weak?1.5:1;
-}
 function damage(e,amt,src){
   e.hp-=amt; e.hitFx=0.15;
   if(src){src.dealt+=amt;} S.dealtTotal+=amt;
@@ -464,76 +470,61 @@ function applySlow(e,dur){
   const f=e.type==='skitter'?(1+SLOW_F)/2:SLOW_F; // skitters shrug off half the slow
   e.slowF=Math.min(e.slowF,f); e.slowT=Math.max(e.slowT,dur);
 }
-function terminalFire(b,targets){
-  const el=ELEMS[b.elem];
-  const u=[...new Set(b.elems)];
-  const has=n=>u.includes(n);
-  const plasma=has('fire')&&has('volt');
-  const firestorm=has('fire')&&has('gale');
-  const thermal=has('fire')&&has('frost');
-  const blizzard=has('frost')&&has('gale');
-  const superc=has('frost')&&has('volt');
-  const storm=has('gale')&&has('volt');
-  b.cd=el.cd; b.flash=0.28;
-  const hitEnemy=(e,mult,allowKb)=>{
-    let d=0;
-    for(const em of u) d+=ELEMS[em].dmg*resistMod(e,em);
-    d*=b.power*mult;
-    const armor=ENEMY_TYPES[e.type].armor||0;
-    if(armor&&!plasma) d=Math.max(0.4,d-armor);
-    if(thermal&&e.slowF<1) d+=4*b.power; // shock burst on chilled targets
-    damage(e,d,b);
-    if(!e.alive) return;
-    if(has('frost')) applySlow(e,blizzard?3.4:SLOW_DUR);
-    if(has('fire')){e.burnDps=Math.max(e.burnDps,ELEMS.fire.burnDps*b.power);e.burnT=ELEMS.fire.burnDur;}
-    if((has('gale')&&allowKb||storm&&allowKb)&&!ENEMY_TYPES[e.type].kbImmune){
-      // each shove toughens the enemy against the next: no infinite stall loops
-      const kb=Math.min((has('gale')?ELEMS.gale.kb:0.8)*b.power,3)*e.kbFactor;
-      e.prog=Math.max(0,e.prog-kb);
-      e.kbFactor*=0.65;
-    }
+function applyElem(b,e,dmg){ // one hit: armor + element status
+  const armor=ENEMY_TYPES[e.type].armor||0;
+  if(armor&&b.elem!=='volt') dmg=Math.max(0.4,dmg-armor); // volt ignores armor
+  damage(e,dmg,b);
+  if(!e.alive) return;
+  if(b.elem==='frost') applySlow(e,SLOW_DUR);
+  if(b.elem==='fire'){e.burnDps=Math.max(e.burnDps,ELEMS.fire.burnDps);e.burnT=ELEMS.fire.burnDur;}
+  const [x,y]=enemyPos(e);
+  burst(x,y,ELEMS[b.elem].color,3);
+}
+function enemiesInCells(cells){
+  const set=new Set(cells.map(([x,y])=>x+','+y)), out=[];
+  for(const e of S.enemies){ if(!e.alive) continue;
     const [x,y]=enemyPos(e);
-    burst(x,y,el.color,3);
-  };
-  const hitSet=new Set();
-  for(const e of targets){hitSet.add(e);hitEnemy(e,1,true);}
-  // volt arcs jump from each beam target to nearby enemies
-  if(has('volt')){
-    const arcR=superc?3.2:ELEMS.volt.arcR;
-    for(const seed of targets){
-      let from=seed, jumps=0;
-      while(jumps<ELEMS.volt.arcN){
-        const [fx,fy]=enemyPos(from);
-        let best=null,bd=arcR*arcR;
-        for(const e of S.enemies){
-          if(!e.alive||hitSet.has(e)) continue;
-          const [x,y]=enemyPos(e);
-          const d=(x-fx)*(x-fx)+(y-fy)*(y-fy);
-          if(d<bd){bd=d;best=e;}
-        }
-        if(!best) break;
-        hitSet.add(best);
-        arcs.push({x1:fx,y1:fy,x2:enemyPos(best)[0],y2:enemyPos(best)[1],t:0});
-        hitEnemy(best,superc&&best.slowF<1?0.9:0.6,storm);
-        from=best; jumps++;
-      }
+    if(set.has(Math.round(x)+','+Math.round(y))) out.push(e);
+  }
+  return out;
+}
+function enemiesInRadius(center,r){
+  const [cx,cy]=center, r2=r*r, out=[];
+  for(const e of S.enemies){ if(!e.alive) continue;
+    const [x,y]=enemyPos(e);
+    if((x-cx)*(x-cx)+(y-cy)*(y-cy)<=r2) out.push(e);
+  }
+  return out;
+}
+function firstToGoal(list){ // 'first' targeting: enemy nearest the goal by the cached dist field
+  const dist=S.goalDist; let best=null, bd=Infinity;
+  for(const e of list){
+    const [x,y]=enemyPos(e), cx=Math.round(x), cy=Math.round(y);
+    const d=(inGrid(cx,cy)&&dist&&dist[idx(cx,cy)]>=0)?dist[idx(cx,cy)]:999;
+    if(d<bd){bd=d;best=e;}
+  }
+  return best;
+}
+function fireTower(b){ // dispatch on kind; returns true if it hit something
+  const P=PATTERNS[b.shape], dmg=ELEMS[b.elem].dmg*P.mult;
+  if(b.kind==='nova'||b.kind==='lane'||b.kind==='cone'){
+    const list=b.kind==='nova'?enemiesInRadius(b.center,b.radius):enemiesInCells(b.coverage);
+    if(!list.length) return false;
+    for(const e of list) applyElem(b,e,dmg);   // hit all
+    return true;
+  }
+  // turret / mortar: single first-target
+  const t=firstToGoal(enemiesInRadius(b.center,b.radius));
+  if(!t) return false;
+  applyElem(b,t,dmg);
+  if(b.kind==='mortar'){
+    const [tx,ty]=enemyPos(t), sp2=P.splash*P.splash;
+    for(const e of S.enemies){ if(!e.alive||e===t) continue;
+      const [x,y]=enemyPos(e);
+      if((x-tx)*(x-tx)+(y-ty)*(y-ty)<=sp2) applyElem(b,e,dmg*0.6);
     }
   }
-  // firestorm: burn splashes to enemies near each burning target
-  if(firestorm){
-    for(const seed of targets){
-      if(!seed.alive) continue;
-      const [sx,sy]=enemyPos(seed);
-      for(const e of S.enemies){
-        if(!e.alive||e===seed) continue;
-        const [x,y]=enemyPos(e);
-        if((x-sx)*(x-sx)+(y-sy)*(y-sy)<1.5*1.5){
-          e.burnDps=Math.max(e.burnDps,ELEMS.fire.burnDps*b.power*0.7*resistMod(e,'fire'));
-          e.burnT=ELEMS.fire.burnDur;
-        }
-      }
-    }
-  }
+  return true;
 }
 function simTick(dt){
   S.waveT+=dt;
@@ -541,7 +532,7 @@ function simTick(dt){
   for(const e of S.enemies){
     if(!e.alive) continue;
     if(e.slowT>0){e.slowT-=dt;if(e.slowT<=0)e.slowF=1;}
-    if(e.burnT>0){e.burnT-=dt;damage(e,e.burnDps*dt*resistMod(e,'fire'),null);if(!e.alive)continue;}
+    if(e.burnT>0){e.burnT-=dt;damage(e,e.burnDps*dt,null);if(!e.alive)continue;}
     e.hitFx=Math.max(0,e.hitFx-dt);
     e.prog+=ENEMY_TYPES[e.type].sp*e.slowF*dt;
     if(e.prog>=e.path.length-1){
@@ -553,20 +544,13 @@ function simTick(dt){
   }
   for(const b of S.blocks.values()){
     b.flash=Math.max(0,b.flash-dt);
-    if(b.role!=='terminal') continue;
+    if(b.role!=='tower') continue;
     b.cd-=dt;
     if(b.cd>0) continue;
-    const set=new Set(b.beam.map(([x,y])=>x+','+y));
-    const targets=[];
-    for(const e of S.enemies){
-      if(!e.alive) continue;
-      const [x,y]=enemyPos(e);
-      if(set.has(Math.round(x)+','+Math.round(y))) targets.push(e);
-    }
-    if(targets.length) terminalFire(b,targets);
+    if(fireTower(b)){b.cd=PATTERNS[b.shape].cd;b.flash=0.28;}
   }
   if(!S.queue.length&&S.enemies.every(e=>!e.alive)){
-    const bonus=8+2*(S.wave+1);
+    const bonus=11+3*(S.wave+1);
     S.gold+=bonus;
     addFloater(GOAL.x,ROWS/2,'wave clear +'+bonus,'#ffd166');
     S.wave++;
@@ -591,7 +575,7 @@ function endRun(won){
 }
 
 /* ---------------- fx ---------------- */
-const parts=[], floaters=[], arcs=[];
+const parts=[], floaters=[];
 function burst(cx,cy,color,n){
   for(let i=0;i<n;i++){
     if(parts.length>600) parts.shift();
@@ -632,46 +616,23 @@ function render(dt){
   const pulse=0.55+0.45*Math.sin(animT*2.4);
   drawPortal(px(SPAWN.x),padY-2,'#ff5d8f',pulse);
   drawPortal(px(GOAL.x),padY+ROWS*cell+2,'#63d7f2',pulse);
-  // beam coverage tint: which cells each terminal actually hits
-  for(const b of S.blocks.values()){
-    if(b.role!=='terminal') continue;
-    const col=ELEMS[b.elem].color;
-    const a=0.07+0.03*Math.sin(animT*2+b.id);
-    ctx.fillStyle=hexA(col,a);
-    for(const [x,y] of b.beam) ctx.fillRect(padX+x*cell+1,padY+y*cell+1,cell-2,cell-2);
-  }
   // path
   const g=drag&&drag.active?dragGhost():null;
   const previewPath=g?(bfsPath(g.cellsAbs)||null):(S.path.length?S.path:null);
   if(previewPath) drawPath(previewPath, g?0.85:(S.phase==='wave'?0.14:0.35));
-  // conduits
-  for(const b of S.blocks.values()){
-    if(b.link===null||b.role==='cycle') continue;
-    const [ex,ey]=b.cells[b.em];
-    const tgt=S.blocks.get(b.link);
-    const glow=0.45+0.3*Math.sin(animT*3+b.id);
-    drawConduit(px(ex),py(ey),px(b.linkCell[0]),py(b.linkCell[1]),ELEMS[b.elem].color,ELEMS[tgt.elem].color,glow);
+  // coverage preview for the selected tower
+  if(S.selected!==null&&!g){
+    const sb=S.blocks.get(S.selected);
+    if(sb&&sb.elem!=='plain') drawCoverage(sb,ELEMS[sb.elem].color);
   }
   for(const b of S.blocks.values()) drawBlock(b,1,b.id===S.selected);
-  // firing beams
+  // firing beams (lanes only)
   for(const b of S.blocks.values()){
-    if(b.role!=='terminal'||b.flash<=0||!b.beam.length) continue;
+    if(b.kind!=='lane'||b.role!=='tower'||b.flash<=0||!b.coverage.length) continue;
     const [ex,ey]=b.cells[b.em];
-    const last=b.beam[b.beam.length-1];
-    drawBeam(px(ex),py(ey),px(last[0]),py(last[1]),ELEMS[b.elem].color,b.flash/0.28,b.power);
+    const last=b.coverage[b.coverage.length-1];
+    drawBeam(px(ex),py(ey),px(last[0]),py(last[1]),ELEMS[b.elem].color,b.flash/0.28);
   }
-  // volt arcs
-  ctx.save();ctx.globalCompositeOperation='lighter';
-  for(let i=arcs.length-1;i>=0;i--){
-    const a=arcs[i]; a.t+=dt;
-    if(a.t>0.22){arcs.splice(i,1);continue;}
-    const al=1-a.t/0.22;
-    ctx.strokeStyle=hexA('#ffe066',al);ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(px(a.x1),py(a.y1));
-    const mx=(a.x1+a.x2)/2+(Math.random()-0.5)*0.3,my=(a.y1+a.y2)/2+(Math.random()-0.5)*0.3;
-    ctx.lineTo(px(mx),py(my));ctx.lineTo(px(a.x2),py(a.y2));ctx.stroke();
-  }
-  ctx.restore();
   // enemies
   for(const e of S.enemies){
     if(!e.alive) continue;
@@ -723,10 +684,6 @@ function drawEnemy(e){
   }else ctx.arc(exx,eyy,r,0,7);
   ctx.fill();
   ctx.restore();
-  // resist ring in the resisted element's colour
-  ctx.strokeStyle=hexA(ELEMS[base.resist].color,0.85);
-  ctx.lineWidth=1.5;
-  ctx.beginPath();ctx.arc(exx,eyy,r+1.5,0,7);ctx.stroke();
   const f=Math.max(0,e.hp/e.maxhp);
   if(f<1){
     ctx.strokeStyle='rgba(0,0,0,.55)';ctx.lineWidth=3;
@@ -753,28 +710,12 @@ function drawPath(path,alpha){
   ctx.stroke();
   ctx.restore();
 }
-function drawConduit(x1,y1,x2,y2,c1,c2,glow){
-  ctx.save();
-  const g=ctx.createLinearGradient(x1,y1,x2,y2);
-  g.addColorStop(0,c1); g.addColorStop(1,c2);
-  ctx.globalCompositeOperation='lighter';
-  ctx.globalAlpha=glow*0.55;
-  ctx.strokeStyle=g; ctx.lineWidth=5;
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-  ctx.globalAlpha=glow; ctx.lineWidth=1.6;
-  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
-  const t=(animT*0.9)%1;
-  ctx.globalAlpha=0.9;
-  ctx.fillStyle='#fff';
-  ctx.beginPath();ctx.arc(x1+(x2-x1)*t,y1+(y2-y1)*t,2.2,0,7);ctx.fill();
-  ctx.restore();
-}
-function drawBeam(x1,y1,x2,y2,color,a,power){
+function drawBeam(x1,y1,x2,y2,color,a){
   ctx.save();
   ctx.globalCompositeOperation='lighter';
   ctx.strokeStyle=color;
   ctx.shadowColor=color; ctx.shadowBlur=12;
-  ctx.globalAlpha=a*0.9; ctx.lineWidth=2+3*Math.min(power,3);
+  ctx.globalAlpha=a*0.9; ctx.lineWidth=4;
   ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
   ctx.globalAlpha=a; ctx.strokeStyle='#fff'; ctx.lineWidth=1.2;
   ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
@@ -810,18 +751,10 @@ function drawBlock(b,alpha,selected){
     for(const [x,y] of b.cells){roundRect(padX+x*cell+1.5,padY+y*cell+1.5,cell-3,cell-3,6);ctx.stroke();}
     ctx.setLineDash([]);
   }
-  if(b.elem!=='plain'){
+  if(b.elem!=='plain'&&(b.kind==='lane'||b.kind==='cone')){ // only directional shapes show a chevron
     const [ex,ey]=b.cells[b.em];
     drawChevron(px(ex),py(ey),b.dir,el.color,alpha,b.role);
-    if(b.role==='terminal'&&b.power>1.01){
-      ctx.font='700 '+Math.max(9,cell*0.24)+'px -apple-system,sans-serif';
-      ctx.textAlign='center';
-      ctx.fillStyle=el.color;
-      ctx.shadowColor='#000';ctx.shadowBlur=3;
-      ctx.fillText('x'+b.power.toFixed(1),px(ex),py(ey)+cell*0.42);
-      ctx.shadowBlur=0;
-    }
-    if(b.role==='idle'){ // beam blocked: show a red mark where it dies
+    if(b.role==='idle'){ // lane blocked: red mark where it dies
       const [dx,dy]=DIRS[b.dir];
       const bx=px(ex)+dx*cell*0.55, by=py(ey)+dy*cell*0.55;
       ctx.strokeStyle='rgba(255,93,143,.85)';ctx.lineWidth=2;
@@ -831,12 +764,24 @@ function drawBlock(b,alpha,selected){
   }
   ctx.restore();
 }
+function drawCoverage(b,color){ // circle for nova/turret/mortar, tinted cells for lane/cone
+  ctx.save();
+  if(b.kind==='lane'||b.kind==='cone'){
+    ctx.fillStyle=hexA(color,0.2);
+    for(const [x,y] of b.coverage) ctx.fillRect(padX+x*cell+1,padY+y*cell+1,cell-2,cell-2);
+  }else{
+    ctx.beginPath();ctx.arc(px(b.center[0]),py(b.center[1]),b.radius*cell,0,7);
+    ctx.fillStyle=hexA(color,0.1); ctx.fill();
+    ctx.strokeStyle=hexA(color,0.6); ctx.lineWidth=1.5; ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawChevron(x,y,dir,color,alpha,role){
   ctx.save();
   ctx.translate(x,y); ctx.rotate(dir*Math.PI/2);
   ctx.globalAlpha=alpha;
   const s=cell*0.22;
-  const dim=role==='cycle'||role==='idle';
+  const dim=role==='idle';
   ctx.shadowColor=color; ctx.shadowBlur=dim?0:9;
   ctx.fillStyle=dim?'rgba(255,255,255,.35)':color;
   ctx.beginPath();
@@ -848,23 +793,27 @@ function drawGhostG(g){
   const el=ELEMS[g.elem];
   const ok=g.ok;
   drawBlockCells(g.cellsAbs, ok?(g.elem==='plain'?'#4a5566':shade(el.color,-30)):'#7a2733', 0.8);
-  if(g.elem!=='plain'){
-    const [ex,ey]=g.cellsAbs[g.em];
-    drawChevron(px(ex),py(ey),g.dir,ok?el.color:'#ff5d8f',0.95,'terminal');
-    if(ok){
-      // what would this beam do? link -> bright conduit preview; attack -> tint cells
-      const t=traceAbs(g.cellsAbs,g.em,g.dir);
-      if(t.hit&&t.hit.elem!=='plain'){
-        drawConduit(px(ex),py(ey),px(t.hitCell[0]),py(t.hitCell[1]),el.color,ELEMS[t.hit.elem].color,0.9);
-        ctx.save();ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.globalAlpha=0.7+0.3*Math.sin(animT*6);
-        for(const [x,y] of t.hit.cells){roundRect(padX+x*cell+1.5,padY+y*cell+1.5,cell-3,cell-3,6);ctx.stroke();}
-        ctx.restore();
-      }else{
-        ctx.fillStyle=hexA(el.color,0.22);
-        for(const [x,y] of t.cells.slice(0,BASE_RANGE))
-          ctx.fillRect(padX+x*cell+1,padY+y*cell+1,cell-2,cell-2);
-      }
-    }
+  if(g.elem==='plain') return;
+  const P=PATTERNS[g.shape], [ex,ey]=g.cellsAbs[g.em], col=el.color;
+  if(P.kind==='lane'||P.kind==='cone')
+    drawChevron(px(ex),py(ey),g.dir,ok?col:'#ff5d8f',0.95,'tower');
+  if(!ok) return;
+  if(P.kind==='lane'){
+    ctx.fillStyle=hexA(col,0.22);
+    for(const [x,y] of traceAbs(g.cellsAbs,g.em,g.dir).cells.slice(0,P.range))
+      ctx.fillRect(padX+x*cell+1,padY+y*cell+1,cell-2,cell-2);
+  }else if(P.kind==='cone'){
+    const own=new Set(g.cellsAbs.map(([x,y])=>x+','+y));
+    ctx.fillStyle=hexA(col,0.22);
+    for(const [x,y] of coneCellsAbs([ex,ey],g.dir,P.depth,own))
+      ctx.fillRect(padX+x*cell+1,padY+y*cell+1,cell-2,cell-2);
+  }else{
+    const c=bboxCenter(g.cellsAbs);
+    ctx.save();
+    ctx.beginPath();ctx.arc(px(c[0]),py(c[1]),P.radius*cell,0,7);
+    ctx.fillStyle=hexA(col,0.1); ctx.fill();
+    ctx.strokeStyle=hexA(col,0.6); ctx.lineWidth=1.5; ctx.stroke();
+    ctx.restore();
   }
 }
 function traceAbs(cellsAbs,em,dir){ // beam trace for a not-yet-placed piece
@@ -891,12 +840,14 @@ function hexA(hex,a){
 
 /* ---------------- main loop ---------------- */
 let last=performance.now(), acc=0;
+function stepSim(dt){ // advance the fixed-timestep sim by dt real seconds
+  if(S.phase!=='wave') return;
+  acc+=dt*S.speed*((drag&&drag.active)?BULLET_TIME:1);
+  while(acc>=STEP&&S.phase==='wave'){simTick(STEP);acc-=STEP;}
+}
 function frame(now){
   const dt=Math.min(0.1,(now-last)/1000); last=now;
-  if(S.phase==='wave'){
-    acc+=dt*((drag&&drag.active)?BULLET_TIME:1);
-    while(acc>=STEP&&S.phase==='wave'){simTick(STEP);acc-=STEP;}
-  }
+  stepSim(dt);
   render(dt);
   requestAnimationFrame(frame);
 }
@@ -956,7 +907,7 @@ function dragGhost(){ // render/query model of the active drag
   }
   const cellsAbs=drag.cells.map(([cx,cy])=>[x+cx,y+cy]);
   const ok=snapped&&drag.waveOk&&S.gold>=drag.piece.cost;
-  return {cellsAbs, em:drag.em, dir:drag.dir, elem:drag.piece.elem, ok};
+  return {cellsAbs, em:drag.em, dir:drag.dir, elem:drag.piece.elem, shape:drag.piece.shape, ok};
 }
 function releaseDrag(){
   if(!drag) return;
@@ -1020,7 +971,7 @@ cv.addEventListener('pointerup',e=>{
 
 /* ---------------- DOM UI ---------------- */
 const slotEls=[...document.querySelectorAll('.slot')];
-const infoPanel=document.getElementById('infoPanel');
+const tray=document.getElementById('tray');
 function syncUI(){
   document.getElementById('goldTxt').textContent=Math.floor(S.gold);
   document.getElementById('livesTxt').textContent=S.lives;
@@ -1044,28 +995,24 @@ function syncUI(){
   });
   drawSlots();
   document.getElementById('rerollCost').textContent=rerollCost();
-  document.getElementById('go').disabled=S.phase!=='build';
-  document.getElementById('go').textContent=S.phase==='wave'?'· · ·':'Go';
-  if(S.selected!==null&&S.blocks.has(S.selected)&&!drag){
+  const goBtn=document.getElementById('go');
+  goBtn.disabled=S.phase==='over';
+  goBtn.textContent=S.phase==='wave'?['','▸ 1x','▸▸ 2x','▸▸▸ 3x'][S.speed]:'Go';
+  const inspecting=S.selected!==null&&S.blocks.has(S.selected)&&!drag;
+  tray.classList.toggle('inspect',inspecting);
+  if(inspecting){
     const b=S.blocks.get(S.selected), el=ELEMS[b.elem];
-    document.getElementById('ipTitle').textContent=el.name+' '+b.shape+(b.elem!=='plain'?' · '+b.role:'');
-    const links=[...S.blocks.values()].filter(o=>o.link===b.id).length;
+    document.getElementById('ipTitle').textContent=el.name+' '+b.shape;
     let sub;
     if(b.elem==='plain') sub='Wall.';
-    else if(b.role==='terminal'){
-      const combos=comboNames(b.elems);
-      sub='x'+b.power.toFixed(2)+' power · range '+b.range
-        +(links?' · fed by '+links:'')
-        +(combos.length?' · '+combos.join(', '):'');
+    else if(b.role==='tower'){
+      sub=el.name+' · '+el.dmg+' dmg';
+      if(b.dealt) sub+=' · '+Math.round(b.dealt)+' dealt';
     }
-    else if(b.role==='feeder') sub='Feeding '+ELEMS[b.elem].name+' downstream.';
-    else if(b.role==='cycle') sub='Chain loop - firing at itself, does nothing.';
     else sub='Beam blocked - aim it somewhere useful.';
-    if(b.dealt) sub+=' · '+Math.round(b.dealt)+' dmg dealt';
     document.getElementById('ipSub').textContent=sub;
     document.getElementById('sellBtn').textContent='Sell ◆'+(b.fresh?b.cost:Math.floor(b.cost/2));
-    infoPanel.style.display='block';
-  }else infoPanel.style.display='none';
+  }
 }
 function drawSlots(){
   slotEls.forEach((el,i)=>drawSlot(el.querySelector('canvas'),S.shop[i]));
@@ -1085,7 +1032,8 @@ function drawSlot(c,p){
     g.roundRect?g.roundRect(rx+1,ry+1,s-2,s-2,3):g.rect(rx+1,ry+1,s-2,s-2);
     g.fill();
   }
-  if(p.elem!=='plain'){
+  const pk=PATTERNS[p.shape].kind;
+  if(p.elem!=='plain'&&(pk==='lane'||pk==='cone')){
     const [emx,emy]=o.cells[o.em];
     g.fillStyle='#0e1116';
     g.save();
@@ -1109,13 +1057,96 @@ document.getElementById('reroll').addEventListener('click',()=>{
   S.shop=[rollPiece(),rollPiece(),rollPiece()];
   syncUI();
 });
-document.getElementById('go').addEventListener('click',startWave);
+document.getElementById('go').addEventListener('click',()=>{
+  if(S.phase==='build') startWave();
+  else if(S.phase==='wave'){S.speed=S.speed%3+1; syncUI();}
+});
 document.getElementById('sellBtn').addEventListener('click',()=>sellBlock(S.selected));
 document.getElementById('ipClose').addEventListener('click',()=>{S.selected=null;syncUI();});
 document.getElementById('restart').addEventListener('click',()=>{
   document.getElementById('overlay').style.display='none';
   S=newState(); placeCache=null; refreshPath(); syncUI();
 });
+
+/* ---------------- balance harness (T4) ---------------- */
+// Reference builds. Coords assume SPAWN(3,0)/GOAL(4,11). See TASKS.md T4.
+const BUILDS={
+  // ~130 gold of towers, no walls: the "tower spam, no maze" strawman
+  open: [ ['P','frost',2,1,0],['P','volt',5,1,0],['P','fire',2,2,0],['P','frost',5,2,0],
+          ['P','volt',2,3,0],['P','fire',5,3,0],['P','frost',2,4,0],['P','volt',5,4,0] ],
+  // serpentine walls (3 switchbacks) + mixed towers hugging the path
+  maze: [ ['I','plain',0,2,0],['P','plain',4,2,0],['P','plain',5,2,0],   // gap right
+          ['I','plain',4,5,0],['P','plain',2,5,0],['P','plain',3,5,0],   // gap left
+          ['I','plain',0,8,0],['P','plain',4,8,0],['P','plain',5,8,0],   // gap right
+          ['P','frost',5,3,0],['P','frost',2,3,0],['P','volt',1,6,0],['P','fire',5,9,0] ],
+};
+// mono variants (I4) & reinvest (I3) are generated: walls + N single-element pebbles,
+// counts chosen so tower spend lands within +-5 of the mixed maze (~63g).
+const MONO_N={frost:5, volt:4, fire:3};
+function buildCost(entries){return entries.reduce((s,[sh,el])=>s+SHAPES[sh].cost+ELEMS[el].cost,0);}
+function mazeWalls(){return BUILDS.maze.filter(e=>e[1]==='plain');}
+function benchPlace(sh,el,x,y,rot){
+  const o=orient(sh,rot), cells=o.cells.map(([cx,cy])=>[x+cx,y+cy]);
+  if(!cellsFree(cells)||bfsPath(cells)===null) throw new Error('bench: illegal '+sh+'/'+el+' @'+x+','+y+' r'+(rot||0));
+  const cost=SHAPES[sh].cost+ELEMS[el].cost;
+  S.gold-=cost; placePiece(sh,el,cost,x,y,rot||0);
+  if(S.gold<0) throw new Error('bench: gold<0 placing '+sh);
+}
+function pathAdjFree(){ // free cells adjacent to the current path, deterministic scan order
+  const onPath=new Set(S.path.map(([x,y])=>x+','+y)), out=[];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    if(S.grid[idx(x,y)]!==null) continue;
+    if((x===SPAWN.x&&y===SPAWN.y)||(x===GOAL.x&&y===GOAL.y)) continue;
+    for(const [dx,dy] of DIRS) if(onPath.has((x+dx)+','+(y+dy))){out.push([x,y]);break;}
+  }
+  return out;
+}
+function placeMonoPebble(elem){ // one P[elem] on the first free path-adjacent cell; false if broke/no room
+  const cost=SHAPES.P.cost+ELEMS[elem].cost;
+  if(S.gold<cost) return false;
+  for(const [x,y] of pathAdjFree()){
+    if(bfsPath([[x,y]])===null) continue;
+    S.gold-=cost; placePiece('P',elem,cost,x,y,0); return true;
+  }
+  return false;
+}
+function reinvestSpend(){ // spend current gold, cycling frost/volt/fire, until no element fits
+  let ci=0, misses=0;
+  while(misses<3){ if(placeMonoPebble(['frost','volt','fire'][ci%3])) misses=0; else misses++; ci++; }
+}
+// spec -> {entries, mono?:{elem,n}, reinvest?}
+function benchSpec(name){
+  if(name==='open'||name==='maze') return {entries:BUILDS[name]};
+  if(name==='mazeReinvest') return {entries:BUILDS.maze, reinvest:true};
+  if(name==='mazeFrost') return {entries:mazeWalls(), mono:{elem:'frost',n:MONO_N.frost}};
+  if(name==='mazeVolt')  return {entries:mazeWalls(), mono:{elem:'volt', n:MONO_N.volt}};
+  if(name==='mazeFire')  return {entries:mazeWalls(), mono:{elem:'fire', n:MONO_N.fire}};
+  throw new Error('bench: unknown build '+name);
+}
+function runBench(name){
+  const spec=benchSpec(name);
+  S=newState(); placeCache=null;
+  const wallCost=buildCost(spec.entries);
+  const monoCost=spec.mono?spec.mono.n*(SHAPES.P.cost+ELEMS[spec.mono.elem].cost):0;
+  S.gold=wallCost+monoCost;
+  for(const [sh,el,x,y,rot] of spec.entries) benchPlace(sh,el,x,y,rot);
+  if(spec.mono){
+    for(let i=0;i<spec.mono.n;i++) if(!placeMonoPebble(spec.mono.elem)) throw new Error('bench: no room for mono '+name+' #'+i);
+  }
+  refreshPath();
+  const path=S.path.length;
+  if(name==='open' && path>14) throw new Error('bench: open path too long ('+path+') - constants drifted');
+  if(name.startsWith('maze') && path<26) throw new Error('bench: maze path too short ('+path+') - constants drifted');
+  if(spec.mono) S.gold=0; // spent to build; no reinvestment
+  let guard=0;
+  while(S.phase!=='over' && guard++<5000){
+    if(S.phase==='build'){ if(spec.reinvest) reinvestSpend(); startWave(); if(S.phase!=='wave') break; }
+    for(let i=0;i<18000 && S.phase==='wave';i++) simTick(STEP);
+  }
+  const won=S.wave>=N_WAVES;
+  return {died:won?N_WAVES+1:S.wave+1, won, path, spent:wallCost+monoCost, kills:S.kills};
+}
+const BENCH_NAMES=['open','maze','mazeReinvest','mazeFrost','mazeVolt','mazeFire'];
 
 /* ---------------- debug hook ---------------- */
 window.__dbg={
@@ -1124,7 +1155,41 @@ window.__dbg={
   gold(n){S.gold=n;syncUI();},
   go(){startWave();},
   tick(sec){for(let i=0;i<sec*60&&S.phase==='wave';i++)simTick(STEP);syncUI();},
+  frame(dt){stepSim(dt);},   // drive the real accumulator (exercises S.speed) - unlike tick()
+  aimCheck(){ // every non-P shape, every rot: coverage must be nonempty and never hit its own cells
+    const fails=[];
+    for(const shape of Object.keys(SHAPES)){
+      if(shape==='P') continue;
+      for(let rot=0;rot<4;rot++){
+        S=newState();
+        placePiece(shape,'frost',0,2,4,rot);
+        const b=[...S.blocks.values()][0], own=new Set(b.cells.map(([x,y])=>x+','+y));
+        if(b.kind==='lane'||b.kind==='cone'){
+          if(!b.coverage.length){fails.push(shape+' r'+rot+': empty coverage');continue;}
+          if(b.coverage.some(([x,y])=>own.has(x+','+y))) fails.push(shape+' r'+rot+': covers own cell');
+        }else if(!(b.radius>0)) fails.push(shape+' r'+rot+': no radius');
+      }
+    }
+    S=newState(); placeCache=null; refreshPath(); syncUI();
+    return fails;
+  },
   waveSafe, legalPositions, orient,
+  builds:BUILDS,
+  bench:runBench,
+  benchAll(){
+    const rows={};
+    for(const n of BENCH_NAMES) rows[n]=runBench(n);
+    const R=n=>rows[n].died, mono=['mazeFrost','mazeVolt','mazeFire'].map(R);
+    const inv={
+      I1_mazePremium: R('maze')-R('open')>=4,                       // maze beats open by >=4 waves
+      I2_anchor:      R('maze')>=10 && R('maze')<=14,               // maze falls wave 10-14
+      I3_winnable:    rows.mazeReinvest.won || R('mazeReinvest')>=18,// reinvest reaches wave 18+
+      I4_noDeadElem:  mono.every(x=>x>=8) && mono.every(x=>x-R('maze')<=2),
+    };
+    console.table(rows); console.table(inv);
+    S=newState(); placeCache=null; refreshPath(); syncUI();
+    return {rows, inv};
+  },
 };
 
 /* ---------------- boot ---------------- */
