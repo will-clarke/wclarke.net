@@ -1,6 +1,18 @@
 {
   "games": [
     {
+      "slug": "drip",
+      "name": "Drip",
+      "accent": "#e455ff",
+      "tagline": "Slide paint machines around the grid, then let the drops fall. Whatever lands first settles at the bottom; drops that land together share a band; dyes mix on the way down. Match the vial."
+    },
+    {
+      "slug": "gridfire",
+      "name": "Gridfire",
+      "accent": "#ff7a45",
+      "tagline": "Maze the grid with random tetromino blocks - every rotation sets both the wall and the aim. Chain elemental emitters into glowing conduits, funnel the horde through your kill zone, and hold twenty waves."
+    },
+    {
       "slug": "shipshape",
       "name": "Shipshape",
       "accent": "#7fd4ff",

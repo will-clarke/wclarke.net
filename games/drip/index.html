@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Cpath d='M16 6c4 6 7 9.5 7 13a7 7 0 1 1-14 0c0-3.5 3-7 7-13z' fill='%23e455ff'/%3E%3C/svg%3E" />
+<title>Drip</title>
+<style>
+  :root{
+    --accent:#e455ff;
+    --on-accent:#14060f;
+  }
+  :root[data-theme="dark"]{
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+    --cellfill:rgba(255,255,255,.035);
+    --wall:#39404f; --wall-edge:rgba(255,255,255,.18);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
+    --cellfill:rgba(22,30,48,.05);
+    --wall:#c6cddc; --wall-edge:rgba(22,30,48,.25);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    height:100dvh;display:flex;flex-direction:column;
+    padding:calc(8px + env(safe-area-inset-top)) 10px 0;
+    overflow:hidden;user-select:none;-webkit-user-select:none;
+  }
+
+  .topbar{display:flex;align-items:center;gap:8px;flex:none}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:38px;height:38px;padding:0;border-radius:11px;flex:none;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:17px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,opacity .15s}
+  .navbtn:active{transform:scale(.94)}
+  .navbtn[disabled]{opacity:.35;pointer-events:none}
+  .tb-title{flex:1;text-align:center;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tb-title b{letter-spacing:.22em;text-transform:uppercase;font-size:15px}
+  .tb-title b i{color:var(--accent);text-shadow:0 0 14px var(--accent);font-style:normal}
+  .tb-title span{color:var(--muted);font-size:13px}
+
+  .statusrow{display:flex;align-items:center;gap:10px;padding:6px 4px 0;flex:none;min-height:26px}
+  #hint{flex:1;color:var(--muted);font-size:12.5px;line-height:1.25}
+  #movesChip{flex:none;font-size:12px;color:var(--muted);background:var(--surface);
+    border:1px solid var(--line);border-radius:99px;padding:3px 10px;white-space:nowrap}
+  #movesChip b{color:var(--ink)}
+  #movesChip.over b{color:#ff7466}
+
+  #boardWrap{position:relative;flex:1;min-height:0;margin-top:4px}
+  #board{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+  #banner{position:absolute;left:50%;top:8px;transform:translateX(-50%) translateY(-8px);
+    background:var(--surface);border:1px solid var(--line-strong);border-radius:12px;
+    padding:8px 14px;font-size:13px;box-shadow:0 8px 24px var(--shadow);
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;max-width:88%;text-align:center}
+  #banner.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #banner.bad{border-color:rgba(255,90,110,.55)}
+
+  .dock{flex:none;display:flex;gap:10px;align-items:stretch;
+    padding:8px 2px calc(10px + env(safe-area-inset-bottom))}
+  .vialbox{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+  .viallabel{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);padding-left:2px}
+  .vial{position:relative;height:104px;border:2px solid var(--line-strong);
+    border-radius:8px 8px 14px 14px;background:var(--surface);
+    overflow:hidden;display:flex;flex-direction:column-reverse}
+  .vial::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:6px 6px 12px 12px;
+    background:linear-gradient(105deg,rgba(255,255,255,.18) 0%,transparent 18%,transparent 78%,rgba(255,255,255,.08) 100%)}
+  .vial.shake{animation:vshake .4s}
+  @keyframes vshake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-2px)}}
+  .band{display:flex;width:100%;height:0;flex:none;transition:height .35s ease}
+  .seg{height:100%;transition:width .35s ease}
+  .band.bad{box-shadow:inset 0 0 0 2px #ff5a6e}
+  .vial .empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    color:var(--muted);font-size:11px;letter-spacing:.1em;opacity:.7}
+
+  #btnRun{width:88px;flex:none;border-radius:16px;border:1px solid var(--line-strong);
+    background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#000));
+    color:#fff;font-size:15px;font-weight:800;letter-spacing:.08em;cursor:pointer;
+    box-shadow:0 6px 20px color-mix(in srgb,var(--accent) 45%,transparent);
+    transition:transform .12s,filter .2s;align-self:stretch;margin-top:16px}
+  #btnRun:active{transform:scale(.96)}
+  #btnRun.alt{background:var(--surface);color:var(--ink);box-shadow:0 2px 10px var(--shadow)}
+
+  #backdrop{position:fixed;inset:0;background:rgba(8,10,16,.55);opacity:0;pointer-events:none;
+    transition:opacity .25s;z-index:40}
+  #backdrop.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;
+    background:var(--bg-top);border-radius:22px 22px 0 0;border:1px solid var(--line);border-bottom:0;
+    padding:18px 18px calc(20px + env(safe-area-inset-bottom));
+    transform:translateY(105%);transition:transform .3s cubic-bezier(.2,.9,.25,1);
+    box-shadow:0 -12px 40px var(--shadow);max-height:78dvh;overflow:auto}
+  .sheet.show{transform:translateY(0)}
+  .sheet h2{margin:0 0 4px;font-size:19px;letter-spacing:.04em}
+  .sheet .sub{color:var(--muted);font-size:13px;margin:0 0 14px}
+  .sheetrow{display:flex;gap:10px;margin-top:14px}
+  .bigbtn{flex:1;padding:13px;border-radius:14px;border:1px solid var(--line-strong);
+    background:var(--surface);color:var(--ink);font-size:15px;font-weight:700;cursor:pointer;
+    transition:transform .12s}
+  .bigbtn:active{transform:scale(.97)}
+  .bigbtn.primary{background:linear-gradient(180deg,var(--accent),color-mix(in srgb,var(--accent) 78%,#000));
+    color:#fff;border-color:transparent}
+  #winStars{font-size:34px;letter-spacing:.1em;margin:6px 0 2px;min-height:42px}
+  #winStars .dim{opacity:.25}
+
+  #lvlList{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+  .lvlchip{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:13px;
+    border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--ink);
+    font-size:13.5px;text-align:left;transition:transform .12s,border-color .15s}
+  .lvlchip:active{transform:scale(.97)}
+  .lvlchip.cur{border-color:var(--accent)}
+  .lvlchip .n{flex:none;width:24px;height:24px;border-radius:8px;background:var(--raised);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--muted)}
+  .lvlchip .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lvlchip .st{flex:none;font-size:13px}
+  .sheetfoot{display:flex;gap:10px;margin-top:16px;justify-content:flex-end}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <button class="navbtn" id="btnLevels" aria-label="Levels">&#9776;</button>
+    <div class="tb-title"><b><i>D</i>RIP</b> <span id="lvlTitle"></span></div>
+    <button class="navbtn" id="btnUndo" aria-label="Undo">&#8630;</button>
+    <button class="navbtn" id="btnReset" aria-label="Reset">&#8635;</button>
+  </div>
+  <div class="statusrow">
+    <div id="hint"></div>
+    <div id="movesChip"></div>
+  </div>
+  <div id="boardWrap">
+    <canvas id="board"></canvas>
+    <div id="banner"></div>
+  </div>
+  <div class="dock">
+    <div class="vialbox">
+      <div class="viallabel">yours</div>
+      <div class="vial" id="vialLive"><div class="empty">run to pour</div></div>
+    </div>
+    <div class="vialbox">
+      <div class="viallabel">target</div>
+      <div class="vial" id="vialTarget"></div>
+    </div>
+    <button id="btnRun">RUN&nbsp;&#9656;</button>
+  </div>
+
+  <div id="backdrop"></div>
+  <div class="sheet" id="sheetWin">
+    <h2 id="winTitle">Solved</h2>
+    <div id="winStars"></div>
+    <p class="sub" id="winSub"></p>
+    <div class="sheetrow">
+      <button class="bigbtn" id="btnReplay">Replay</button>
+      <button class="bigbtn primary" id="btnNext">Next level</button>
+    </div>
+  </div>
+  <div class="sheet" id="sheetLevels">
+    <h2>Levels</h2>
+    <p class="sub">A star means solved at par.</p>
+    <div id="lvlList"></div>
+    <div class="sheetfoot">
+      <button class="navbtn" id="btnSound" aria-label="Sound"></button>
+      <button class="navbtn" id="themeToggle" aria-label="Toggle light or dark"></button>
+    </div>
+  </div>
+
+<script>
+/* ================= DRIP CORE START ================= */
+'use strict';
+const DRIP = (() => {
+
+  // ---- colours ----
+  // X blank, R red, Y yellow, B blue, O orange, G green, P purple, M mud
+  const MIXT = { BR: 'P', BY: 'G', RY: 'O' };
+  function mix(drop, dye) {
+    if (drop === 'X') return dye;
+    if (drop === dye) return drop;
+    return MIXT[[drop, dye].sort().join('')] || 'M';
+  }
+
+  // ---- build phase ----
+  function cloneMachines(level) {
+    return level.machines.map(m => Object.assign({}, m));
+  }
+
+  function blockedBuild(level, machines, x, y, skip) {
+    if (x < 0 || y < 0 || x >= level.w || y >= level.h) return true;
+    if (level.walls.some(([wx, wy]) => wx === x && wy === y)) return true;
+    if (level.emitters.some(e => e.x === x && e.y === y)) return true;
+    return machines.some((m, i) => i !== skip && m.x === x && m.y === y);
+  }
+
+  // slide machine mi one cardinal direction until blocked; null if it can't move
+  function slideDest(level, machines, mi, dx, dy) {
+    const m = machines[mi];
+    if (!m || m.fixed) return null;
+    let x = m.x, y = m.y;
+    while (!blockedBuild(level, machines, x + dx, y + dy, mi)) { x += dx; y += dy; }
+    if (x === m.x && y === m.y) return null;
+    return { x, y };
+  }
+
+  function applySlide(level, machines, mi, dx, dy) {
+    const dest = slideDest(level, machines, mi, dx, dy);
+    if (!dest) return false;
+    machines[mi].x = dest.x; machines[mi].y = dest.y;
+    return true;
+  }
+
+  function applyRotate(machines, mi) {
+    const m = machines[mi];
+    if (!m || m.type !== 'ramp' || m.fixed) return false;
+    m.dir = -m.dir;
+    return true;
+  }
+
+  // ---- simulation ----
+  // Tick model: drops fall 1 cell/tick. Entering a machine is the tick's move;
+  // the next tick is spent inside (dwell); the tick after, the machine's exit
+  // rule runs. So a dye costs one extra beat, ramps and splitters cost two.
+  // Machines accept drops from above only; ramp exits and splitter copies need
+  // an EMPTY cell (a plugged splitter side simply produces no copy).
+  const TICK_CAP = 300;
+
+  function simulate(level, machines) {
+    const W = level.w, H = level.h;
+    const wallSet = new Set(level.walls.map(([x, y]) => x + ',' + y));
+    const machMap = new Map(machines.map(m => [m.x + ',' + m.y, m]));
+    const emitters = level.emitters.map(e => ({
+      x: e.x, y: e.y, count: e.count || 1, every: e.every || 4, spawned: 0
+    }));
+    const emitSet = new Set(emitters.map(e => e.x + ',' + e.y));
+
+    const drops = [];
+    let nextId = 1;
+    const layers = [];
+    const ticks = [];
+
+    const isWall = (x, y) => wallSet.has(x + ',' + y);
+    const isEmit = (x, y) => emitSet.has(x + ',' + y);
+    const machAt = (x, y) => machMap.get(x + ',' + y);
+    const dropAt = (x, y) => drops.find(d => !d.dead && d.x === x && d.y === y);
+    const cellFree = (x, y) =>
+      x >= 0 && x < W && y >= 0 && y < H &&
+      !isWall(x, y) && !isEmit(x, y) && !machAt(x, y) && !dropAt(x, y);
+
+    for (let t = 0; t < TICK_CAP; t++) {
+      let moved = false;
+      const events = [];
+      const exited = [];
+
+      // spawn: i-th drop of an emitter at t >= i*every, when its cell is clear
+      for (const e of emitters) {
+        if (e.spawned < e.count && t >= e.spawned * e.every && !dropAt(e.x, e.y)) {
+          drops.push({ id: nextId++, x: e.x, y: e.y, c: 'X', in: 'emit', act: t + 1 });
+          e.spawned++;
+          moved = true;
+          events.push({ k: 'spawn', x: e.x, y: e.y });
+        }
+      }
+
+      // move the drop into (x,y+1) if possible; handles exit / machine entry
+      function descend(d) {
+        const ny = d.y + 1;
+        if (ny >= H) {
+          d.dead = true;
+          exited.push({ c: d.c, x: d.x });
+          events.push({ k: 'exit', id: d.id, x: d.x, c: d.c });
+          return true;
+        }
+        if (isWall(d.x, ny) || isEmit(d.x, ny) || dropAt(d.x, ny)) return false;
+        const m = machAt(d.x, ny);
+        if (m) {
+          d.y = ny; d.in = m.type; d.act = t + 2; // dwell one tick inside
+          if (m.type === 'dye') {
+            d.c = mix(d.c, m.color);
+            events.push({ k: 'dye', id: d.id, x: d.x, y: ny, c: d.c });
+          } else if (m.type === 'bleach') {
+            d.c = 'X';
+            events.push({ k: 'bleach', id: d.id, x: d.x, y: ny });
+          } else {
+            events.push({ k: 'enter', id: d.id, x: d.x, y: ny });
+          }
+          return true;
+        }
+        d.y = ny; d.in = null; d.act = t + 1;
+        return true;
+      }
+
+      // bottom row first so vertical trains fall in lockstep
+      const order = drops.filter(d => !d.dead).sort((a, b) => b.y - a.y || a.x - b.x);
+      for (const d of order) {
+        if (d.act > t) continue; // dwelling / just created
+        if (d.in === 'split') {
+          const sides = [[d.x - 1, d.y], [d.x + 1, d.y]].filter(([sx, sy]) => cellFree(sx, sy));
+          if (sides.length) {
+            for (const [sx, sy] of sides) {
+              drops.push({ id: nextId++, x: sx, y: sy, c: d.c, in: null, act: t + 1 });
+              events.push({ k: 'split', x: d.x, y: d.y, tx: sx, ty: sy, c: d.c });
+            }
+            d.dead = true;
+            moved = true;
+          }
+          continue;
+        }
+        if (d.in === 'ramp') {
+          const m = machAt(d.x, d.y);
+          const nx = d.x + m.dir;
+          if (cellFree(nx, d.y)) {
+            events.push({ k: 'chute', id: d.id, x: d.x, y: d.y, tx: nx });
+            d.x = nx; d.in = null; d.act = t + 1;
+            moved = true;
+          }
+          continue;
+        }
+        // free drop, or inside emitter/dye/bleach: fall out below
+        if (descend(d)) moved = true;
+      }
+
+      if (exited.length) {
+        exited.sort((a, b) => a.x - b.x);
+        layers.push(exited.map(e => e.c));
+      }
+
+      ticks.push({
+        t,
+        drops: drops.filter(d => !d.dead).map(d => ({ id: d.id, x: d.x, y: d.y, c: d.c, in: d.in })),
+        events,
+        layers: layers.map(l => l.slice())
+      });
+
+      const dwellers = drops.some(d => !d.dead && d.act > t);
+      const pendingSpawn = emitters.some(e => e.spawned < e.count);
+      if (!moved && !dwellers && !pendingSpawn) break;
+      if (!moved && !dwellers && pendingSpawn && t > 100) break; // deadlocked spawn
+    }
+
+    const lost = drops.filter(d => !d.dead).length;
+    return { ticks, layers, lost, win: layersMatch(layers, level.target) };
+  }
+
+  // ---- target comparison ----
+  // a layer is an array of drop colours in x order; adjacent equal colours
+  // merge, then fractions must match exactly
+  function segs(layer) {
+    const out = [];
+    for (const c of layer) {
+      if (out.length && out[out.length - 1].c === c) out[out.length - 1].f += 1 / layer.length;
+      else out.push({ c, f: 1 / layer.length });
+    }
+    return out;
+  }
+
+  function layersMatch(a, b) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const sa = segs(a[i]), sb = segs(b[i]);
+      if (sa.length !== sb.length) return false;
+      for (let j = 0; j < sa.length; j++) {
+        if (sa[j].c !== sb[j].c || Math.abs(sa[j].f - sb[j].f) > 1e-6) return false;
+      }
+    }
+    return true;
+  }
+
+  // ---- levels ----
+  // 7 x 9 grid. machines: dye {color}, split, ramp {dir: -1 left / 1 right}, bleach.
+  // target: bottom band first. solution ops: ['s', mi, dx, dy] | ['r', mi].
+  const LEVELS = [
+    {
+      id: 'first-drip', name: 'First Drip', par: 1,
+      hint: 'Drag the red dye - it slides until it hits something. Then run.',
+      w: 7, h: 9,
+      walls: [[4, 5]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [{ type: 'dye', color: 'R', x: 0, y: 5 }],
+      target: [['R']],
+      solution: [['s', 0, 1, 0]]
+    },
+    {
+      id: 'low-lands-first', name: 'Low Lands First', par: 2,
+      hint: 'Whatever lands first settles at the bottom.',
+      w: 7, h: 9,
+      walls: [[6, 4], [0, 6]],
+      emitters: [{ x: 1, y: 0 }, { x: 5, y: 2 }],
+      machines: [
+        { type: 'dye', color: 'R', x: 3, y: 4 },
+        { type: 'dye', color: 'B', x: 3, y: 6 }
+      ],
+      target: [['R'], ['B']],
+      solution: [['s', 0, 1, 0], ['s', 1, -1, 0]]
+    },
+    {
+      id: 'side-by-side', name: 'Side by Side', par: 1,
+      hint: 'Land together, share a band. The left drop paints the left.',
+      w: 7, h: 9,
+      walls: [[6, 6]],
+      emitters: [{ x: 1, y: 0 }, { x: 5, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'B', x: 1, y: 4, fixed: true },
+        { type: 'dye', color: 'R', x: 3, y: 6 }
+      ],
+      target: [['B', 'R']],
+      solution: [['s', 1, 1, 0]]
+    },
+    {
+      id: 'mixer', name: 'Mixer', par: 2,
+      hint: 'Yellow, then blue, makes green.',
+      w: 7, h: 9,
+      walls: [[4, 2], [2, 5]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'Y', x: 0, y: 2 },
+        { type: 'dye', color: 'B', x: 6, y: 5 }
+      ],
+      target: [['G']],
+      solution: [['s', 0, 1, 0], ['s', 1, -1, 0]]
+    },
+    {
+      id: 'the-long-way', name: 'The Long Way', par: 2,
+      hint: 'Tap the chute to turn it. A drop with nowhere to go is lost.',
+      w: 7, h: 9,
+      walls: [[1, 4], [0, 2]],
+      emitters: [{ x: 1, y: 0 }],
+      machines: [
+        { type: 'ramp', dir: -1, x: 4, y: 2 },
+        { type: 'dye', color: 'R', x: 2, y: 6, fixed: true }
+      ],
+      target: [['R']],
+      solution: [['s', 0, -1, 0], ['r', 0]]
+    },
+    {
+      id: 'twins', name: 'Twins', par: 2,
+      hint: 'The splitter clones a drop to both sides.',
+      w: 7, h: 9,
+      walls: [[3, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 3, fixed: true },
+        { type: 'dye', color: 'R', x: 0, y: 6 },
+        { type: 'dye', color: 'B', x: 6, y: 6 }
+      ],
+      target: [['R', 'B']],
+      solution: [['s', 1, 1, 0], ['s', 2, -1, 0]]
+    },
+    {
+      id: 'offbeat', name: 'Offbeat', par: 3,
+      hint: 'Every machine a drop enters costs one beat.',
+      w: 7, h: 9,
+      walls: [[3, 4], [3, 5], [3, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 2, fixed: true },
+        { type: 'dye', color: 'B', x: 0, y: 5 },
+        { type: 'dye', color: 'R', x: 6, y: 4 },
+        { type: 'dye', color: 'R', x: 6, y: 6 }
+      ],
+      target: [['B'], ['R']],
+      solution: [['s', 1, 1, 0], ['s', 2, -1, 0], ['s', 3, -1, 0]]
+    },
+    {
+      id: 'clone-then-paint', name: 'Clone, Then Paint', par: 2,
+      hint: 'Bleach wipes a drop clean for a fresh coat.',
+      w: 7, h: 9,
+      walls: [[5, 5], [3, 7]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'G', x: 3, y: 1, fixed: true },
+        { type: 'split', x: 3, y: 3, fixed: true },
+        { type: 'bleach', x: 0, y: 5 },
+        { type: 'dye', color: 'B', x: 6, y: 7 }
+      ],
+      target: [['G'], ['B']],
+      solution: [['s', 2, 1, 0], ['s', 3, -1, 0]]
+    },
+    {
+      id: 'one-is-enough', name: 'One Is Enough', par: 2,
+      hint: 'A plugged splitter side makes no copy.',
+      w: 7, h: 9,
+      walls: [[3, 6]],
+      emitters: [{ x: 3, y: 0 }],
+      machines: [
+        { type: 'split', x: 3, y: 4, fixed: true },
+        { type: 'dye', color: 'Y', x: 6, y: 4 },
+        { type: 'dye', color: 'R', x: 0, y: 6 }
+      ],
+      target: [['R']],
+      solution: [['s', 1, -1, 0], ['s', 2, 1, 0]]
+    },
+    {
+      id: 'sunset', name: 'Sunset', par: 3,
+      hint: 'Everything at once. Paint the sunset.',
+      w: 7, h: 9,
+      walls: [[1, 6]],
+      emitters: [{ x: 0, y: 2 }, { x: 2, y: 0 }, { x: 4, y: 1 }, { x: 6, y: 0 }],
+      machines: [
+        { type: 'dye', color: 'P', x: 1, y: 8 },
+        { type: 'dye', color: 'O', x: 4, y: 6 },
+        { type: 'bleach', x: 4, y: 4 },
+        { type: 'split', x: 4, y: 2, fixed: true },
+        { type: 'dye', color: 'B', x: 3, y: 5, fixed: true },
+        { type: 'dye', color: 'B', x: 5, y: 5, fixed: true },
+        { type: 'dye', color: 'Y', x: 6, y: 6, fixed: true }
+      ],
+      target: [['P'], ['O'], ['B', 'B', 'Y']],
+      solution: [['s', 0, -1, 0], ['s', 1, -1, 0], ['s', 2, 1, 0]]
+    }
+  ];
+
+  return { mix, cloneMachines, slideDest, applySlide, applyRotate, simulate, segs, layersMatch, LEVELS };
+})();
+if (typeof module !== 'undefined') module.exports = DRIP;
+/* ================= DRIP CORE END ================= */
+
+/* ================= UI ================= */
+(function () {
+  const CLR = {
+    X: '#c3cbdb', R: '#ff5964', Y: '#ffd23f', B: '#4b8dff',
+    O: '#ff9838', G: '#3fd98c', P: '#a06bff', M: '#8f6b50'
+  };
+  const NAME = { X: 'blank', R: 'red', Y: 'yellow', B: 'blue', O: 'orange', G: 'green', P: 'purple', M: 'mud' };
+
+  const $ = id => document.getElementById(id);
+  const boardWrap = $('boardWrap'), canvas = $('board'), ctx = canvas.getContext('2d');
+  const vialLive = $('vialLive'), vialTarget = $('vialTarget');
+  const banner = $('banner'), hintEl = $('hint'), movesChip = $('movesChip'), lvlTitle = $('lvlTitle');
+  const btnRun = $('btnRun'), btnUndo = $('btnUndo'), btnReset = $('btnReset');
+
+  function ls(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+  const vib = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) { } };
+
+  // ---------- sound ----------
+  const SND = (() => {
+    let ctxA = null, muted = ls('drip_mute') === '1';
+    function ac() {
+      if (!ctxA) ctxA = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctxA.state === 'suspended') ctxA.resume();
+      return ctxA;
+    }
+    function tone(f0, f1, dur, type, vol) {
+      if (muted) return;
+      try {
+        const c = ac(), o = c.createOscillator(), g = c.createGain();
+        o.type = type || 'sine';
+        o.frequency.setValueAtTime(f0, c.currentTime);
+        o.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), c.currentTime + dur);
+        g.gain.setValueAtTime(vol || .12, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur);
+        o.connect(g); g.connect(c.destination);
+        o.start(); o.stop(c.currentTime + dur + .02);
+      } catch (e) { }
+    }
+    function noise(dur, vol, freq) {
+      if (muted) return;
+      try {
+        const c = ac(), n = c.createBufferSource();
+        const buf = c.createBuffer(1, Math.max(1, c.sampleRate * dur), c.sampleRate);
+        const d = buf.getChannelData(0);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+        n.buffer = buf;
+        const f = c.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+        const g = c.createGain();
+        g.gain.setValueAtTime(vol, c.currentTime);
+        g.gain.exponentialRampToValueAtTime(.001, c.currentTime + dur);
+        n.connect(f); f.connect(g); g.connect(c.destination); n.start();
+      } catch (e) { }
+    }
+    return {
+      thunk() { noise(.09, .22, 350); tone(150, 55, .1, 'sine', .18); },
+      click() { tone(650, 900, .06, 'square', .05); },
+      pop() { tone(280, 720, .13, 'sine', .13); },
+      splitS() { tone(420, 300, .08, 'triangle', .1); setTimeout(() => tone(420, 560, .09, 'triangle', .1), 45); },
+      pour() { noise(.22, .16, 1500); },
+      deny() { tone(150, 90, .13, 'sawtooth', .07); },
+      win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => tone(f, f, .22, 'sine', .12), i * 95)); },
+      fail() { tone(230, 130, .4, 'sine', .1); },
+      toggle() { muted = !muted; lsSet('drip_mute', muted ? '1' : '0'); return muted; },
+      muted: () => muted
+    };
+  })();
+
+  // ---------- state ----------
+  let levelIndex = 0, level = null, machines = [];
+  let moves = 0, undoStack = [], mode = 'build', selected = -1;
+  let sim = null, play = null, lastResult = null;
+  let drag = null, slideAnim = null, wiggle = null;
+  let particles = [];
+  let cell = 40, ox = 0, oy = 0, dpr = 1;
+
+  const progress = (() => { try { return JSON.parse(ls('drip_progress') || '{}'); } catch (e) { return {}; } })();
+
+  // ---------- vials ----------
+  function renderVial(el, layers, badSet) {
+    el.querySelectorAll('.band,.empty').forEach(n => n.remove());
+    if (!layers.length) {
+      const e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = el === vialTarget ? '' : 'run to pour';
+      el.appendChild(e);
+      return;
+    }
+    layers.forEach((layer, i) => {
+      const band = document.createElement('div');
+      band.className = 'band';
+      if (badSet && badSet.has(i)) band.classList.add('bad');
+      for (const s of DRIP.segs(layer)) {
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        seg.style.width = (s.f * 100) + '%';
+        seg.style.background = CLR[s.c];
+        band.appendChild(seg);
+      }
+      el.appendChild(band);
+      band.getBoundingClientRect(); // force layout so height transitions
+      band.style.height = (100 / layers.length) + '%';
+    });
+    // adjust heights of pre-existing bands
+    [...el.querySelectorAll('.band')].forEach(b => { b.style.height = (100 / layers.length) + '%'; });
+  }
+
+  function updateLiveVial(layers) {
+    const bands = [...vialLive.querySelectorAll('.band')];
+    vialLive.querySelectorAll('.empty').forEach(n => n.remove());
+    if (bands.length > layers.length) { renderVial(vialLive, layers); return; }
+    for (let i = bands.length; i < layers.length; i++) {
+      const band = document.createElement('div');
+      band.className = 'band';
+      for (const s of DRIP.segs(layers[i])) {
+        const seg = document.createElement('div');
+        seg.className = 'seg';
+        seg.style.width = (s.f * 100) + '%';
+        seg.style.background = CLR[s.c];
+        band.appendChild(seg);
+      }
+      vialLive.appendChild(band);
+      band.getBoundingClientRect();
+    }
+    [...vialLive.querySelectorAll('.band')].forEach(b => { b.style.height = (100 / layers.length) + '%'; });
+  }
+
+  // ---------- level flow ----------
+  function loadLevel(i) {
+    levelIndex = Math.max(0, Math.min(DRIP.LEVELS.length - 1, i));
+    level = DRIP.LEVELS[levelIndex];
+    machines = DRIP.cloneMachines(level);
+    moves = 0; undoStack = []; selected = -1;
+    mode = 'build'; play = null; sim = null; lastResult = null;
+    drag = null; slideAnim = null; particles = [];
+    lvlTitle.textContent = (levelIndex + 1) + ' · ' + level.name;
+    hintEl.textContent = level.hint;
+    renderVial(vialTarget, level.target);
+    renderVial(vialLive, []);
+    hideBanner(); closeSheets(); setRunBtn(); updateChip();
+    lsSet('drip_level', String(levelIndex));
+  }
+
+  function updateChip() {
+    movesChip.innerHTML = 'moves <b>' + moves + '</b> · par ' + level.par;
+    movesChip.classList.toggle('over', moves > level.par);
+    btnUndo.disabled = !undoStack.length || mode === 'running';
+  }
+
+  function pushUndo() {
+    undoStack.push({ m: machines.map(m => Object.assign({}, m)), moves });
+    if (undoStack.length > 60) undoStack.shift();
+  }
+
+  function undo() {
+    if (mode === 'running' || !undoStack.length) return;
+    if (mode === 'result') clearResult();
+    const s = undoStack.pop();
+    machines = s.m; moves = s.moves;
+    SND.click(); updateChip();
+  }
+
+  function resetLevel() {
+    if (mode === 'running') return;
+    loadLevel(levelIndex);
+    SND.click();
+  }
+
+  function commitMove(fn) {
+    if (mode === 'result') clearResult();
+    pushUndo();
+    if (fn()) { moves++; updateChip(); return true; }
+    undoStack.pop();
+    return false;
+  }
+
+  // ---------- run / playback ----------
+  const TICK_MS = 260, TICK_MS_FAST = 80;
+
+  function setRunBtn() {
+    btnRun.classList.remove('alt');
+    if (mode === 'running') { btnRun.innerHTML = 'FAST&nbsp;&#9656;&#9656;'; }
+    else if (mode === 'result' && lastResult && !lastResult.win) { btnRun.textContent = 'TWEAK'; btnRun.classList.add('alt'); }
+    else btnRun.innerHTML = 'RUN&nbsp;&#9656;';
+  }
+
+  function startRun(instant) {
+    if (mode === 'running') { if (play) play.fast = true; setRunBtn(); return; }
+    if (mode === 'result') { clearResult(); if (!instant) return; }
+    sim = DRIP.simulate(level, machines);
+    let last = 0;
+    sim.ticks.forEach((tk, i) => { if (tk.events.length) last = i; });
+    const snaps = sim.ticks.slice(0, Math.min(sim.ticks.length, last + 2));
+    snaps.forEach(s => { s.byId = {}; s.drops.forEach(d => { s.byId[d.id] = d; }); });
+    play = { snaps, pos: 0, fired: -1, fast: false, t: performance.now() };
+    mode = 'running'; selected = -1; drag = null;
+    renderVial(vialLive, []); hideBanner(); setRunBtn(); updateChip();
+    if (instant) {
+      for (const s of snaps) fireTick(s, true);
+      play = null;
+      finish(true);
+    }
+  }
+
+  function fireTick(snap, silent) {
+    for (const ev of snap.events) {
+      if (silent) continue;
+      if (ev.k === 'dye') { SND.pop(); ring(ev.x, ev.y, CLR[ev.c]); }
+      else if (ev.k === 'bleach') { SND.pop(); ring(ev.x, ev.y, CLR.X); }
+      else if (ev.k === 'split') { SND.splitS(); ring(ev.x, ev.y, CLR[ev.c]); }
+      else if (ev.k === 'exit') { SND.pour(); }
+      else if (ev.k === 'chute') SND.click();
+    }
+    if (snap.layers.length !== vialLive.querySelectorAll('.band').length) updateLiveVial(snap.layers);
+  }
+
+  function finish(instant) {
+    const win = sim.win;
+    lastResult = { win, layers: sim.layers, moves, lost: sim.lost };
+    mode = 'result';
+    updateLiveVial(sim.layers);
+    if (win) {
+      const star = moves <= level.par;
+      const p = progress[level.id] || {};
+      progress[level.id] = { solved: true, star: p.star || star, best: Math.min(p.best || 99, moves) };
+      lsSet('drip_progress', JSON.stringify(progress));
+      if (!instant) { SND.win(); vib([15, 40, 25]); }
+      showWinSheet(star);
+    } else {
+      if (!instant) { SND.fail(); vib(60); }
+      const bad = new Set();
+      const n = Math.max(sim.layers.length, level.target.length);
+      for (let i = 0; i < sim.layers.length; i++) {
+        if (i >= level.target.length || !DRIP.layersMatch([sim.layers[i]], [level.target[i]])) bad.add(i);
+      }
+      renderVial(vialLive, sim.layers, bad);
+      vialLive.classList.remove('shake'); void vialLive.offsetWidth; vialLive.classList.add('shake');
+      let msg;
+      if (!sim.layers.length) msg = 'Nothing landed - every drop got stuck.';
+      else if (sim.layers.length !== level.target.length)
+        msg = sim.layers.length + ' band' + (sim.layers.length > 1 ? 's' : '') + ' poured - the target has ' + level.target.length + '.';
+      else {
+        const okCount = level.target.length - bad.size;
+        msg = okCount + ' of ' + level.target.length + ' bands match. Tap the board to keep building.';
+      }
+      showBanner(msg, true);
+    }
+    setRunBtn(); updateChip();
+  }
+
+  function clearResult() {
+    mode = 'build'; lastResult = null; sim = null; play = null;
+    renderVial(vialLive, []); hideBanner(); setRunBtn(); updateChip();
+  }
+
+  function showBanner(text, bad) {
+    banner.textContent = text;
+    banner.classList.toggle('bad', !!bad);
+    banner.classList.add('show');
+  }
+  function hideBanner() { banner.classList.remove('show'); }
+
+  // ---------- sheets ----------
+  const backdrop = $('backdrop'), sheetWin = $('sheetWin'), sheetLevels = $('sheetLevels');
+  function openSheet(sh) { backdrop.classList.add('show'); sh.classList.add('show'); }
+  function closeSheets() { backdrop.classList.remove('show'); sheetWin.classList.remove('show'); sheetLevels.classList.remove('show'); }
+  backdrop.addEventListener('click', closeSheets);
+
+  function showWinSheet(star) {
+    $('winTitle').textContent = level.name + ' solved';
+    $('winStars').innerHTML = star ? '&#9733;' : '<span class="dim">&#9733;</span>';
+    $('winSub').textContent = moves + ' move' + (moves === 1 ? '' : 's') + ' · par ' + level.par +
+      (star ? ' · perfect' : ' · match par for the star');
+    $('btnNext').style.display = levelIndex < DRIP.LEVELS.length - 1 ? '' : 'none';
+    setTimeout(() => openSheet(sheetWin), 500);
+  }
+  $('btnReplay').addEventListener('click', () => { loadLevel(levelIndex); });
+  $('btnNext').addEventListener('click', () => { loadLevel(levelIndex + 1); });
+
+  function renderLevelList() {
+    const list = $('lvlList');
+    list.innerHTML = '';
+    DRIP.LEVELS.forEach((lv, i) => {
+      const p = progress[lv.id];
+      const b = document.createElement('button');
+      b.className = 'lvlchip' + (i === levelIndex ? ' cur' : '');
+      b.innerHTML = '<span class="n">' + (i + 1) + '</span><span class="nm">' + lv.name + '</span>' +
+        '<span class="st">' + (p ? (p.star ? '&#9733;' : '&#10003;') : '') + '</span>';
+      b.addEventListener('click', () => { loadLevel(i); });
+      list.appendChild(b);
+    });
+  }
+  $('btnLevels').addEventListener('click', () => {
+    if (mode === 'running') return;
+    renderLevelList(); openSheet(sheetLevels);
+  });
+
+  // sound + theme buttons
+  const btnSound = $('btnSound');
+  function soundGlyph() { btnSound.innerHTML = SND.muted() ? '&#128263;' : '&#128266;'; }
+  btnSound.addEventListener('click', () => { SND.toggle(); soundGlyph(); });
+  soundGlyph();
+  (function () {
+    const btn = $('themeToggle');
+    function glyph() { btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀' : '☾'; }
+    glyph();
+    btn.addEventListener('click', function () {
+      const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      lsSet('theme', next);
+      glyph();
+      setTimeout(refreshTheme, 0);
+    });
+  })();
+
+  btnUndo.addEventListener('click', undo);
+  btnReset.addEventListener('click', resetLevel);
+  btnRun.addEventListener('click', () => {
+    if (mode === 'result' && lastResult && !lastResult.win) { clearResult(); return; }
+    startRun(false);
+  });
+
+  // ---------- geometry ----------
+  function fit() {
+    const r = boardWrap.getBoundingClientRect();
+    dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    cell = Math.floor(Math.min(r.width / level.w, r.height / level.h));
+    ox = (r.width - cell * level.w) / 2;
+    oy = (r.height - cell * level.h) / 2;
+  }
+  new ResizeObserver(fit).observe(boardWrap);
+
+  const px = x => ox + x * cell;
+  const py = y => oy + y * cell;
+  const cellAt = (cx, cy) => [Math.floor((cx - ox) / cell), Math.floor((cy - oy) / cell)];
+
+  // ---------- drawing ----------
+  const T = {};
+  function refreshTheme() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const v of ['--accent', '--surface', '--raised', '--ink', '--muted', '--line', '--line-strong', '--cellfill', '--wall', '--wall-edge', '--bg'])
+      T[v] = cs.getPropertyValue(v).trim();
+  }
+  refreshTheme();
+  const css = v => T[v];
+
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  function drawDroplet(cx, cy, r, color) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 1.25);
+    ctx.bezierCurveTo(cx + r * 1.05, cy - r * .1, cx + r * .95, cy + r * .95, cx, cy + r * .95);
+    ctx.bezierCurveTo(cx - r * .95, cy + r * .95, cx - r * 1.05, cy - r * .1, cx, cy - r * 1.25);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function drawMachine(m, x, y, scale, alpha) {
+    const s = cell * .86 * (scale || 1);
+    const cx = x + cell / 2, cy = y + cell / 2;
+    const lx = cx - s / 2, ly = cy - s / 2;
+    ctx.save();
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    if (scale && scale > 1) {
+      ctx.shadowColor = 'rgba(0,0,0,.4)';
+      ctx.shadowBlur = 14; ctx.shadowOffsetY = 6;
+    }
+    if (m.type === 'ramp') {
+      ctx.beginPath();
+      if (m.dir === 1) { ctx.moveTo(lx, ly); ctx.lineTo(lx + s, ly + s); ctx.lineTo(lx, ly + s); }
+      else { ctx.moveTo(lx + s, ly); ctx.lineTo(lx + s, ly + s); ctx.lineTo(lx, ly + s); }
+      ctx.closePath();
+      ctx.fillStyle = css('--raised');
+      ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : css('--accent');
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // direction arrow
+      ctx.strokeStyle = css('--muted'); ctx.lineWidth = 2; ctx.lineCap = 'round';
+      const ay = ly + s * .74, a1 = m.dir === 1 ? lx + s * .28 : lx + s * .72, a2 = m.dir === 1 ? lx + s * .66 : lx + s * .34;
+      ctx.beginPath(); ctx.moveTo(a1, ay); ctx.lineTo(a2, ay);
+      ctx.moveTo(a2 - m.dir * 5, ay - 4); ctx.lineTo(a2, ay); ctx.lineTo(a2 - m.dir * 5, ay + 4);
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+    rr(lx, ly, s, s, s * .22);
+    if (m.type === 'dye') {
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.fillStyle = CLR[m.color] + '2e'; ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : CLR[m.color];
+      ctx.lineWidth = 1.8; ctx.stroke();
+      drawDroplet(cx, cy + s * .04, s * .26, CLR[m.color]);
+    } else if (m.type === 'bleach') {
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : CLR.X;
+      ctx.lineWidth = 1.8; ctx.stroke();
+      // four point sparkle
+      ctx.fillStyle = CLR.X;
+      ctx.beginPath();
+      const r0 = s * .3, r1 = s * .1;
+      for (let i = 0; i < 8; i++) {
+        const r = i % 2 ? r1 : r0, a = i * Math.PI / 4 - Math.PI / 2;
+        ctx[i ? 'lineTo' : 'moveTo'](cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+      }
+      ctx.closePath(); ctx.fill();
+    } else if (m.type === 'split') {
+      ctx.fillStyle = css('--raised'); ctx.fill();
+      ctx.strokeStyle = m.fixed ? css('--line-strong') : css('--accent');
+      ctx.lineWidth = 1.8; ctx.stroke();
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2.2; ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - s * .28); ctx.lineTo(cx, cy);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx - s * .28, cy + s * .18);
+      ctx.moveTo(cx, cy); ctx.lineTo(cx + s * .28, cy + s * .18);
+      ctx.stroke();
+      ctx.fillStyle = css('--ink');
+      [[-1, 1], [1, 1]].forEach(([sx]) => {
+        const axx = cx + sx * s * .28, ayy = cy + s * .18;
+        ctx.beginPath();
+        ctx.moveTo(axx, ayy + 4); ctx.lineTo(axx - 4 * sx, ayy - 1); ctx.lineTo(axx + 1 * sx, ayy - 4);
+        ctx.closePath(); ctx.fill();
+      });
+    }
+    // bolts on fixed machines
+    if (m.fixed) {
+      ctx.fillStyle = css('--line-strong');
+      const o = s * .12;
+      [[lx + o, ly + o], [lx + s - o, ly + o], [lx + o, ly + s - o], [lx + s - o, ly + s - o]]
+        .forEach(([bx, by]) => { ctx.beginPath(); ctx.arc(bx, by, 1.6, 0, 7); ctx.fill(); });
+    }
+    ctx.restore();
+  }
+
+  function drawEmitter(e) {
+    const x = px(e.x), y = py(e.y), s = cell * .86;
+    const lx = x + (cell - s) / 2, ly = y + (cell - s) / 2;
+    rr(lx, ly, s, s, s * .18);
+    ctx.fillStyle = css('--surface'); ctx.fill();
+    ctx.strokeStyle = css('--line-strong'); ctx.lineWidth = 1.8; ctx.stroke();
+    // hatch top
+    ctx.strokeStyle = css('--line'); ctx.lineWidth = 1.5;
+    for (let i = 1; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(lx + s * i / 4, ly + s * .12); ctx.lineTo(lx + s * i / 4, ly + s * .38);
+      ctx.stroke();
+    }
+    // spout hole + hanging drop
+    ctx.fillStyle = css('--bg');
+    ctx.beginPath(); ctx.arc(x + cell / 2, ly + s * .82, s * .17, 0, 7); ctx.fill();
+    drawDroplet(x + cell / 2, ly + s * .84, s * .1, css('--accent'));
+  }
+
+  function drawDrop(x, y, c, r, alpha) {
+    ctx.save();
+    ctx.globalAlpha = alpha == null ? 1 : alpha;
+    const col = CLR[c];
+    const g = ctx.createRadialGradient(x - r * .35, y - r * .4, r * .15, x, y, r * 1.15);
+    g.addColorStop(0, '#ffffff');
+    g.addColorStop(.25, col);
+    g.addColorStop(1, col);
+    ctx.fillStyle = g;
+    ctx.shadowColor = col; ctx.shadowBlur = r * .9;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill();
+    ctx.restore();
+  }
+
+  function ring(cx, cy, color) {
+    particles.push({ k: 'ring', x: px(cx) + cell / 2, y: py(cy) + cell / 2, t0: performance.now(), dur: 420, color });
+  }
+
+  const easeIO = f => f < .5 ? 2 * f * f : 1 - Math.pow(-2 * f + 2, 2) / 2;
+
+  function draw(now) {
+    requestAnimationFrame(draw);
+    if (!level) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // cells
+    ctx.fillStyle = css('--cellfill');
+    for (let y = 0; y < level.h; y++)
+      for (let x = 0; x < level.w; x++) {
+        rr(px(x) + 2, py(y) + 2, cell - 4, cell - 4, 5);
+        ctx.fill();
+      }
+    // faint fall guides under emitters
+    for (const e of level.emitters) {
+      ctx.fillStyle = css('--cellfill');
+      ctx.fillRect(px(e.x) + cell * .42, py(e.y + 1), cell * .16, py(level.h) - py(e.y + 1));
+    }
+    // bottom edge: where paint exits
+    const grad = ctx.createLinearGradient(0, py(level.h) - 6, 0, py(level.h) + 8);
+    grad.addColorStop(0, 'transparent'); grad.addColorStop(1, css('--accent') + '55');
+    ctx.fillStyle = grad;
+    ctx.fillRect(px(0), py(level.h) - 6, cell * level.w, 12);
+
+    // walls
+    for (const [wx, wy] of level.walls) {
+      rr(px(wx) + 1.5, py(wy) + 1.5, cell - 3, cell - 3, 6);
+      ctx.fillStyle = css('--wall'); ctx.fill();
+      ctx.strokeStyle = css('--wall-edge'); ctx.lineWidth = 1.4; ctx.stroke();
+    }
+    for (const e of level.emitters) drawEmitter(e);
+
+    // machines
+    machines.forEach((m, i) => {
+      if (drag && drag.mi === i) return;
+      if (slideAnim && slideAnim.mi === i) return;
+      let wob = 0;
+      if (wiggle && wiggle.mi === i) {
+        const f = (now - wiggle.t0) / 300;
+        if (f < 1) wob = Math.sin(f * Math.PI * 4) * 3 * (1 - f); else wiggle = null;
+      }
+      const sel = i === selected && mode === 'build';
+      drawMachine(m, px(m.x) + wob, py(m.y), sel ? 1.04 : 1);
+    });
+
+    // slide animation
+    if (slideAnim) {
+      const f = Math.min(1, (now - slideAnim.t0) / slideAnim.dur);
+      const e = 1 - Math.pow(1 - f, 3);
+      const m = machines[slideAnim.mi];
+      drawMachine(m, px(slideAnim.fx + (m.x - slideAnim.fx) * e), py(slideAnim.fy + (m.y - slideAnim.fy) * e), 1.05);
+      if (f >= 1) slideAnim = null;
+    }
+
+    // drag ghost + lifted machine
+    if (drag && drag.locked) {
+      const m = machines[drag.mi];
+      if (drag.dest) {
+        ctx.save();
+        ctx.setLineDash([5, 5]);
+        ctx.strokeStyle = css('--accent'); ctx.lineWidth = 2;
+        rr(px(drag.dest.x) + 3, py(drag.dest.y) + 3, cell - 6, cell - 6, 7);
+        ctx.stroke();
+        ctx.restore();
+      }
+      drawMachine(m, px(m.x) + drag.vx, py(m.y) + drag.vy, 1.12);
+    }
+
+    // drops during playback / result
+    if (play) {
+      const dt = Math.max(0, now - play.t); play.t = now; // rAF timestamps can pre-date startRun's now()
+      play.pos += dt / (play.fast ? TICK_MS_FAST : TICK_MS);
+      const maxPos = play.snaps.length - 1;
+      if (play.pos > maxPos + .6) { const done = play; play = null; finish(false); }
+      else {
+        while (play.fired < Math.min(Math.floor(play.pos), maxPos)) {
+          play.fired++;
+          fireTick(play.snaps[play.fired]);
+        }
+        const k = Math.min(Math.floor(play.pos), maxPos);
+        const cur = play.snaps[k], nxt = play.snaps[Math.min(k + 1, maxPos)];
+        const f = easeIO(Math.min(1, play.pos - k));
+        // drops present in nxt: tween from cur position
+        for (const d of nxt.drops) {
+          const p = cur.byId[d.id];
+          const fx = p ? p.x : d.x, fy = p ? p.y : d.y;
+          const X = px(fx + (d.x - fx) * f) + cell / 2;
+          const Y = py(fy + (d.y - fy) * f) + cell / 2;
+          const c = (p && f < .7) ? p.c : d.c;
+          const inM = d.in && d.id in cur.byId && cur.byId[d.id].in === d.in;
+          const r = cell * (inM ? .24 : .3);
+          const ap = p ? 1 : Math.min(1, f * 2);
+          drawDrop(X, Y, c, r * (p ? 1 : (.4 + .6 * f)), ap);
+        }
+        // drops that exited between cur and nxt: continue past the bottom
+        for (const d of cur.drops) {
+          if (nxt.byId[d.id]) continue;
+          const ex = nxt.events.find(ev => ev.k === 'exit' && ev.id === d.id);
+          if (ex) drawDrop(px(d.x) + cell / 2, py(d.y + f) + cell / 2, d.c, cell * .3, 1 - f * .7);
+        }
+      }
+    } else if (mode === 'result' && sim) {
+      const lastSnap = sim.ticks[sim.ticks.length - 1];
+      for (const d of lastSnap.drops) {
+        drawDrop(px(d.x) + cell / 2, py(d.y) + cell / 2, d.c, cell * .26, .45);
+      }
+    }
+
+    // particles
+    particles = particles.filter(p => {
+      const f = (now - p.t0) / p.dur;
+      if (f >= 1) return false;
+      ctx.save();
+      ctx.globalAlpha = 1 - f;
+      ctx.strokeStyle = p.color; ctx.lineWidth = 2.5 * (1 - f);
+      ctx.beginPath(); ctx.arc(p.x, p.y, cell * (.2 + f * .55), 0, 7); ctx.stroke();
+      ctx.restore();
+      return true;
+    });
+  }
+
+  // ---------- input ----------
+  function hitMachine(cx, cy) {
+    const [gx, gy] = cellAt(cx, cy);
+    return machines.findIndex(m => m.x === gx && m.y === gy);
+  }
+
+  canvas.addEventListener('pointerdown', ev => {
+    ev.preventDefault();
+    try { canvas.setPointerCapture(ev.pointerId); } catch (e) { }
+    const r = canvas.getBoundingClientRect();
+    const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+    if (mode === 'running') { if (play) { play.fast = true; setRunBtn(); } return; }
+    if (mode === 'result') { clearResult(); return; }
+    const mi = hitMachine(cx, cy);
+    drag = { mi, sx: cx, sy: cy, t0: performance.now(), locked: null, vx: 0, vy: 0, dest: null, dir: 0, pull: 0 };
+    if (mi < 0) drag = null;
+  });
+
+  canvas.addEventListener('pointermove', ev => {
+    if (!drag || mode !== 'build') return;
+    const r = canvas.getBoundingClientRect();
+    const dx = ev.clientX - r.left - drag.sx, dy = ev.clientY - r.top - drag.sy;
+    const m = machines[drag.mi];
+    if (!drag.locked) {
+      if (Math.hypot(dx, dy) < 12) return;
+      if (m.fixed) { wiggle = { mi: drag.mi, t0: performance.now() }; SND.deny(); vib(30); drag = null; return; }
+      drag.locked = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+    }
+    const a = drag.locked === 'h' ? dx : dy;
+    const dir = a > 0 ? 1 : -1;
+    if (dir !== drag.dir) {
+      drag.dir = dir;
+      const [ddx, ddy] = drag.locked === 'h' ? [dir, 0] : [0, dir];
+      drag.dest = DRIP.slideDest(level, machines, drag.mi, ddx, ddy);
+      drag.ddx = ddx; drag.ddy = ddy;
+    }
+    const lim = drag.dest
+      ? (drag.locked === 'h' ? (drag.dest.x - m.x) * cell : (drag.dest.y - m.y) * cell)
+      : 0;
+    const v = dir > 0 ? Math.min(a, Math.max(lim, 0)) : Math.max(a, Math.min(lim, 0));
+    drag.vx = drag.locked === 'h' ? v : 0;
+    drag.vy = drag.locked === 'v' ? v : 0;
+    drag.pull = Math.abs(v);
+  });
+
+  function endDrag(ev) {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (mode !== 'build') return;
+    const m = machines[d.mi];
+    const dt = performance.now() - d.t0;
+    if (!d.locked) {
+      // tap
+      if (dt < 450) {
+        if (m.type === 'ramp' && !m.fixed) {
+          commitMove(() => DRIP.applyRotate(machines, d.mi));
+          SND.click(); vib(10);
+        } else if (m.fixed) {
+          wiggle = { mi: d.mi, t0: performance.now() }; SND.deny();
+        }
+        selected = d.mi;
+      }
+      return;
+    }
+    if (d.dest && d.pull > cell * .33) {
+      const from = { x: m.x, y: m.y };
+      if (commitMove(() => DRIP.applySlide(level, machines, d.mi, d.ddx, d.ddy))) {
+        const cells = Math.abs(m.x - from.x) + Math.abs(m.y - from.y);
+        slideAnim = { mi: d.mi, fx: from.x + (d.vx / cell), fy: from.y + (d.vy / cell), t0: performance.now(), dur: 90 + cells * 40 };
+        selected = d.mi;
+        setTimeout(() => { SND.thunk(); vib(12); }, slideAnim.dur * .8);
+      }
+    } else if (d.dest === null && d.pull === 0) {
+      wiggle = { mi: d.mi, t0: performance.now() }; SND.deny();
+    }
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', () => { drag = null; });
+
+  // keyboard (desktop)
+  window.addEventListener('keydown', ev => {
+    if (ev.key === ' ') { ev.preventDefault(); startRun(false); return; }
+    if (ev.key === 'Escape') { closeSheets(); return; }
+    if (mode !== 'build') return;
+    if (ev.key === 'z' || ev.key === 'u') { undo(); return; }
+    if (selected >= 0) {
+      const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+      if (dirs[ev.key]) {
+        ev.preventDefault();
+        const [dx, dy] = dirs[ev.key];
+        const m = machines[selected];
+        const from = { x: m.x, y: m.y };
+        if (commitMove(() => DRIP.applySlide(level, machines, selected, dx, dy))) {
+          const cells = Math.abs(m.x - from.x) + Math.abs(m.y - from.y);
+          slideAnim = { mi: selected, fx: from.x, fy: from.y, t0: performance.now(), dur: 90 + cells * 40 };
+          SND.thunk();
+        } else SND.deny();
+      }
+      if (ev.key === 'r') {
+        if (commitMove(() => DRIP.applyRotate(machines, selected))) SND.click(); else SND.deny();
+      }
+    }
+  });
+
+  // ---------- debug hook ----------
+  window.__drip = {
+    load: i => loadLevel(i),
+    slide: (mi, dx, dy) => commitMove(() => DRIP.applySlide(level, machines, mi, dx, dy)),
+    rotate: mi => commitMove(() => DRIP.applyRotate(machines, mi)),
+    run: instant => startRun(!!instant),
+    solveMoves: () => { for (const op of level.solution) op[0] === 's' ? window.__drip.slide(op[1], op[2], op[3]) : window.__drip.rotate(op[1]); },
+    state: () => ({ mode, moves, levelIndex, machines: machines.map(m => ({ ...m })), result: lastResult }),
+    LEVELS: DRIP.LEVELS
+  };
+
+  // ---------- boot ----------
+  if (/nofx/.test(location.search)) {
+    const st = document.createElement('style');
+    st.textContent = '*{transition:none!important;animation:none!important}';
+    document.head.appendChild(st);
+  }
+  const startAt = parseInt(ls('drip_level') || '0', 10) || 0;
+  loadLevel(startAt);
+  fit();
+  requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>

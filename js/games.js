@@ -17,6 +17,8 @@
   // mirrors games.json (order matters - it drives the spiral). The fetch below
   // refreshes accents/names in place, so this only needs to be roughly current.
   var FALLBACK = [
+    { slug: "drip", name: "Drip", accent: "#e455ff" },
+    { slug: "gridfire", name: "Gridfire", accent: "#ff7a45" },
     { slug: "shipshape", name: "Shipshape", accent: "#7fd4ff" },
     { slug: "fathom", name: "Fathom", accent: "#2fe6c9" },
     { slug: "lumen", name: "Lumen", accent: "#ffb43a" },
