@@ -245,6 +245,7 @@
         <li><span class="k">tap</span> a cell to cycle it: empty ▸ <b>self</b> ▸ (other) ▸ empty. A <b>self</b> cell holds the whole mark, shrunk - the mark is made of itself.</li>
         <li><span class="k">hold</span> a cell to <b>invert</b> it: empty ⇄ solid ink, a mark ⇄ its <b>anti</b> (the negative). These powers unlock level by level.</li>
         <li>Match the <b>target</b>. Tap either picture to replay its recursion growing in.</li>
+        <li>Why does pure <b>self</b> draw anything? A point is inked when it <i>never escapes</i>: zoom in forever and it always lands in a filled cell. All nine self = nothing ever escapes = solid; leave holes and points fall out at every scale - that's the lace.</li>
         <li>◐ ghosts the target over yours · ↶ undoes · <b>par</b> is the fewest cells the mark needs.</li>
       </ul>
       <button class="nb" id="helpClose">got it</button>
@@ -268,6 +269,7 @@
         <button class="nb" id="rand">⚄ random</button>
         <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
         <button class="nb" id="clear">clear</button>
+        <button class="nb" id="sshare" title="Share this creation as a puzzle link">⧉ link</button>
         <button class="nb" id="exitSand">✕ exit</button>
       </div>
       <div class="nav" id="navRandom" hidden>
@@ -547,7 +549,10 @@ function tileGens(W,H,n){                    // two reusable generations of n*2 
 function sqTile(stamps, base, W, colour, maxDepth, root, rootPar){
   if(maxDepth==null) maxDepth=Infinity;
   const n=stamps.length, c=W/base;
-  let iters=0; for(let s=W; s>=1.15 && iters<maxDepth; s/=base) iters++;
+  // stop while the smallest feature is still >=1px: sparse marks (Cantor dust,
+  // Ouroboros) are measure-zero, so one generation further the downscale
+  // averages them below visibility and the mark fades to blank
+  let iters=0; for(let s=W; s>=base && iters<maxDepth; s/=base) iters++;
   let [cur,nxt]=tileGens(W,W,n);
   for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,W); t.ctx.fillStyle=colour; t.ctx.fillRect(0,0,W,W); }
   for(let g=0;g<iters;g++){
@@ -971,7 +976,7 @@ function enterSandbox(){
   if(mode==='random') clearHash();
   mode='sand'; setNav('sand'); geom='sq3'; sandOp='none'; levelOp=null;
   $('lvnum').textContent=''; $('lvname').textContent='Free play';
-  $('hint').innerHTML="No target. Build two marks - <b>hold</b> any cell to invert it into its <b>anti</b> - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise.";
+  $('hint').innerHTML="No target. Build two marks - <b>hold</b> any cell to invert it into its <b>anti</b> - then <b>combine</b> them: <b>g1 xor g2</b> and its kin get gloriously strange. Try ⚄ for a surprise, and <b>⧉ link</b> to send a find as a puzzle.";
   $('par').hidden=true;
   stamps=[Array(9).fill(0), Array(9).fill(0)];
   baseline=stamps.map(s=>s.slice());
@@ -1043,16 +1048,22 @@ function renderSandbox(maxDepth){
 const GEOMS=['sq3','sq2','tri'];
 const GEOMCH={sq3:'S', sq2:'s', tri:'t'};
 const CHGEOM={S:'sq3', s:'sq2', t:'tri'};
-function encodeStamps(g, st){ return GEOMCH[g] + st.map(s=>s.map(v=>v.toString(16)).join('')).join('.'); }
+function encodeStamps(g, st, op){
+  return GEOMCH[g] + st.map(s=>s.map(v=>v.toString(16)).join('')).join('.')
+       + (op && op!=='none' ? '~'+op : '');
+}
 function decodeStamps(str){
-  const g=CHGEOM[str[0]]; if(!g) return null;
-  const parts=str.slice(1).split('.').filter(Boolean);
+  const [body, opRaw]=str.split('~');
+  const g=CHGEOM[body[0]]; if(!g) return null;
+  const parts=body.slice(1).split('.').filter(Boolean);
   if(!parts.length) return null;
   const st=parts.map(p=>[...p].map(ch=>parseInt(ch,16)));
   const n=NCELLS[g], ns=st.length;   // refs 2..(1+count), anti-refs 4..(3+count)
   const ok=v=>!isNaN(v) && (v===0||v===1 || (v>=2&&v<2+ns) || (v>=4&&v<4+ns));
   if(st.some(s=>s.length!==n || s.some(v=>!ok(v)))) return null;
-  return {geom:g, stamps:st};
+  const op=opRaw ? opRaw.toUpperCase() : null;
+  if(op && (!OPS[op] || ns!==2 || g!=='sq3')) return null;   // ops fuse exactly two 3x3 grids
+  return {geom:g, stamps:st, op};
 }
 function fromHash(){
   const m=(location.hash||'').match(/p=([^&]+)/);
@@ -1091,17 +1102,19 @@ function genRandom(){ const g=GEOMS[Math.floor(Math.random()*GEOMS.length)]; ret
 
 function enterRandom(target){
   clearTimeout(advTimer); advTimer=null; prevWin=false;
-  mode='random'; setNav('random'); levelOp=null;
+  mode='random'; setNav('random'); levelOp=target.op||null;
   geom=target.geom; targetStamps=target.stamps;
   baseline=targetStamps.map(s=>s.map(_=>0));
   stamps=baseline.map(s=>s.slice());
-  targetFP=fingerprint(targetStamps, geom);
+  targetFP = levelOp ? combineFP(targetStamps, levelOp) : fingerprint(targetStamps, geom);
   curPar=parOf(targetStamps);
   resetUndo();
-  try{ history.replaceState(null,'','#p='+encodeStamps(geom,targetStamps)); }catch(e){}
-  $('targetPic').querySelector('.cap').textContent='Target';
-  $('lvnum').textContent=''; $('lvname').textContent='Random';
-  $('hint').innerHTML=`Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
+  try{ history.replaceState(null,'','#p='+encodeStamps(geom,targetStamps,levelOp)); }catch(e){}
+  $('targetPic').querySelector('.cap').textContent = levelOp ? ('G1 '+OPSYM[levelOp]+' G2') : 'Target';
+  $('lvnum').textContent=''; $('lvname').textContent = levelOp ? 'Shared' : 'Random';
+  $('hint').innerHTML = levelOp
+    ? `Reverse-engineer this <b>fused</b> mark: grid 1 <b>${levelOp}</b> grid 2. Match it in as few cells as you can, then <b>⧉ link</b> it onward.`
+    : `Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
   $('par').hidden=false;
   $('yoursFrame').classList.remove('win','pop'); $('winMsg').classList.remove('show');
   buildEditors(); setTapnote(); markDots(); applyOnion(); update();
@@ -1141,6 +1154,18 @@ $('rshare').onclick=()=>{
   const t=$('rshare');
   const done=()=>{ t.textContent='copied ✓'; setTimeout(()=>t.textContent='⧉ link',1400); };
   try{ navigator.clipboard.writeText(location.href).then(done, done); }catch(e){ done(); }
+};
+/* share a free-play creation: the link opens it as a solvable puzzle */
+$('sshare').onclick=()=>{
+  const t=$('sshare');
+  const needG2 = sandOp!=='none' || stamps[0].some(v=>v===3||v===5);   // grid 2 only if the mark can see it
+  const share = needG2 ? stamps : [stamps[0]];
+  if(share.every(s=>s.every(v=>v===0))){
+    t.textContent='empty!'; setTimeout(()=>t.textContent='⧉ link',1200); return;
+  }
+  const url=location.origin+location.pathname+'#p='+encodeStamps(geom, share, sandOp);
+  const done=()=>{ t.textContent='copied ✓'; setTimeout(()=>t.textContent='⧉ link',1400); };
+  try{ navigator.clipboard.writeText(url).then(done, done); }catch(e){ done(); }
 };
 document.querySelectorAll('.undoB').forEach(b=>b.onclick=undo);
 function closeHelp(){ $('help').hidden=true; try{ localStorage.setItem('recurr-help','1'); }catch(e){} }
