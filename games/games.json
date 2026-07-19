@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "lanternwake",
+      "name": "Lanternwake",
+      "accent": "#ffc457",
+      "tagline": "You are the last Lamplighter. Sculpt the dark into a maze with lanterns and shutters - shades burn only where it is bright, and detour around the light you place. Then focus that light into weapons, draft your build, and hold eight waves and the Eclipse before the Long Night takes you."
+    },
+    {
       "slug": "drip",
       "name": "Drip",
       "accent": "#e455ff",

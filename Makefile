@@ -32,7 +32,7 @@ KEEP_EXCLUDES := $(foreach g,$(KEEP_GAMES),--exclude=$(g))
 
 # Build-based games: built in ../games, then only their dist/ is copied in.
 # Excluded from the generic static sync so the raw project tree never lands.
-BUILD_GAMES    := fathom shipshape
+BUILD_GAMES    := fathom shipshape lanternwake
 BUILD_EXCLUDES := $(foreach g,$(BUILD_GAMES),--exclude=$(g))
 
 .DEFAULT_GOAL := help
