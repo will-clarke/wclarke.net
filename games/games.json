@@ -1,10 +1,10 @@
 {
   "games": [
     {
-      "slug": "lanternwake",
-      "name": "Lanternwake",
-      "accent": "#ffc457",
-      "tagline": "You are the last Lamplighter. Sculpt the dark into a maze with lanterns and shutters - shades burn only where it is bright, and detour around the light you place. Then focus that light into weapons, draft your build, and hold eight waves and the Eclipse before the Long Night takes you."
+      "slug": "recurr",
+      "name": "Recurr",
+      "accent": "#ff7ac2",
+      "tagline": "Design one tiny mark that is made of itself - tap cells to cycle self and other, hold to invert into ink or anti. Match the fractal in as few cells as par, reverse-engineer a random mark, or fuse two grids with a boolean operator."
     },
     {
       "slug": "drip",
@@ -13,10 +13,28 @@
       "tagline": "Slide paint machines around the grid, then let the drops fall. Whatever lands first settles at the bottom; drops that land together share a band; dyes mix on the way down. Match the vial."
     },
     {
+      "slug": "cascade",
+      "name": "Cascade",
+      "accent": "#3ad9ff",
+      "tagline": "Place stones - they never move. Win the majority of a block's 9 cells to take the block; a majority of blocks wins the game. Own ~31% of the board and still take it all."
+    },
+    {
       "slug": "gridfire",
       "name": "Gridfire",
       "accent": "#ff7a45",
       "tagline": "Maze the grid with random tetromino blocks - every rotation sets both the wall and the aim. Chain elemental emitters into glowing conduits, funnel the horde through your kill zone, and hold twenty waves."
+    },
+    {
+      "slug": "lumen",
+      "name": "Lumen",
+      "accent": "#ffb43a",
+      "tagline": "Every stone is a lamp and a wall. Light along its row & column until blocked. Cells lit by only you are yours; lit by both, worthless. Most territory wins."
+    },
+    {
+      "slug": "lanternwake",
+      "name": "Lanternwake",
+      "accent": "#ffc457",
+      "tagline": "You are the last Lamplighter. Sculpt the dark into a maze with lanterns and shutters - shades burn only where it is bright, and detour around the light you place. Then focus that light into weapons, draft your build, and hold eight waves and the Eclipse before the Long Night takes you."
     },
     {
       "slug": "shipshape",
@@ -31,28 +49,22 @@
       "tagline": "Lower a powered cable of stations into an ocean trench. Read the 36h threat forecast, tune your defences, and push The Line deeper. When the deep wins, scuttle and surface - your old wreck is down there waiting to be salvaged."
     },
     {
-      "slug": "lumen",
-      "name": "Lumen",
-      "accent": "#ffb43a",
-      "tagline": "Every stone is a lamp and a wall. Light along its row & column until blocked. Cells lit by only you are yours; lit by both, worthless. Most territory wins."
+      "slug": "echo",
+      "name": "Echo",
+      "accent": "#5cd6ff",
+      "tagline": "Rewind on the pad to spawn a replay of your past self. Choreograph the yous you used to be - hold each other's doors, dodge your own history - then sequence a clean shutdown where every loop closes. Recursion, written in time."
     },
     {
-      "slug": "cascade",
-      "name": "Cascade",
-      "accent": "#3ad9ff",
-      "tagline": "Place stones - they never move. Win the majority of a block's 9 cells to take the block; a majority of blocks wins the game. Own ~31% of the board and still take it all."
+      "slug": "debt",
+      "name": "Debt",
+      "accent": "#b48cff",
+      "tagline": "Borrow anything from the future - use it now, then send one back through the portal to become the thing you borrowed. The exit only opens on a clean ledger. Bootstrap paradoxes, played as a pocket accounting game."
     },
     {
       "slug": "fracture",
       "name": "Fracture",
       "accent": "#ff5a6e",
       "tagline": "Tap empty to place. Tap an enemy stone to shatter it into a new war. Win the line, own the cell."
-    },
-    {
-      "slug": "recurr",
-      "name": "Recurr",
-      "accent": "#ff7ac2",
-      "tagline": "Design one tiny mark that is made of itself - tap cells to cycle self and other, hold to invert into ink or anti. Match the fractal in as few cells as par, reverse-engineer a random mark, or fuse two grids with a boolean operator."
     },
     {
       "slug": "seed",
@@ -65,18 +77,6 @@
       "name": "Loom",
       "accent": "#b98cff",
       "tagline": "Author up to three rewrite rules. The loom runs them tick by tick, leftmost match first, until the bead thread matches the target - or unravels to nothing, or grows forever. Markov algorithms wearing a bead necklace."
-    },
-    {
-      "slug": "echo",
-      "name": "Echo",
-      "accent": "#5cd6ff",
-      "tagline": "Rewind on the pad to spawn a replay of your past self. Choreograph the yous you used to be - hold each other's doors, dodge your own history - then sequence a clean shutdown where every loop closes. Recursion, written in time."
-    },
-    {
-      "slug": "debt",
-      "name": "Debt",
-      "accent": "#b48cff",
-      "tagline": "Borrow anything from the future - use it now, then send one back through the portal to become the thing you borrowed. The exit only opens on a clean ledger. Bootstrap paradoxes, played as a pocket accounting game."
     }
   ]
 }

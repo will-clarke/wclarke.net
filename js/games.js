@@ -17,18 +17,19 @@
   // mirrors games.json (order matters - it drives the spiral). The fetch below
   // refreshes accents/names in place, so this only needs to be roughly current.
   var FALLBACK = [
+    { slug: "recurr", name: "Recurr", accent: "#ff7ac2" },
     { slug: "drip", name: "Drip", accent: "#e455ff" },
+    { slug: "cascade", name: "Cascade", accent: "#3ad9ff" },
     { slug: "gridfire", name: "Gridfire", accent: "#ff7a45" },
+    { slug: "lumen", name: "Lumen", accent: "#ffb43a" },
+    { slug: "lanternwake", name: "Lanternwake", accent: "#ffc457" },
     { slug: "shipshape", name: "Shipshape", accent: "#7fd4ff" },
     { slug: "fathom", name: "Fathom", accent: "#2fe6c9" },
-    { slug: "lumen", name: "Lumen", accent: "#ffb43a" },
-    { slug: "cascade", name: "Cascade", accent: "#3ad9ff" },
-    { slug: "fracture", name: "Fracture", accent: "#ff5a6e" },
-    { slug: "recurr", name: "Recurr", accent: "#ff7ac2" },
-    { slug: "seed", name: "Seed", accent: "#57e08a" },
-    { slug: "loom", name: "Loom", accent: "#b98cff" },
     { slug: "echo", name: "Echo", accent: "#5cd6ff" },
     { slug: "debt", name: "Debt", accent: "#b48cff" },
+    { slug: "fracture", name: "Fracture", accent: "#ff5a6e" },
+    { slug: "seed", name: "Seed", accent: "#57e08a" },
+    { slug: "loom", name: "Loom", accent: "#b98cff" },
   ];
 
   // axial neighbour directions, in ring-traversal order (matches hexfield's grid)

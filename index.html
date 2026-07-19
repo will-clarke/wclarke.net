@@ -367,6 +367,13 @@ const SEED_CONTENT = {
             blurb: 'a zachtronics-style factory: emitters, colourers, cloners, portals, fans - with vcr play/step/rewind. 30 levels.' },
   '1,-1': { glyph: '🚢', title: 'shipshape', act: 'play', href: '/games/shipshape/', accent: '#7fd4ff',
             blurb: 'drag salvaged blocks onto your ship while rocks rain in. every block is armour, a gun, and a puzzle. die, bank the salvage, evolve, dive back in.' },
+  // ---- best-of, promoted out of their rooms to the top level ----
+  '2,0':  { glyph: '🌀', title: 'recurr', act: 'play', href: '/games/recurr/', accent: '#ff7ac2',
+            blurb: 'design one tiny mark that is made of itself. match a fractal in as few cells as par, reverse-engineer a random mark, or fuse two grids with a boolean operator.' },
+  '0,-2': { glyph: '🎼', title: 'music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
+            blurb: 'a full-length keyboard piece, generated end to end by a pytorch model i trained on the shed rtx 3090. no human wrote a note of it - it just came out sounding like bach. tap to play.' },
+  '1,-2': { glyph: '🍽', title: 'culprit', accent: '#7fe0a0',
+            blurb: 'a diet detective that runs on the homelab. snap a meal and the 3090 identifies the food; log your mood and gut; it hunts the lagged correlations and tells you which foods to stop eating.' },
   '0,-1|1,0':  { glyph: '🏛', title: 'museum', act: 'visit', href: '/museum/',
                  blurb: 'every previous incarnation of this website, lovingly embalmed.' },
   '0,-1|0,1':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
@@ -394,7 +401,7 @@ for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
 
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
-  drip: '💧', gridfire: '🔥' };
+  drip: '💧', gridfire: '🔥', lanternwake: '🕯' };
 const PINNED_GAMES = [
   { glyph: '📦', title: 'recursive sokoban', act: 'play', href: '/games/recursive-sokoban/',
     blurb: 'boxes contain whole levels. push one, step inside, solve the nested puzzle, climb back out. stacks 16 deep.' },
@@ -408,7 +415,7 @@ const PINNED_GAMES = [
     blurb: 'a conway-operator playground: dual, truncate, gyro... sculpt living solids in the browser.' },
 ];
 // featured at the top level of the comb, so not repeated in the games room
-const FEATURED_SLUGS = ['shipshape'];
+const FEATURED_SLUGS = ['shipshape', 'recurr'];
 // first matching pattern names a post's glyph; ✍ is the fallback
 const POST_GLYPHS = [
   [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],
@@ -428,7 +435,7 @@ const contentReady = Promise.allSettled([
         act: 'play', href: '/games/' + g.slug + '/', accent: g.accent,
         blurb: g.tagline,
       }));
-      fillSection('1,0', PINNED_GAMES.concat(items), 'more games', '🕹');
+      fillSection('1,0', items.concat(PINNED_GAMES), 'more games', '🕹');
     })
     .catch(() => fillSection('1,0', PINNED_GAMES, 'more games', '🕹')),
   fetch('/index.xml')
@@ -1117,10 +1124,10 @@ function drawPlaque(px, py, s, item, alpha, hov){
     const lines = wrapText(item.blurb, s * 1.25, 5);
     lines.forEach((l, i) => ctx.fillText(l, px, py - s * 0.02 + i * bs * 1.45));
   }
-  if (t3 > 0 && item.href){
+  if (t3 > 0 && (item.href || item.audio)){
     const ps = Math.min(16, Math.max(11, s * 0.055));
     ctx.font = '600 ' + ps.toFixed(1) + 'px ' + MONO;
-    const label = (item.act || 'open') + ' ↗';
+    const label = (item.act || 'open') + (item.audio ? ' ♪' : ' ↗');
     const w = ctx.measureText(label).width + ps * 1.8, h = ps * 2.1;
     const yy = py + s * 0.52;
     const accent = item.accent || '#e8b558';
@@ -1391,7 +1398,14 @@ addEventListener('popstate', () => {
   navigateToChain(cells);
 });
 
+let musicEl = null;
+function toggleMusic(src){
+  if (!musicEl){ musicEl = new Audio(src); musicEl.loop = true; }
+  if (musicEl.paused) musicEl.play().catch(() => {}); else musicEl.pause();
+}
+
 function openItem(it){
+  if (it.audio){ toggleMusic(it.audio); return; }
   const url = new URL(it.href, location.origin);
   if (url.protocol === 'mailto:'){ location.href = it.href; return; }
   const same = url.origin === location.origin || url.hostname.endsWith('wclarke.net');
@@ -1406,7 +1420,7 @@ function handleTap(sx, sy){
   if (p.tr.kind >= 3){
     // first tap zooms the plaque up; a tap on the zoomed plaque opens it
     if (p.sr > 0.5 * minVp()){
-      if (p.tr.item.href) openItem(p.tr.item);
+      if (p.tr.item.href || p.tr.item.audio) openItem(p.tr.item);
       else pulses.set(p.key, nowMs);
     } else flyTo(p.wx, p.wy, 0.62 * minVp() / p.ru);
   } else if (p.tr.deep){
