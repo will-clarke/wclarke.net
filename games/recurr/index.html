@@ -216,6 +216,9 @@
     height:18px;opacity:0;transition:.3s;font-weight:600;
   }
   .win-msg.show{opacity:1}
+  .sat-msg{text-align:center;font-size:12px;letter-spacing:.05em;color:var(--muted);
+    height:16px;opacity:0;transition:.3s}
+  .sat-msg.show{opacity:.9}
 
   /* help sheet */
   .overlay{position:fixed;inset:0;z-index:100;background:var(--veil);
@@ -246,6 +249,7 @@
         <li><span class="k">hold</span> a cell to <b>invert</b> it: empty ⇄ solid ink, a mark ⇄ its <b>anti</b> (the negative). These powers unlock level by level.</li>
         <li>Match the <b>target</b>. Tap either picture to replay its recursion growing in.</li>
         <li>Why does pure <b>self</b> draw anything? A point is inked when it <i>never escapes</i>: zoom in forever and it always lands in a filled cell. All nine self = nothing ever escapes = solid; leave holes and points fall out at every scale - that's the lace.</li>
+        <li><b>anti</b> swaps filled ⇄ empty for everything beneath it - it is not a snapshot negative. A mark built only of selfs and antis has nothing to swap, so it <i>saturates</i>: undecided forever counts as ink, and the square locks solid.</li>
         <li>◐ ghosts the target over yours · ↶ undoes · <b>par</b> is the fewest cells the mark needs.</li>
       </ul>
       <button class="nb" id="helpClose">got it</button>
@@ -303,6 +307,7 @@
     </div>
 
     <div class="win-msg" id="winMsg">solved</div>
+    <div class="sat-msg" id="satNote">☯ saturated - no cell here can ever show white, so the whole mark locks solid</div>
 
     <div class="editwrap">
       <div class="editors" id="editors"></div>
@@ -868,11 +873,32 @@ function paintTriCell(tc, ov){
   tc.appendChild(cv);
 }
 
+/* saturated: no reachable cell can ever emit white. White is born only from
+   an empty cell at even parity or an ink cell at odd parity; a mark built of
+   nothing but references (e.g. 8 selfs + an anti-self - the liar paradox,
+   which has NO consistent picture) never lets a point escape, and the
+   never-escape rule resolves every undecided point to ink: it locks solid. */
+function saturated(st){
+  const seen=new Set(), q=[[0,0]];
+  let refs=false;
+  while(q.length){
+    const [id,p]=q.pop(), key=id*2+p;
+    if(seen.has(key)) continue; seen.add(key);
+    for(const v of st[id]){
+      if(v===0){ if(!p) return false; }
+      else if(v===1){ if(p) return false; }
+      else if(st[refIdOf(v)]){ refs=true; q.push([refIdOf(v), p^antiOf(v)]); }
+    }
+  }
+  return refs;
+}
 function update(){
   stopBloom('yours'); stopZoom();
   if(geom==='tri') document.querySelectorAll('.tcell').forEach(c=>paintTriCell(c));
   else document.querySelectorAll('.cell').forEach(c=>paintSqCell(c));
   renderYours();
+  const plain = mode==='sand' ? sandOp==='none' : !levelOp;   // fused output isn't the root mark
+  $('satNote').classList.toggle('show', plain && saturated(stamps));
   if(mode!=='sand'){ updatePar(); checkWin(); }
 }
 function renderYours(maxDepth){
