@@ -13,8 +13,8 @@
     document.documentElement.setAttribute('data-theme',t);
   }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
 </script>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3ES%3C/text%3E%3C/svg%3E" />
-<title>Selfie</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23ff7ac2'%3ER%3C/text%3E%3C/svg%3E" />
+<title>Recurr</title>
 <style>
   :root{
     --accent:#ff7ac2;
@@ -26,6 +26,7 @@
     --ok:#5cffb0;
   }
   :root[data-theme="dark"]{
+    --veil:rgba(9,12,18,.62);
     --bg:#171b23; --bg-top:#212734;
     --surface:#232a38; --raised:#2b3342;
     --cell:#1e2531;
@@ -34,6 +35,7 @@
     --shadow:rgba(0,0,0,.45);
   }
   :root[data-theme="light"]{
+    --veil:rgba(225,231,242,.62);
     --bg:#eef1f7; --bg-top:#ffffff;
     --surface:#ffffff; --raised:#f3f6fb;
     --cell:#f6f8fc;
@@ -53,7 +55,7 @@
   }
 
   .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
-    justify-content:flex-end;padding:12px 14px;pointer-events:none}
+    justify-content:flex-end;gap:8px;padding:12px 14px;pointer-events:none}
   .topbar .navbtn{pointer-events:auto}
   .navbtn{display:inline-flex;align-items:center;justify-content:center;
     width:40px;height:40px;padding:0;border-radius:11px;
@@ -214,13 +216,41 @@
     height:18px;opacity:0;transition:.3s;font-weight:600;
   }
   .win-msg.show{opacity:1}
+
+  /* help sheet */
+  .overlay{position:fixed;inset:0;z-index:100;background:var(--veil);
+    display:flex;align-items:center;justify-content:center;padding:18px;
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .sheet{max-width:400px;width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px 16px;box-shadow:0 24px 60px -18px var(--shadow);
+    font-size:13.5px;line-height:1.55}
+  .sheet h2{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+  .sheet ul{margin:0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+  .sheet li{opacity:.88}
+  .sheet b{color:var(--a);font-weight:600}
+  .sheet .k{display:inline-block;padding:0 6px;border:1px solid var(--line-strong);
+    border-radius:6px;font-size:12px;background:var(--raised)}
 </style>
 </head>
 <body>
   <div class="topbar">
+    <button class="navbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
     <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
   </div>
-  <h1><b>S</b>elfie</h1>
+
+  <div class="overlay" id="help" hidden>
+    <div class="sheet">
+      <h2>How to play</h2>
+      <ul>
+        <li><span class="k">tap</span> a cell to cycle it: empty ▸ <b>self</b> ▸ (other) ▸ empty. A <b>self</b> cell holds the whole mark, shrunk - the mark is made of itself.</li>
+        <li><span class="k">hold</span> a cell to <b>invert</b> it: empty ⇄ solid ink, a mark ⇄ its <b>anti</b> (the negative). These powers unlock level by level.</li>
+        <li>Match the <b>target</b>. Tap either picture to replay its recursion growing in.</li>
+        <li>◐ ghosts the target over yours · ↶ undoes · <b>par</b> is the fewest cells the mark needs.</li>
+      </ul>
+      <button class="nb" id="helpClose">got it</button>
+    </div>
+  </div>
+  <h1><b>R</b>ecurr</h1>
   <div class="sub">Design one tiny mark. It is made of itself. Match the fractal.</div>
 
   <div class="wrap">
@@ -335,7 +365,7 @@ const LEVELS=[
     stamps:[[A,A,A, A,0,A, A,A,A]] },
 
   { name:"Seeds",
-    hint:"Now mix them: <b>tap twice</b> for solid <b>ink</b> - a block that stays a block. A seed in the middle, <b>self</b> in the corners.",
+    hint:"A new power: <b>hold</b> an empty cell for solid <b>ink</b> - a block that stays a block, no recursion. A seed in the middle, <b>self</b> in the corners.",
     stamps:[[A,0,A, 0,1,0, A,0,A]] },
 
   { name:"Ink & Echo",
@@ -438,7 +468,7 @@ const LEVELS=[
 
   /* --- Fusions: build two independent marks; the target is grid1 <op> grid2 --- */
   { name:"Star", op:"OR",
-    hint:"A new kind of mark: two independent grids <b>fused</b>. Here with <b>OR</b> - every cell lit by <b>either</b> grid. Overlay a plus on a saltire for a woven star of stars.",
+    hint:"A new kind of mark: two independent grids <b>fused</b>. Here with <b>OR</b> - every cell lit by <b>either</b> grid. Overlay a plus on a saltire for a woven star of stars. (A second tap gives <b>B</b>: a cell that recurses into the <i>other</i> grid.)",
     stamps:[[0,A,0, A,A,A, 0,A,0],
             [A,0,A, 0,A,0, A,0,A]] },
 
@@ -462,9 +492,14 @@ const LEVELS=[
     stamps:[[A,0,A, 0,A,0, A,0,A],
             [0,A,0, A,A,A, 0,A,0]] },
 
+  { name:"Braid", op:"XOR",
+    hint:"Fused grids can also <b>quote each other</b>: a <b>B</b> cell recurses into the <i>other</i> grid. Grid 1 wraps a plus of B around a self heart; grid 2 is plain corners. XOR them and the braid appears.",
+    stamps:[[0,B,0, B,A,B, 0,B,0],
+            [A,0,A, 0,0,0, A,0,A]] },
+
   /* --- The negative: anti-self (X) - the cell holds the mark's NEGATIVE --- */
   { name:"Negative",
-    hint:"A new power: <b>hold</b> a self cell to invert it into <b>anti</b> - the same colour gone <b>dark</b>, ringed by a dashed border - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
+    hint:"The other face of <b>hold</b>: hold a <b>self</b> cell to invert it into <b>anti</b> - the same colour gone <b>dark</b>, ringed by a dashed border - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
     stamps:[[1,1,1, 1,X,1, 1,1,1]] },
 
   { name:"Cascade",
@@ -489,46 +524,86 @@ const LEVELS=[
 ];
 
 /* ---- rendering: the fixed point -----------------------------------
-   par: negation parity. Under odd parity everything inverts - empty cells
-   fill, ink cells vanish - and each anti-reference flips it again.
-   maxDepth: recursion cut-off for the bloom animation; a reference at the
-   limit renders as a solid block, so depth 1,2,3… shows the fractal grow. */
-function drawStamp(ctx, stamps, geom, x, y, size, topColour, maxDepth){
-  if(maxDepth==null) maxDepth=Infinity;
-  if(geom==='tri') drawTri(ctx, stamps, 0, x+size/2,y, x,y+size, x+size,y+size, topColour, 0, 0, maxDepth);
-  else drawSq(ctx, stamps, 0, BASE[geom], x, y, size, topColour, 0, 0, maxDepth);
+   Bottom-up tile composition. The old renderer recursed per cell - up to
+   9^7 fillRects for a dense mark - which froze the tab on the final tap.
+   Instead: start every stamp as a solid tile, then re-compose each stamp
+   from scaled drawImage copies of the previous generation. One generation
+   per depth level, ~10 draw calls each: the fixed point in ~60 blits.
+   Tiles are kept per (stamp id, parity). par: negation parity - under odd
+   parity everything inverts (empty cells fill, ink cells vanish) and each
+   anti-reference flips it again.
+   maxDepth: generations to run, so depth 1,2,3… still animates the bloom
+   (a reference at the limit renders as a solid block). */
+const TILEPOOL={};
+function tileGens(W,H,n){                    // two reusable generations of n*2 canvases
+  const key=W+'x'+H;
+  const gens=TILEPOOL[key]||(TILEPOOL[key]=[[],[]]);
+  gens.forEach(g=>{ while(g.length<n*2){
+    const cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+    g.push({cv, ctx:cv.getContext('2d')});
+  }});
+  return gens;
 }
-function drawSq(ctx, stamps, id, base, x, y, size, carried, par, depth, maxDepth){
-  if(size < 1.15 || depth>=maxDepth){    // pixel/depth limit: region = a lit block
-    ctx.fillStyle=carried; ctx.fillRect(x, y, Math.ceil(size), Math.ceil(size)); return;
+function sqTile(stamps, base, W, colour, maxDepth, root, rootPar){
+  if(maxDepth==null) maxDepth=Infinity;
+  const n=stamps.length, c=W/base;
+  let iters=0; for(let s=W; s>=1.15 && iters<maxDepth; s/=base) iters++;
+  let [cur,nxt]=tileGens(W,W,n);
+  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,W); t.ctx.fillStyle=colour; t.ctx.fillRect(0,0,W,W); }
+  for(let g=0;g<iters;g++){
+    for(let id=0;id<n;id++) for(let p=0;p<2;p++){
+      const ctx=nxt[id*2+p].ctx, s=stamps[id];
+      ctx.clearRect(0,0,W,W); ctx.fillStyle=colour;
+      for(let k=0;k<base*base;k++){
+        const v=s[k], sx=(k%base)*c, sy=((k/base)|0)*c;
+        if(v===0){ if(p) ctx.fillRect(sx,sy,c+0.6,c+0.6); }
+        else if(v===1){ if(!p) ctx.fillRect(sx,sy,c+0.6,c+0.6); }
+        else ctx.drawImage(cur[refIdOf(v)*2+(p^antiOf(v))].cv, sx,sy,c,c);
+      }
+    }
+    const t=cur; cur=nxt; nxt=t;
   }
-  const c=size/base, s=stamps[id];
-  for(let k=0;k<base*base;k++){
-    const v=s[k];
-    const sx=x+(k%base)*c, sy=y+((k/base)|0)*c;
-    if(v===0){ if(par){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); } }
-    else if(v===1){ if(!par){ ctx.fillStyle=carried; ctx.fillRect(sx, sy, c+0.6, c+0.6); } }
-    else drawSq(ctx, stamps, refIdOf(v), base, sx, sy, c, carried, par^antiOf(v), depth+1, maxDepth);
-  }
+  return cur[root*2+rootPar].cv;
 }
 function triPath(ctx, ax,ay,bx,by,cx,cy){ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath(); }
-function drawTri(ctx, stamps, id, ax,ay,bx,by,cx,cy, carried, par, depth, maxDepth){
-  const e=Math.max(Math.hypot(bx-ax,by-ay), Math.hypot(cx-bx,cy-by), Math.hypot(ax-cx,ay-cy));
-  if(e < 2 || depth>=maxDepth){ ctx.fillStyle=carried; triPath(ctx,ax,ay,bx,by,cx,cy); ctx.fill(); return; }
-  const s=stamps[id];
-  const px=(ax+bx)/2, py=(ay+by)/2, qx=(ax+cx)/2, qy=(ay+cy)/2, rx=(bx+cx)/2, ry=(by+cy)/2;
-  const sub=[
-    [ax,ay, px,py, qx,qy],   // 0 top     (upright, apex corner)
-    [px,py, bx,by, rx,ry],   // 1 left     (upright)
-    [qx,qy, rx,ry, cx,cy],   // 2 right    (upright)
-    [rx,ry, qx,qy, px,py],   // 3 centre  (inverted - propagates)
+function triTile(stamps, W, H, colour, maxDepth, root, rootPar){
+  if(maxDepth==null) maxDepth=Infinity;
+  const n=stamps.length, w=W/2, h=H/2;
+  let iters=0; for(let e=W; e>=2 && iters<maxDepth; e/=2) iters++;
+  let [cur,nxt]=tileGens(W,H,n);
+  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,H); t.ctx.fillStyle=colour; triPath(t.ctx, W/2,0, 0,H, W,H); t.ctx.fill(); }
+  const KID=[                               // sub-boxes; the centre one is the tile rotated 180°
+    {bx:W/4, by:0, inv:false, v:[W/2,0,   W/4,h,   3*W/4,h]},   // 0 top    (upright)
+    {bx:0,   by:h, inv:false, v:[W/4,h,   0,H,     W/2,H  ]},   // 1 left    (upright)
+    {bx:W/2, by:h, inv:false, v:[3*W/4,h, W/2,H,   W,H    ]},   // 2 right   (upright)
+    {bx:W/4, by:h, inv:true,  v:[W/4,h,   3*W/4,h, W/2,H  ]},   // 3 centre (inverted - propagates)
   ];
-  for(let k=0;k<4;k++){
-    const v=s[k], t=sub[k];
-    if(v===0){ if(par){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); } }
-    else if(v===1){ if(!par){ ctx.fillStyle=carried; triPath(ctx,t[0],t[1],t[2],t[3],t[4],t[5]); ctx.fill(); } }
-    else drawTri(ctx, stamps, refIdOf(v), t[0],t[1],t[2],t[3],t[4],t[5], carried, par^antiOf(v), depth+1, maxDepth);
+  for(let g=0;g<iters;g++){
+    for(let id=0;id<n;id++) for(let p=0;p<2;p++){
+      const ctx=nxt[id*2+p].ctx, s=stamps[id];
+      ctx.clearRect(0,0,W,H); ctx.fillStyle=colour;
+      for(let k=0;k<4;k++){
+        const v=s[k], t=KID[k];
+        if(v===0 || v===1){
+          if(v===0 ? p : !p){ triPath(ctx,...t.v); ctx.fill(); }
+        } else {
+          const src=cur[refIdOf(v)*2+(p^antiOf(v))].cv;
+          if(!t.inv) ctx.drawImage(src, t.bx, t.by, w, h);
+          else { ctx.save(); ctx.translate(W/2, h+h/2); ctx.rotate(Math.PI); ctx.drawImage(src, -w/2, -h/2, w, h); ctx.restore(); }
+        }
+      }
+    }
+    const t=cur; cur=nxt; nxt=t;
   }
+  return cur[root*2+rootPar].cv;
+}
+/* root/par select which stamp (and starting parity) is the top of the mark -
+   the editors use this to preview a cell's sub-mark. */
+function drawStamp(ctx, stamps, geom, x, y, size, topColour, maxDepth, root, par){
+  const tile = geom==='tri'
+    ? triTile(stamps, size, size, topColour, maxDepth, root||0, par||0)
+    : sqTile(stamps, BASE[geom], size, topColour, maxDepth, root||0, par||0);
+  ctx.drawImage(tile, x, y, size, size);
 }
 function renderPic(canvas, stamps, geom, colour, maxDepth){
   const ctx=canvas.getContext('2d');
@@ -561,8 +636,15 @@ let prevWin=false, advTimer=null;
 let undoStack=[];         // one snapshot per gesture (also reset / clear / random)
 let onion=false;          // ghost-overlay toggle (target superimposed on yours)
 let solved={};
-try{ solved=JSON.parse(localStorage.getItem('selfie-solved')||'{}'); }catch(e){}
-try{ onion=localStorage.getItem('selfie-onion')==='1'; }catch(e){}
+try{
+  const raw=localStorage.getItem('recurr-solved');
+  if(raw!=null) solved=JSON.parse(raw);
+  else {   // migrate progress from the old name; 'Braid' was inserted at index 35
+    const old=JSON.parse(localStorage.getItem('selfie-solved')||'{}');
+    for(const k in old) solved[+k>=35 ? +k+1 : +k]=1;
+  }
+}catch(e){}
+try{ onion=(localStorage.getItem('recurr-onion')||localStorage.getItem('selfie-onion'))==='1'; }catch(e){}
 
 const $=id=>document.getElementById(id);
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -626,11 +708,14 @@ function loadLevel(i){
   bloomTarget();
 }
 
+const INK_LV=LEVELS.findIndex(L=>L.name==='Seeds');
+const ANTI_LV=LEVELS.findIndex(L=>L.name==='Negative');
 function setTapnote(){
   const steps=['self'];
-  if(stamps.length>1 && !levelOp) steps.push('other');
-  steps.push('ink');
-  let s='tap cycles '+steps.join(' ▸ ')+' ▸ empty · hold inverts a cell';
+  if(stamps.length>1) steps.push('other');
+  let s='tap cycles '+steps.join(' ▸ ')+' ▸ empty';
+  if(mode!=='play' || li>=ANTI_LV) s+=' · hold inverts: empty ⇄ ink, mark ⇄ anti';
+  else if(li>=INK_LV) s+=' · hold an empty cell for solid ink';
   if(levelOp) s+=' · target = grid 1 '+levelOp+' grid 2';
   $('tapnote').textContent=s;
 }
@@ -678,22 +763,20 @@ function buildTriGrid(si){
 }
 
 /* ---- editing gestures ---------------------------------------------
-   Tap  (applied on release): cycle through the base states
-         empty ▸ self ▸ (other) ▸ ink ▸ empty
-         ('other' only on two-stamp cross-ref levels; anti cells cycle
-          as their base state)
-   Hold (~500ms): INVERT the cell - self ⇄ anti-self, other ⇄ anti-other,
-         empty ⇄ ink. One rule: holding negates.
+   Tap  (applied on release): cycle the positive states
+         empty ▸ self ▸ (other, when a second grid exists) ▸ empty
+         (anti and ink cells cycle from their base state)
+   Hold (~500ms): INVERT the cell - empty ⇄ ink, self ⇄ anti-self,
+         other ⇄ anti-other. One rule: holding negates.
    Sliding off the cell before release cancels the tap.
 ------------------------------------------------------------------- */
 function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||7); }catch(e){} }
 function nextVal(t){
-  const other = stamps.length>1 && !levelOp;   // combine grids are independent -> no 'other' step
-  const b = t>=4 ? t-2 : t;                    // an anti cell cycles like its base
+  const other = stamps.length>1;               // second tap = the other grid
+  const b = t>=4 ? t-2 : t;                    // an anti cell cycles from its base
   if(b===0) return 2;
-  if(b===2) return other?3:1;
-  if(b===3) return 1;
-  return 0;                                    // ink ▸ empty
+  if(b===2 && other) return 3;
+  return 0;                                    // other / ink ▸ empty
 }
 const negate=v=> v===0 ? 1 : v===1 ? 0 : v>=4 ? v-2 : v+2;
 let gesture=null;   // {cell,si,k,held,timer}
@@ -751,8 +834,9 @@ function paintSqCell(cell){
   const cv=document.createElement('canvas'); cv.width=cv.height=84;
   cell.appendChild(cv);
   const ctx=cv.getContext('2d');
-  if(levelOp) drawSq(ctx, soloStamps(stamps[si]), 0, 3, 0,0,84, getCss(anti?'--xa':'--a'), anti, 0, Infinity); // each grid is its own mark
-  else drawSq(ctx, stamps, refId, BASE[geom], 0,0,84, getCss(anti?(refId===0?'--xa':'--xb'):(refId===0?'--a':'--b')), anti, 0, Infinity);
+  // combine grids use relative refs: re-root so A recurses into this grid, B into its sibling
+  const src = (levelOp && si===1) ? [stamps[1],stamps[0]] : stamps;
+  drawStamp(ctx, src, geom, 0,0,84, getCss(anti?(refId===0?'--xa':'--xb'):(refId===0?'--a':'--b')), Infinity, refId, anti);
   const ring=document.createElement('div'); ring.className='ring'; cell.appendChild(ring);
 }
 function paintTriCell(tc, ov){
@@ -767,7 +851,9 @@ function paintTriCell(tc, ov){
   else {
     const refId=refIdOf(v), anti=antiOf(v);
     const paint=getCss(anti?(refId===0?'--xa':'--xb'):(refId===0?'--a':'--b'));
-    drawTri(ctx, stamps, refId, V[0],V[1],V[2],V[3],V[4],V[5], paint, anti, 0, Infinity);
+    const tile=triTile(stamps, w, h, paint, Infinity, refId, anti);
+    if(up) ctx.drawImage(tile, 0, 0);
+    else { ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(Math.PI); ctx.drawImage(tile, -w/2, -h/2); ctx.restore(); }
     ctx.strokeStyle=paint; ctx.lineWidth=2;
     if(anti) ctx.setLineDash([6,5]);
     triPath(ctx,...V); ctx.stroke(); ctx.setLineDash([]);
@@ -856,10 +942,10 @@ function checkWin(){
 
   if(win && !prevWin){                       // fresh solve
     const used=cellsUsed();
-    celebrate(); winZoom();
+    requestAnimationFrame(()=>{ celebrate(); winZoom(); });   // let the solved mark paint first
     if(mode==='play'){
       solved[li]=1;
-      try{ localStorage.setItem('selfie-solved', JSON.stringify(solved)); }catch(e){}
+      try{ localStorage.setItem('recurr-solved', JSON.stringify(solved)); }catch(e){}
       markDots();
       const last = li===LEVELS.length-1;
       $('winMsg').textContent = last ? "every mark solved ✦"
@@ -921,14 +1007,11 @@ function buildOps(){
 function markOps(){ [...$('ops').querySelectorAll('.chip')].forEach(el=>el.classList.toggle('armed', el.dataset.op===sandOp)); }
 
 function hexRgb(h){ h=h.replace('#',''); if(h.length===3) h=[...h].map(c=>c+c).join(''); const n=parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
-const soloStamps=s=> [ s.map(v=> v<2 ? v : v>=4 ? X : 2) ];   // every ref -> self (anti kept)
 const OFF=document.createElement('canvas');
 /* Render one operand for a combine: the chosen grid as the root of its own
    fractal, with relative refs - self (A) recurses into this grid, the other (B)
    into the sibling grid. Reordering so root=index 0 keeps A=self / B=other from
-   each grid's point of view, so 'the other' actually bends the mark instead of
-   collapsing to self (as a flat soloStamps would). Puzzles use only A, so each
-   grid stays self-referential and their fingerprints are unchanged. */
+   each grid's point of view, in puzzles and free play alike. */
 function maskAt(stamps, root, W, maxDepth){          // render grid `root` as its own mark, return on/off pixels
   const ordered = root===0 ? stamps : [stamps[1], stamps[0]];
   OFF.width=OFF.height=W;
@@ -1038,7 +1121,7 @@ function applyOnion(){
 $('ghostBtn').onclick=e=>{
   e.stopPropagation();   // don't also trigger the frame's replay-bloom
   onion=!onion;
-  try{ localStorage.setItem('selfie-onion', onion?'1':'0'); }catch(e){}
+  try{ localStorage.setItem('recurr-onion', onion?'1':'0'); }catch(e){}
   applyOnion();
 };
 
@@ -1060,7 +1143,13 @@ $('rshare').onclick=()=>{
   try{ navigator.clipboard.writeText(location.href).then(done, done); }catch(e){ done(); }
 };
 document.querySelectorAll('.undoB').forEach(b=>b.onclick=undo);
+function closeHelp(){ $('help').hidden=true; try{ localStorage.setItem('recurr-help','1'); }catch(e){} }
+$('helpBtn').onclick=()=>{ $('help').hidden=false; };
+$('helpClose').onclick=closeHelp;
+$('help').addEventListener('click', e=>{ if(e.target===$('help')) closeHelp(); });
+try{ if(!localStorage.getItem('recurr-help')) $('help').hidden=false; }catch(e){}
 document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){ closeHelp(); return; }
   if(e.key==='z'||e.key==='u'){ undo(); return; }
   if(mode!=='play') return;
   if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);

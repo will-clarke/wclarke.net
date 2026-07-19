@@ -24,7 +24,7 @@
     { slug: "lumen", name: "Lumen", accent: "#ffb43a" },
     { slug: "cascade", name: "Cascade", accent: "#3ad9ff" },
     { slug: "fracture", name: "Fracture", accent: "#ff5a6e" },
-    { slug: "selfie", name: "Selfie", accent: "#ff7ac2" },
+    { slug: "recurr", name: "Recurr", accent: "#ff7ac2" },
     { slug: "seed", name: "Seed", accent: "#57e08a" },
     { slug: "loom", name: "Loom", accent: "#b98cff" },
     { slug: "echo", name: "Echo", accent: "#5cd6ff" },
