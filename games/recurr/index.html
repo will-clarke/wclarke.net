@@ -25,6 +25,8 @@
     --xb:#8f2b5e;           /* anti-B: the other's own hue, darkened */
     --ok:#5cffb0;
   }
+  :root[data-theme="dark"]{ --u:#ffb454 }   /* lens: unresolved points */
+  :root[data-theme="light"]{ --u:#cf860f }
   :root[data-theme="dark"]{
     --veil:rgba(9,12,18,.62);
     --bg:#171b23; --bg-top:#212734;
@@ -133,6 +135,13 @@
     color:var(--muted);font-size:14px;line-height:1;cursor:pointer;transition:.15s}
   .ghostbtn:hover{border-color:var(--line-strong)}
   body.onion .ghostbtn{color:var(--a);border-color:var(--a);box-shadow:0 0 10px -4px var(--a)}
+  .lensbtn{position:absolute;top:42px;left:8px;z-index:4;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--line);
+    color:var(--muted);font-size:14px;line-height:1;cursor:pointer;transition:.15s}
+  .lensbtn:hover{border-color:var(--line-strong)}
+  body.lens .lensbtn{color:var(--u);border-color:var(--u);box-shadow:0 0 10px -4px var(--u)}
+  body.sand .lensbtn{top:8px}
 
   /* sandbox: one big canvas, no target */
   body.sand #targetPic{display:none}
@@ -250,6 +259,7 @@
         <li>Match the <b>target</b>. Tap either picture to replay its recursion growing in.</li>
         <li>Why does pure <b>self</b> draw anything? A point is inked when it <i>never escapes</i>: zoom in forever and it always lands in a filled cell. All nine self = nothing ever escapes = solid; leave holes and points fall out at every scale - that's the lace.</li>
         <li><b>anti</b> swaps filled ⇄ empty for everything beneath it - it is not a snapshot negative. A mark built only of selfs and antis has nothing to swap, so it <i>saturates</i>: undecided forever counts as ink, and the square locks solid.</li>
+        <li><b>◉ truth lens</b>: ink = provably black (born from an ink cell), white = provably escapes, <b>amber</b> = never resolves - the mark's skeleton. Classic pure-recursion fractals are all skeleton.</li>
         <li>◐ ghosts the target over yours · ↶ undoes · <b>par</b> is the fewest cells the mark needs.</li>
       </ul>
       <button class="nb" id="helpClose">got it</button>
@@ -300,6 +310,7 @@
           <canvas id="yours" width="486" height="486"></canvas>
           <canvas class="ghostcv" id="ghost" width="486" height="486"></canvas>
           <button class="ghostbtn" id="ghostBtn" type="button" title="Overlay the target as a ghost" aria-label="Toggle target overlay">◐</button>
+          <button class="lensbtn" id="lensBtn" type="button" title="Truth lens: unresolved points in amber" aria-label="Toggle truth lens">◉</button>
           <div class="burst" id="burst"></div>
           <div class="badge">✓</div>
         </div>
@@ -307,7 +318,7 @@
     </div>
 
     <div class="win-msg" id="winMsg">solved</div>
-    <div class="sat-msg" id="satNote">☯ saturated - no cell here can ever show white, so the whole mark locks solid</div>
+    <div class="sat-msg" id="satNote">☯ saturated - no cell here can ever show white, so the mark locks solid · peek with ◉</div>
 
     <div class="editwrap">
       <div class="editors" id="editors"></div>
@@ -551,7 +562,7 @@ function tileGens(W,H,n){                    // two reusable generations of n*2 
   }});
   return gens;
 }
-function sqTile(stamps, base, W, colour, maxDepth, root, rootPar){
+function sqTile(stamps, base, W, colour, maxDepth, root, rootPar, seedEmpty){
   if(maxDepth==null) maxDepth=Infinity;
   const n=stamps.length, c=W/base;
   // stop while the smallest feature is still >=1px: sparse marks (Cantor dust,
@@ -559,7 +570,10 @@ function sqTile(stamps, base, W, colour, maxDepth, root, rootPar){
   // averages them below visibility and the mark fades to blank
   let iters=0; for(let s=W; s>=base && iters<maxDepth; s/=base) iters++;
   let [cur,nxt]=tileGens(W,W,n);
-  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,W); t.ctx.fillStyle=colour; t.ctx.fillRect(0,0,W,W); }
+  // seed solid -> converge from above (ink = never provably white; the default)
+  // seed empty -> converge from below (ink = provably black; the lens' lower pass)
+  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,W);
+    if(!seedEmpty){ t.ctx.fillStyle=colour; t.ctx.fillRect(0,0,W,W); } }
   for(let g=0;g<iters;g++){
     for(let id=0;id<n;id++) for(let p=0;p<2;p++){
       const ctx=nxt[id*2+p].ctx, s=stamps[id];
@@ -576,12 +590,13 @@ function sqTile(stamps, base, W, colour, maxDepth, root, rootPar){
   return cur[root*2+rootPar].cv;
 }
 function triPath(ctx, ax,ay,bx,by,cx,cy){ ctx.beginPath(); ctx.moveTo(ax,ay); ctx.lineTo(bx,by); ctx.lineTo(cx,cy); ctx.closePath(); }
-function triTile(stamps, W, H, colour, maxDepth, root, rootPar){
+function triTile(stamps, W, H, colour, maxDepth, root, rootPar, seedEmpty){
   if(maxDepth==null) maxDepth=Infinity;
   const n=stamps.length, w=W/2, h=H/2;
   let iters=0; for(let e=W; e>=2 && iters<maxDepth; e/=2) iters++;
   let [cur,nxt]=tileGens(W,H,n);
-  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,H); t.ctx.fillStyle=colour; triPath(t.ctx, W/2,0, 0,H, W,H); t.ctx.fill(); }
+  for(let i=0;i<n*2;i++){ const t=cur[i]; t.ctx.clearRect(0,0,W,H);
+    if(!seedEmpty){ t.ctx.fillStyle=colour; triPath(t.ctx, W/2,0, 0,H, W,H); t.ctx.fill(); } }
   const KID=[                               // sub-boxes; the centre one is the tile rotated 180°
     {bx:W/4, by:0, inv:false, v:[W/2,0,   W/4,h,   3*W/4,h]},   // 0 top    (upright)
     {bx:0,   by:h, inv:false, v:[W/4,h,   0,H,     W/2,H  ]},   // 1 left    (upright)
@@ -609,10 +624,10 @@ function triTile(stamps, W, H, colour, maxDepth, root, rootPar){
 }
 /* root/par select which stamp (and starting parity) is the top of the mark -
    the editors use this to preview a cell's sub-mark. */
-function drawStamp(ctx, stamps, geom, x, y, size, topColour, maxDepth, root, par){
+function drawStamp(ctx, stamps, geom, x, y, size, topColour, maxDepth, root, par, seedEmpty){
   const tile = geom==='tri'
-    ? triTile(stamps, size, size, topColour, maxDepth, root||0, par||0)
-    : sqTile(stamps, BASE[geom], size, topColour, maxDepth, root||0, par||0);
+    ? triTile(stamps, size, size, topColour, maxDepth, root||0, par||0, seedEmpty)
+    : sqTile(stamps, BASE[geom], size, topColour, maxDepth, root||0, par||0, seedEmpty);
   ctx.drawImage(tile, x, y, size, size);
 }
 function renderPic(canvas, stamps, geom, colour, maxDepth){
@@ -645,6 +660,7 @@ let curPar=0;
 let prevWin=false, advTimer=null;
 let undoStack=[];         // one snapshot per gesture (also reset / clear / random)
 let onion=false;          // ghost-overlay toggle (target superimposed on yours)
+let lens=false;           // truth lens: three-valued render, unresolved in amber
 let solved={};
 try{
   const raw=localStorage.getItem('recurr-solved');
@@ -655,6 +671,7 @@ try{
   }
 }catch(e){}
 try{ onion=(localStorage.getItem('recurr-onion')||localStorage.getItem('selfie-onion'))==='1'; }catch(e){}
+try{ lens=localStorage.getItem('recurr-lens')==='1'; }catch(e){}
 
 const $=id=>document.getElementById(id);
 function getCss(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
@@ -902,11 +919,13 @@ function update(){
   if(mode!=='sand'){ updatePar(); checkWin(); }
 }
 function renderYours(maxDepth){
+  if(lens){ renderLens($('yours'), stamps, geom, mode==='sand' ? (sandOp!=='none'&&sandOp) : levelOp, maxDepth); return; }
   if(mode==='sand') renderSandbox(maxDepth);
   else if(levelOp) putCombine($('yours'), stamps, levelOp, maxDepth);
   else renderPic($('yours'), stamps, geom, null, maxDepth);
 }
 function renderTargetPic(maxDepth){
+  if(lens){ renderLens($('target'), targetStamps, geom, levelOp, maxDepth); return; }
   if(levelOp) putCombine($('target'), targetStamps, levelOp, maxDepth);
   else renderPic($('target'), targetStamps, geom, null, maxDepth);
 }
@@ -944,7 +963,8 @@ function winZoom(){
   const k=sel[(sel.length-1)/2|0], cx=(k%base)/base, cy=((k/base)|0)/base;
   const cvs=$('yours'), W=cvs.width, ctx=cvs.getContext('2d');
   const off=document.createElement('canvas'); off.width=off.height=W*base;
-  renderPic(off, stamps, geom);
+  if(lens) renderLens(off, stamps, geom, null);
+  else renderPic(off, stamps, geom);
   const t0=performance.now(), dur=1500, token=zoomToken={};
   const step=now=>{
     if(zoomToken!==token) return;
@@ -1070,6 +1090,49 @@ function renderSandbox(maxDepth){
   else putCombine($('yours'), stamps, sandOp, maxDepth);
 }
 
+/* ---- truth lens: three-valued render -------------------------------
+   Every point is white (provably escapes), black (provably lands on an
+   ink cell) or UNRESOLVED (defers forever - the mark's skeleton; classic
+   pure-recursion fractals are ALL skeleton). Two monotone passes tell
+   them apart: seeded empty the iteration converges from below (provably
+   black); seeded solid from above (black + unresolved). Disagreement is
+   painted amber. Boolean combines use Kleene logic on {0, U, 1}. */
+const KOPS={ AND:(a,b)=>Math.min(a,b), OR:(a,b)=>Math.max(a,b),
+             XOR:(a,b)=> (a===.5||b===.5) ? .5 : (a!==b?1:0),
+             NAND:(a,b)=>1-Math.min(a,b),
+             XNOR:(a,b)=> (a===.5||b===.5) ? .5 : (a===b?1:0) };
+function lensMask(st, geomv, W, maxDepth, seedEmpty){
+  OFF.width=OFF.height=W;
+  const ctx=OFF.getContext('2d',{willReadFrequently:true});
+  ctx.clearRect(0,0,W,W);
+  drawStamp(ctx, st, geomv, 0,0,W, '#fff', maxDepth, 0, 0, seedEmpty);
+  return ctx.getImageData(0,0,W,W).data;
+}
+function lensVals(st, geomv, W, maxDepth){          // per-pixel: 0 white · .5 unresolved · 1 black
+  const lo=lensMask(st, geomv, W, maxDepth, true);
+  const hi=lensMask(st, geomv, W, maxDepth, false);
+  const v=new Float64Array(W*W);
+  for(let i=0,j=0;j<v.length;i+=4,j++) v[j]= lo[i+3]>8 ? 1 : hi[i+3]>8 ? .5 : 0;
+  return v;
+}
+function renderLens(canvas, st, geomv, op, maxDepth){
+  const W=canvas.width, ctx=canvas.getContext('2d');
+  let v;
+  if(op){
+    const f=KOPS[op];
+    const a=lensVals(st, 'sq3', W, maxDepth), b=lensVals([st[1],st[0]], 'sq3', W, maxDepth);
+    v=a; for(let j=0;j<v.length;j++) v[j]=f(a[j], b[j]);
+  } else v=lensVals(st, geomv, W, maxDepth);
+  const ink=hexRgb(getCss('--ink')), amb=hexRgb(getCss('--u'));
+  const out=ctx.createImageData(W,W), o=out.data;
+  for(let j=0;j<v.length;j++){
+    const s=v[j]; if(!s) continue;
+    const c=s===1?ink:amb, i=j*4;
+    o[i]=c[0]; o[i+1]=c[1]; o[i+2]=c[2]; o[i+3]=255;
+  }
+  ctx.clearRect(0,0,W,W); ctx.putImageData(out,0,0);
+}
+
 /* ---- random puzzle (solve a random mark; the URL is the puzzle) --- */
 const GEOMS=['sq3','sq2','tri'];
 const GEOMCH={sq3:'S', sq2:'s', tri:'t'};
@@ -1163,6 +1226,16 @@ $('ghostBtn').onclick=e=>{
   try{ localStorage.setItem('recurr-onion', onion?'1':'0'); }catch(e){}
   applyOnion();
 };
+$('lensBtn').onclick=e=>{
+  e.stopPropagation();
+  lens=!lens;
+  try{ localStorage.setItem('recurr-lens', lens?'1':'0'); }catch(e){}
+  document.body.classList.toggle('lens', lens);
+  stopBloom('yours'); stopBloom('target'); stopZoom();
+  renderYours();
+  if(mode!=='sand') renderTargetPic();
+};
+document.body.classList.toggle('lens', lens);
 
 /* ---- controls ---------------------------------------------------- */
 $('prev').onclick =()=>loadLevel(li-1);
