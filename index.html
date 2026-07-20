@@ -371,6 +371,11 @@ const SEED_CONTENT = {
   '0,0|1,-1|-1,1|2,-1': { note: 'the zombies, “a rose for emily”. the sixties knew things.', glyph: '🌹' },
   '0,0|1,-1|-1,1|-2,1': { note: 'also: chopin, elo, supertramp, muse, queen, zeppelin, the beatles... and hamilton. a broad shelf, and i’m not embarrassed by any of it. well. one of them.', glyph: '🗄' },
   '0,0|1,-1|-1,1|-1,-1': { note: 'there is nearly always a piano going somewhere in the house. not always well, but going.', glyph: '🎹' },
+  // ---- short stories (buried on purpose) - filled from stories.json below ----
+  '0,0|1,-1|1,-1': { section: true, glyph: '📖', title: 'short stories' },
+  '0,0|1,-1|1,-1|0,-1': { note: 'fiction, from before i knew better. sci-fi mostly, and all quietly worried that none of this is real. the finished ones are through here; the rest are on the open shelf, unfixed.', glyph: '📖' },
+  '0,0|1,-1|1,-1|1,0': { section: true, glyph: '📖', title: 'finished' },
+  '0,0|1,-1|1,-1|-1,0': { section: true, glyph: '✍', title: 'unfinished' },
   // ---- homelab: a top-level room of its own ----
   '1,1': { section: true, glyph: '🛖', title: 'homelab' },
   '1,1|0,1':  { note: 'the server lives in an actual shed: a single ryzen box with an rtx 3090 and a stack of disks that is never quite big enough.', glyph: '🖥' },
@@ -649,6 +654,20 @@ const contentReady = Promise.allSettled([
       items.unshift({ glyph: '📐', title: 'the whole site', act: 'visit', href: d.base,
         blurb: 'maths you can feel: every post is one interactive diagram - drag it until the proof feels obvious.' });
       fillSection('0,1', items, 'more intuition', '📐');
+    })
+    .catch(() => {}),
+  fetch('/stories.json')
+    .then(r => r.json())
+    .then(d => {
+      const toItem = s => ({
+        glyph: s.glyph, title: s.title.toLowerCase(), act: 'read',
+        href: s.href, inline: true, date: s.date, html: s.html,
+        blurb: s.blurb.length > 150 ? s.blurb.slice(0, 147) + '…' : s.blurb,
+      });
+      const finished = d.stories.filter(s => s.status === 'finished').map(toItem);
+      const unfinished = d.stories.filter(s => s.status === 'unfinished').map(toItem);
+      fillSection('0,0|1,-1|1,-1|1,0', finished, 'more stories', '📖');
+      fillSection('0,0|1,-1|1,-1|-1,0', unfinished, 'more', '✍');
     })
     .catch(() => {}),
 ]);
@@ -1522,14 +1541,24 @@ function openReader(it){
   const url = new URL(it.href, location.origin);
   document.getElementById('reader-glyph').textContent = it.glyph || '✍';
   document.getElementById('reader-title').textContent = it.title;
-  document.getElementById('reader-date').textContent = '';
+  document.getElementById('reader-date').textContent = it.date || '';
   document.getElementById('reader-raw').href = url.pathname;
   const body = document.getElementById('reader-body');
-  body.innerHTML = '<p style="color:#8f7444">fetching…</p>';
   readerEl.hidden = false;
   readerOpen = true;
   history.pushState({ reader: 1 }, '');   // back button folds the reader away
   hoverKey = null; hovered = null;
+  // stories carry their own prose in the comb (stories.json), so render it
+  // straight in rather than fetching a page
+  if (it.html != null){
+    body.innerHTML = it.html;
+    for (const a of body.querySelectorAll('a[href^="http"]')){
+      if (!a.href.includes(location.host)) { a.target = '_blank'; a.rel = 'noopener'; }
+    }
+    body.scrollTop = 0;
+    return;
+  }
+  body.innerHTML = '<p style="color:#8f7444">fetching…</p>';
   const fill = doc => {
     const main = doc.querySelector('main') || doc.body;
     const tb = main.querySelector('#title-block-header');
