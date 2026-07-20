@@ -85,7 +85,20 @@
   button.nb:disabled{opacity:.3;cursor:default}
   [hidden]{display:none!important}
 
-  /* dots */
+  /* chapter label + dots */
+  .chapline{display:flex;justify-content:center;margin-bottom:-5px}
+  .chapbtn{background:none;border:none;color:var(--muted);cursor:pointer;
+    font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+    padding:3px 10px;border-radius:9px;transition:.15s}
+  .chapbtn:hover{color:var(--ink);background:var(--surface)}
+  .sheet.atlas{max-height:78vh;overflow-y:auto}
+  .at-chap{margin-bottom:13px}
+  .at-chap:last-child{margin-bottom:2px}
+  .at-head{display:flex;justify-content:space-between;align-items:baseline;
+    font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.65;margin-bottom:6px}
+  .at-count{opacity:.7;letter-spacing:.06em}
+  .at-dots{display:flex;flex-wrap:wrap;gap:8px}
+  .dot.big{width:14px;height:14px}
   .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
   .dot{
     width:9px;height:9px;border-radius:50%;cursor:pointer;
@@ -265,6 +278,13 @@
       <button class="nb" id="helpClose">got it</button>
     </div>
   </div>
+
+  <div class="overlay" id="atlas" hidden>
+    <div class="sheet atlas">
+      <h2>Chapters</h2>
+      <div id="atlasBody"></div>
+    </div>
+  </div>
   <h1><b>R</b>ecurr</h1>
   <div class="sub">Design one tiny mark. It is made of itself. Match the fractal.</div>
 
@@ -295,6 +315,7 @@
       </div>
     </div>
 
+    <div class="chapline"><button class="chapbtn" id="atlasBtn" type="button" title="All chapters"><span id="chapTitle"></span> ▾</button></div>
     <div class="dots" id="dots"></div>
 
     <div class="tray ops" id="ops" hidden></div>
@@ -342,7 +363,7 @@
      tri - triangle   (4 cells)   [the centre sub-triangle is inherently
            inverted, and that flip propagates - Sierpiński and friends]
 ------------------------------------------------------------------- */
-const A=2, B=3, X=4;   /* X = anti-self */
+const A=2, B=3, X=4, Y=5;   /* X = anti-A · Y = anti-B */
 const refIdOf=v=>(v-2)%2, antiOf=v=>v>=4?1:0;
 /* (earlier builds packed rotation and colour into higher bits; both retired.) */
 const NCELLS={sq3:9, sq2:4, tri:4};
@@ -350,7 +371,7 @@ const BASE={sq3:3, sq2:2};
 const GEOMNAME={sq3:'3×3', sq2:'2×2', tri:'triangle'};
 
 const LEVELS=[
-  { name:"Solid",
+  { chap:"Self", name:"Solid",
     hint:"<b>Tap</b> a cell to plant <b>self</b> - a copy of the whole mark, shrunk. One alone collapses to a dot… but fill all <b>nine</b>, and nine copies of everything become a solid block.",
     stamps:[[1,1,1, 1,1,1, 1,1,1]] },
 
@@ -382,7 +403,7 @@ const LEVELS=[
     hint:"Eight self-cells around a hole. Sierpiński's carpet.",
     stamps:[[A,A,A, A,0,A, A,A,A]] },
 
-  { name:"Seeds",
+  { chap:"Ink", name:"Seeds",
     hint:"A new power: <b>hold</b> an empty cell for solid <b>ink</b> - a block that stays a block, no recursion. A seed in the middle, <b>self</b> in the corners.",
     stamps:[[A,0,A, 0,1,0, A,0,A]] },
 
@@ -398,7 +419,7 @@ const LEVELS=[
     hint:"Asymmetry. Two arms reach up, one stem grows down - and each does it again.",
     stamps:[[A,0,A, 0,A,0, 0,A,0]] },
 
-  { name:"Two Minds",
+  { chap:"Two Minds", name:"Two Minds",
     hint:"Now two stamps. Tap once for <b>self</b> (grid 1), twice for the <b>other</b> (grid 2). A is a cross of B; B is corners of A. They dream each other.",
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
@@ -423,7 +444,7 @@ const LEVELS=[
     stamps:[[0,B,0, B,0,B, 0,B,0],
             [B,0,B, 0,0,0, B,0,B]] },
 
-  { name:"Quarters", geom:"sq2",
+  { chap:"Other Worlds", name:"Quarters", geom:"sq2",
     hint:"A new world: the <b>two-by-two</b>. Four quadrants. Recurse three of them and leave one empty - a square Sierpiński.",
     stamps:[[A,A, A,0]] },
 
@@ -435,8 +456,119 @@ const LEVELS=[
     hint:"A solid <b>ink</b> steeple on top; the two lower corners fall into gaskets; the inverted middle stays hollow. Ink and recursion, sharing one triangle.",
     stamps:[[1,A,A, 0]] },
 
-  /* --- Found marks: shapes discovered in free play, set as targets --- */
-  { name:"Perforated",
+  /* --- The negative: anti-self (X) - the cell holds the mark's NEGATIVE --- */
+  { chap:"The Negative", name:"Negative",
+    hint:"The other face of <b>hold</b>: hold a <b>self</b> cell to invert it into <b>anti</b> - the same colour gone <b>dark</b>, ringed by a dashed border - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
+    stamps:[[1,1,1, 1,X,1, 1,1,1]] },
+
+  { name:"Cascade",
+    hint:"Three negatives fall down the diagonal. Each block carries its own hollow, and every hollow its own block.",
+    stamps:[[X,0,0, 0,X,0, 0,0,X]] },
+
+  { name:"Ramparts",
+    hint:"Four anti corners and nothing else. Battlements grow from the void, each tower crenellated with smaller towers.",
+    stamps:[[X,0,X, 0,0,0, X,0,X]] },
+
+  { name:"Counterpoint",
+    hint:"A saltire of negatives. Figure and ground swap at every scale - lace woven from its own absence.",
+    stamps:[[X,0,X, 0,X,0, X,0,X]] },
+
+  { name:"Dark Heart",
+    hint:"A saltire of self around a single anti heart: dust orbiting a dense knot of negative space.",
+    stamps:[[A,0,A, 0,X,0, A,0,A]] },
+
+  { name:"Ghost Gasket", geom:"tri",
+    hint:"Sierpiński, cut from negatives: three anti corners. The gasket dreams itself inside-out.",
+    stamps:[[X,X,X, 0]] },
+
+  /* --- Gallery: single marks discovered in free play, set as targets --- */
+  { chap:"Gallery", name:"Drift",
+    hint:"Barely three cells of self, scattering into a slow diagonal snowfall.",
+    stamps:[[0,0,A, A,0,0, 0,0,A]] },
+
+  { name:"Chapel",
+    hint:"Solid ground, an <b>anti</b> heart, a self for a spire - a chapel that raises smaller chapels on its own roof.",
+    stamps:[[0,A,0, 0,X,0, 1,1,1]] },
+
+  { name:"Pinwheel",
+    hint:"Four inks and an anti heart locked in half-turn symmetry: two arms forever trading places.",
+    stamps:[[1,0,0, 1,X,1, 0,0,1]] },
+
+  { name:"Fiddlehead",
+    hint:"Five cells curl into a fern-tip. Follow the spiral inward - it never quite arrives.",
+    stamps:[[0,0,1, 0,X,1, 0,1,1]] },
+
+  { name:"Bastion",
+    hint:"A wall of ink hangs in the sky; three antis crenellate the ground. Towers upon towers upon towers.",
+    stamps:[[1,1,0, 0,0,0, X,X,X]] },
+
+  { name:"Patchwork",
+    hint:"Corners of <b>anti</b> pinned by a single self: a quilt sewn from its own offcuts.",
+    stamps:[[X,0,X, 0,A,0, X,0,X]] },
+
+  { name:"Flotilla",
+    hint:"A raft of selves with one anti aboard - little squares casting off into the pale.",
+    stamps:[[0,0,0, A,X,A, A,A,0]] },
+
+  { name:"Banners",
+    hint:"Ink pins the corners of a falling flag; the anti in the middle keeps unfurling it.",
+    stamps:[[1,0,1, A,X,A, 0,1,0]] },
+
+  { name:"Staircase",
+    hint:"Selves descend the left edge, ink for a landing, an anti at the turn. Down, and down, and down.",
+    stamps:[[A,0,0, A,1,0, A,X,A]] },
+
+  { name:"Spindrift",
+    hint:"Heavy below, scattered above - spray blown off a wave that is also the wave.",
+    stamps:[[A,0,A, 0,0,A, A,A,A]] },
+
+  { name:"Relic",
+    hint:"No symmetry, no plan: selves, inks and one anti weathered into something excavated, not designed.",
+    stamps:[[X,A,0, A,A,1, 0,1,0]] },
+
+  { name:"Chainmail",
+    hint:"Two diagonal bands of self, interlocking - rings within rings, cut on the bias.",
+    stamps:[[0,A,A, A,0,A, A,A,0]] },
+
+  { name:"Ribbons",
+    hint:"Chainmail, one cell richer: now the heart recurses too, and the rings thicken into ribbon.",
+    stamps:[[0,A,A, A,A,A, A,A,0]] },
+
+  { name:"Strait",
+    hint:"Two anti headlands, and a channel of lace running diagonally between them.",
+    stamps:[[X,A,0, A,0,A, 0,A,X]] },
+
+  { name:"Tumble",
+    hint:"Six negatives caught mid-somersault - masonry falling downstairs forever.",
+    stamps:[[X,X,0, 0,X,X, X,X,0]] },
+
+  { name:"Bower",
+    hint:"An arch of anti over crossed selves: a garden gate grown from its own shadow.",
+    stamps:[[0,X,0, X,A,X, A,0,A]] },
+
+  { name:"Pendant",
+    hint:"Ink and anti strung along one diagonal chain - the jewel repeats wherever you look closer.",
+    stamps:[[A,X,1, 0,X,0, 1,X,A]] },
+
+  { name:"Counterpane",
+    hint:"Six negatives and a single self, stitched into a bedspread of light and dark squares.",
+    stamps:[[X,0,X, 0,X,0, X,A,X]] },
+
+  { name:"Snowblind",
+    hint:"Self and anti alternate until the mark can barely decide what it is. Most of this square never resolves - watch it glow under ◉.",
+    stamps:[[A,X,A, X,0,X, A,X,A]] },
+
+  { name:"Monolith",
+    hint:"Three selves shoulder to shoulder atop a scatter of negatives: a monument that quotes itself.",
+    stamps:[[A,A,A, X,0,X, 0,X,0]] },
+
+  { name:"Sleight",
+    hint:"You are offered <b>two</b> grids for this one. Study the target before you spend them both - <b>par</b> is honest.",
+    stamps:[[X,A,1, 0,A,A, A,A,0],
+            [0,0,0, 0,0,0, 0,0,0]] },
+
+  /* --- Tapestries: two-grid marks discovered in free play --- */
+  { chap:"Tapestries", name:"Perforated",
     hint:"A near-solid field, punched through by a plus - and every plus punched with smaller plusses, all the way down.",
     stamps:[[A,A,A, A,B,A, A,A,A],
             [A,0,A, 0,0,0, A,0,A]] },
@@ -461,10 +593,6 @@ const LEVELS=[
     stamps:[[B,B,B, B,A,B, B,B,B],
             [A,A,A, A,0,A, A,A,A]] },
 
-  { name:"Chainmail",
-    hint:"Two diagonal bands of self, interlocking - rings within rings, cut on the bias.",
-    stamps:[[0,A,A, A,0,A, A,A,0]] },
-
   { name:"Wreath",
     hint:"The two marks curl around a hollow centre - a ring woven from smaller rings.",
     stamps:[[0,A,B, A,0,A, B,A,0],
@@ -475,17 +603,108 @@ const LEVELS=[
     stamps:[[B,0,B, 0,B,0, B,0,B],
             [A,B,A, B,A,B, A,B,A]] },
 
-  { name:"Drift",
-    hint:"Barely three cells of self, scattering into a slow diagonal snowfall.",
-    stamps:[[0,0,A, A,0,0, 0,0,A]] },
-
   { name:"Bramble",
     hint:"A saltire of self over a diamond of the other - a dense thicket knitted from both marks.",
     stamps:[[A,B,A, B,A,B, A,B,A],
             [0,A,0, A,B,A, 0,A,0]] },
 
-  /* --- Fusions: build two independent marks; the target is grid1 <op> grid2 --- */
-  { name:"Star", op:"OR",
+  { name:"Moiré",
+    hint:"B-cells hatched against a grid of pure self: two weaves slide across each other and the interference sings. All skeleton - check ◉.",
+    stamps:[[B,B,0, B,0,B, 0,B,B],
+            [A,A,A, A,A,A, A,A,A]] },
+
+  { name:"Gossamer",
+    hint:"A checker of both marks laid over a saltire of B - threads so fine the cloth barely holds light.",
+    stamps:[[B,A,B, A,B,A, B,A,B],
+            [B,0,B, 0,B,0, B,0,B]] },
+
+  { name:"Trellis",
+    hint:"A saltire of B climbing a carpet of A: vines on a frame, knotted at every scale.",
+    stamps:[[B,0,B, 0,B,0, B,0,B],
+            [A,A,A, A,0,A, A,A,A]] },
+
+  { name:"Rosette",
+    hint:"A carpet of B with a self heart, dressed on a diamond - a window rose cut in stone.",
+    stamps:[[B,B,B, B,A,B, B,B,B],
+            [0,A,0, A,0,A, 0,A,0]] },
+
+  { name:"Grille",
+    hint:"Every cell of the first mark quotes the second; the second is a plus of the first. Wrought iron, all the way down.",
+    stamps:[[B,B,B, B,B,B, B,B,B],
+            [0,A,0, A,A,A, 0,A,0]] },
+
+  { name:"Tangle",
+    hint:"Two thorned marks knot into each other along the diagonal. Somewhere inside, each is still whole.",
+    stamps:[[A,B,B, A,B,A, B,B,A],
+            [0,A,0, A,A,0, 0,0,A]] },
+
+  { name:"Roe",
+    hint:"Clusters of rings packed wall to wall - eggs of the mark, each holding the spawn of both.",
+    stamps:[[A,B,A, B,B,A, A,A,B],
+            [0,A,0, A,A,0, 0,0,A]] },
+
+  { name:"Charms",
+    hint:"Delicate: two rings of self swap a dark charm of <b>anti-B</b> between them, strung corner to corner.",
+    stamps:[[0,0,B, B,X,B, B,0,0],
+            [A,A,0, 0,Y,0, 0,A,A]] },
+
+  { name:"Dice",
+    hint:"Grid 2 is a single seed of ink. Grid 1 stakes everything on quoting it - and the pips scatter.",
+    stamps:[[1,1,B, 1,X,1, B,1,1],
+            [0,0,0, 0,1,0, 0,0,0]] },
+
+  { name:"Brocade",
+    hint:"Ink threads woven through a checker of both marks: cloth with the pattern raised in gold.",
+    stamps:[[A,B,A, B,A,B, A,B,A],
+            [B,1,B, 1,0,1, B,1,B]] },
+
+  { name:"Strata",
+    hint:"The same checker, pressed under ink - sediment lines, with lace between the beds.",
+    stamps:[[A,B,A, B,A,B, A,B,A],
+            [A,1,A, 0,0,0, 1,A,1]] },
+
+  { name:"Loom",
+    hint:"Three rows, three ranks: anti-B, then B, then self. Warp above, weft below, and the shuttle never stops.",
+    stamps:[[Y,Y,Y, B,B,B, A,A,A],
+            [A,0,A, A,0,A, A,A,0]] },
+
+  { name:"Archipelago",
+    hint:"One mark is almost empty; the other leans on it anyway - islands strung across a dark strait.",
+    stamps:[[A,A,0, A,B,A, 0,A,A],
+            [0,A,0, 0,0,0, 0,A,0]] },
+
+  { name:"Arrowhead",
+    hint:"Flint knapped from two grids: an anti-B point hafted onto crossed ink and anti.",
+    stamps:[[A,0,A, A,Y,A, B,A,B],
+            [X,1,X, 0,B,0, 1,X,1]] },
+
+  { name:"Nightbloom",
+    hint:"Dark garden, pale flowers: petals of <b>anti-B</b> around stems of B, blooming in negative.",
+    stamps:[[0,Y,0, Y,B,Y, 0,Y,0],
+            [X,B,X, B,0,B, X,B,X]] },
+
+  { name:"Houndstooth",
+    hint:"The cloth looks torn on the diagonal - but in the infinite weave, black wins every border dispute, and the <b>true</b> cloth is whole. Study it under ◉.",
+    stamps:[[A,B,X, B,0,B, X,B,A],
+            [A,A,0, 0,A,0, 0,A,A]] },
+
+  { name:"Eiderdown",
+    hint:"Almost everything here is negative - a duvet of anti-A and anti-B, holes quilted with holes.",
+    stamps:[[Y,X,Y, X,0,X, Y,X,Y],
+            [X,0,X, 0,Y,0, X,0,X]] },
+
+  { name:"Filigree",
+    hint:"Anti-B beaten thin over a diamond of self: silverwork fine enough to see through.",
+    stamps:[[A,Y,A, Y,Y,Y, X,Y,X],
+            [0,A,0, A,0,A, 0,A,0]] },
+
+  { name:"Murmuration",
+    hint:"No symmetry at all: flecks of five different kinds wheel like starlings - and the flock is the bird.",
+    stamps:[[Y,Y,A, Y,0,X, B,X,X],
+            [0,0,Y, 0,0,0, Y,0,0]] },
+
+  /* --- Epilogue - Fusions: build two independent marks; the target is grid1 <op> grid2 --- */
+  { chap:"Epilogue", name:"Star", op:"OR",
     hint:"A new kind of mark: two independent grids <b>fused</b>. Here with <b>OR</b> - every cell lit by <b>either</b> grid. Overlay a plus on a saltire for a woven star of stars. (A second tap gives <b>B</b>: a cell that recurses into the <i>other</i> grid.)",
     stamps:[[0,A,0, A,A,A, 0,A,0],
             [A,0,A, 0,A,0, A,0,A]] },
@@ -515,30 +734,20 @@ const LEVELS=[
     stamps:[[0,B,0, B,A,B, 0,B,0],
             [A,0,A, 0,0,0, A,0,A]] },
 
-  /* --- The negative: anti-self (X) - the cell holds the mark's NEGATIVE --- */
-  { name:"Negative",
-    hint:"The other face of <b>hold</b>: hold a <b>self</b> cell to invert it into <b>anti</b> - the same colour gone <b>dark</b>, ringed by a dashed border - the mark's <b>negative</b>, filled where it is empty, empty where it is filled. Ring one in ink and a bullseye is born.",
-    stamps:[[1,1,1, 1,X,1, 1,1,1]] },
+  { name:"Motley", op:"OR",
+    hint:"Found in the wild: a plain diamond, OR'd with a checker that quotes it. Patches of every cloth in one coat.",
+    stamps:[[0,A,0, A,0,A, 0,A,0],
+            [A,B,A, B,Y,B, A,B,A]] },
 
-  { name:"Cascade",
-    hint:"Three negatives fall down the diagonal. Each block carries its own hollow, and every hollow its own block.",
-    stamps:[[X,0,0, 0,X,0, 0,0,X]] },
+  { name:"Lantern", op:"NAND",
+    hint:"<b>NAND</b> a knot of ink and B against a field of pure negative, and a plus of light burns through the dark.",
+    stamps:[[1,A,1, A,B,A, 1,A,1],
+            [Y,X,Y, X,X,X, Y,X,Y]] },
 
-  { name:"Ramparts",
-    hint:"Four anti corners and nothing else. Battlements grow from the void, each tower crenellated with smaller towers.",
-    stamps:[[X,0,X, 0,0,0, X,0,X]] },
-
-  { name:"Counterpoint",
-    hint:"A saltire of negatives. Figure and ground swap at every scale - lace woven from its own absence.",
-    stamps:[[X,0,X, 0,X,0, X,0,X]] },
-
-  { name:"Dark Heart",
-    hint:"A saltire of self around a single anti heart: dust orbiting a dense knot of negative space.",
-    stamps:[[A,0,A, 0,X,0, A,0,A]] },
-
-  { name:"Ghost Gasket", geom:"tri",
-    hint:"Sierpiński, cut from negatives: three anti corners. The gasket dreams itself inside-out.",
-    stamps:[[X,X,X, 0]] },
+  { name:"Frost", op:"XOR",
+    hint:"A saltire of anti, XOR'd with an inked cross of the other grid: ice ferns creeping across the whole pane.",
+    stamps:[[A,0,A, 0,X,0, A,0,A],
+            [1,X,1, X,A,X, 1,X,1]] },
 ];
 
 /* ---- rendering: the fixed point -----------------------------------
@@ -661,13 +870,25 @@ let prevWin=false, advTimer=null;
 let undoStack=[];         // one snapshot per gesture (also reset / clear / random)
 let onion=false;          // ghost-overlay toggle (target superimposed on yours)
 let lens=false;           // truth lens: three-valued render, unresolved in amber
+/* solved is keyed by level NAME so levels can be reordered/inserted freely.
+   Older saves were keyed by index (in this order); older still, under 'selfie-'. */
+const OLD_ORDER=['Solid','Descent','Cantor Dust','The Cross','Saltire','Diamond','Triangle',
+  'Carpet','Seeds','Ink & Echo','Plus-Flower','Sprout','Two Minds','Ouroboros','Duet',
+  'Scatter','Lattice','Quarters','Sierpiński','Steeple','Perforated','Snowflake','Foam',
+  'Kiss','Sieve','Chainmail','Wreath','Hourglass','Drift','Bramble','Star','Rift','Distil',
+  'Ghost','Accord','Braid','Negative','Cascade','Ramparts','Counterpoint','Dark Heart','Ghost Gasket'];
 let solved={};
 try{
-  const raw=localStorage.getItem('recurr-solved');
-  if(raw!=null) solved=JSON.parse(raw);
-  else {   // migrate progress from the old name; 'Braid' was inserted at index 35
-    const old=JSON.parse(localStorage.getItem('selfie-solved')||'{}');
-    for(const k in old) solved[+k>=35 ? +k+1 : +k]=1;
+  let raw=localStorage.getItem('recurr-solved');
+  if(raw==null){   // migrate from the old game name; 'Braid' was inserted at index 35
+    const old=JSON.parse(localStorage.getItem('selfie-solved')||'{}'), sh={};
+    for(const k in old) sh[+k>=35 ? +k+1 : +k]=1;
+    raw=JSON.stringify(sh);
+  }
+  const parsed=JSON.parse(raw);
+  for(const k in parsed){
+    if(/^\d+$/.test(k)){ if(OLD_ORDER[k]) solved[OLD_ORDER[k]]=1; }
+    else solved[k]=1;
   }
 }catch(e){}
 try{ onion=(localStorage.getItem('recurr-onion')||localStorage.getItem('selfie-onion'))==='1'; }catch(e){}
@@ -678,23 +899,60 @@ function getCss(v){ return getComputedStyle(document.documentElement).getPropert
 const cellsUsed=()=> stamps.reduce((n,s)=>n+s.filter(v=>v!==0).length,0);
 const parOf=st=> st.reduce((n,s)=>n+s.filter(v=>v!==0).length,0);
 
-/* ---- dots -------------------------------------------------------- */
+/* ---- chapters & dots ----------------------------------------------
+   Levels are grouped into chapters (the first level of each carries a
+   `chap` title). The inline dots show only the current chapter; the
+   chapter label opens the atlas - every chapter at a glance. */
+const CHAPTERS=[];
+LEVELS.forEach((L,i)=>{
+  if(L.chap) CHAPTERS.push({name:L.chap, start:i, end:i});
+  else CHAPTERS[CHAPTERS.length-1].end=i;
+});
+const ROMAN=['I','II','III','IV','V','VI','VII','VIII','IX','X'];
+const chapOf=i=>CHAPTERS.findIndex(c=>i>=c.start&&i<=c.end);
+let dotChap=0;
 function buildDots(){
-  const host=$('dots'); host.innerHTML='';
-  LEVELS.forEach((L,i)=>{
+  dotChap=chapOf(li);
+  const c=CHAPTERS[dotChap], host=$('dots'); host.innerHTML='';
+  for(let i=c.start;i<=c.end;i++){
     const d=document.createElement('div'); d.className='dot';
-    if(solved[i]) d.classList.add('solved');
-    d.title=L.name;
-    d.onclick=()=>loadLevel(i);
+    d.title=LEVELS[i].name;
+    d.onclick=(j=>()=>loadLevel(j))(i);
     host.appendChild(d);
-  });
+  }
+  $('chapTitle').textContent=ROMAN[dotChap]+' · '+c.name;
+  markDots();
 }
 function markDots(){
-  [...$('dots').children].forEach((d,i)=>{
+  const c=CHAPTERS[dotChap];
+  [...$('dots').children].forEach((d,j)=>{
+    const i=c.start+j;
     d.classList.toggle('cur', mode==='play' && i===li);
-    d.classList.toggle('solved', !!solved[i]);
+    d.classList.toggle('solved', !!solved[LEVELS[i].name]);
   });
 }
+function buildAtlas(){
+  const host=$('atlasBody'); host.innerHTML='';
+  CHAPTERS.forEach((c,ci)=>{
+    const row=document.createElement('div'); row.className='at-chap';
+    let ns=0; for(let i=c.start;i<=c.end;i++) if(solved[LEVELS[i].name]) ns++;
+    const head=document.createElement('div'); head.className='at-head';
+    head.innerHTML='<span>'+ROMAN[ci]+' · '+c.name+'</span><span class="at-count">'+ns+'/'+(c.end-c.start+1)+'</span>';
+    row.appendChild(head);
+    const dd=document.createElement('div'); dd.className='at-dots';
+    for(let i=c.start;i<=c.end;i++){
+      const d=document.createElement('div'); d.className='dot big';
+      if(solved[LEVELS[i].name]) d.classList.add('solved');
+      if(mode==='play'&&i===li) d.classList.add('cur');
+      d.title=LEVELS[i].name;
+      d.onclick=(j=>()=>{ closeAtlas(); loadLevel(j); })(i);
+      dd.appendChild(d);
+    }
+    row.appendChild(dd);
+    host.appendChild(row);
+  });
+}
+function closeAtlas(){ $('atlas').hidden=true; }
 
 /* ---- level / mode entry ------------------------------------------ */
 function setNav(m){
@@ -731,7 +989,7 @@ function loadLevel(i){
   $('yoursFrame').classList.remove('win','pop');
   $('winMsg').classList.remove('show');
 
-  buildEditors(); setTapnote(); markDots(); applyOnion(); update();
+  buildEditors(); setTapnote(); buildDots(); applyOnion(); update();
   bloomTarget();
 }
 
@@ -995,7 +1253,7 @@ function checkWin(){
     const used=cellsUsed();
     requestAnimationFrame(()=>{ celebrate(); winZoom(); });   // let the solved mark paint first
     if(mode==='play'){
-      solved[li]=1;
+      solved[LEVELS[li].name]=1;
       try{ localStorage.setItem('recurr-solved', JSON.stringify(solved)); }catch(e){}
       markDots();
       const last = li===LEVELS.length-1;
@@ -1272,8 +1530,10 @@ $('helpBtn').onclick=()=>{ $('help').hidden=false; };
 $('helpClose').onclick=closeHelp;
 $('help').addEventListener('click', e=>{ if(e.target===$('help')) closeHelp(); });
 try{ if(!localStorage.getItem('recurr-help')) $('help').hidden=false; }catch(e){}
+$('atlasBtn').onclick=()=>{ buildAtlas(); $('atlas').hidden=false; };
+$('atlas').addEventListener('click', e=>{ if(e.target===$('atlas')) closeAtlas(); });
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){ closeHelp(); return; }
+  if(e.key==='Escape'){ closeHelp(); closeAtlas(); return; }
   if(e.key==='z'||e.key==='u'){ undo(); return; }
   if(mode!=='play') return;
   if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
