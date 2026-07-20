@@ -194,9 +194,11 @@
     .feedback { margin-top: 3rem; font-size: 0.95rem; color: var(--muted); }
 
     @media (max-width: 480px) {
-      .tri-grid { grid-template-columns: 1fr; gap: 0.9rem; }
-      .tri-card { padding: 1.1rem 1.1rem 1.15rem; }
-      svg.tri { max-width: 15rem; }
+      .tri-grid { grid-template-columns: 1fr; gap: 1rem; }
+      .tri-card { padding: 1.15rem 1.1rem 1.3rem; }
+      /* fill the card: a much bigger triangle (and bigger labels) to read at a glance */
+      svg.tri { max-width: none; }
+      .vtx text { font-size: 11.5px; }
       .intro .lede { font-size: 1.1rem; }
     }
 
@@ -377,19 +379,6 @@
       ],
       kicker: null
     },
-    "israel": {
-      title: "A state in Israel/Palestine",
-      sub: "the Israeli trilemma",
-      src: "https://en.wikipedia.org/wiki/Jewish_and_democratic_state",
-      v: ["Jewish", "Democratic", "All the land"],
-      premise: "A trilemma taught in political science: a state in this land can aim to be Jewish in character, fully democratic with one vote per person, and to hold all the territory between the river and the sea. The claim is that all three at once is impossible.",
-      give: [
-        "One democratic state over all the land, with equal votes for everyone in it - in which Jews might not be the majority.",
-        "One state holding all the land and Jewish in character, but without equal votes for everyone living under its rule.",
-        "A Jewish and democratic state in part of the territory, giving up permanent control of the rest. The logic behind partition and two-state plans."
-      ],
-      kicker: "Nearly every serious proposal for the region is, underneath, a choice about which corner to release."
-    },
     "iron-triangle": {
       title: "Getting something made",
       sub: "fast, good, cheap · the project triangle",
@@ -442,6 +431,45 @@
       ],
       kicker: "Life is short. Better to choose your two on purpose than to lose one by default."
     },
+    "job": {
+      title: "A job",
+      sub: "the dream-job triangle",
+      src: null,
+      v: ["Well paid", "Fulfilling", "Balanced"],
+      premise: "The thing careers advice rarely admits: work that pays well, means something to you, and leaves you time to live. Most jobs, most of the time, offer two.",
+      give: [
+        "Meaningful work with sane hours - a calling you can sustain, on a salary that quietly caps your options. Charities, the arts, much of teaching.",
+        "Good money and your evenings free, doing work you don't much care about. The comfortable, slightly hollow job.",
+        "Well paid and genuinely gripping, at the cost of nearly everything else. Startups, big law, medicine, the ambitious years."
+      ],
+      kicker: null
+    },
+    "housing": {
+      title: "Somewhere to live",
+      sub: "the renter's triangle",
+      src: null,
+      v: ["Cheap", "Spacious", "Central"],
+      premise: "Anyone who has ever hunted for a flat knows this one. Affordable, roomy, and well located - pick two, and the city decides how hard.",
+      give: [
+        "Big and central, and you pay through the nose for it. The city-centre dream, on a city-centre budget.",
+        "Cheap and central, in a shoebox. Great postcode, nowhere to put anything.",
+        "Cheap and spacious, out in the suburbs or beyond. Room to breathe, and a long commute."
+      ],
+      kicker: null
+    },
+    "food": {
+      title: "Eating well",
+      sub: "the dinner triangle",
+      src: null,
+      v: ["Cheap", "Healthy", "Tasty"],
+      premise: "A quiet daily trilemma: meals that are cheap, good for you, and a pleasure to eat. Any two are easy; all three take real effort.",
+      give: [
+        "Healthy and delicious, and it adds up fast. The wholefoods shop, the good restaurant.",
+        "Cheap and delicious, and you can feel it. Fast food does this on purpose.",
+        "Cheap and healthy, and a little joyless. Plain rice, boiled veg, the sad desk lunch."
+      ],
+      kicker: null
+    },
     "student": {
       title: "Student life",
       sub: "dorm-room folklore",
@@ -470,11 +498,12 @@
     }
   };
 
+  // ordered most general / most useful first, niche last
   var SECTIONS = [
-    { title: "Computing & systems", slugs: ["cap-theorem", "zooko", "blockchain", "storage"] },
-    { title: "Money, politics & the state", slugs: ["impossible-trinity", "globalization", "energy", "welfare-state", "israel"] },
-    { title: "Making, knowing & believing", slugs: ["iron-triangle", "encyclopedias", "epicurean"] },
-    { title: "A life, lived", slugs: ["life", "student", "communism"] }
+    { title: "Everyday trade-offs", slugs: ["iron-triangle", "life", "job", "housing", "food", "student", "communism"] },
+    { title: "Money, politics & the state", slugs: ["impossible-trinity", "globalization", "energy", "welfare-state"] },
+    { title: "Knowledge & belief", slugs: ["encyclopedias", "epicurean"] },
+    { title: "Computing & systems", slugs: ["cap-theorem", "zooko", "blockchain", "storage"] }
   ];
 
   var state = {};  // slug -> array of selected vertex indices (max 2)
