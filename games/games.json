@@ -83,6 +83,12 @@
       "name": "Mirror",
       "accent": "#8fd0ff",
       "tagline": "Stroke a line across the grid and the light reflects across it - folding, doubling, and spilling off the edge until a few lit cells bloom into a symmetric pattern. Match the target constellation in the fewest mirrors: two mirrors make a turn, two parallel ones a slide. Chase par through sixteen levels, reverse-engineer a random mandala, or fold your own and share it."
+    },
+    {
+      "slug": "tile",
+      "name": "Tile",
+      "accent": "#9f86ff",
+      "tagline": "One shape per level. Tap an empty cell to stamp it - its glowing eye lands where you touch; tap again to turn it through every way it fits there; hold to dissolve it. Fill the whole region with copies of that single polyomino, where hue is orientation so a finished tiling glows with its own hidden lattice. Fourteen levels from the deficient-board theorem to one-sided chirality, plus grown puzzles to share."
     }
   ]
 }
