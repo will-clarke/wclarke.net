@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%238fd0ff'%3EM%3C/text%3E%3C/svg%3E" />
+<title>Mirror</title>
+<style>
+  :root{
+    --a:#8fd0ff;            /* light / lit cells */
+    --bad:#ff7ac2;          /* overspill */
+    --gold:#ffd27a;         /* solved at par */
+    --ok:#5cffb0;           /* win */
+  }
+  :root[data-theme="dark"]{
+    --veil:rgba(9,12,18,.62);
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --cell:#1e2531;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --veil:rgba(225,231,242,.62);
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --cell:#eef2f9;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
+    --a:#2b8fd6; --gold:#c98a1e;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:60px 12px 40px;gap:13px;
+    touch-action:manipulation;
+  }
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+    justify-content:flex-end;gap:8px;padding:12px 14px;pointer-events:none}
+  .topbar .navbtn{pointer-events:auto}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;border-radius:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
+  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .navbtn:active{transform:translateY(0)}
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.22em;font-size:16px;text-transform:uppercase;text-align:center}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-6px;text-align:center;max-width:440px}
+
+  .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:13px}
+
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
+  .levelbar .name{font-weight:600;letter-spacing:.04em}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{background:var(--raised);border-color:var(--line-strong);color:var(--ink)}
+  button.nb:disabled{opacity:.3;cursor:default}
+  [hidden]{display:none!important}
+
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;
+    background:var(--line-strong);transition:.15s}
+  .dot:hover{background:var(--muted)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.par{background:var(--gold);box-shadow:0 0 8px -1px var(--gold)}
+  .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  .frame{
+    position:relative;border-radius:16px;overflow:hidden;width:100%;
+    background:var(--raised);border:1px solid var(--line);
+    box-shadow:0 16px 46px -22px var(--shadow), inset 0 0 0 1px var(--line);
+    aspect-ratio:1;transition:box-shadow .3s,border-color .3s;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .frame canvas{width:100%;height:100%;display:block}
+  .frame.over{border-color:var(--bad);box-shadow:0 0 34px -10px var(--bad), inset 0 0 0 1px rgba(255,122,194,.35)}
+  .frame.win{border-color:var(--ok);box-shadow:0 0 40px -6px var(--ok), inset 0 0 0 1px rgba(92,255,176,.3)}
+  .frame.pop{animation:pop .55s ease}
+  @keyframes pop{0%{transform:scale(1)}28%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .badge{
+    position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:14px;z-index:3;
+    background:var(--ok);color:#04120b;font-weight:700;opacity:0;transform:scale(.4);
+    transition:.28s cubic-bezier(.3,1.6,.5,1);
+  }
+  .frame.win .badge{opacity:1;transform:scale(1)}
+  .burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:2}
+  .burst.go::after{
+    content:"";position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 0 0 2.5px var(--ok);
+    animation:ring .72s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes ring{from{width:16px;height:16px;opacity:.85}to{width:160%;height:160%;opacity:0}}
+
+  .win-row{display:flex;align-items:center;justify-content:center;gap:12px;min-height:28px}
+  .win-msg{text-align:center;font-size:13px;letter-spacing:.05em;color:var(--ok);
+    opacity:0;transition:.3s;font-weight:600}
+  .win-msg.show{opacity:1}
+  .nextup{display:none;background:transparent;border:1px solid var(--ok);color:var(--ok);
+    border-radius:999px;padding:4px 14px;font-size:12px;letter-spacing:.08em;font-weight:600;
+    cursor:pointer;opacity:1;transition:opacity .5s,transform .5s,box-shadow .15s,background .15s}
+  .nextup.show{display:inline-block}
+  @starting-style{.nextup.show{opacity:0;transform:translateY(3px)}}
+  .nextup:hover{box-shadow:0 0 14px -4px var(--ok)}
+
+  .hint{font-size:12.5px;opacity:.62;text-align:center;max-width:420px;min-height:34px;line-height:1.5}
+  .hint b{color:var(--a);font-weight:600}
+  .par{font-size:12px;letter-spacing:.06em;opacity:.85;text-align:center}
+  .par b{font-weight:600}
+  .par .under{color:var(--a)}
+  .par .over{color:var(--bad)}
+  .par .parwin{color:var(--gold)}
+  .editwrap{display:flex;flex-direction:column;gap:9px;align-items:center}
+
+  .overlay{position:fixed;inset:0;z-index:100;background:var(--veil);
+    display:flex;align-items:center;justify-content:center;padding:18px;
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .sheet{max-width:400px;width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px 16px;box-shadow:0 24px 60px -18px var(--shadow);
+    font-size:13.5px;line-height:1.55}
+  .sheet h2{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+  .sheet ul{margin:0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+  .sheet li{opacity:.88}
+  .sheet b{color:var(--a);font-weight:600}
+  .sheet .k{display:inline-block;padding:0 6px;border:1px solid var(--line-strong);
+    border-radius:6px;font-size:12px;background:var(--raised)}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <button class="navbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
+    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
+  </div>
+
+  <div class="overlay" id="help" hidden>
+    <div class="sheet">
+      <h2>How to play</h2>
+      <ul>
+        <li><span class="k">stroke</span> the board to draw a <b>mirror line</b> - horizontal, vertical or diagonal. Every lit cell reflects across it, and the light grows.</li>
+        <li>You are filling in the faint <b>target</b> constellation. Match it exactly to win.</li>
+        <li>Light only ever grows. A copy that lands <b>outside</b> the target turns <b>pink</b> and the frame blushes - <span class="k">undo</span> and try another line.</li>
+        <li>A line through the <b>centre</b> of cells leaves those cells single; a line <b>between</b> cells duplicates everything. Copies that fall off the edge are lost.</li>
+        <li><b>par</b> is the fewest mirrors the target needs - solve at par for a gold dot. Two mirrors make a turn; two parallel mirrors make a slide.</li>
+      </ul>
+      <button class="nb" id="helpClose">got it</button>
+    </div>
+  </div>
+
+  <h1><b>M</b>irror</h1>
+  <div class="sub">Stroke a mirror line. The light reflects. Match the pattern in the fewest mirrors.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Mirror</span></div>
+      <div class="nav" id="navPlay">
+        <button class="nb" id="prev" title="Previous">‹</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next" title="Next">›</button>
+        <button class="nb" id="toSand" title="Free play">✎</button>
+        <button class="nb" id="toRandom" title="Random puzzle">⚄</button>
+      </div>
+      <div class="nav" id="navSand" hidden>
+        <button class="nb" id="srand" title="Random creation">⚄</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="clear">clear</button>
+        <button class="nb" id="sshare" title="Share this creation as a puzzle link">⧉ link</button>
+        <button class="nb" id="exitSand">✕ exit</button>
+      </div>
+      <div class="nav" id="navRandom" hidden>
+        <button class="nb" id="rnew">⚄ new</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="rreset">reset</button>
+        <button class="nb" id="rshare">⧉ link</button>
+        <button class="nb" id="rexit">✕ exit</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="frame" id="frame">
+      <canvas id="board"></canvas>
+      <div class="burst" id="burst"></div>
+      <div class="badge">✓</div>
+    </div>
+
+    <div class="win-row">
+      <div class="win-msg" id="winMsg">solved</div>
+      <button class="nextup" id="nextUp" type="button">next ›</button>
+    </div>
+
+    <div class="editwrap">
+      <div class="hint" id="hint"></div>
+      <div class="par" id="par"></div>
+    </div>
+  </div>
+
+<script>
+/* ===== KERNEL (verbatim with mirror/harness.mjs) ==================== */
+function reflect(m, x, y){
+  switch(m.o){
+    case 'V': return [m.p-1-x, y];
+    case 'H': return [x, m.p-1-y];
+    case 'D': return [y-m.p, x+m.p];
+    case 'A': return [m.p-y, m.p-x];
+  }
+}
+function allMirrors(n){
+  const out=[];
+  for(let dp=1; dp<=2*n-1; dp++){ out.push({o:'V',p:dp}); out.push({o:'H',p:dp}); }
+  for(let c=-(n-2); c<=n-2; c++) out.push({o:'D',p:c});
+  for(let s=1; s<=2*n-3; s++) out.push({o:'A',p:s});
+  return out;
+}
+function applyMirror(n, lit, m){                 // lit: Set of y*n+x -> new Set
+  const out=new Set(lit);
+  for(const idx of lit){
+    const x=idx%n, y=(idx/n)|0, [rx,ry]=reflect(m, x, y);
+    if(rx>=0 && rx<n && ry>=0 && ry<n) out.add(ry*n+rx);
+  }
+  return out;
+}
+/* ===== end kernel =================================================== */
+
+const M=([o,p])=>({o,p});
+function applyMirrors(n, seedCells, hist){
+  let lit=new Set(seedCells.map(([x,y])=>y*n+x));
+  for(const m of hist) lit=applyMirror(n, lit, m);
+  return lit;
+}
+/* geometry in cell-coord space: cell (ix,iy) centre = (ix+.5, iy+.5) */
+function lineEnds(n, m){
+  if(m.o==='V'){ const x=m.p/2; return [[x,0],[x,n]]; }
+  if(m.o==='H'){ const y=m.p/2; return [[0,y],[n,y]]; }
+  if(m.o==='D'){ const c=m.p, t0=Math.max(0,-c), t1=Math.min(n,n-c); return [[t0,t0+c],[t1,t1+c]]; }
+  const s1=m.p+1, t0=Math.max(0,s1-n), t1=Math.min(n,s1); return [[t0,s1-t0],[t1,s1-t1]];   // A
+}
+function fixedCells(n, m){
+  const out=[];
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++){ const [rx,ry]=reflect(m,x,y); if(rx===x&&ry===y) out.push(y*n+x); }
+  return out;
+}
+function distToLine(m, ix, iy){
+  const cx=ix+0.5, cy=iy+0.5;
+  if(m.o==='V') return Math.abs(cx-m.p/2);
+  if(m.o==='H') return Math.abs(cy-m.p/2);
+  if(m.o==='D') return Math.abs((cy-cx)-m.p)/Math.SQRT2;
+  return Math.abs((cx+cy)-(m.p+1))/Math.SQRT2;      // A
+}
+function snapMirror(n, sx, sy, cx, cy){
+  const dx=cx-sx, dy=cy-sy, d=Math.hypot(dx,dy);
+  if(d<0.35) return null;
+  let am=(Math.atan2(dy,dx)*180/Math.PI)%180; if(am<0) am+=180; if(am>=157.5) am-=180;
+  const mx=(sx+cx)/2, my=(sy+cy)/2, cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+  if(am<22.5)  return {o:'H', p:cl(Math.round(2*my),1,2*n-1)};
+  if(am<67.5)  return {o:'D', p:cl(Math.round(my-mx),-(n-2),n-2)};
+  if(am<112.5) return {o:'V', p:cl(Math.round(2*mx),1,2*n-1)};
+  return         {o:'A', p:cl(Math.round(mx+my-1),1,2*n-3)};
+}
+
+/* ===== BigInt solver (random-mode par; SPEC §7) ===================== */
+function maskOf(n, cells){ let m=0n; for(const c of cells) m|=1n<<BigInt(typeof c==='number'?c:c[1]*n+c[0]); return m; }
+function applyMask(n, s, m){
+  let out=s;
+  for(let y=0;y<n;y++) for(let x=0;x<n;x++){
+    if((s>>BigInt(y*n+x))&1n){
+      const [rx,ry]=reflect(m,x,y);
+      if(rx>=0&&rx<n&&ry>=0&&ry<n) out|=1n<<BigInt(ry*n+rx);
+    }
+  }
+  return out;
+}
+function solve(n, seedMask, targetMask, cap=150000){
+  const T=targetMask, S=seedMask;
+  if(S===T) return 0;
+  if((S & ~T)!==0n) return -1;
+  const moves=allMirrors(n);
+  let states=[S], seen=new Set([S.toString()]);
+  for(let depth=1; depth<=8; depth++){
+    const next=[];
+    for(const s of states) for(const m of moves){
+      const t=applyMask(n,s,m);
+      if(t===s || (t & ~T)!==0n) continue;
+      if(t===T) return depth;
+      const k=t.toString();
+      if(!seen.has(k)){ seen.add(k); next.push(t); if(seen.size>cap) return -2; }
+    }
+    if(!next.length) return -1;
+    states=next;
+  }
+  return -1;
+}
+
+/* ===== levels (SPEC §5; tuned by harness) =========================== */
+const LEVELS=[
+  { name:"Mirror",   n:5, seed:[[1,1],[1,2],[1,3],[2,2]],
+    hint:"<b>Stroke</b> a vertical line down the middle. Everything to one side casts across - and the mark is symmetric.", sol:[["V",5]] },
+  { name:"Quarters", n:5, seed:[[0,0],[1,0],[0,1]],
+    hint:"One mirror halves it. <b>Two</b> mirrors - across, then down - make it four-fold.", sol:[["V",5],["H",5]] },
+  { name:"Bloom",    n:7, seed:[[2,0],[2,1]],
+    hint:"Three lines through the centre - across, down, and a <b>diagonal</b>. A couple of cells burst into an eight-fold rose.", sol:[["V",7],["H",7],["D",0]] },
+  { name:"Fallen",   n:5, seed:[[1,1],[2,1],[1,2],[1,3]],
+    hint:"Mirror against the far edge - some copies fall <b>off the board</b> and are lost.", sol:[["V",7]] },
+  { name:"Spine",    n:5, seed:[[2,0],[2,1],[1,2],[1,3],[2,4]],
+    hint:"A line through the centre of a column leaves those cells <b>single</b> - they sit on the mirror.", sol:[["V",5]] },
+  { name:"Gaze",     n:5, seed:[[1,0],[2,0],[2,1]],
+    hint:"Now a <b>diagonal</b>. Stroke corner-to-corner and the pattern flips across it.", sol:[["D",0]] },
+  { name:"Turn",     n:5, seed:[[1,0],[2,0],[1,1]],
+    hint:"A mirror, then a diagonal. Two mirrors make a <b>turn</b> - the order picks which way it spins.", sol:[["V",5],["D",0]] },
+  { name:"Pinwheel", n:7, seed:[[3,0],[3,1],[4,1]],
+    hint:"Two <b>diagonals</b> crossing at the centre compose into a ninety-degree turn.", sol:[["D",0],["A",6]] },
+  { name:"Ladder",   n:7, seed:[[0,2],[0,3],[0,4]],
+    hint:"Two <b>parallel</b> mirrors don't just reflect - together they <b>slide</b> the whole pattern across.", sol:[["V",4],["V",8]] },
+  { name:"Weave",    n:7, seed:[[2,2],[3,2],[2,3]],
+    hint:"Mirror across an <b>off-centre</b> line and the copies land shifted, not squared up.", sol:[["V",9],["H",9]] },
+  { name:"Lattice",  n:7, seed:[[1,1],[2,2],[0,0]],
+    hint:"Mirrors <b>between</b> cells tile the plane - a tessellation built from one small mark.", sol:[["V",6],["H",6],["V",12],["H",12]] },
+  { name:"Trap",     n:5, seed:[[0,2],[1,2],[2,1],[2,0]],
+    hint:"The obvious centre stroke spills <b>outside</b> the target. Find the lines that don't.", sol:[["V",7],["H",7]] },
+  { name:"Window",   n:9, seed:[[1,0],[2,0],[4,1]],
+    hint:"A wider eight-fold rose. Across, down, and a diagonal - all through the centre.", sol:[["V",9],["H",9],["D",0]] },
+  { name:"Halls",    n:9, seed:[[1,1],[2,1],[1,2]],
+    hint:"Every family at once - two <b>diagonals</b>, a fold and a mirror - opens into a grand hall.", sol:[["D",-2],["V",9],["H",9],["D",0]] },
+  { name:"Thorn",    n:7, seed:[[2,2],[3,2],[2,3],[2,4]],
+    hint:"A fold and a diagonal, with copies falling <b>off the edge</b> - the result comes out lopsided.", sol:[["H",11],["D",-2]] },
+  { name:"Rose",     n:9, seed:[[1,1],[2,2]],
+    hint:"The finale - a whole <b>mandala</b> from two cells. Five mirrors, not one to waste.", sol:[["D",-2],["H",8],["V",9],["H",9],["D",0]] },
+];
+
+/* ===== state ======================================================== */
+let mode='play';                 // play | sand | random
+let n=5, li=0;
+let seed=[];                     // [[x,y]] current seed (mutable in sandbox)
+let hist=[];                     // [{o,p}] mirrors placed
+let lit=new Set();               // lit cell indices (derived)
+let targetSet=new Set();         // target cells
+let curPar=0;
+let solved={};
+let prevWin=false, advTimer=null;
+let undoStack=[];                // [{seed, hist}] snapshots
+
+/* animation state */
+let births=new Map();            // idx -> start time (ms)
+let lineFlash=null;              // {t0, idx}
+let winAnim=null;                // {t0}
+let preview=null;                // {m, ghosts:Set} while stroking
+let rafId=null;
+
+try{ solved=JSON.parse(localStorage.getItem('mirror-solved')||'{}'); }catch(e){ solved={}; }
+
+const $=id=>document.getElementById(id);
+const C=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||7); }catch(e){} }
+
+/* ===== canvas setup ================================================= */
+const DPR=Math.min(2, window.devicePixelRatio||1);
+const board=$('board');
+board.width=486*DPR; board.height=486*DPR;
+const PADF=10/486;
+
+function geo(){                  // board pixel geometry
+  const W=board.width, pad=W*PADF, P=(W-2*pad)/n;
+  return {W, pad, P};
+}
+function pxOf(cx, cy){ const {pad,P}=geo(); return [pad+cx*P, pad+cy*P]; }
+function pointerCell(e){
+  const r=board.getBoundingClientRect();
+  const nx=(e.clientX-r.left)/r.width, ny=(e.clientY-r.top)/r.height;
+  const cx=(nx-PADF)/(1-2*PADF)*n, cy=(ny-PADF)/(1-2*PADF)*n;
+  return [cx, cy];
+}
+
+/* ===== rendering ==================================================== */
+function roundRect(ctx, x, y, w, h, r){
+  r=Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function cellRect(ix, iy, scale){
+  const {pad,P}=geo();
+  const cx=pad+(ix+0.5)*P, cy=pad+(iy+0.5)*P, s=(P-4)*(scale==null?1:scale);
+  return {cx, cy, x:cx-s/2, y:cy-s/2, s, r:P*0.18};
+}
+function drawLine(ctx, m, W){
+  const [[ax,ay],[bx,by]]=lineEnds(n,m);
+  const [px0,py0]=pxOf(ax,ay), [px1,py1]=pxOf(bx,by);
+  ctx.beginPath(); ctx.moveTo(px0,py0); ctx.lineTo(px1,py1); ctx.stroke();
+}
+
+function render(now){
+  const ctx=board.getContext('2d'), {W,pad,P}=geo();
+  ctx.clearRect(0,0,W,W);
+  const colA=C('--a'), colBad=C('--bad'), colMuted=C('--muted'), colLine=C('--line');
+
+  /* 1. grid */
+  ctx.lineWidth=1; ctx.strokeStyle=colLine;
+  ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const g=pad+i*P;
+    ctx.moveTo(pad,g); ctx.lineTo(W-pad,g);
+    ctx.moveTo(g,pad); ctx.lineTo(g,W-pad);
+  }
+  ctx.stroke();
+
+  /* 2. target ghosts - unlit target cells as faint rings */
+  ctx.lineWidth=1.5; ctx.strokeStyle=colMuted; ctx.globalAlpha=0.3;
+  for(const idx of targetSet){
+    if(lit.has(idx)) continue;
+    const ix=idx%n, iy=(idx/n)|0, R=cellRect(ix,iy);
+    roundRect(ctx, R.x, R.y, R.s, R.s, R.r); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  /* 3. lit cells (with birth wave) */
+  for(const idx of lit){
+    const ix=idx%n, iy=(idx/n)|0;
+    let scale=1, alpha=1;
+    if(births.has(idx)){
+      const t0=births.get(idx), prog=(now-t0)/240;
+      if(prog<0){ continue; }                 // not yet born
+      if(prog>=1){ births.delete(idx); }
+      else{ const e=1-Math.pow(1-prog,3); scale=0.3+0.7*e; alpha=e; }
+    }
+    const over = mode!=='sand' && !targetSet.has(idx);
+    const col = over ? colBad : colA;
+    const R=cellRect(ix,iy,scale);
+    ctx.globalAlpha=alpha;
+    ctx.save();
+    ctx.shadowColor=col; ctx.shadowBlur=P*0.28;
+    ctx.fillStyle=col;
+    roundRect(ctx, R.x, R.y, R.s, R.s, R.r); ctx.fill();
+    ctx.restore();
+    /* soft highlight */
+    const g=ctx.createRadialGradient(R.cx-R.s*0.18, R.cy-R.s*0.2, R.s*0.05, R.cx, R.cy, R.s*0.8);
+    g.addColorStop(0,'rgba(255,255,255,0.4)'); g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g; roundRect(ctx, R.x, R.y, R.s, R.s, R.r); ctx.fill();
+    /* seed dot */
+    if(isSeed(idx)){
+      ctx.fillStyle='rgba(0,0,0,0.34)';
+      ctx.beginPath(); ctx.arc(R.cx, R.cy, Math.max(1.5,R.s*0.09), 0, 7); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+
+  /* 4. persistent mirror lines */
+  ctx.lineCap='round';
+  for(let i=0;i<hist.length;i++){
+    let a = i===hist.length-1 ? 0.4 : 0.18;
+    if(winAnim){
+      const wt=now-winAnim.t0-i*80;
+      if(wt>0 && wt<260) a=0.18+0.82*Math.sin(Math.PI*wt/260);
+    } else if(lineFlash && lineFlash.idx===i){
+      const ft=(now-lineFlash.t0)/500;
+      if(ft<1) a=0.4+0.6*(1-ft);
+    }
+    ctx.globalAlpha=1; ctx.strokeStyle=colA;
+    ctx.save(); ctx.globalAlpha=a; ctx.lineWidth=2; ctx.shadowColor=colA; ctx.shadowBlur=a>0.5?10:0;
+    drawLine(ctx, hist[i], W); ctx.restore();
+  }
+  ctx.lineCap='butt';
+
+  /* 6. live preview */
+  if(preview){
+    const m=preview.m;
+    /* fixed-cell rings (through-centre legibility) */
+    ctx.strokeStyle=colA; ctx.globalAlpha=0.4; ctx.lineWidth=1.5;
+    for(const idx of fixedCells(n,m)){
+      const ix=idx%n, iy=(idx/n)|0, R=cellRect(ix,iy);
+      roundRect(ctx, R.x, R.y, R.s, R.s, R.r); ctx.stroke();
+    }
+    /* ghost adds */
+    for(const idx of preview.ghosts){
+      const ix=idx%n, iy=(idx/n)|0, R=cellRect(ix,iy);
+      const over=mode!=='sand' && !targetSet.has(idx);
+      ctx.globalAlpha=over?0.6:0.45; ctx.fillStyle=over?colBad:colA;
+      roundRect(ctx, R.x, R.y, R.s, R.s, R.r); ctx.fill();
+    }
+    /* snapped line */
+    ctx.globalAlpha=0.85; ctx.strokeStyle=colA; ctx.lineWidth=2.5; ctx.lineCap='round';
+    ctx.save(); ctx.shadowColor=colA; ctx.shadowBlur=12; drawLine(ctx, m, W); ctx.restore();
+    ctx.lineCap='butt'; ctx.globalAlpha=1;
+  }
+  ctx.globalAlpha=1;
+}
+
+function isAnimating(now){
+  if(births.size) return true;
+  if(lineFlash && now-lineFlash.t0<500) return true;
+  if(winAnim && now-winAnim.t0 < 700 + hist.length*80 + 300) return true;
+  return false;
+}
+function frameStep(now){
+  render(now);
+  if(isAnimating(now)) rafId=requestAnimationFrame(frameStep);
+  else{ rafId=null; if(lineFlash && now-lineFlash.t0>=500) lineFlash=null; }
+}
+function kick(){ if(rafId==null) rafId=requestAnimationFrame(frameStep); }
+function draw(){ render(performance.now()); }
+
+/* ===== seed lookup ================================================== */
+let seedIdx=new Set();
+function refreshSeedIdx(){ seedIdx=new Set(seed.map(([x,y])=>y*n+x)); }
+function isSeed(idx){ return seedIdx.has(idx); }
+
+/* ===== gestures (stroke a mirror) =================================== */
+let stroking=false, sx=0, sy=0, maxD=0;
+board.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  if(mode==='play' && prevWin) return;           // frozen after solve until next
+  [sx,sy]=pointerCell(e); maxD=0; stroking=true; preview=null;
+  try{ board.setPointerCapture(e.pointerId); }catch(_){}
+});
+board.addEventListener('pointermove', e=>{
+  if(!stroking) return;
+  let [cx,cy]=pointerCell(e);
+  cx=Math.max(0,Math.min(n,cx)); cy=Math.max(0,Math.min(n,cy));
+  maxD=Math.max(maxD, Math.hypot(cx-sx, cy-sy));
+  const m=snapMirror(n, sx, sy, cx, cy);
+  if(m){ preview={m, ghosts:diffCells(m)}; }
+  else preview=null;
+  draw();
+});
+function diffCells(m){
+  const after=applyMirror(n, lit, m), g=new Set();
+  for(const idx of after) if(!lit.has(idx)) g.add(idx);
+  return g;
+}
+function endStroke(e, cancel){
+  if(!stroking) return;
+  stroking=false;
+  const wasPreview=preview; preview=null;
+  if(cancel){ draw(); return; }
+  let [cx,cy]=pointerCell(e);
+  cx=Math.max(0,Math.min(n,cx)); cy=Math.max(0,Math.min(n,cy));
+  const dist=Math.hypot(cx-sx, cy-sy);
+  if(mode==='sand' && maxD<0.35){ toggleSeed(sx, sy); return; }   // tap = seed toggle
+  const m=snapMirror(n, sx, sy, cx, cy);
+  if(m && dist>=0.6){ commitMirror(m); return; }
+  draw();                                          // too short / no candidate: fizzle
+}
+board.addEventListener('pointerup',   e=>endStroke(e,false));
+board.addEventListener('pointercancel',e=>endStroke(e,true));
+board.addEventListener('contextmenu', e=>e.preventDefault());
+
+/* ===== mutations ==================================================== */
+function pushUndo(){
+  undoStack.push({seed:seed.map(c=>c.slice()), hist:hist.slice()});
+  if(undoStack.length>120) undoStack.shift();
+  setUndoBtns();
+}
+function relight(){ refreshSeedIdx(); lit=applyMirrors(n, seed, hist); }
+function commitMirror(m){
+  const after=applyMirror(n, lit, m);
+  if(after.size===lit.size){ draw(); return; }     // no-op: fizzle
+  pushUndo();
+  const now=performance.now();
+  for(const idx of after) if(!lit.has(idx)){
+    const ix=idx%n, iy=(idx/n)|0;
+    births.set(idx, now + distToLine(m,ix,iy)*42);
+  }
+  lit=after; hist.push(m);
+  lineFlash={t0:now, idx:hist.length-1};
+  haptic(7);
+  updateStatus(); checkWin(); kick();
+}
+function toggleSeed(fx, fy){
+  const ix=Math.floor(fx), iy=Math.floor(fy);
+  if(ix<0||ix>=n||iy<0||iy>=n) return;
+  pushUndo();
+  const k=seed.findIndex(([x,y])=>x===ix&&y===iy);
+  if(k>=0) seed.splice(k,1); else seed.push([ix,iy]);
+  relight(); births.clear(); haptic(); updateStatus(); draw();
+}
+function undo(){
+  if(!undoStack.length) return;
+  const s=undoStack.pop(); seed=s.seed; hist=s.hist;
+  relight(); births.clear(); lineFlash=null; winAnim=null; prevWin=false;
+  $('frame').classList.remove('win','over'); $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  clearTimeout(advTimer); advTimer=null;
+  setUndoBtns(); updateStatus(); if(mode!=='sand') checkWin(); draw();
+}
+function resetLevel(){
+  pushUndo(); hist=[]; relight(); births.clear(); lineFlash=null; winAnim=null; prevWin=false;
+  $('frame').classList.remove('win','over'); $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  clearTimeout(advTimer); advTimer=null; updateStatus(); if(mode!=='sand') checkWin(); draw();
+}
+function setUndoBtns(){ document.querySelectorAll('.undoB').forEach(b=>b.disabled=!undoStack.length); }
+
+/* ===== win / status ================================================= */
+function overspill(){ for(const idx of lit) if(!targetSet.has(idx)) return true; return false; }
+function isWin(){
+  if(lit.size!==targetSet.size) return false;
+  for(const idx of lit) if(!targetSet.has(idx)) return false;
+  return true;
+}
+function updateStatus(){
+  if(mode==='sand'){ $('par').innerHTML=`mirrors <b>${hist.length}</b>`; $('frame').classList.remove('over'); return; }
+  const over=overspill(), win=isWin();
+  $('frame').classList.toggle('over', over && !win);
+  const cls = win ? 'parwin' : (hist.length<=curPar ? 'under' : 'over');
+  $('par').innerHTML=`mirrors <b class="${cls}">${hist.length}</b> &nbsp;·&nbsp; par <b>${curPar}</b>`;
+}
+function checkWin(){
+  const win=isWin();
+  const frame=$('frame');
+  frame.classList.toggle('win', win);
+  $('winMsg').classList.toggle('show', win);
+  if(win && !prevWin){
+    winAnim={t0:performance.now()}; kick(); celebrate(); haptic(18);
+    const atPar = hist.length<=curPar;
+    if(mode==='play'){
+      const val=atPar?2:1;
+      if((solved[LEVELS[li].name]||0)<val){ solved[LEVELS[li].name]=val;
+        try{ localStorage.setItem('mirror-solved', JSON.stringify(solved)); }catch(e){} }
+      markDots();
+      const last=li===LEVELS.length-1;
+      $('winMsg').textContent = last ? 'every mirror solved ✦' : (atPar?`solved · par ${curPar}`:`solved · ${hist.length} mirrors`);
+      if(!last) advTimer=setTimeout(()=>$('nextUp').classList.add('show'), 1100);
+    } else {
+      $('winMsg').textContent = atPar?`solved · par ${curPar} ✦`:`solved · ${hist.length} mirrors`;
+    }
+  }
+  if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; $('nextUp').classList.remove('show'); winAnim=null; }
+  prevWin=win;
+}
+function celebrate(){
+  const frame=$('frame'), burst=$('burst');
+  frame.classList.remove('pop'); void frame.offsetWidth; frame.classList.add('pop');
+  burst.classList.remove('go');  void burst.offsetWidth; burst.classList.add('go');
+}
+
+/* ===== dots ========================================================= */
+function buildDots(){
+  const host=$('dots'); host.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const d=document.createElement('div'); d.className='dot'; d.title=L.name;
+    d.onclick=(j=>()=>loadLevel(j))(i);
+    host.appendChild(d);
+  });
+  markDots();
+}
+function markDots(){
+  [...$('dots').children].forEach((d,i)=>{
+    const v=solved[LEVELS[i].name]||0;
+    d.classList.toggle('solved', v>=1);
+    d.classList.toggle('par', v===2);
+    d.classList.toggle('cur', mode==='play' && i===li);
+  });
+}
+
+/* ===== nav / mode entry ============================================= */
+function setNav(m){
+  $('navPlay').hidden  = m!=='play';
+  $('navSand').hidden  = m!=='sand';
+  $('navRandom').hidden= m!=='random';
+}
+function clearHash(){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; } }
+
+function loadLevel(i){
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  if(mode==='random') clearHash();
+  mode='play'; setNav('play');
+  li=(i+LEVELS.length)%LEVELS.length;
+  const L=LEVELS[li];
+  n=L.n; seed=L.seed.map(c=>c.slice()); hist=[];
+  relight();
+  targetSet=applyMirrors(n, L.seed, L.sol.map(M));
+  curPar=L.sol.length;
+  births.clear(); lineFlash=null; winAnim=null; preview=null; undoStack=[];
+  $('lvnum').textContent=String(li+1).padStart(2,'0');
+  $('lvname').textContent=L.name;
+  $('hint').innerHTML=L.hint;
+  $('prev').disabled=li===0; $('next').disabled=li===LEVELS.length-1;
+  $('frame').classList.remove('win','over','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  setUndoBtns(); buildDots(); updateStatus(); checkWin(); draw();
+}
+
+/* ===== sandbox ====================================================== */
+function enterSandbox(){
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  if(mode==='random') clearHash();
+  mode='sand'; setNav('sand');
+  n=7; seed=[]; hist=[]; targetSet=new Set(); relight();
+  births.clear(); lineFlash=null; winAnim=null; preview=null; undoStack=[];
+  $('lvnum').textContent=''; $('lvname').textContent='Free play';
+  $('hint').innerHTML='<b>Tap</b> a cell to seed light. <b>Stroke</b> to place mirrors. Then <b>⧉ link</b> your result as a puzzle for someone to solve.';
+  $('frame').classList.remove('win','over','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  setUndoBtns(); markDots(); updateStatus(); draw();
+}
+function sandRandom(){
+  pushUndo();
+  n=7; hist=[];
+  const cx=1+Math.floor(Math.random()*2), cy=1+Math.floor(Math.random()*2), sd=new Set();
+  const k=3+Math.floor(Math.random()*3);
+  let g=0; while(sd.size<k && g++<40){ sd.add((cy+Math.floor(Math.random()*3))*n+(cx+Math.floor(Math.random()*3))); }
+  seed=[...sd].map(i=>[i%n,(i/n)|0]);
+  const moves=allMirrors(n), km=2+Math.floor(Math.random()*3);
+  relight();
+  for(let i=0;i<km;i++){ const m=moves[Math.floor(Math.random()*moves.length)]; const nl=applyMirror(n,lit,m); if(nl.size!==lit.size){ lit=nl; hist.push(m); } }
+  births.clear(); updateStatus(); draw();
+}
+
+/* ===== random / shared puzzle ======================================= */
+function genRandom(){
+  for(let tries=0; tries<400; tries++){
+    const nn=Math.random()<0.5?5:7;
+    const qx=Math.random()<0.5?0:Math.ceil(nn/2), qy=Math.random()<0.5?0:Math.ceil(nn/2);
+    const sd=new Set(); let g=0;
+    const need=3+Math.floor(Math.random()*3);
+    while(sd.size<need && g++<50){ const x=qx+Math.floor(Math.random()*(Math.floor(nn/2)+1)), y=qy+Math.floor(Math.random()*(Math.floor(nn/2)+1)); if(x<nn&&y<nn) sd.add(y*nn+x); }
+    if(sd.size<3) continue;
+    const moves=allMirrors(nn), km=2+Math.floor(Math.random()*3);
+    let L=new Set(sd), used=[];
+    for(let i=0;i<km;i++){ const m=moves[Math.floor(Math.random()*moves.length)]; const nl=applyMirror(nn,L,m); if(nl.size!==L.size){ L=nl; used.push(m); } }
+    if(L.size===sd.size || L.size<8 || L.size>0.8*nn*nn) continue;
+    const par=solve(nn, maskOf(nn,[...sd]), maskOf(nn,[...L]));
+    if(par<2) continue;
+    return {n:nn, seed:[...sd].map(i=>[i%nn,(i/nn)|0]), mirrors:used};
+  }
+  return null;
+}
+function enterRandom(puz){
+  if(!puz) return;
+  clearTimeout(advTimer); advTimer=null; prevWin=false;
+  mode='random'; setNav('random');
+  n=puz.n; seed=puz.seed.map(c=>c.slice()); hist=[];
+  relight();
+  targetSet=applyMirrors(n, puz.seed, puz.mirrors);
+  const par=solve(n, maskOf(n, puz.seed), maskOf(n, [...targetSet]));
+  curPar=par>0?par:puz.mirrors.length;
+  births.clear(); lineFlash=null; winAnim=null; preview=null; undoStack=[];
+  try{ history.replaceState(null,'','#p='+encodePuzzle(puz.n, puz.seed, puz.mirrors)); }catch(e){}
+  $('lvnum').textContent=''; $('lvname').textContent='Puzzle';
+  $('hint').innerHTML='Fill the target with your own mirrors. Match it in as few as you can, then <b>⧉ link</b> it onward.';
+  $('frame').classList.remove('win','over','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  setUndoBtns(); markDots(); updateStatus(); checkWin(); draw();
+}
+
+/* ===== share encode / decode ======================================= */
+function encodePuzzle(nn, seedCells, mirrors){
+  let m=0n; for(const [x,y] of seedCells) m|=1n<<BigInt(y*nn+x);
+  return nn+'.'+m.toString(36)+'.'+mirrors.map(k=>k.o+k.p).join('');
+}
+function b36ToBig(s){ let r=0n; for(const ch of s){ const d=parseInt(ch,36); if(isNaN(d)) return null; r=r*36n+BigInt(d); } return r; }
+function decodePuzzle(str){
+  const parts=str.split('.'); if(parts.length<2) return null;
+  const nn=+parts[0]; if(![5,7,9].includes(nn)) return null;
+  const bm=b36ToBig(parts[1]); if(bm==null) return null;
+  const seedCells=[];
+  for(let i=0;i<nn*nn;i++) if((bm>>BigInt(i))&1n) seedCells.push([i%nn,(i/nn)|0]);
+  if(!seedCells.length) return null;
+  const mirrors=[]; const mstr=parts[2]||'';
+  const re=/([VHDA])(-?\d+)/g; let mm;
+  while((mm=re.exec(mstr))){
+    const o=mm[1], p=+mm[2];
+    const okV=p>=1&&p<=2*nn-1, okD=p>=-(nn-2)&&p<=nn-2, okA=p>=1&&p<=2*nn-3;
+    if(o==='V'||o==='H'){ if(!okV) return null; }
+    else if(o==='D'){ if(!okD) return null; }
+    else { if(!okA) return null; }
+    mirrors.push({o,p});
+  }
+  if(!mirrors.length) return null;
+  return {n:nn, seed:seedCells, mirrors};
+}
+function fromHash(){
+  const m=(location.hash||'').match(/p=([^&]+)/);
+  if(!m) return null;
+  try{ return decodePuzzle(decodeURIComponent(m[1])); }catch(e){ return null; }
+}
+function copyLink(btn, url){
+  const done=()=>{ btn.textContent='copied ✓'; setTimeout(()=>btn.textContent='⧉ link',1400); };
+  try{ navigator.clipboard.writeText(url).then(done,done); }catch(e){ done(); }
+}
+
+/* ===== controls ===================================================== */
+$('prev').onclick=()=>loadLevel(li-1);
+$('next').onclick=()=>loadLevel(li+1);
+$('nextUp').onclick=()=>loadLevel(li+1);
+$('reset').onclick=resetLevel;
+$('toSand').onclick=enterSandbox;
+$('toRandom').onclick=()=>enterRandom(genRandom());
+$('exitSand').onclick=()=>loadLevel(li);
+$('clear').onclick=()=>{ pushUndo(); seed=[]; hist=[]; relight(); births.clear(); updateStatus(); draw(); };
+$('srand').onclick=sandRandom;
+$('rnew').onclick=()=>enterRandom(genRandom());
+$('rreset').onclick=resetLevel;
+$('rexit').onclick=()=>loadLevel(li);
+$('rshare').onclick=()=>copyLink($('rshare'), location.href);
+$('sshare').onclick=()=>{
+  const t=$('sshare');
+  if(!seed.length){ t.textContent='seed first!'; setTimeout(()=>t.textContent='⧉ link',1300); return; }
+  const url=location.origin+location.pathname+'#p='+encodePuzzle(n, seed, hist);
+  copyLink(t, url);
+};
+document.querySelectorAll('.undoB').forEach(b=>b.onclick=undo);
+
+function closeHelp(){ $('help').hidden=true; try{ localStorage.setItem('mirror-help','1'); }catch(e){} }
+$('helpBtn').onclick=()=>{ $('help').hidden=false; };
+$('helpClose').onclick=closeHelp;
+$('help').addEventListener('click', e=>{ if(e.target===$('help')) closeHelp(); });
+try{ if(!localStorage.getItem('mirror-help')) $('help').hidden=false; }catch(e){}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeHelp(); return; }
+  if(e.key==='z'||e.key==='u'){ undo(); return; }
+  if(mode!=='play') return;
+  if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
+  if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+  if(e.key==='Enter' && prevWin && li<LEVELS.length-1) loadLevel(li+1);
+});
+window.addEventListener('hashchange', ()=>{ const h=fromHash(); if(h) enterRandom(h); });
+
+/* ===== theme ======================================================== */
+window.addEventListener('themechange', draw);
+(function(){
+  const btn=$('themeToggle'); if(!btn) return;
+  const glyph=()=>btn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';
+  glyph();
+  btn.addEventListener('click', ()=>{
+    const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ localStorage.setItem('theme',next); }catch(e){}
+    glyph(); window.dispatchEvent(new Event('themechange'));
+  });
+})();
+
+/* ===== boot ========================================================= */
+buildDots();
+(function(){ const h=fromHash(); if(h) enterRandom(h); else loadLevel(0); })();
+</script>
+</body>
+</html>

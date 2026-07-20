@@ -77,6 +77,12 @@
       "name": "Loom",
       "accent": "#b98cff",
       "tagline": "Author up to three rewrite rules. The loom runs them tick by tick, leftmost match first, until the bead thread matches the target - or unravels to nothing, or grows forever. Markov algorithms wearing a bead necklace."
+    },
+    {
+      "slug": "mirror",
+      "name": "Mirror",
+      "accent": "#8fd0ff",
+      "tagline": "Stroke a line across the grid and the light reflects across it - folding, doubling, and spilling off the edge until a few lit cells bloom into a symmetric pattern. Match the target constellation in the fewest mirrors: two mirrors make a turn, two parallel ones a slide. Chase par through sixteen levels, reverse-engineer a random mandala, or fold your own and share it."
     }
   ]
 }
