@@ -1,115 +1,651 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <style>
-      h1,
-      h2,
-      .source {
-        text-align: center;
-      }
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Choose two - Will Clarke</title>
+  <meta name="description" content="Trilemmas from computing, economics, politics and ordinary life. Three things you want, room for two. Tap two corners to see what you keep and what you give up.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>&#9651;</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .intro { max-width: 40rem; }
+    .intro .lede { font-size: 1.2rem; }
 
-      .container {
-        position: relative;
-      }
+    .glow-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(70% 45% at 50% -5%,
+          color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%);
+    }
 
-      @media (max-width: 768px) {
-        .container {
-          width: 100%;
-        }
-      }
+    .tri-section { margin-top: 2.8rem; }
+    .tri-section > h2 {
+      margin-bottom: 0.2rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .tri-section > h2::before {
+      content: "\25B3";
+      color: var(--accent);
+      font-size: 0.72em;
+      opacity: 0.85;
+    }
 
-      @media (min-width: 769px) {
-        .container {
-          width: 40%;
-          margin: 0 auto;
-        }
-      }
+    .tri-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(18.5rem, 1fr));
+      gap: 1.1rem;
+      margin-top: 1.1rem;
+    }
 
-      .links {
-        display: flex;
-        justify-content: center;
-      }
+    .tri-card {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 1.15rem 1.2rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--fg) 3%, transparent),
+        color-mix(in srgb, var(--fg) 1%, transparent));
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      transition: border-color 0.25s ease, box-shadow 0.25s ease,
+                  transform 0.25s cubic-bezier(0.22, 0.9, 0.3, 1),
+                  background 0.3s ease;
+    }
+    .tri-card:hover {
+      border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px color-mix(in srgb, var(--accent) 13%, rgba(0, 0, 0, 0.12));
+    }
+    .tri-card.chosen {
+      border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+      background: linear-gradient(180deg,
+        color-mix(in srgb, var(--accent) 7%, transparent),
+        color-mix(in srgb, var(--accent) 2%, transparent));
+    }
+    .tri-card.flash {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+    }
+    .tri-card.reveal { opacity: 0; transform: translateY(14px); }
+    .tri-card.reveal.in {
+      opacity: 1;
+      transform: none;
+      transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 0.9, 0.3, 1);
+    }
 
-      .links a {
-        margin: 0 5px;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>Life</h1>
+    .tri-title { font-size: 1.08rem; font-weight: 600; margin: 0; line-height: 1.25; }
+    .tri-sub {
+      display: block;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.3rem;
+    }
+    .tri-sub a { color: inherit; text-decoration: none; opacity: 0.75; }
+    .tri-sub a:hover { color: var(--accent); opacity: 1; }
 
-    <div class="container">
-      <svg width="100%" viewBox="0 0 100 100">
-        <polygon
-          points="50,20 85,80 15,80"
-          fill="rgb(255, 255, 255)"
-          style="stroke-width: 1.5; stroke: rgb(0, 0, 0)"
-        />
+    .tri-figure { margin: 0.55rem 0 0.15rem; }
+    svg.tri {
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: visible;
+      font-family: var(--mono);
+      max-width: 17rem;
+      margin: 0 auto;
+    }
+    .tri-base {
+      fill: color-mix(in srgb, var(--fg) 4%, transparent);
+      stroke: var(--line);
+      stroke-width: 1.5;
+      stroke-linejoin: round;
+      transition: fill 0.3s ease, stroke 0.3s ease;
+    }
+    svg.tri.active .tri-base {
+      fill: color-mix(in srgb, var(--accent) 9%, transparent);
+      stroke: color-mix(in srgb, var(--accent) 30%, var(--line));
+    }
+    .tri-edge {
+      stroke: var(--accent);
+      stroke-width: 3.4;
+      stroke-linecap: round;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+      filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 65%, transparent));
+    }
+    .tri-edge.lit { opacity: 1; }
 
-        <circle cx="50" cy="20" r="2.5" />
-        <circle cx="85" cy="80" r="2.5" />
-        <circle cx="15" cy="80" r="2.5" />
+    .vtx { cursor: pointer; transition: opacity 0.2s ease; }
+    .vtx .hit { fill: transparent; }
+    .vtx .dot {
+      fill: var(--muted);
+      stroke: var(--bg);
+      stroke-width: 1.5;
+      transition: fill 0.2s ease, r 0.2s ease, filter 0.2s ease;
+    }
+    .vtx text { fill: var(--fg); font-size: 10.5px; letter-spacing: 0.02em; }
+    .vtx:hover .dot { fill: var(--accent); }
+    .vtx.sel .dot {
+      fill: var(--accent);
+      r: 6.5px;
+      filter: drop-shadow(0 0 5px color-mix(in srgb, var(--accent) 70%, transparent));
+    }
+    .vtx.sel text { fill: var(--accent); font-weight: 700; }
+    .vtx.dim { opacity: 0.3; }
+    .vtx.dim text { text-decoration: line-through; }
+    .vtx:focus-visible { outline: none; }
+    .vtx:focus-visible .dot { stroke: var(--accent); stroke-width: 2; }
 
-        <text
-          x="50"
-          y="55"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          style="font-size: 10px; fill: grey"
-        >
-          Choose
-        </text>
+    .tri-cap {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      color: var(--fg);
+      margin-top: 0.5rem;
+      min-height: 6.2em;
+    }
+    .tri-cap .cap-keep {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .tri-cap .cap-drop {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .tri-cap .cap-body { display: block; margin-top: 0.32rem; }
+    .tri-cap .cap-hint { color: var(--muted); font-style: italic; }
 
-        <text
-          x="50"
-          y="65"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          style="font-size: 16px; fill: grey"
-        >
-          Two
-        </text>
+    .tri-kicker {
+      margin-top: 0.6rem;
+      padding-top: 0.55rem;
+      border-top: 1px dashed var(--line);
+      font-size: 0.8rem;
+      font-style: italic;
+      color: var(--muted);
+    }
 
-        <text
-          x="50"
-          y="10"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          style="font-size: 8px"
-        >
-          Career
-        </text>
-        <text
-          x="85"
-          y="90"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          style="font-size: 8px"
-        >
-          Hobbies
-        </text>
-        <text
-          x="12"
-          y="90"
-          text-anchor="middle"
-          alignment-baseline="middle"
-          style="font-size: 8px"
-        >
-          Family
-        </text>
-      </svg>
+    .feedback { margin-top: 3rem; font-size: 0.95rem; color: var(--muted); }
+
+    @media (max-width: 480px) {
+      .tri-grid { grid-template-columns: 1fr; gap: 0.9rem; }
+      .tri-card { padding: 1.1rem 1.1rem 1.15rem; }
+      svg.tri { max-width: 15rem; }
+      .intro .lede { font-size: 1.1rem; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tri-edge, .vtx, .vtx .dot, .tri-card, .tri-base { transition: none; }
+      .tri-card.reveal { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="glow-bg" aria-hidden="true"></div>
+<div class="wrap">
+
+  <header class="site">
+    <span class="brand"><a href="/">Will Clarke</a></span>
+    <nav>
+      <a href="/">home</a>
+      <a href="/projects.html">projects</a>
+      <a href="/writing.html">writing</a>
+      <a href="/about.html">about</a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">&#9680;</button>
+    </nav>
+  </header>
+
+  <main>
+    <div class="intro">
+      <h1>Choose two</h1>
+      <p class="lede">Most hard choices aren't a straight line between good and
+      bad. They're a triangle: three things you want, and room for two.</p>
+
+      <p>A trilemma is an honest map of a trade-off. Name the three things you're
+      really after, accept that you can hold at most two, and the decision gets
+      clearer - you stop hoping for all three and start choosing which corner to
+      give up. We tend to do this badly by default: we pick two without noticing,
+      then quietly resent losing the third.</p>
+
+      <p>Below are trilemmas from computing, economics, politics and ordinary
+      life - some proven with maths, some just true. <strong>Tap two corners</strong>
+      of any triangle to see what you keep, and what you have to let go.</p>
+
+      <p class="muted" style="font-size:0.9rem">(A few famous trilemmas are the
+      opposite shape - three exits and you must take exactly one, like Agrippa's
+      ancient problem of how <em>any</em> belief can be justified. These are all
+      the choose-two kind.)</p>
     </div>
 
-    <div class="links">
-      <a href="./about.html">About</a>
-      <a
-        href="https://docs.google.com/forms/d/e/1FAIpQLSc9cc54pEcx-gbyEcGkOyrL12kExG1bPS0VGYGbTEUSptXG4g/viewform?usp=sf_link"
-        >Feedback</a
-      >
-      <a href="./globalization-paradox.html">Previous</a>
-      <a href="./communism.html">Next</a>
-    </div>
-    
-  </body>
+    <div id="tris"></div>
+
+    <p class="feedback">Found some of these vaguely interesting? There's a
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSc9cc54pEcx-gbyEcGkOyrL12kExG1bPS0VGYGbTEUSptXG4g/viewform?usp=sf_link">short feedback form</a>.</p>
+  </main>
+
+  <footer class="site">
+    <a href="/projects.html">projects</a> ·
+    <a href="https://github.com/will-clarke">github</a> ·
+    <a href="/index.xml">rss</a>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- geometry (shared by every triangle) ----
+  var P = [ {x:120,y:30}, {x:44,y:132}, {x:196,y:132} ];   // 0 top, 1 left, 2 right
+  var LP = [
+    {x:120, y:19,  anchor:"middle", dir:"up"},
+    {x:40,  y:150, anchor:"middle", dir:"down"},
+    {x:200, y:150, anchor:"middle", dir:"down"}
+  ];
+
+  // ---- the trilemmas ----
+  // v: [top, left, right].  give[i] describes the world where you drop v[i]
+  // and keep the other two.
+  var DATA = {
+    "cap-theorem": {
+      title: "Distributed data stores",
+      sub: "CAP theorem · Eric Brewer, 2000",
+      src: "https://en.wikipedia.org/wiki/CAP_theorem",
+      v: ["Consistency", "Availability", "Partition-tolerance"],
+      premise: "Spread data across many machines and, sooner or later, a link between them drops. During that 'partition' each machine must either answer with maybe-stale data or refuse to answer. You can't promise both.",
+      give: [
+        "Every node keeps answering even when cut off, so two clients can briefly read different values until things reconcile. This is DNS, or a shopping cart that merges later (AP).",
+        "When nodes can't reach each other they stop answering rather than risk a wrong answer. This is a bank ledger, or anything built on Paxos or Raft (CP).",
+        "Never tolerate a partition - only safe on a single machine. The moment you're genuinely distributed, this corner leaves the table (CA)."
+      ],
+      kicker: "Partitions happen whether you like them or not, so the real choice is between consistency and availability."
+    },
+    "zooko": {
+      title: "Naming things on a network",
+      sub: "Zooko's triangle · Zooko Wilcox-O'Hearn, 2001",
+      src: "https://en.wikipedia.org/wiki/Zooko%27s_triangle",
+      v: ["Meaningful", "Secure", "Decentralized"],
+      premise: "A name on a network wants three things: to be memorable to humans, to point only ever at the right thing, and to need no central authority. Classically you get two.",
+      give: [
+        "Raw keys or content hashes: globally unique and answer to no one, but impossible to remember. Think Tor .onion addresses or an IPFS hash.",
+        "Nicknames anyone may claim: easy to say and no gatekeeper, but you can never be sure whose name you just typed.",
+        "Domain names: readable and mostly unambiguous, at the price of trusting registrars and the DNS root."
+      ],
+      kicker: "Namecoin and blockchain naming claim to 'square' the triangle by decentralising the registrar itself."
+    },
+    "blockchain": {
+      title: "Blockchains",
+      sub: "the scalability trilemma · Vitalik Buterin, 2017",
+      src: "https://ethereum.org/en/developers/docs/scaling/",
+      v: ["Decentralized", "Secure", "Scalable"],
+      premise: "Vitalik Buterin's rule of thumb: a blockchain wants to be run by many independent parties, resist attack, and process lots of cheap transactions. Simple designs get two.",
+      give: [
+        "Run the chain on a few big, powerful validators: fast and hard to attack, but now a handful of parties are in charge. Many 'high-TPS' chains sit here.",
+        "Thin out the checks or the validator set to stay fast and open, and the chain becomes far cheaper to attack.",
+        "Have every node verify everything, staying open and hard to attack, and you're capped at a modest few transactions a second. Classic Bitcoin and Ethereum L1."
+      ],
+      kicker: "Layer-2 rollups are the industry's bet on beating the trilemma rather than living with it."
+    },
+    "storage": {
+      title: "Disk storage",
+      sub: "fast, cheap, reliable · the RAID triangle",
+      src: "https://en.wikipedia.org/wiki/RAID",
+      v: ["Fast", "Cheap", "Reliable"],
+      premise: "Every way of storing data trades among speed, cost per byte, and how much you trust it to survive a failure. The named RAID levels are just points on this triangle.",
+      give: [
+        "Cheap and safe: redundant copies across commodity disks, but writes crawl. Think RAID 6 on slow drives, or tape backup.",
+        "Fast and safe: mirror everything onto flash, and pay for two of everything. Think RAID 10 on SSDs.",
+        "Fast and cheap: stripe across disks with no redundancy. Great numbers until any one disk dies and takes the lot. That's RAID 0."
+      ],
+      kicker: null
+    },
+    "impossible-trinity": {
+      title: "Running an open economy",
+      sub: "the impossible trinity · Mundell-Fleming",
+      src: "https://en.wikipedia.org/wiki/Impossible_trinity",
+      v: ["Fixed rate", "Free capital", "Own rates"],
+      premise: "A central bank would love a stable exchange rate, money that can cross its borders freely, and interest rates set to suit its own economy. It can lock in any two.",
+      give: [
+        "Let the currency float. Capital moves freely and you set your own rates, but the currency's value swings. The US, UK, and the euro area as a whole.",
+        "Impose capital controls. You keep the peg and your own rates by policing money at the border. China through much of its rise; the Bretton Woods era.",
+        "Give up setting rates. Peg hard or adopt another currency and import its monetary policy. Hong Kong's dollar peg; members of the euro."
+      ],
+      kicker: null
+    },
+    "globalization": {
+      title: "Globalization",
+      sub: "Rodrik's political trilemma · 2011",
+      src: "https://en.wikipedia.org/wiki/Dani_Rodrik",
+      v: ["Global market", "Sovereignty", "Democracy"],
+      premise: "Dani Rodrik's political trilemma: you can't have deep global economic integration, the sovereign nation-state, and mass democratic politics all at once.",
+      give: [
+        "The postwar Bretton Woods compromise: sovereign nations run their own democratic economic policy and keep globalisation on a leash.",
+        "Global federalism: push democracy up to global institutions big enough to match the global market. The EU, aimed at the whole world.",
+        "The 'golden straitjacket': stay sovereign and hyper-globalised by putting economic policy beyond the reach of voters. Technocrats and markets over ballots."
+      ],
+      kicker: null
+    },
+    "energy": {
+      title: "Powering a country",
+      sub: "the energy trilemma · World Energy Council",
+      src: "https://www.worldenergy.org/transition-toolkit/world-energy-trilemma-framework",
+      v: ["Secure", "Affordable", "Clean"],
+      premise: "Energy policy pulls three ways: keep the lights reliably on, keep power affordable for everyone, and keep it clean. Push hard on two and the third tends to give.",
+      give: [
+        "Chase cheap and clean and you can end up leaning on intermittent renewables or imported fuel without the backup to ride out a shock.",
+        "A grid that is both reliable and clean - storage, nuclear, overbuilt renewables - can push bills past what many households can pay.",
+        "The oldest bargain: reliable, cheap power from burning coal and gas, with the bill for the carbon arriving later."
+      ],
+      kicker: null
+    },
+    "welfare-state": {
+      title: "The welfare state",
+      sub: "the service-economy trilemma · Iversen & Wren, 1998",
+      src: "https://en.wikipedia.org/wiki/Trilemma",
+      v: ["Balanced books", "Equality", "Jobs"],
+      premise: "Iversen and Wren's trilemma of the service economy: rich democracies want balanced budgets, low wage inequality, and plenty of jobs. The politics lets them prioritise two.",
+      give: [
+        "The Nordic route: equality and lots of (public-sector) jobs, funded by high taxes and a large state, with the budget under strain.",
+        "The Anglo-American route: fiscal discipline and booming private-service jobs, but a widening gap between low- and high-paid work.",
+        "The Continental route: balanced books and protected wages, at the price of stubbornly high unemployment, felt worst by outsiders."
+      ],
+      kicker: null
+    },
+    "israel": {
+      title: "A state in Israel/Palestine",
+      sub: "the Israeli trilemma",
+      src: "https://en.wikipedia.org/wiki/Jewish_and_democratic_state",
+      v: ["Jewish", "Democratic", "All the land"],
+      premise: "A trilemma taught in political science: a state in this land can aim to be Jewish in character, fully democratic with one vote per person, and to hold all the territory between the river and the sea. The claim is that all three at once is impossible.",
+      give: [
+        "One democratic state over all the land, with equal votes for everyone in it - in which Jews might not be the majority.",
+        "One state holding all the land and Jewish in character, but without equal votes for everyone living under its rule.",
+        "A Jewish and democratic state in part of the territory, giving up permanent control of the rest. The logic behind partition and two-state plans."
+      ],
+      kicker: "Nearly every serious proposal for the region is, underneath, a choice about which corner to release."
+    },
+    "iron-triangle": {
+      title: "Getting something made",
+      sub: "fast, good, cheap · the project triangle",
+      src: "https://en.wikipedia.org/wiki/Project_management_triangle",
+      v: ["Fast", "Good", "Cheap"],
+      premise: "The oldest bargain in any workshop or studio. You can have it done quickly, done well, and done cheaply - pick two.",
+      give: [
+        "Good and cheap, but not soon. You wait, or you do it yourself on evenings and weekends.",
+        "Fast and cheap, but it will show. Corners get cut and you fix it again later.",
+        "Fast and good, but you pay for it. Overtime, specialists, premium rates."
+      ],
+      kicker: null
+    },
+    "encyclopedias": {
+      title: "Reference works",
+      sub: "authoritative, comprehensive, current",
+      src: null,
+      v: ["Authoritative", "Comprehensive", "Current"],
+      premise: "A reference work wants to be trustworthy, to cover everything, and to stay current. Doing all three at once is exactly what makes them hard to build.",
+      give: [
+        "Wikipedia's bargain: enormous and up-to-date because anyone can edit, with no guarantee that a given page is right.",
+        "A tight, expert-reviewed handbook: trustworthy and current, but deliberately narrow.",
+        "The printed Britannica: authoritative and broad, but frozen on the day it went to the presses."
+      ],
+      kicker: null
+    },
+    "epicurean": {
+      title: "God and suffering",
+      sub: "the Epicurean paradox · problem of evil",
+      src: "https://en.wikipedia.org/wiki/Problem_of_evil",
+      v: ["All-powerful", "All-good", "Evil exists"],
+      premise: "Epicurus's old riddle. Three claims that each sound reasonable on their own; hold any two and the third has to give.",
+      give: [
+        "If God is wholly good and evil is real, then God would end it but cannot - so God is not all-powerful.",
+        "If God is all-powerful and evil is real, then God could end it but doesn't - so God is not wholly good.",
+        "If God is both all-powerful and wholly good, then evil shouldn't exist at all - which means denying the suffering in front of you."
+      ],
+      kicker: "Believers answer it in many ways; the trilemma is what every answer has to face."
+    },
+    "life": {
+      title: "A life",
+      sub: "the one everyone lives",
+      src: null,
+      v: ["Career", "Family", "Yourself"],
+      premise: "The version of this you actually live. A thriving career, real time with the people you love, and a life of your own - most seasons give you two.",
+      give: [
+        "Present at home and looking after yourself, while the ambitious career takes a back seat. The down-shift, the coasting years.",
+        "Flying at work and keeping yourself together, while the people at home get whatever's left. The classic workaholic bargain.",
+        "A good parent and good at the job, running on empty - sleep, health and friendships are what quietly get spent."
+      ],
+      kicker: "Life is short. Better to choose your two on purpose than to lose one by default."
+    },
+    "student": {
+      title: "Student life",
+      sub: "dorm-room folklore",
+      src: null,
+      v: ["Grades", "Sleep", "Friends"],
+      premise: "The oldest law of university, scrawled on a thousand whiteboards: good grades, enough sleep, a social life.",
+      give: [
+        "Rested and popular, cheerfully heading for a resit.",
+        "Top marks and a full calendar, running entirely on caffeine and 3am.",
+        "Straight A's and well rested, with the library largely to yourself."
+      ],
+      kicker: null
+    },
+    "communism": {
+      title: "Under communism",
+      sub: "a Soviet-era joke",
+      src: null,
+      v: ["Honest", "Intelligent", "Loyal"],
+      premise: "An old joke from behind the Iron Curtain. Under the system, a person could be honest, intelligent, or a loyal Party member - but never all three.",
+      give: [
+        "Intelligent and loyal: you see exactly what is wrong, and toe the line anyway.",
+        "Honest and loyal: you believe every word, which is why they trust you.",
+        "Honest and intelligent: you see the truth and you say it, which is why you're in trouble."
+      ],
+      kicker: null
+    }
+  };
+
+  var SECTIONS = [
+    { title: "Computing & systems", slugs: ["cap-theorem", "zooko", "blockchain", "storage"] },
+    { title: "Money, politics & the state", slugs: ["impossible-trinity", "globalization", "energy", "welfare-state", "israel"] },
+    { title: "Making, knowing & believing", slugs: ["iron-triangle", "encyclopedias", "epicurean"] },
+    { title: "A life, lived", slugs: ["life", "student", "communism"] }
+  ];
+
+  var state = {};  // slug -> array of selected vertex indices (max 2)
+
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // split a label into <= 2 lines when it is long and has a break point
+  function labelLines(s) {
+    if (s.length <= 11) return [s];
+    var parts = s.split(/[-\s]/);
+    if (parts.length === 1) return [s];
+    return [parts[0], parts.slice(1).join(" ")];
+  }
+
+  function labelTspans(label, lp) {
+    var lines = labelLines(label), ys;
+    if (lines.length === 2) {
+      ys = lp.dir === "up" ? [lp.y - 11, lp.y] : [lp.y, lp.y + 11];
+    } else {
+      ys = [lp.y];
+    }
+    return lines.map(function (ln, k) {
+      return '<tspan x="' + lp.x + '" y="' + ys[k] + '">' + esc(ln) + "</tspan>";
+    }).join("");
+  }
+
+  function vtxSvg(slug, i, t) {
+    return '<g class="vtx" data-card="' + slug + '" data-i="' + i +
+      '" tabindex="0" role="button" aria-label="' + esc(t.v[i]) + '">' +
+      '<circle class="hit" cx="' + P[i].x + '" cy="' + P[i].y + '" r="20"/>' +
+      '<circle class="dot" cx="' + P[i].x + '" cy="' + P[i].y + '" r="5"/>' +
+      '<text text-anchor="' + LP[i].anchor + '">' + labelTspans(t.v[i], LP[i]) + "</text>" +
+      "</g>";
+  }
+
+  function cardHtml(slug) {
+    var t = DATA[slug];
+    var srcLink = t.src
+      ? ' · <a href="' + t.src + '" target="_blank" rel="noopener">source ↗</a>'
+      : "";
+    return '<article class="tri-card" id="' + slug + '">' +
+      '<div class="tri-head">' +
+        '<h3 class="tri-title">' + esc(t.title) + "</h3>" +
+        '<span class="tri-sub">' + esc(t.sub) + srcLink + "</span>" +
+      "</div>" +
+      '<div class="tri-figure">' +
+        '<svg class="tri" viewBox="0 0 240 172" role="img" aria-label="' + esc(t.title) + ' trilemma">' +
+          '<polygon class="tri-base" points="120,30 44,132 196,132"/>' +
+          '<line class="tri-edge" x1="0" y1="0" x2="0" y2="0"/>' +
+          vtxSvg(slug, 0, t) + vtxSvg(slug, 1, t) + vtxSvg(slug, 2, t) +
+        "</svg>" +
+      "</div>" +
+      '<div class="tri-cap"></div>' +
+      (t.kicker ? '<div class="tri-kicker">' + esc(t.kicker) + "</div>" : "") +
+      "</article>";
+  }
+
+  function paint(slug) {
+    var t = DATA[slug], sel = state[slug];
+    var card = document.getElementById(slug);
+    if (!card) return;
+
+    card.querySelectorAll(".vtx").forEach(function (g) {
+      var i = +g.dataset.i;
+      g.classList.toggle("sel", sel.indexOf(i) >= 0);
+      g.classList.toggle("dim", sel.length === 2 && sel.indexOf(i) < 0);
+    });
+
+    var edge = card.querySelector(".tri-edge");
+    if (sel.length === 2) {
+      var a = P[sel[0]], b = P[sel[1]];
+      edge.setAttribute("x1", a.x); edge.setAttribute("y1", a.y);
+      edge.setAttribute("x2", b.x); edge.setAttribute("y2", b.y);
+      edge.classList.add("lit");
+    } else {
+      edge.classList.remove("lit");
+    }
+
+    card.classList.toggle("chosen", sel.length === 2);
+    card.querySelector("svg.tri").classList.toggle("active", sel.length === 2);
+
+    var cap = card.querySelector(".tri-cap");
+    if (sel.length === 2) {
+      var drop = [0, 1, 2].filter(function (i) { return sel.indexOf(i) < 0; })[0];
+      var keep = sel.slice().sort(function (x, y) { return x - y; })
+        .map(function (i) { return t.v[i]; });
+      cap.innerHTML =
+        '<span class="cap-keep">' + esc(keep.join(" + ")) + "</span> " +
+        '<span class="cap-drop">lose ' + esc(t.v[drop]) + "</span>" +
+        '<span class="cap-body">' + esc(t.give[drop]) + "</span>";
+    } else {
+      cap.innerHTML = esc(t.premise) +
+        ' <span class="cap-hint">Tap two corners.</span>';
+    }
+  }
+
+  function toggle(slug, i) {
+    var sel = state[slug];
+    var pos = sel.indexOf(i);
+    if (pos >= 0) {
+      sel.splice(pos, 1);
+    } else {
+      sel.push(i);
+      if (sel.length > 2) sel.shift();
+    }
+    paint(slug);
+  }
+
+  // ---- build the page ----
+  var host = document.getElementById("tris");
+  host.innerHTML = SECTIONS.map(function (sec) {
+    return '<section class="tri-section"><h2>' + esc(sec.title) + "</h2>" +
+      '<div class="tri-grid">' +
+      sec.slugs.map(cardHtml).join("") +
+      "</div></section>";
+  }).join("");
+
+  Object.keys(DATA).forEach(function (slug) { state[slug] = []; paint(slug); });
+
+  // gentle scroll-in reveal. A viewport sweep (rather than IntersectionObserver)
+  // so a jump-scroll or the browser restoring scroll position on reload can never
+  // leave a card stuck invisible: anything at or above the fold is always shown.
+  if (!matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    var pending = [].slice.call(host.querySelectorAll(".tri-card"));
+    pending.forEach(function (c) { c.classList.add("reveal"); });
+    var ticking = false;
+    var sweep = function () {
+      ticking = false;
+      var vh = window.innerHeight;
+      pending = pending.filter(function (c) {
+        if (c.getBoundingClientRect().top < vh * 0.92) { c.classList.add("in"); return false; }
+        return true;
+      });
+      if (!pending.length) {
+        window.removeEventListener("scroll", onScroll);
+        window.removeEventListener("resize", onScroll);
+      }
+    };
+    var onScroll = function () {
+      if (!ticking) { ticking = true; requestAnimationFrame(sweep); }
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    sweep();
+  }
+
+  function hit(e) {
+    var g = e.target.closest(".vtx");
+    if (!g) return;
+    e.preventDefault();
+    toggle(g.dataset.card, +g.dataset.i);
+  }
+  host.addEventListener("click", hit);
+  host.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") hit(e);
+  });
+
+  // ---- deep link (#slug) ----
+  function flashHash() {
+    if (!location.hash) return;
+    var el = document.getElementById(location.hash.slice(1));
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("flash");
+    setTimeout(function () { el.classList.remove("flash"); }, 1700);
+  }
+  flashHash();
+  window.addEventListener("hashchange", flashHash);
+})();
+</script>
+</body>
 </html>
