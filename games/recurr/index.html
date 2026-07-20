@@ -159,7 +159,7 @@
   /* sandbox: one big canvas, no target */
   body.sand #targetPic{display:none}
   body.sand #yoursPic .cap{visibility:hidden}
-  body.sand .badge,body.sand #winMsg{display:none}
+  body.sand .badge,body.sand #winMsg,body.sand #nextUp{display:none}
   body.sand .ghostbtn,body.sand .ghostcv{display:none}
 
   /* editors */
@@ -233,11 +233,20 @@
   .par .under{color:var(--ok)}
   .par .over{color:var(--b)}
 
+  .win-row{display:flex;align-items:center;justify-content:center;gap:12px;min-height:28px}
   .win-msg{
     text-align:center;font-size:13px;letter-spacing:.05em;color:var(--ok);
-    height:18px;opacity:0;transition:.3s;font-weight:600;
+    opacity:0;transition:.3s;font-weight:600;
   }
   .win-msg.show{opacity:1}
+  .nextup{
+    display:none;background:transparent;border:1px solid var(--ok);color:var(--ok);
+    border-radius:999px;padding:4px 14px;font-size:12px;letter-spacing:.08em;font-weight:600;
+    cursor:pointer;opacity:1;transition:opacity .5s,transform .5s,box-shadow .15s,background .15s;
+  }
+  .nextup.show{display:inline-block}
+  @starting-style{.nextup.show{opacity:0;transform:translateY(3px)}}
+  .nextup:hover{box-shadow:0 0 14px -4px var(--ok)}
   .sat-msg{text-align:center;font-size:12px;letter-spacing:.05em;color:var(--muted);
     height:16px;opacity:0;transition:.3s}
   .sat-msg.show{opacity:.9}
@@ -338,7 +347,10 @@
       </div>
     </div>
 
-    <div class="win-msg" id="winMsg">solved</div>
+    <div class="win-row">
+      <div class="win-msg" id="winMsg">solved</div>
+      <button class="nextup" id="nextUp" type="button">next mark ›</button>
+    </div>
     <div class="sat-msg" id="satNote">☯ saturated - no cell here can ever show white, so the mark locks solid · peek with ◉</div>
 
     <div class="editwrap">
@@ -987,7 +999,7 @@ function loadLevel(i){
   $('prev').disabled = li===0;
   $('next').disabled = li===LEVELS.length-1;
   $('yoursFrame').classList.remove('win','pop');
-  $('winMsg').classList.remove('show');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
 
   buildEditors(); setTapnote(); buildDots(); applyOnion(); update();
   bloomTarget();
@@ -1259,12 +1271,12 @@ function checkWin(){
       const last = li===LEVELS.length-1;
       $('winMsg').textContent = last ? "every mark solved ✦"
         : (used<=curPar ? `solved · par ${curPar}` : `solved · ${used} cells`);
-      if(!last) advTimer=setTimeout(()=>loadLevel(li+1), 1650);
+      if(!last) advTimer=setTimeout(()=>$('nextUp').classList.add('show'), 1200);
     } else {                                 // random
       $('winMsg').textContent = used<=curPar ? `solved · par ${curPar} ✦` : `solved · ${used} cells`;
     }
   }
-  if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; }
+  if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; $('nextUp').classList.remove('show'); }
   prevWin=win;
 }
 
@@ -1463,7 +1475,8 @@ function enterRandom(target){
     ? `Reverse-engineer this <b>fused</b> mark: grid 1 <b>${levelOp}</b> grid 2. Match it in as few cells as you can, then <b>⧉ link</b> it onward.`
     : `Reverse-engineer this <b>${GEOMNAME[geom]}</b> mark. Match it in as few cells as you can, then <b>⧉ link</b> the exact puzzle to a friend.`;
   $('par').hidden=false;
-  $('yoursFrame').classList.remove('win','pop'); $('winMsg').classList.remove('show');
+  $('yoursFrame').classList.remove('win','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
   buildEditors(); setTapnote(); markDots(); applyOnion(); update();
   bloomTarget();
 }
@@ -1498,6 +1511,7 @@ document.body.classList.toggle('lens', lens);
 /* ---- controls ---------------------------------------------------- */
 $('prev').onclick =()=>loadLevel(li-1);
 $('next').onclick =()=>loadLevel(li+1);
+$('nextUp').onclick=()=>loadLevel(li+1);
 $('reset').onclick=()=>{ pushUndo(); stamps=baseline.map(s=>s.slice()); update(); };
 $('toSand').onclick=enterSandbox;
 $('toRandom').onclick=()=>enterRandom(genRandom());
@@ -1538,6 +1552,7 @@ document.addEventListener('keydown',e=>{
   if(mode!=='play') return;
   if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
   if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+  if(e.key==='Enter' && prevWin && li<LEVELS.length-1) loadLevel(li+1);
 });
 window.addEventListener('hashchange',()=>{ const h=fromHash(); if(h) enterRandom(h); });
 
