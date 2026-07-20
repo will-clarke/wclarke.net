@@ -71,13 +71,20 @@ undo-dive; the in-comb reader pushes one entry, so back folds it away
 first. Esc rises a level (or closes the reader). The ⬡ crumb flies
 home from any depth.
 
-**Useful cells to know.** `'0,0'` = the about room (with `'0,0|0,0'` =
-the shed/homelab and `'0,0|1,1'` = the employers room inside it);
-`'1,0'` games; `'-1,1'` writing; `'0,-1'` lab; `'0,1'` intuition (every
-post from the sibling repo, via `/intuition.json`); top-level features:
-`'-1,0'` paint machine, `'1,-1'` shipshape. A handful of easter-egg
-cells hide in the procedural wilds (end of `SEED_CONTENT`); their
-ancestor paths are hash-verified deep, so don't rename them casually. Tunables (`ZF`, `DIVE_FRAC`,
+**Useful cells to know.** `'0,0'` = the about room (inside it:
+`'0,0|1,1'` the day jobs, `'0,0|1,-1'` interests → films / books /
+listening / games-i-play - the deepest curated branch); `'1,0'` games;
+`'-1,1'` writing; `'0,1'` intuition (every post from the sibling repo,
+via `/intuition.json`); `'1,1'` homelab; `'-1,-1'` the workshop;
+`'-2,0'` the lab; `'-2,1'` the archive; `'-2,2'` threads; `'-1,2'` the
+armchair. Top-level plaques include `'-1,0'` culprit, `'2,-2'`
+classiccult and `'0,-2'` the generated music. The FILMS / BOOKS /
+PLAYED arrays right after `SEED_CONTENT` fill their rooms via
+`fillSection`. Easter-egg cells hide in the procedural wilds (end of
+`SEED_CONTENT`); their ancestor paths are hash-verified deep (every
+ancestor is a section or hashes below the `isDeep` threshold), so don't
+rename or move them casually - adding content onto an egg's ancestor
+path orphans it. Tunables (`ZF`, `DIVE_FRAC`,
 easing rates) sit at the top of the script. Test with `make serve` -
 content fetches need http, not file://.
 

@@ -1,28 +1,90 @@
-The 5 hero tiles (lead the home page with these)
+# IDEAS.md - backlog for wclarke.net
 
-These are the ones that make a stranger stop scrolling. Two are technically impressive, all five are creative, and four are playable in-browser right now.
+Rewritten 2026-07-20. The old version of this file was the "5 hero tiles"
+pitch from before the honeycomb existed; most of it either shipped or got
+overruled, so it's gone. The full cell-by-cell copy spec lives in the notes
+repo (`organised/ideas/wclarke-net-honeycomb-content.md`).
 
-1. Recursive Sokoban 🎮 - boxes contain whole levels; push one, step inside, solve the nested puzzle, exit. Stacks 16 deep. The single best idea you've had and it's already ported to WASM + verified playable. One screenshot sells it.
-2. Functional Sokoban 🎮 - push value-boxes through function-boxes (+1, *2, NEG), then it adds currying and composition. It's a visual-programming toy disguised as a puzzle game. Programmers cannot not click this. Also live-playable.
-3. intuition 🔗 - ~62 draggable single-diagram maths proofs + a Conway-operator polyhedra playground, already live and browser-native. This is the "vaguely competent" flex that's actually a lot more than vaguely. Genuine centerpiece.
-4. chip8 🎮 - a CHIP-8 emulator with 36 real ROMs (PONG, TETRIS, INVADERS). The classic "I understand how computers work" badge. Not yet ported but it's the highest-value remaining WASM job.
-5. Paint Machine 🎮 - a Zachtronics-style factory (emitters → colorers/cloners/portals/fans) with VCR play/step/rewind. Most visually striking of the shelf, and also already playable.
+## Decisions that override older versions of this file
 
-The next tier of home-page links (fun + alive + character)
+- The sokoban variants live **in the games room**, not at the top level.
+  Only recurr, drip and polyhedra are promoted out of their rooms.
+- classiccult is a top-level tile at `(2,-2)` - it earned it by being alive.
+- No war-stories room in the homelab: one throwaway "things die on a rota"
+  cell. Lots dies; no ceremonies.
+- The films canon is the 17 in `FILMS`; no comfort-films room (not a
+  rewatcher), no context-free film recommendation egg.
+- Every ring-≤2 top-level cell now has content, so easter eggs live inside
+  section rooms on isDeep-verified paths. **Adding content onto an egg's
+  ancestor path orphans it** - see README before touching cells.
 
-6. t8r8r ✍️ - "fulfilling your potato-rating needs," live on Fly. Potato ELO. The joke is the product; commit log is "Make potatoes more boring". Peak fun.
-7. classiccult ✍️🔗 - live, zero-backend site scraping classic/cult film screenings across London cinemas. Best war story in the whole trawl: routes around BFI's Cloudflare by piggybacking a stranger's residential-Pi open-data feed. "Nothing to host, nothing to pay for."
-8. choosetwo 🔗 - trilemmas ("pick any two") rendered as SVG triangles from a YAML file. CAP theorem, Zooko, plus a personal Career/Family/Hobbies one. Small, sharp, creative. Self-hostable from committed static pages.
-9. story-gen / shortstories.lol ✍️ - Llama-2 stories fine-tuned on your own laptop. "I generated these pretty rubbish models on my laptop(!)" and "No limit for Reddit scraping megalolz". Great anecdote even if you just show the survivors.
-10. evolution 🎮 - emergent artificial-life sandbox with no fitness function, running on the shed 3090. Hard to fully port, but a recorded clip or hosted instance is a strong "I build weird ambitious things" showpiece.
+## Shipped 2026-07-20 (stop re-proposing these)
 
-The character/meta links (round it out to
+Interests branch (films / books / listening / games-i-play), the workshop
+(firewood, someday shelf, 3d printing), the lab (evolution + clip, t8r8r,
+shortstories plaque, half-finished shelf), the archive (museum front,
+morgue, early stuff), the armchair (consciousness, ai, the ledger), threads
+(cross-room deep links), classiccult promotion, new generated bach
+(`music` repo `20260718-160954-0`), evolution brain-probe clip at
+`/video/evolution.webm`, all 15 easter eggs re-placed and verified.
 
-11. Worm Division 🎮 - a worm divides and history with relative orientation, i.e.emergent automation. The "…and it kept mutating" coda to the sokoban cluster. (Fifth playable variant.)
-12. super-simple-static-site-generator ✍️ - "150 lines of fabulous shell script!" that generates the very site
-you're on. Perfect footer line: this site  the source.
-13. The websites before this one ✍️ - the Rails+jQuery → Jekyll → org-mode → ssssg → Docker → hand-written-HTML
-retrospective, plus the 10-year CV saga thead of anything fancy." Shows range +doesn't take itself seriously.
-14. The early stuff (2014) ✍️ - My-First-BTE. OMG. TOTES AWESOME) and Sir Archibald,the aristocrat bot that scolds people for saying "manors": "Anything less than 800 acres is pitiful." The
-trajectory-from-here bookend.
-15. /uses + homelab 🔗 - k3s "in the shed"ama, Frigate YOLO, Immich, Jellyfin…), aVoron 2.4 CoreXY printer, Emacs→nvim→Helixs is the tile that screams this persongenuinely tinkers.
+## Next builds - plaques are already live, pages are missing
+
+1. **CV exhibit** - pure ruby → org-mode → pandoc → json → google docs,
+   with the deleted PDFs from the cv repo's history. Redact the phone
+   number in the old `cv.rb` first. Plaque: archive `-2,1|0,1`.
+2. **Commit-message hall of fame** - the trawl ("add node_modules 😱",
+   "commit images - no idea if this is a good idea ¯\_(ツ)_/¯", "tweak
+   skills - am I bad at ANYTHING??"). Plaque: archive `-2,1|-1,1`.
+3. **Deleted scenes wing** - resurrect from git history: the 16 deleted
+   short stories (`73e8ff5^:src/stories/`), the `/funky/` pages ("Yoloolo"),
+   the `¯\_(ツ)_/¯` 404 (`6836c89^`). Plaque: archive `-2,1|0,-1`.
+4. **shortstories static export** - pull the survivors out of `stories.db`
+   into static HTML; then add an href to the lab plaque `-2,0|-1,0`.
+
+## Ports
+
+- **chip8 → WASM** - ncurses→canvas shim; 36 real ROMs. The games-room
+  plaque is drafted in a comment next to `PINNED_GAMES`. Highest-value port.
+- **hex-game → WASM** - same raylib recipe as the sokobans; low risk.
+- **crossword / wordsearch → browser** - JS rewrite of the core (grid →
+  HTML table, typeable cells, clue lists, check/reveal); `dict.rb` → JSON.
+- **asteroids** - debug the Elm 0.18 build (`Set.fromList` runtime crash).
+  Its morgue epitaph is live; resurrection would be a good joke.
+
+## Polish / known gaps
+
+- worm-division levels 30-36 need a feel pass (ghost timing unforgiving).
+- WASM game progress doesn't survive reloads (MEMFS) - a localStorage
+  bridge would fix all five at once.
+- gifs/screenshots per game card (currently text-only).
+- intuition custom domain: `intuition.wclarke.net` was never wired up in
+  Cloudflare; it still serves from `intuition-2i1.pages.dev`.
+- Museum "deleted scenes" overlaps build #3 above - same job.
+
+## New ideas (2026-07-20)
+
+- **The shed's setlist** - `~/code/music/out/` already has scarlatti,
+  handel, chopin and mozart runs alongside the bach. Swap the single music
+  cell for a small room: one composer per cell, tap to play. Or keep one
+  top-level cell and rotate the track each deploy - quieter, probably
+  better.
+- **More clips like evolution's** - the playwright recordVideo recipe is
+  proven (fresh context, scripted interaction, ~25s, keep the vp8). Best
+  candidates: a worm-division time-travel level solving itself; paint
+  machine's biggest factory running with play/rewind. One per plaque, no
+  autoplay, same `/video/` dir.
+- **Photos for the workshop** - the actual spaghetti photo, a printed
+  polyhedron, the log pile. The in-comb reader can render an image page,
+  so each photo can be a same-site href with `inline: true`.
+- **Egg verifier in tools/** - a small node script replicating
+  hash32/isDeep that checks every easter-egg path against SEED_CONTENT
+  (each ancestor a section or hash-deep, no packed-room collisions). The
+  logic exists from the 2026-07-20 re-placement; committing it stops the
+  next content edit from silently orphaning eggs.
+- **t8r8r write-up** - the potato ELO story plus the deleted potato photos
+  from its history. Goes in the lab or as a post; the plaque already jokes
+  that the product is finished.
+- Rejected on ethos grounds, recorded so they stay rejected: a search box
+  (the site has a shape instead), a build step for freshness badges, and
+  any kind of easter-egg map.
