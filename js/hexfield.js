@@ -1,5 +1,5 @@
-/* hexfield.js - a pannable honeycomb of hexagons, shared by the homepage
-   (js/hex.js) and the writing archive (js/writing.js).
+/* hexfield.js - a pannable honeycomb of hexagons, driving the games cabinet
+   (games/index.html, with js/games.js).
 
    A field of big hexagons on an axial grid. A set of "special" hexes carry
    content (a live toy, a door, a post); the rest are quiet texture that fades

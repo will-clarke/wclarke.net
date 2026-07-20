@@ -18,7 +18,6 @@ about.html
 404.html
 css/style.css     one shared, restyleable stylesheet
 writing.html      hub linking both posts and stories
-writing-hex.html  the old hex-grid writing index (kept; linked from the lab)
 posts/            the blog
 posts.html        blog index (still live; not in nav - reached via writing.html)
 stories/          short fiction (indexed from writing.html)
