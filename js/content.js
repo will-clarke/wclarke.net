@@ -16,11 +16,11 @@
 const SEED_CONTENT = {
   // ---- the centre cell is me: a whole about-room, not a link ----
   '0,0':  { section: true, glyph: '🐝', title: 'about me 💅' },
-  '0,0|1,0':  { note: 'i live in dorset, near the coast. i’ve been a software engineer for a while now; three kids.', glyph: '🌳' },
+  '0,0|1,0':  { note: 'i live in dorset, near the coast. i’ve been a software engineer for a while now.', glyph: '🌳' },
   '0,0|0,1':  { note: 'this whole page is one infinite honeycomb. dive into any dark cell, or zoom out forever - there is no top.', glyph: '⬡' },
-  '0,0|-1,1': { note: 'the site is hand-written html - no build step, no framework, no dependencies. every previous version of it lives in the museum.',
-                glyph: '🏛', href: '/museum/', act: 'visit the museum' },
-  '0,0|-1,0': { note: 'seven chickens patrol the garden. i’m assured they are mine.', glyph: '🐔' },
+  '0,0|-1,1': { glyph: '🏛', title: 'the museum', act: 'visit', href: '/museum/',
+                blurb: 'every previous version of this site, embalmed and served raw.' },
+  '0,0|-1,0': { note: 'we have seven chickens and three kids. the chickens are marginally better behaved.', glyph: '🐔' },
   '0,0|0,-1': { glyph: '✉', title: 'say hello', act: 'email', href: 'mailto:wmmclarke@gmail.com',
                 blurb: 'wmmclarke@gmail.com' },
   '0,0|2,-1': { glyph: '💼', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
@@ -29,13 +29,12 @@ const SEED_CONTENT = {
                 blurb: 'the writing, as a feed.' },
   '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'view', href: '/stats.html',
                  blurb: 'numbers about this site.' },
-  '0,0|2,-2': { glyph: '⚙', title: 'sourcehut', act: 'visit', href: 'https://git.sr.ht/~will-clarke',
-                blurb: 'a mirror; some older code lives here too.' },
-  '0,0|1,-2': { note: 'the kids are not in these hexagons. some things you don’t put on the internet.', glyph: '🌱' },
+  '0,0|2,-2': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
+                blurb: 'most of the code. quality varies.' },
   // ---- code: github and the projects that live there ----
   '0,0|2,0': { section: true, glyph: '🐙', title: 'code' },
-  '0,0|2,0|1,0': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
-                   blurb: 'most of the code. quality varies.' },
+  '0,0|2,0|1,0': { glyph: '⚙', title: 'sourcehut', act: 'visit', href: 'https://git.sr.ht/~will-clarke',
+                   blurb: 'a mirror; some older code lives here too.' },
   '0,0|2,0|0,1': { glyph: '🦠', title: 'evolution', accent: '#9fdc6a', act: 'watch', href: '/video/evolution.webm',
                    blurb: 'an artificial-life sandbox with no fitness function: things survive because they survive. runs on the shed gpu. the clip probes one creature’s brain mid-swarm.' },
   '0,0|2,0|-1,1': { glyph: '🥔', title: 't8r8r', act: 'visit', href: 'https://t8r8r.fly.dev',
@@ -53,13 +52,13 @@ const SEED_CONTENT = {
   '0,0|2,0|1,1': { glyph: '🕹', title: 'hah', act: 'the code', href: 'https://github.com/will-clarke/hah',
                    blurb: 'a rust arcade game. get past 20,000 points. nobody has, the author included.' },
   // ---- a decade of employers, one hex each ----
-  '0,0|1,1': { section: true, glyph: '💼', title: 'the day jobs' },
+  '0,0|1,1': { section: true, glyph: '💼', title: 'cool places i’ve worked' },
   '0,0|1,1|1,0':  { note: 'now: blacklane. dispatching - matching rides to chauffeurs, in every timezone at once.', glyph: '🚘' },
-  '0,0|1,1|0,1':  { note: 'infosum (2022): privacy maths in go. i mostly remember arguing about api boundaries, slowly, and winning, slowly.', glyph: '🔒' },
+  '0,0|1,1|0,1':  { note: 'infosum (2022): privacy maths in golang. i mostly remember arguing about api boundaries, slowly.', glyph: '🔒' },
   '0,0|1,1|-1,1': { note: 'river island (2020-2022): engineer, then tech lead. we plugged a new warehouse into the business.', glyph: '👕' },
   '0,0|1,1|-1,0': { note: 'ratio (2019-2020): automated a daily reporting grind until it stopped existing. nobody has missed it.', glyph: '📊' },
-  '0,0|1,1|0,-1': { note: 'deliveroo (2016-2019): built the tracker people watched their dinner on. also said words at gophercon, once.',
-                    glyph: '🛵', href: 'https://www.youtube.com/watch?v=OFM4G0wr8bc', act: 'watch the words' },
+  '0,0|1,1|0,-1': { note: 'deliveroo (2016-2019): built the tracker people watched their dinner on. also spoke at gophercon, once.',
+                    glyph: '🛵', href: 'https://www.youtube.com/watch?v=OFM4G0wr8bc', act: 'watch the talk' },
   '0,0|1,1|1,-1': { note: 'snaptrip (2014-2016): scrappy holiday-cottage startup. i got stuck in everywhere.', glyph: '🏖' },
   '0,0|1,1|2,-1': { note: 'forward3d (2012-2014): hired as a data analyst; taught myself ruby and quietly automated most of my own job.', glyph: '🤖' },
   '0,0|1,1|-2,1': { note: 'before any of that: a masters in anthropology & archaeology at durham. the trowel-to-keyboard pipeline.', glyph: '🏺' },
@@ -104,8 +103,6 @@ const SEED_CONTENT = {
             blurb: 'a mark made of itself: every cell is the whole mark, smaller. match the fractal in par.' },
   '1,-1': { glyph: '💎', title: 'polyhedra playground', act: 'play', href: '/games/polyhedra/', accent: '#8affd4',
             blurb: 'dual, truncate, gyro: conway operators on spinning solids. more soothing than it has any right to be.' },
-  '2,-1': { glyph: '💧', title: 'painting game', act: 'play', href: '/games/drip/', accent: '#e455ff',
-            blurb: 'slide the machines, drop the paint, match the vial. gravity does most of the work.' },
   '0,2':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
             blurb: 'trilemmas as svg triangles - pick any two: cap theorem, zooko, career / family / hobbies, and more.' },
   '0,-2': { glyph: '🎼', title: 'ai music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
@@ -264,7 +261,7 @@ const PLAYED = [
 
 // games will actually rates; the rest of games.json lands in the
 // 'unfinished concepts' sub-room at the games room's centre cell
-const DECENT_SLUGS = ['mirror', 'tile', 'shipshape', 'loom'];
+const DECENT_SLUGS = ['mirror', 'tile', 'shipshape', 'loom', 'drip'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
   drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷' };
@@ -281,7 +278,7 @@ const PINNED_GAMES = [
     blurb: 'sokoban, except the slime teleports.' },
 ];
 // featured at the top level of the comb, so not repeated in the games room
-const FEATURED_SLUGS = ['recurr', 'drip'];
+const FEATURED_SLUGS = ['recurr'];
 // first matching pattern names a post's glyph; ✍ is the fallback
 const POST_GLYPHS = [
   [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],
