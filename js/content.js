@@ -97,6 +97,7 @@ const SEED_CONTENT = {
   '-1,1': { section: true, glyph: '✍', title: 'tech blog' },
   '0,1':  { section: true, glyph: '📐', title: 'draggable maths' },
   '-1,0': { glyph: '🍽', title: 'culprit · food tracker', accent: '#7fe0a0',
+            href: '/culprit.html', inline: true, act: 'peek inside',
             blurb: 'a food & symptom tracker: photograph meals, log symptoms, and let the correlations do the rest. image recognition runs locally on the home server - nothing leaves the house.' },
   // ---- best-of, promoted out of their rooms to the top level ----
   '2,0':  { glyph: '🌀', title: 'recurr · fractal game', act: 'play', href: '/games/recurr/', accent: '#ff7ac2',

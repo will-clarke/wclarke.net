@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Culprit - Will Clarke</title>
+  <meta name="description" content="A food & symptom tracker for a suspicious gut. Runs entirely at home.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🍽</text></svg>">
+  <script>
+  (function () {
+    var t = localStorage.getItem("theme");
+    if (t) document.documentElement.dataset.theme = t;
+    window.toggleTheme = function () {
+      var el = document.documentElement;
+      var dark = el.dataset.theme
+        ? el.dataset.theme === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      el.dataset.theme = dark ? "light" : "dark";
+      localStorage.setItem("theme", el.dataset.theme);
+    };
+  })();
+  </script>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .shots {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+      gap: 1.2rem;
+      margin: 2rem 0;
+    }
+    .shots figure {
+      margin: 0;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 0.6rem;
+    }
+    .shots img {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 3px;
+    }
+    .shots figcaption {
+      font-size: 0.85rem;
+      color: var(--muted);
+      padding: 0.6rem 0.2rem 0.1rem;
+    }
+    .shots figcaption b {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--fg);
+      margin-right: 0.4em;
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site">
+    <span class="brand"><a href="/">Will Clarke</a></span>
+    <nav>
+      <a href="/">home</a>
+      <a href="/projects.html">projects</a>
+      <a href="/writing.html">writing</a>
+      <a href="/about.html">about</a>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="toggle dark mode" title="toggle dark mode">◐</button>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Culprit</h1>
+    <p class="lede">A food &amp; symptom tracker for a suspicious gut:
+    photograph meals, log how you feel, and let the correlations do the
+    detective work. Image recognition runs locally on the home server -
+    nothing leaves the house. Which also means there is no public demo,
+    so these screenshots will have to incriminate it instead.</p>
+
+    <div class="shots">
+      <figure>
+        <img src="/images/culprit/capture.jpeg" alt="Culprit's capture tab: a camera viewfinder with food/field/note tags and a five-emoji mood picker" width="390" height="844" loading="lazy">
+        <figcaption><b>capture</b>Point the camera at a meal, tag it, stamp a
+        mood. The viewfinder is black here because the server has no
+        camera - or, arguably, because it was taken by a headless browser.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/feel.jpeg" alt="Culprit's feel tab: quick symptom and feeling check-ins" width="390" height="844" loading="lazy">
+        <figcaption><b>feel</b>Quick check-ins through the day: symptoms,
+        energy, general state of the machinery.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/review.jpeg" alt="Culprit's review tab: a chronological log of captures with daily weather and air-quality entries" width="390" height="844" loading="lazy">
+        <figcaption><b>review</b>The log. Weather and air quality record
+        themselves daily, so the correlations have someone else to
+        blame too.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/trends.jpeg" alt="Culprit's trends tab: thirty-day sparklines for mood, energy and stress" width="390" height="844" loading="lazy">
+        <figcaption><b>trends</b>Thirty days of mood, energy and stress as
+        sparklines. Direction of travel is the whole point.</figcaption>
+      </figure>
+    </div>
+
+    <p class="footnote">The image recognition is a local model on the shed's
+    GPU. The app only resolves indoors, which is the correct amount of cloud
+    for a database of what I had for lunch.</p>
+  </main>
+
+  <footer class="site">
+    <a href="/">home</a> ·
+    <a href="/museum/">museum</a> ·
+    <a href="https://git.sr.ht/~will-clarke">sr.ht</a> ·
+    <a href="https://github.com/will-clarke">github</a>
+  </footer>
+
+</div>
+</body>
+</html>
