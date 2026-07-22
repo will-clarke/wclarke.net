@@ -37,8 +37,11 @@ The homepage is a single self-contained file: an infinite recursive
 honeycomb (zoom in forever, zoom out forever) with the site's content
 living at fixed cell addresses. No dependencies, no build.
 
-**How content works.** Everything is in the `CONTENT` registry near the
-top of the `<script>`. Keys are cell paths from the origin comb:
+**How content works.** All editorial content (the `SEED_CONTENT`
+registry plus the FILMS / BOOKS / PLAYED / etc arrays) lives in
+`js/content.js`, a plain script loaded just before the comb script -
+edit content there, machinery in `index.html`. Keys are cell paths
+from the origin comb:
 `'1,0'` is a cell of the home comb, `'1,0|0,1'` is a cell inside that
 cell's comb, and so on. Three item shapes:
 
@@ -65,22 +68,23 @@ glyph picked from its title by `POST_GLYPHS`) and `/intuition.json`
 overflow into a recursive "more" room at the comb's centre - that is
 how 64 posts paginate through the fractal.
 
-**Navigation contract.** Every room is a hash URL (`/#0,0/0,0` is the
-homelab). Dives push history entries, so the browser back button is
+**Navigation contract.** Every room is a hash URL (`/#-1,-1/-1,1` is
+the shed). Dives push history entries, so the browser back button is
 undo-dive; the in-comb reader pushes one entry, so back folds it away
 first. Esc rises a level (or closes the reader). The ⬡ crumb flies
 home from any depth.
 
 **Useful cells to know.** `'0,0'` = the about room (inside it:
-`'0,0|1,1'` the day jobs, `'0,0|1,-1'` interests → films / books /
-listening / games-i-play - the deepest curated branch); `'1,0'` games;
-`'-1,1'` writing; `'0,1'` intuition (every post from the sibling repo,
-via `/intuition.json`); `'1,1'` homelab; `'-1,-1'` the workshop;
-`'-2,0'` the lab; `'-2,1'` the archive; `'-2,2'` threads; `'-1,2'` the
-armchair. Top-level plaques include `'-1,0'` culprit, `'2,-2'`
-classiccult and `'0,-2'` the generated music. The FILMS / BOOKS /
-PLAYED arrays right after `SEED_CONTENT` fill their rooms via
-`fillSection`. Easter-egg cells hide in the procedural wilds (end of
+`'0,0|1,1'` the day jobs, `'0,0|2,0'` code (github + real projects),
+`'0,0|1,-1'` interests → films / books / listening / games-i-play -
+the deepest curated branch); `'1,0'` games; `'-1,1'` writing; `'0,1'`
+intuition (every post from the sibling repo, via `/intuition.json`);
+`'-1,-1'` the workshop (inside it: `'-1,-1|-1,1'` the shed, née
+homelab); `'-1,2'` philosophical musings (the retired armchair sits
+commented out beside it in `js/content.js`). Top-level plaques include
+`'-1,0'` culprit, `'2,-2'` classiccult and `'0,-2'` the generated
+music. The FILMS / BOOKS / PLAYED arrays after `SEED_CONTENT` fill
+their rooms via `fillSection` (called from `index.html`). Easter-egg cells hide in the procedural wilds (end of
 `SEED_CONTENT`); their ancestor paths are hash-verified deep (every
 ancestor is a section or hashes below the `isDeep` threshold), so don't
 rename or move them casually - adding content onto an egg's ancestor
