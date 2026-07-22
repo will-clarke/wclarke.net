@@ -332,12 +332,20 @@ const contentReady = Promise.allSettled([
   fetch('/games/games.json')
     .then(r => r.json())
     .then(d => {
-      const items = d.games.filter(g => !FEATURED_SLUGS.includes(g.slug)).map(g => ({
+      const toItem = g => ({
         glyph: GAME_GLYPHS[g.slug] || '🎮', title: g.name.toLowerCase(),
         act: 'play', href: '/games/' + g.slug + '/', accent: g.accent,
         blurb: g.tagline,
-      }));
-      fillSection('1,0', items.concat(PINNED_GAMES), 'more games', '🕹');
+      });
+      const rest = d.games.filter(g => !FEATURED_SLUGS.includes(g.slug));
+      const good = rest.filter(g => DECENT_SLUGS.includes(g.slug))
+        .sort((a, b) => DECENT_SLUGS.indexOf(a.slug) - DECENT_SLUGS.indexOf(b.slug));
+      fillSection('1,0', good.map(toItem), 'more games', '🕹');
+      // the rest live one level deeper, at the room's centre cell
+      addContent('1,0|0,0', { section: true, glyph: '💡', title: 'unfinished concepts' });
+      fillSection('1,0|0,0',
+        rest.filter(g => !DECENT_SLUGS.includes(g.slug)).map(toItem).concat(PINNED_GAMES),
+        'more concepts', '💡');
     })
     .catch(() => fillSection('1,0', PINNED_GAMES, 'more games', '🕹')),
   fetch('/index.xml')

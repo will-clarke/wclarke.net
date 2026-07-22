@@ -30,7 +30,7 @@ Keys are cell paths from the origin comb (`q,r` axial coords joined by
 `/games/games.json`), `-1,1` writing (auto-filled from `/index.xml`),
 `0,1` intuition (auto-filled from `/intuition.json`; regenerate with
 `make sync-intuition`), `-1,-1` the workshop (contains `-1,-1|-1,1`
-the shed), `-1,2` philosophical musings. Easter-egg cells hide at the
+the shed). Philosophical musings live at `0,0|-1,2` in the about room. Easter-egg cells hide at the
 end of `SEED_CONTENT` - their paths are hash-verified deep (every
 ancestor is a section or hashes below the `isDeep` threshold), so
 don't move them casually.

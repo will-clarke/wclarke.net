@@ -76,12 +76,14 @@ home from any depth.
 
 **Useful cells to know.** `'0,0'` = the about room (inside it:
 `'0,0|1,1'` the day jobs, `'0,0|2,0'` code (github + real projects),
-`'0,0|1,-1'` interests → films / books / listening / games-i-play -
-the deepest curated branch); `'1,0'` games; `'-1,1'` writing; `'0,1'`
-intuition (every post from the sibling repo, via `/intuition.json`);
-`'-1,-1'` the workshop (inside it: `'-1,-1|-1,1'` the shed, née
-homelab); `'-1,2'` philosophical musings (the retired armchair sits
-commented out beside it in `js/content.js`). Top-level plaques include
+`'0,0|-1,2'` philosophical musings (the retired armchair sits
+commented out beside it in `js/content.js`), `'0,0|1,-1'` interests →
+films / books / listening / games-i-play - the deepest curated
+branch); `'1,0'` games (only `DECENT_SLUGS` games sit in the room;
+the rest fill an "unfinished concepts" sub-room at its centre cell);
+`'-1,1'` the tech blog; `'0,1'` intuition (every post from the
+sibling repo, via `/intuition.json`); `'-1,-1'` the workshop (inside
+it: `'-1,-1|-1,1'` the shed, née homelab). Top-level plaques include
 `'-1,0'` culprit, `'2,-2'` classiccult and `'0,-2'` the generated
 music. The FILMS / BOOKS / PLAYED arrays after `SEED_CONTENT` fill
 their rooms via `fillSection` (called from `index.html`). Easter-egg cells hide in the procedural wilds (end of
