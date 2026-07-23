@@ -15,7 +15,7 @@
 
 const SEED_CONTENT = {
   // ---- the centre cell is me: a whole about-room, not a link ----
-  '0,0':  { section: true, glyph: '🐝', title: 'about me 🙃' },
+  '0,0':  { section: true, glyph: '🙃', title: 'about me 🙃' },
   '0,0|1,0':  { note: 'i live in dorset, near the coast. i’ve been a software engineer for a while now.', glyph: '🌳' },
   '0,0|0,1':  { note: 'i bet you can’t reach the last hexagon here.', glyph: '⬡' },
   '0,0|-1,1': { glyph: '🏛', title: 'past websites - not as cool as this one', act: 'visit', href: '/museum/',
