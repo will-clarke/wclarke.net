@@ -323,9 +323,9 @@ function fillSection(baseKey, items, moreTitle, moreGlyph){
 for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
 
 // ---- the curated shelves; each fills its room via fillSection ----
-fillSection('0,0|1,-1|1,0|-1,0', FILMS, 'more films', '🎞');
-fillSection('0,0|1,-1|0,1', BOOKS, 'more books', '📚');
-fillSection('0,0|1,-1|-1,0', PLAYED, 'more games i play', '🎮');
+fillSection('0,-1|2,-1|1,-1|-1,1|1,0|-1,0', FILMS, 'more films', '🎞');
+fillSection('0,-1|2,-1|1,-1|-1,1|0,1', BOOKS, 'more books', '📚');
+fillSection('0,-1|2,-1|1,-1|-1,1|-1,0', PLAYED, 'more games i play', '🎮');
 
 const postGlyph = t => (POST_GLYPHS.find(p => p[0].test(t)) || [0, '✍'])[1];
 const contentReady = Promise.allSettled([
@@ -388,8 +388,8 @@ const contentReady = Promise.allSettled([
       });
       const finished = d.stories.filter(s => s.status === 'finished').map(toItem);
       const unfinished = d.stories.filter(s => s.status === 'unfinished').map(toItem);
-      fillSection('0,0|1,-1|1,-1|1,0', finished, 'more stories', '📖');
-      fillSection('0,0|1,-1|1,-1|-1,0', unfinished, 'more', '✍');
+      fillSection('0,-1|2,-1|1,-1|-1,1|1,-1|1,0', finished, 'more stories', '📖');
+      fillSection('0,-1|2,-1|1,-1|-1,1|1,-1|-1,0', unfinished, 'more', '✍');
     })
     .catch(() => {}),
 ]);
