@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Will Clarke</title>
-<meta name="description" content="Will Clarke's infinite honeycomb: odd puzzle games, write-ups and experiments, all nested inside one recursive hex grid.">
+<meta name="description" content="aaaaargh there are too many ⬡ ⬡ ⬡ ... everything here is just too HEXAGONAL.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-1.1 -1.1 2.2 2.2'%3E%3Cpath d='M0-1 .866-.5v1L0 1-.866.5v-1z' fill='none' stroke='%23e8b558' stroke-width='.14'/%3E%3C/svg%3E">
 <style>
   html, body { margin:0; height:100%; overflow:hidden; background:#0b0806; }
@@ -1182,6 +1182,15 @@ let pinchPrev = null;
 
 canvas.addEventListener('pointerdown', e => {
   canvas.setPointerCapture(e.pointerId);
+  // grab the disco ball before the comb gets the pointer
+  if (party.on && party.drop > 0.5 && party.R &&
+      Math.hypot(e.clientX - party.bx, e.clientY - party.by) < party.R * 1.3){
+    party.grab = e.pointerId;
+    party.grabX = e.clientX; party.grabY = e.clientY;
+    party.grabVX = 0; party.grabVY = 0; party.grabT = performance.now();
+    anim = null; queue = null; inert = null;
+    return;
+  }
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   anim = null; queue = null; inert = null; histLock = false;
   if (pointers.size === 1){
@@ -1197,6 +1206,14 @@ canvas.addEventListener('pointerdown', e => {
 
 canvas.addEventListener('pointermove', e => {
   mx = e.clientX; my = e.clientY; mouseOn = true;
+  if (party.grab === e.pointerId){
+    const now = performance.now(), dtm = Math.max(8, now - party.grabT) / 1000;
+    const clamp = v => Math.max(-4000, Math.min(4000, v));
+    party.grabVX = clamp(0.6 * party.grabVX + 0.4 * (e.clientX - party.grabX) / dtm);
+    party.grabVY = clamp(0.6 * party.grabVY + 0.4 * (e.clientY - party.grabY) / dtm);
+    party.grabX = e.clientX; party.grabY = e.clientY; party.grabT = now;
+    return;
+  }
   const pt = pointers.get(e.pointerId);
   if (!pt) return;
   const dx = e.clientX - pt.x, dy = e.clientY - pt.y;
@@ -1237,6 +1254,7 @@ canvas.addEventListener('pointermove', e => {
 });
 
 canvas.addEventListener('pointerup', e => {
+  if (party.grab === e.pointerId){ party.grab = null; return; }   // let it swing out
   pointers.delete(e.pointerId);
   pinchPrev = null;
   if (dragging){
@@ -1248,6 +1266,7 @@ canvas.addEventListener('pointerup', e => {
   downAt = null; pressKey = null;
 });
 canvas.addEventListener('pointercancel', e => {
+  if (party.grab === e.pointerId) party.grab = null;
   pointers.delete(e.pointerId);
   pinchPrev = null; dragging = false; downAt = null; pressKey = null;
 });
@@ -1398,7 +1417,13 @@ addEventListener('keydown', e => {
 // The 🕺 in the corner is the only switch. Everything is drawn on the
 // same canvas, over the comb; the music is synthesized on the spot.
 const partyBtn = document.getElementById('party-btn');
-const party = { on: false, drop: 0, from: 0, to: 0, t0: 0, dur: 1, spin: 0, confetti: [] };
+const party = { on: false, drop: 0, from: 0, to: 0, t0: 0, dur: 1, spin: 0, confetti: [],
+  // the ball hangs off a real chain: a rope of point-masses solved with
+  // position-based dynamics. grab it to swing, throw or lift it; the links
+  // fold and coil when you raise it, snap taut when it hangs.
+  rope: null, NSEG: 16, acc: 0, grab: null, grabX: 0, grabY: 0,
+  grabVX: 0, grabVY: 0, grabT: 0,
+  bx: 0, by: 0, R: 0, pivotX: 0, pivotY: 0 };
 const PARTY_HUES = [348, 42, 130, 190, 265, 305];
 const DROP_MS = 1800, RISE_MS = 700;
 const IMPACT = 1 / 2.75;            // easeOutBounce's first touchdown
@@ -1418,6 +1443,7 @@ partyBtn.addEventListener('click', () => {
   party.to = party.on ? 1 : 0;
   party.t0 = performance.now();
   party.dur = party.on ? DROP_MS * (1 - party.from * 0.6) : RISE_MS;
+  if (party.on && party.from < 0.5) party.rope = null;   // re-coil at the pivot so it drops in fresh
   if (party.on) startDisco(party.from < 0.5 ? IMPACT * party.dur / 1000 : 0.05);
   else stopDisco();
 });
@@ -1551,10 +1577,66 @@ function drawParty(dt){
   }
 
   const R = Math.max(34, minVp() * 0.075);
-  const swing = Math.sin(nowMs * 0.0011) * 0.05 * drop * MOTION;
-  const len = R * 1.8 + (0.24 * vh + R * 1.8) * drop;   // pivot → ball centre
-  const bx = vw / 2 + Math.sin(swing) * len;
-  const by = -R * 1.8 + Math.cos(swing) * len;
+  // full length while the party is on (gravity drops the ball in); on the way
+  // out the chain reels back up into the void as `drop` falls to 0.
+  const len = (0.24 * vh + R * 3.6) * Math.max(0.02, party.on ? 1 : drop);
+  const pivotX = vw / 2, pivotY = -R * 1.8;
+  const N = party.NSEG + 1, segLen = len / party.NSEG;
+  if (!party.rope || party.rope.length !== N)
+    party.rope = Array.from({ length: N }, (_, i) => {   // coiled just under the pivot; gravity pays it out
+      const x = pivotX + i * 2, y = pivotY + i * 3;
+      return { x, y, px: x, py: y };
+    });
+  const rope = party.rope;
+
+  // ---- a real chain: verlet point-masses with max-length links ----
+  // gravity drops the ball in and pays the chain out link by link; each link
+  // only pulls when stretched, so the chain folds and coils when you lift the
+  // ball. solved on a fixed timestep so it behaves the same at any frame rate.
+  // KS < 1 makes each link a soft spring: it under-corrects, so the chain
+  // stretches when you yank it and boings back with the stored slack. low
+  // damping lets that recoil wobble instead of dying on the first swing.
+  const G = 2600 * MOTION, WIND = 30 * MOTION, h = 1 / 120, KS = 0.26, DAMP = 0.995;
+  party.acc = Math.min(0.05, party.acc + dt);
+  while (party.acc >= h){
+    party.acc -= h;
+    for (let i = 1; i < N; i++){
+      const n = rope[i];
+      if (party.grab != null && i === N - 1) continue;   // grabbed ball is driven by the pointer
+      const vx = (n.x - n.px) * DAMP, vy = (n.y - n.py) * DAMP;
+      n.px = n.x; n.py = n.y;
+      n.x += vx + (i === N - 1 ? Math.sin(nowMs * 0.0008) * WIND * h * h : 0);
+      n.y += vy + G * h * h;
+    }
+    rope[0].x = pivotX; rope[0].y = pivotY; rope[0].px = pivotX; rope[0].py = pivotY;
+    if (party.grab != null){                             // ball tracks the pointer; px carries the throw velocity
+      const b = rope[N - 1];                             // yank it well past the chain's length - the links stretch
+      let gx = party.grabX, gy = party.grabY;
+      const dx = gx - pivotX, dy = gy - pivotY, dd = Math.hypot(dx, dy) || 1;
+      if (dd > len * 3.5){ gx = pivotX + dx / dd * len * 3.5; gy = pivotY + dy / dd * len * 3.5; }
+      b.x = gx; b.y = gy;
+      b.px = gx - party.grabVX * h; b.py = gy - party.grabVY * h;
+    }
+    for (let k = 0; k < 6; k++){                          // relax: springy pull on stretched links, slack can still coil
+      for (let i = 0; i < N - 1; i++){
+        const a = rope[i], b = rope[i + 1];
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+        if (d <= segLen || d < 1e-4) continue;
+        const diff = (d - segLen) / d * KS;
+        let wa = i === 0 ? 0 : 1, wb = (party.grab != null && i + 1 === N - 1) ? 0 : 1;
+        const s = wa + wb || 1; wa /= s; wb /= s;
+        a.x += dx * diff * wa; a.y += dy * diff * wa;
+        b.x -= dx * diff * wb; b.y -= dy * diff * wb;
+      }
+      rope[0].x = pivotX; rope[0].y = pivotY;
+    }
+  }
+
+  const ball = rope[N - 1], nub = rope[N - 2];
+  const bx = ball.x, by = ball.y;
+  const swing = Math.atan2(bx - nub.x, by - nub.y);      // local chain angle where it meets the ball
+  party.bx = bx; party.by = by; party.R = R;
+  party.pivotX = pivotX; party.pivotY = pivotY;
 
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
@@ -1624,19 +1706,16 @@ function drawParty(dt){
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.globalAlpha = 1;
 
-  // the chain
-  const topY = by - Math.cos(swing) * (R * 0.98);
-  const topX = bx - Math.sin(swing) * (R * 0.98);
-  const links = Math.max(2, Math.round((topY + R) / 13));
+  // the chain: one drawn link per rope segment, so it bends and coils
+  const attX = bx - Math.sin(swing) * (R * 0.98);
+  const attY = by - Math.cos(swing) * (R * 0.98);   // where the chain meets the ball
   ctx.strokeStyle = '#9a9aa8';
   ctx.lineCap = 'round';
-  for (let i = 0; i < links; i++){
-    const t0 = i / links, t1 = (i + 0.72) / links;
-    const x0 = vw / 2 + (topX - vw / 2) * t0, y0 = -4 + (topY + 4) * t0;
-    const x1 = vw / 2 + (topX - vw / 2) * t1, y1 = -4 + (topY + 4) * t1;
+  for (let i = 0; i < N - 1; i++){
+    const a = rope[i], b = i + 1 === N - 1 ? { x: attX, y: attY } : rope[i + 1];
     ctx.lineWidth = i % 2 ? 2 : 3.4;
     ctx.globalAlpha = i % 2 ? 0.55 : 0.9;
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
   }
   ctx.globalAlpha = 1;
 
@@ -1739,7 +1818,10 @@ function frame(t){
   } else if (dragging || pointers.size){
     hovered = null; hoverKey = null;
   }
-  canvas.style.cursor = dragging ? 'grabbing'
+  canvas.style.cursor = party.grab ? 'grabbing'
+                      : party.on && party.R && !COARSE &&
+                        Math.hypot(mx - party.bx, my - party.by) < party.R * 1.3 ? 'grab'
+                      : dragging ? 'grabbing'
                       : hovered && (hovered.tr.deep || hovered.tr.kind >= 3)
                         ? 'pointer' : 'default';
   if (hoverKey && !hoverAmts.has(hoverKey)) hoverAmts.set(hoverKey, 0);

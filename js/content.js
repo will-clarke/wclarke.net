@@ -15,15 +15,15 @@
 
 const SEED_CONTENT = {
   // ---- the centre cell is me: a whole about-room, not a link ----
-  '0,0':  { section: true, glyph: '🙃', title: 'about me 🙃' },
-  '0,0|1,0':  { note: 'i live in dorset, near the coast. i’ve been a software engineer for a while now.', glyph: '🌳' },
-  '0,0|0,1':  { note: 'i bet you can’t reach the last hexagon here.', glyph: '⬡' },
-  '0,0|-1,1': { glyph: '🏛', title: 'past websites - not as cool as this one', act: 'visit', href: '/museum/',
-                blurb: 'every previous version of this site, embalmed and served raw.' },
+  '0,0':  { section: true, glyph: '🙃', title: 'about me' },
+  '0,0|1,0':  { note: 'i live in dorset, in the middle of nowhere.', glyph: '🌳' },
+  '0,0|0,1':  { note: 'people pay me to untangle their software problems.', glyph: '💻' },
+  '0,0|-1,1': { glyph: '🌐', title: 'past websites', act: 'visit', href: '/museum/',
+                blurb: 'every previous version of this site, embalmed and served raw. none of them as cool as this one.' },
   '0,0|-1,0': { note: 'our house is made of mud and constantly damp.', glyph: '🏚' },
   '0,0|0,-1': { glyph: '✉', title: 'say hello', act: 'email', href: 'mailto:wmmclarke@gmail.com',
                 blurb: 'wmmclarke@gmail.com' },
-  '0,0|2,-1': { glyph: '💼', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
+  '0,0|2,-1': { glyph: '🫠', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
                 blurb: 'the professional mask.' },
   '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'view', href: '/stats.html',
                  blurb: 'numbers about this site.' },
@@ -48,7 +48,7 @@ const SEED_CONTENT = {
   '0,0|2,0|1,1': { glyph: '🕹', title: 'hah', act: 'the code', href: 'https://github.com/will-clarke/hah',
                    blurb: 'a rust arcade game. get past 20,000 points. nobody has, the author included.' },
   // ---- a decade of employers, one hex each ----
-  '0,0|1,1': { section: true, glyph: '💼', title: 'cool places i’ve worked' },
+  '0,0|1,1': { section: true, glyph: '📝', title: 'cool places i’ve worked' },
   '0,0|1,1|1,0':  { note: 'now: blacklane. dispatching - matching rides to chauffeurs, in every timezone at once.', glyph: '🚘' },
   '0,0|1,1|0,1':  { note: 'infosum (2022): privacy maths in golang. i mostly remember arguing about api boundaries, slowly.', glyph: '🔒' },
   '0,0|1,1|-1,1': { note: 'river island (2020-2022): engineer, then tech lead. we plugged a new warehouse into the business.', glyph: '👕' },
@@ -101,14 +101,16 @@ const SEED_CONTENT = {
   '1,1':  { glyph: '🦠', title: 'evolution', act: 'watch', href: '/video/evolution.webm', accent: '#9fdc6a',
             blurb: 'an artificial-life sandbox with no fitness function: things survive because they survive. runs on the shed gpu. the clip probes one creature’s brain mid-swarm.' },
   '1,-1': { glyph: '💎', title: 'polyhedra playground', act: 'play', href: '/games/polyhedra/', accent: '#8affd4',
-            blurb: 'dual, truncate, gyro: conway operators on spinning solids. more soothing than it has any right to be.' },
+            blurb: 'dual, truncate, gyro: conway operators on spinning solids. export any of them and 3d print it.' },
+  '2,-1': { glyph: '🚉', title: 'terminus · train puzzle', act: 'play', href: '/games/terminus/', accent: '#66ffa3',
+            blurb: 'draw each track piece by scarce piece, then run every train at once. lines may cross; trains may not.' },
   '0,2':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
             blurb: 'trilemmas as svg triangles - pick any two: cap theorem, zooko, career / family / hobbies, and more.' },
   '0,-2': { glyph: '🎼', title: 'ai music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
             blurb: 'a keyboard piece from a model trained in the shed. nobody wrote it; it came out sounding like bach anyway. tap to play.' },
   '2,-2': { glyph: '🎬', title: 'classiccult · film finder', act: 'visit', href: 'https://classiccult.pages.dev/', accent: '#ffd166',
             blurb: 'every classic & cult screening in london, scraped nightly onto one page. no backend, nothing to pay for. i moved to dorset shortly after finishing it.' },
-  '1,-2': { note: 'welcome to my hexagon!', glyph: '👋' },
+  '1,-2': { note: 'welcome to my hexagon! explore around if you like - it goes deeper than it looks.', glyph: '👋' },
   // ---- my shed ----
   '-1,-1': { section: true, glyph: '🪓', title: 'my shed' },
   '-1,-1|1,0':  { note: 'no central heating. the house runs on logs; the logs run on me. winter is a supply chain and i am most of it.', glyph: '🔥' },
@@ -142,18 +144,18 @@ const SEED_CONTENT = {
   '-1,-1|-1,1|-2,2': { note: 'things in the shed die on a rota: a disk, a heatwave, the occasional self-inflicted rebuild. no funerals held.', glyph: '🔥' },
   // ---- random thoughts: a cut-down room in the about room, where the
   // fuller philosophical musings used to sit ----
-  '0,0|-1,2': { section: true, glyph: '💭', title: 'random thoughts since you’re here' },
-  '0,0|-1,2|1,0':  { note: 'transparency > privacy.', glyph: '🔎' },
-  '0,0|-1,2|0,1':  { note: 'maybe some undiscovered inventions are better off undiscovered.', glyph: '🕳' },
-  '0,0|-1,2|-1,1': { note: 'intelligence is underrated.', glyph: '💡' },
-  '0,0|-1,2|-1,0': { note: 'simplicity is underrated.', glyph: '💎' },
-  '0,0|-1,2|0,-1': { note: 'determination is underrated.', glyph: '🎯' },
-  '0,0|-1,2|1,-1': { note: 'evolution and biology matter more than most of us admit.', glyph: '🧬' },
-  '0,0|-1,2|2,0':  { note: 'ai alignment is impossible in the way most people hope. like chickens trying to align humans - they manage it by being tasty.', glyph: '🐔' },
-  '0,0|-1,2|1,1':  { note: 'consciousness isn’t a mega-mystery. you’re a brain; why wouldn’t you sense your inputs?', glyph: '🧠' },
-  '0,0|-1,2|0,2':  { note: 'consciousness is a spectrum far wider than people imagine - ai included.', glyph: '🌈' },
-  '0,0|-1,2|-1,2': { note: 'there’s wisdom in old-fashioned customs.', glyph: '🏺' },
-  '0,0|-1,2|-2,2': { note: 'poverty is the default state of humankind - we should hyper-focus on how to create prosperity.', glyph: '🌾' },
+  '0,0|-1,2': { section: true, glyph: '💭', title: 'unpopular opinions' },
+  '0,0|-1,2|1,0':  { note: 'transparency beats privacy. i’d be happy for almost everything to be public.', glyph: '🔎' },
+  '0,0|-1,2|0,1':  { note: 'evolution and biology explain more about people than we like to admit.', glyph: '🧬' },
+  '0,0|-1,2|-1,1': { note: 'ai alignment is impossible in the way most people hope. like chickens trying to align humans - they manage it by being tasty.', glyph: '🐔' },
+  '0,0|-1,2|-1,0': { note: 'consciousness isn’t a mega-mystery. you’re a brain; why wouldn’t you sense your inputs?', glyph: '🧠' },
+  '0,0|-1,2|0,-1': { note: 'maybe some undiscovered inventions are better off undiscovered.', glyph: '🕳' },
+  '0,0|-1,2|1,-1': { note: 'intelligence is wildly undervalued.', glyph: '💡' },
+  '0,0|-1,2|2,0':  { note: 'sheer determination matters more than people admit.', glyph: '🎯' },
+  '0,0|-1,2|1,1':  { note: 'poverty is the default state of humankind - we should obsess over where prosperity comes from.', glyph: '🌾' },
+  '0,0|-1,2|0,2':  { note: 'consciousness is a spectrum far wider than people imagine.', glyph: '🌈' },
+  '0,0|-1,2|-1,2': { note: 'simplicity is chronically overlooked.', glyph: '💎' },
+  '0,0|-1,2|-2,2': { note: 'there’s real wisdom in old-fashioned customs.', glyph: '🏺' },
   // ---- philosophical musings: the fuller set, buried deep and unsignposted ----
   '0,-1|-2,1|-1,1|1,-1': { section: true, glyph: '💭', title: 'philosophical musings' },
   '0,-1|-2,1|-1,1|1,-1|1,0':  { note: 'i’m a fully paid-up ai doomer: we should be taking the risks far more seriously. progress is probably inevitable anyway - competition sees to that - so we’d better hope it lands well.', glyph: '🤖' },
@@ -273,7 +275,7 @@ const PLAYED = [
 const DECENT_SLUGS = ['mirror', 'tile', 'shipshape', 'loom', 'drip'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
-  drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷' };
+  drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉' };
 const PINNED_GAMES = [
   { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/', accent: '#ff9a3a',
     blurb: 'a little factory: emitters, colourers, portals, fans. build it, press play, watch it be wrong, rewind. 30 levels.' },
@@ -287,7 +289,7 @@ const PINNED_GAMES = [
     blurb: 'sokoban, except the slime teleports.' },
 ];
 // featured at the top level of the comb, so not repeated in the games room
-const FEATURED_SLUGS = ['recurr'];
+const FEATURED_SLUGS = ['recurr', 'terminus'];
 // first matching pattern names a post's glyph; ✍ is the fallback
 const POST_GLYPHS = [
   [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],
