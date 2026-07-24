@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "terminus",
+      "name": "Terminus",
+      "accent": "#66ffa3",
+      "tagline": "Draw the track piece by scarce piece, then run every train at once. Lines may cross - trains may not. Fetch the key before the padlock, split colours apart, work each branch, and couple them back together in the right order."
+    },
+    {
       "slug": "recurr",
       "name": "Recurr",
       "accent": "#ff7ac2",

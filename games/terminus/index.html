@@ -1,0 +1,1087 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23161b22'/%3E%3Cpath d='M6 22 L14 22 L14 10 L26 10' fill='none' stroke='%2366ffa3' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='6' cy='22' r='3' fill='%2366ffa3'/%3E%3Ccircle cx='26' cy='10' r='3' fill='none' stroke='%2366ffa3' stroke-width='2'/%3E%3C/svg%3E" />
+<title>Terminus</title>
+<style>
+  :root{
+    --a:#66ffa3; --bad:#ff7a7a;
+    --r:#ff6b8a; --b:#5cb8ff; --y:#ffd75c; --p:#c78bff; --o:#ffab66; --g:#54e89a; --n:#9b8b7a;
+  }
+  :root[data-theme="dark"]{
+    --bg:#10141b; --bg2:#161c26; --panel:#1a212c; --raised:#232c3a;
+    --ink:#e8eef7; --muted:#8fa0b8; --line:#2a3547; --track:#46536b; --rock:#20293a;
+    --shadow:rgba(0,0,0,.5);
+  }
+  :root[data-theme="light"]{
+    --bg:#eef1f6; --bg2:#e4e9f2; --panel:#ffffff; --raised:#f2f5fa;
+    --ink:#182234; --muted:#5c6b80; --line:#d0d9e6; --track:#a7b4c9; --rock:#c9d2e0;
+    --shadow:rgba(30,40,60,.18);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:16px/1.45 system-ui,-apple-system,sans-serif;overscroll-behavior:none;
+       user-select:none;-webkit-user-select:none;touch-action:manipulation}
+  #atlas{max-width:520px;margin:0 auto;padding:22px 16px 40px}
+  #atlas h1{font-size:30px;margin:8px 0 0;letter-spacing:.06em}
+  #atlas h1 .dot{color:var(--a)}
+  #atlas .tag{color:var(--muted);margin:2px 0 6px}
+  #atlas .help{color:var(--muted);font-size:13px;margin:4px 0 18px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{width:52px;height:52px;border-radius:12px;background:var(--panel);
+        border:1px solid var(--line);color:var(--ink);font:600 15px system-ui;
+        display:flex;flex-direction:column;align-items:center;justify-content:center;
+        cursor:pointer;box-shadow:0 2px 8px var(--shadow)}
+  .chip small{font-size:9px;color:var(--muted);font-weight:500}
+  .chip.done{border-color:var(--a);color:var(--a)}
+  .chip.done small{color:var(--a)}
+  #play{display:flex;flex-direction:column;align-items:center;height:100dvh;
+        max-width:560px;margin:0 auto;padding:10px 10px 12px;gap:8px}
+  .topbar{display:flex;align-items:center;gap:10px;width:100%}
+  .topbar button{background:var(--panel);border:1px solid var(--line);color:var(--ink);
+        border-radius:10px;padding:6px 13px;font-size:17px;cursor:pointer}
+  .title{flex:1;min-width:0}
+  .title b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .title span{font-size:11px;color:var(--muted)}
+  #pieces{font-size:12px;color:var(--muted);text-align:right;min-width:72px}
+  #pieces b{color:var(--a);font-size:15px}
+  #pieces.full b{color:var(--bad)}
+  #blurb{font-size:13px;color:var(--muted);text-align:center;min-height:1.2em;width:100%}
+  #wrap{position:relative;flex:1;display:flex;align-items:center;justify-content:center;width:100%;min-height:0}
+  canvas{display:block;border-radius:14px;background:var(--bg2);
+         box-shadow:0 6px 30px var(--shadow);touch-action:none}
+  .goalbar{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);
+           min-height:22px;flex-wrap:wrap;justify-content:center}
+  .goalbar .dot{width:14px;height:14px;border-radius:50%;display:inline-block;vertical-align:-2px}
+  .goalbar .ring{width:12px;height:12px;border-radius:50%;display:inline-block;
+                 border:3px solid currentColor;vertical-align:-2px}
+  .goalbar .mini{width:10px;height:10px;border-radius:50%;display:inline-block;vertical-align:-1px;
+                 border:1.5px solid var(--bg)}
+  .botbar{display:flex;align-items:center;gap:10px;width:100%;justify-content:center}
+  .botbar button{border:none;border-radius:12px;padding:12px 0;font:700 15px system-ui;
+                 cursor:pointer}
+  #go{flex:2;max-width:190px;background:var(--a);color:#0a2416;font-size:16px}
+  #go.stop{background:var(--bad);color:#2a0d0d}
+  #stepb,#clearb,#speed{flex:1;max-width:86px;background:var(--panel);color:var(--ink);
+         border:1px solid var(--line)}
+  #banner{position:absolute;inset:0;display:flex;flex-direction:column;gap:12px;
+          align-items:center;justify-content:center;background:color-mix(in srgb,var(--bg) 72%,transparent);
+          backdrop-filter:blur(3px);border-radius:14px;text-align:center;padding:18px}
+  #banner h3{margin:0;font-size:21px}
+  #banner p{margin:0;color:var(--muted);font-size:14px;max-width:300px}
+  #banner .row{display:flex;gap:10px}
+  #banner button{background:var(--a);color:#0a2416;border:none;border-radius:11px;
+                 padding:10px 22px;font:700 15px system-ui;cursor:pointer}
+  #banner button.ghostb{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<div id="atlas">
+  <h1>TERMINUS<span class="dot">.</span></h1>
+  <p class="tag">draw the line, run the trains</p>
+  <p class="help">Drag to paint track between the arrows and the stations, then press GO.
+  Every train runs at once. Track pieces are scarce, collisions are real, and the
+  length of a line is a clock. Tap painted track to erase it.</p>
+  <div class="chips" id="chips"></div>
+</div>
+<div id="play" hidden>
+  <div class="topbar">
+    <button id="back" aria-label="back">‹</button>
+    <div class="title"><b id="lvlname"></b><span id="lvlid"></span></div>
+    <div id="pieces"></div>
+  </div>
+  <div id="blurb"></div>
+  <div id="wrap">
+    <canvas id="cv"></canvas>
+    <div id="banner" hidden></div>
+  </div>
+  <div class="goalbar" id="goal"></div>
+  <div class="botbar">
+    <button id="clearb">CLEAR</button>
+    <button id="stepb">STEP</button>
+    <button id="go">GO</button>
+    <button id="speed">1×</button>
+  </div>
+</div>
+
+<script>
+/* ===== KERNEL (extracted verbatim by harness.mjs - keep self-contained) ===== */
+const TK = (() => {
+  'use strict';
+  const DX = { N: 0, E: 1, S: 0, W: -1 };
+  const DY = { N: -1, E: 0, S: 1, W: 0 };
+  const OPP = { N: 'S', S: 'N', E: 'W', W: 'E' };
+  const ORD = { N: 0, E: 1, S: 2, W: 3 };
+  const seg = (a, b) => ORD[a] < ORD[b] ? a + b : b + a;
+  const MIXBASE = { br: 'p', ry: 'o', by: 'g' };
+  const mix = (a, b) => a === b ? a : (MIXBASE[[a, b].sort().join('')] || 'n');
+  const key = (x, y) => x + ',' + y;
+
+  function parse(def) {
+    const H = def.map.length, W = Math.max(...def.map.map(r => r.length));
+    const at = {};
+    for (const th of def.things) at[key(th.x, th.y)] = th;
+    const lv = {
+      def, W, H, budget: def.budget, at: (x, y) => at[key(x, y)] || null,
+      ter(x, y) {
+        if (x < 0 || y < 0 || x >= W || y >= H) return ' ';
+        return (def.map[y] || '')[x] || ' ';
+      },
+      things: def.things,
+      entries: def.things.filter(t => t.k === 'entry'),
+      exits: def.things.filter(t => t.k === 'exit').map(t => ({ ...t, key: key(t.x, t.y) })),
+    };
+    lv.fixed = (x, y) => {
+      const th = lv.at(x, y);
+      return th && (th.k === 'entry' || th.k === 'exit' || th.k === 'fork' || th.k === 'join');
+    };
+    lv.canPaint = (x, y) => lv.ter(x, y) === '.' && !lv.fixed(x, y);
+    return lv;
+  }
+
+  function validate(lv) {
+    const errs = [];
+    for (const th of lv.things) {
+      if (lv.ter(th.x, th.y) !== '.') errs.push(`${th.k} at ${th.x},${th.y} off '.' terrain`);
+      if (th.k === 'fork') {
+        const m = mix(th.outs[0][1], th.outs[1][1]);
+        if (m === 'n') errs.push(`fork at ${th.x},${th.y} outs don't mix`);
+      }
+    }
+    if (!lv.entries.length) errs.push('no entries');
+    if (!lv.exits.length) errs.push('no exits');
+    if (!lv.budget) errs.push('no budget');
+    return errs;
+  }
+
+  // ---- paint -----------------------------------------------------------------
+  const cost = track => Object.values(track).reduce((n, s) => n + s.length, 0);
+  const cloneTrack = track => { const t = {}; for (const k in track) t[k] = track[k].slice(); return t; };
+
+  function addSeg(lv, track, x, y, sg, budget) {
+    if (!lv.canPaint(x, y)) return false;
+    const k = key(x, y), cur = track[k] || [];
+    if (cur.includes(sg)) return true;
+    let next;
+    if (cur.length === 1 && ((cur[0] === 'NS' && sg === 'EW') || (cur[0] === 'EW' && sg === 'NS')))
+      next = [cur[0], sg];
+    else next = [sg];
+    if (budget != null && cost(track) - cur.length + next.length > budget) return false;
+    track[k] = next;
+    return true;
+  }
+
+  const dirTo = (c, o) => o.x < c.x ? 'W' : o.x > c.x ? 'E' : o.y < c.y ? 'N' : 'S';
+
+  // cells: [{x,y}] consecutive 4-adjacent. Returns true iff nothing was rejected.
+  function stroke(lv, track, cells, budget) {
+    let ok = true;
+    for (let i = 0; i < cells.length; i++) {
+      const c = cells[i], prev = cells[i - 1], next = cells[i + 1];
+      if (!lv.canPaint(c.x, c.y)) continue;
+      let a, b;
+      if (prev && next) {
+        a = dirTo(c, prev); b = dirTo(c, next);
+        if (a === b) continue;
+      } else if (prev || next) {
+        if ((track[key(c.x, c.y)] || []).length) continue;  // resume: leave alone
+        b = dirTo(c, prev || next); a = OPP[b];
+      } else continue;
+      if (!addSeg(lv, track, c.x, c.y, seg(a, b), budget)) ok = false;
+    }
+    return ok;
+  }
+
+  const parseStroke = s => s.trim().split(/\s+/).map(p => {
+    const [x, y] = p.split(',').map(Number); return { x, y };
+  });
+
+  function paintSol(lv) {
+    const track = {};
+    for (const s of lv.def.sol || []) stroke(lv, track, parseStroke(s), null);
+    return track;
+  }
+
+  // ---- simulation --------------------------------------------------------------
+  function initWorld(lv, track) {
+    return { tick: 0, trains: [], nid: 1, taken: {}, done: {}, status: 'running',
+             seen: new Set(), failAt: null, track };
+  }
+
+  function accepts(lv, track, x, y, inPort) {
+    if (lv.ter(x, y) !== '.') return false;
+    const th = lv.at(x, y);
+    if (th) {
+      if (th.k === 'entry') return false;
+      if (th.k === 'exit') return inPort === th.p;
+      if (th.k === 'fork') return inPort === th.in;
+      if (th.k === 'join') return th.ins.includes(inPort);
+    }
+    return (track[key(x, y)] || []).some(s => s.includes(inPort));
+  }
+
+  function step(lv, w, ev) {
+    ev = ev || [];
+    if (w.status !== 'running') return w.status;
+    const track = w.track;
+    const fail = (st, x, y) => { w.status = st; w.failAt = x != null ? { x, y } : null;
+                                 ev.push({ t: st, x, y }); return st; };
+    // 1. spawns
+    const born = new Set();
+    for (const en of lv.entries) {
+      if ((en.t0 || 0) !== w.tick) continue;
+      if (w.trains.some(t => t.alive && t.x === en.x && t.y === en.y))
+        return fail('crash', en.x, en.y);
+      const tr = { id: w.nid++, x: en.x, y: en.y, in: null, c: en.c, man: [],
+                   pend: en.p, wait: false, alive: true, exited: false };
+      w.trains.push(tr); born.add(tr.id);
+      ev.push({ t: 'spawn', id: tr.id, x: en.x, y: en.y });
+    }
+    // 2. compute moves
+    const moves = [];
+    for (const t of w.trains) {
+      if (!t.alive || t.wait || t.exited || born.has(t.id)) continue;
+      let ex = t.pend;
+      if (!ex) {
+        const s = (track[key(t.x, t.y)] || []).find(s => s.includes(t.in));
+        if (!s) return fail('derail', t.x, t.y);
+        ex = s[0] === t.in ? s[1] : s[0];
+      }
+      const nx = t.x + DX[ex], ny = t.y + DY[ex];
+      if (!accepts(lv, track, nx, ny, OPP[ex])) return fail('derail', t.x, t.y);
+      moves.push({ t, ex, nx, ny });
+    }
+    // 3. conflicts
+    for (let i = 0; i < moves.length; i++) for (let j = i + 1; j < moves.length; j++) {
+      const a = moves[i], b = moves[j];
+      if (a.nx === b.nx && a.ny === b.ny) {
+        const th = lv.at(a.nx, a.ny);
+        if (!(th && th.k === 'join' && OPP[a.ex] !== OPP[b.ex]))
+          return fail('crash', a.nx, a.ny);
+      }
+      if (a.nx === b.t.x && a.ny === b.t.y && b.nx === a.t.x && b.ny === a.t.y &&
+          a.ex === OPP[b.ex])
+        return fail('crash', a.nx, a.ny);
+    }
+    for (const m of moves) {
+      const st = w.trains.find(t => t.alive && !t.exited && t !== m.t &&
+        !moves.some(o => o.t === t) && t.x === m.nx && t.y === m.ny);
+      if (st) {
+        const th = lv.at(m.nx, m.ny);
+        if (!(th && th.k === 'join' && st.wait && st.in !== OPP[m.ex]))
+          return fail('crash', m.nx, m.ny);
+      }
+    }
+    // 4. apply
+    const movedNow = new Set();
+    for (const m of moves) {
+      ev.push({ t: 'move', id: m.t.id, fx: m.t.x, fy: m.t.y, x: m.nx, y: m.ny });
+      m.t.x = m.nx; m.t.y = m.ny; m.t.in = OPP[m.ex]; m.t.pend = null;
+      movedNow.add(m.t.id);
+    }
+    // 5. arrivals
+    for (const m of moves) {
+      const t = m.t;
+      if (!t.alive || t.exited) continue;
+      const th = lv.at(t.x, t.y), k = key(t.x, t.y);
+      if (!th) continue;
+      if (th.k === 'ball') {
+        if (!w.taken[k]) { w.taken[k] = 1; t.man.push(th.c);
+                           ev.push({ t: 'pickup', x: t.x, y: t.y, c: th.c }); }
+      } else if (th.k === 'gate') {
+        const i = t.man.lastIndexOf(th.c);
+        if (i < 0) return fail('locked', t.x, t.y);
+        t.man.splice(i, 1);
+        ev.push({ t: 'consume', x: t.x, y: t.y, c: th.c });
+      } else if (th.k === 'exit') {
+        if (w.done[k] || t.c !== th.c) return fail('wrongStation', t.x, t.y);
+        if (th.want && t.man.join() !== th.want.join()) return fail('wrongCargo', t.x, t.y);
+        if (!th.want && t.man.length) return fail('wrongCargo', t.x, t.y);
+        t.alive = false; t.exited = true; w.done[k] = 1;
+        ev.push({ t: 'arrive', x: t.x, y: t.y, c: th.c });
+      } else if (th.k === 'fork') {
+        const [[p1, c1], [p2, c2]] = th.outs;
+        if (mix(c1, c2) !== t.c) return fail('jam', t.x, t.y);
+        t.c = c1; t.pend = p1;
+        w.trains.push({ id: w.nid++, x: t.x, y: t.y, in: t.in, c: c2, man: [],
+                        pend: p2, wait: false, alive: true, exited: false });
+        ev.push({ t: 'split', x: t.x, y: t.y });
+      } else if (th.k === 'join') {
+        const other = w.trains.find(o => o !== t && o.alive && o.wait &&
+                                    o.x === t.x && o.y === t.y);
+        if (other) {
+          if (other.in === t.in) return fail('crash', t.x, t.y);
+          let wtr = other, arr = t;
+          if (movedNow.has(other.id) && t.in === th.ins[0]) { wtr = t; arr = other; }
+          wtr.c = mix(wtr.c, arr.c);
+          wtr.man = wtr.man.concat(arr.man);
+          wtr.wait = false; wtr.pend = th.out;
+          arr.alive = false;
+          ev.push({ t: 'merge', x: t.x, y: t.y, id: wtr.id, gone: arr.id });
+        } else { t.wait = true; ev.push({ t: 'wait', id: t.id }); }
+      }
+    }
+    // 6. end checks
+    w.tick++;
+    const alive = w.trains.filter(t => t.alive);
+    const pending = lv.entries.some(en => (en.t0 || 0) >= w.tick);
+    const allDone = lv.exits.every(x => w.done[x.key]);
+    if (allDone && !alive.length && !pending) { w.status = 'win'; return 'win'; }
+    if (!pending && (!alive.length || alive.every(t => t.wait)))
+      return fail('lost', null, null);
+    const h = w.tick > Math.max(0, ...lv.entries.map(e => e.t0 || 0)) ? 'T' : w.tick;
+    const state = h + '|' + w.trains.filter(t => t.alive).map(t =>
+      [t.id, t.x, t.y, t.in, t.c, t.man.join(''), t.wait ? 1 : 0, t.pend || ''].join(':')
+    ).join(';') + '|' + Object.keys(w.taken).join(',') + '|' + Object.keys(w.done).join(',');
+    if (w.seen.has(state) || w.tick > 500) return fail('loop', null, null);
+    w.seen.add(state);
+    return 'running';
+  }
+
+  function run(lv, track) {
+    const w = initWorld(lv, track);
+    while (w.status === 'running') step(lv, w);
+    return { status: w.status, ticks: w.tick, world: w };
+  }
+
+  return { DX, DY, OPP, seg, mix, key, parse, validate, cost, cloneTrack, addSeg,
+           dirTo, stroke, parseStroke, paintSol, initWorld, accepts, step, run };
+})();
+/* ===== END KERNEL ===== */
+
+/* ===== LEVELS (extracted verbatim by harness.mjs) ===== */
+const LEVELS = [
+  {
+    id: 's1', name: 'First Line', budget: 7,
+    blurb: 'Drag a line from the arrow to the station. Then GO.',
+    map: [
+      '.....',
+      '.....',
+      '..#..',
+      '.....',
+      '.....',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 2, p: 'E', c: 'r', t0: 0 },
+      { k: 'exit', x: 4, y: 2, p: 'W', c: 'r' },
+    ],
+    sol: ['0,2 1,2 1,1 2,1 3,1 3,2 4,2'],
+  },
+  {
+    id: 's2', name: 'Short Rations', budget: 7,
+    blurb: 'Seven pieces. Weaving between the rocks costs nine.',
+    map: [
+      '.......',
+      '.......',
+      '..#.#..',
+      '.......',
+      '.......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 2, p: 'E', c: 'b', t0: 0 },
+      { k: 'exit', x: 6, y: 2, p: 'W', c: 'b' },
+    ],
+    sol: ['0,2 1,2 1,1 2,1 3,1 4,1 5,1 5,2 6,2'],
+  },
+  {
+    id: 's3', name: 'Crossing Paths', budget: 9,
+    blurb: 'Tracks may cross. Trains may not.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 3, p: 'E', c: 'r', t0: 0 },
+      { k: 'exit', x: 5, y: 3, p: 'W', c: 'r' },
+      { k: 'entry', x: 2, y: 0, p: 'S', c: 'b', t0: 0 },
+      { k: 'exit', x: 2, y: 5, p: 'N', c: 'b' },
+    ],
+    sol: ['0,3 1,3 2,3 3,3 4,3 5,3', '2,0 2,1 2,2 2,3 2,4 2,5'],
+  },
+  {
+    id: 's4', name: 'Near Miss', budget: 10,
+    blurb: 'Same distance, same moment. Someone goes the long way round.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 3, p: 'E', c: 'r', t0: 0 },
+      { k: 'exit', x: 5, y: 3, p: 'W', c: 'r' },
+      { k: 'entry', x: 3, y: 0, p: 'S', c: 'b', t0: 0 },
+      { k: 'exit', x: 3, y: 5, p: 'N', c: 'b' },
+    ],
+    sol: ['0,3 1,3 2,3 2,2 3,2 4,2 4,3 5,3', '3,0 3,1 3,2 3,3 3,4 3,5'],
+  },
+  {
+    id: 's5', name: 'Locksmith', budget: 8,
+    blurb: 'A padlock wants a matching ball. Fetch before you pass.',
+    map: [
+      '......',
+      '....#.',
+      '......',
+      '....#.',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 2, p: 'E', c: 'r', t0: 0 },
+      { k: 'exit', x: 5, y: 2, p: 'W', c: 'r' },
+      { k: 'gate', x: 3, y: 2, c: 'b' },
+      { k: 'ball', x: 2, y: 0, c: 'b' },
+    ],
+    sol: ['0,2 1,2 1,1 1,0 2,0 3,0 3,1 3,2 4,2 5,2'],
+  },
+  {
+    id: 's6', name: 'The Fork', budget: 8,
+    blurb: 'Purple in. Red and blue out - the pips say which side.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 2, p: 'E', c: 'p', t0: 0 },
+      { k: 'fork', x: 2, y: 2, in: 'W', outs: [['N', 'r'], ['S', 'b']] },
+      { k: 'exit', x: 5, y: 1, p: 'W', c: 'r' },
+      { k: 'exit', x: 5, y: 3, p: 'W', c: 'b' },
+    ],
+    sol: ['0,2 1,2 2,2', '2,2 2,1 3,1 4,1 5,1', '2,2 2,3 3,3 4,3 5,3'],
+  },
+  {
+    id: 's7', name: 'Confluence', budget: 8,
+    blurb: 'First to the coupling waits inside. Colours mix.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 1, p: 'E', c: 'r', t0: 0 },
+      { k: 'entry', x: 0, y: 3, p: 'E', c: 'b', t0: 2 },
+      { k: 'join', x: 3, y: 2, ins: ['N', 'S'], out: 'E' },
+      { k: 'exit', x: 5, y: 2, p: 'W', c: 'p' },
+    ],
+    sol: ['0,1 1,1 2,1 3,1 3,2', '0,3 1,3 2,3 3,3 3,2', '3,2 4,2 5,2'],
+  },
+  {
+    id: 's8', name: 'In Good Order', budget: 10,
+    blurb: 'Whoever arrives first, their carriages lead. The station is fussy.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 1, p: 'E', c: 'r', t0: 0 },
+      { k: 'entry', x: 0, y: 3, p: 'E', c: 'r', t0: 0 },
+      { k: 'ball', x: 2, y: 1, c: 'b' },
+      { k: 'ball', x: 2, y: 3, c: 'y' },
+      { k: 'join', x: 4, y: 2, ins: ['N', 'S'], out: 'E' },
+      { k: 'exit', x: 5, y: 2, p: 'W', c: 'r', want: ['y', 'b'] },
+    ],
+    sol: ['0,1 1,1 2,1 3,1 3,0 4,0 4,1 4,2', '0,3 1,3 2,3 3,3 4,3 4,2'],
+  },
+  {
+    id: 's9', name: 'Rush Hour', budget: 14,
+    blurb: 'Three timetables. Read the departure boards - one crossing bites.',
+    map: [
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+      '......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 1, p: 'E', c: 'r', t0: 0 },
+      { k: 'exit', x: 5, y: 1, p: 'W', c: 'r' },
+      { k: 'entry', x: 3, y: 0, p: 'S', c: 'b', t0: 2 },
+      { k: 'exit', x: 3, y: 5, p: 'N', c: 'b' },
+      { k: 'entry', x: 5, y: 4, p: 'W', c: 'y', t0: 1 },
+      { k: 'exit', x: 0, y: 4, p: 'E', c: 'y' },
+    ],
+    sol: ['0,1 1,1 1,0 2,0 2,1 3,1 4,1 5,1', '3,0 3,1 3,2 3,3 3,4 3,5',
+          '5,4 4,4 3,4 2,4 1,4 0,4'],
+  },
+  {
+    id: 's10', name: 'The Works', budget: 17,
+    blurb: 'Split. Work each branch. Couple again - in the right order.',
+    map: [
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+      '.......',
+    ],
+    things: [
+      { k: 'entry', x: 0, y: 2, p: 'E', c: 'p', t0: 0 },
+      { k: 'fork', x: 2, y: 2, in: 'W', outs: [['N', 'r'], ['S', 'b']] },
+      { k: 'ball', x: 3, y: 0, c: 'r' },
+      { k: 'ball', x: 5, y: 0, c: 'y' },
+      { k: 'gate', x: 5, y: 2, c: 'r' },
+      { k: 'ball', x: 1, y: 4, c: 'g' },
+      { k: 'join', x: 5, y: 3, ins: ['N', 'S'], out: 'E' },
+      { k: 'exit', x: 6, y: 3, p: 'W', c: 'p', want: ['g', 'y'] },
+    ],
+    sol: ['0,2 1,2 2,2',
+          '2,2 2,1 2,0 3,0 3,1 4,1 4,0 5,0 5,1 5,2 5,3',
+          '2,2 2,3 1,3 1,4 2,4 3,4 4,4 5,4 5,3'],
+  },
+];
+/* ===== END LEVELS ===== */
+
+/* ===== game: renderer + UI ===== */
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const FAILS = {
+  crash:        ['Crash', 'Two trains, one piece of track, same moment.'],
+  derail:       ['Derailed', 'The track just… ended.'],
+  locked:       ['Locked out', 'That padlock wants a matching ball on the train.'],
+  jam:          ['Jammed', 'A fork only splits the colour its pips promise.'],
+  wrongStation: ['Wrong station', 'A station takes its own colour, exactly once.'],
+  wrongCargo:   ['Wrong order', 'Right station, wrong carriages. Order counts.'],
+  lost:         ['Left behind', 'Every train must arrive, every station must be fed.'],
+  loop:         ['Going in circles', 'That railway would have run forever.'],
+};
+const store = {
+  load() { try { return JSON.parse(localStorage.getItem('terminus2-solves') || '{}'); } catch (e) { return {}; } },
+  save(s) { try { localStorage.setItem('terminus2-solves', JSON.stringify(s)); } catch (e) {} },
+};
+let solves = store.load();
+const hap = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL = () => ({
+  track: css('--track'), a: css('--a'), ink: css('--ink'), muted: css('--muted'),
+  bad: css('--bad'), bg2: css('--bg2'), panel: css('--panel'), rock: css('--rock'),
+  c: { r: css('--r'), g: css('--g'), b: css('--b'), y: css('--y'),
+       p: css('--p'), o: css('--o'), n: css('--n') },
+});
+
+// ---- atlas ----------------------------------------------------------------
+function buildAtlas() {
+  const root = $('chips');
+  root.innerHTML = '';
+  LEVELS.forEach((l, i) => {
+    const b = document.createElement('button');
+    const s = solves[l.id];
+    b.className = 'chip' + (s ? ' done' : '');
+    b.innerHTML = `${i + 1}<small>${s ? s.pieces + ' pc' : ''}</small>`;
+    b.onclick = () => openLevel(l);
+    root.appendChild(b);
+  });
+}
+
+// ---- play state -----------------------------------------------------------
+const cv = $('cv'), ctx = cv.getContext('2d');
+let def = null, lv = null, track = {}, world = null;
+let phase = 'edit';                  // edit | run | done
+let paused = false, speed = 1;
+let cell = 44, dpr = 1;
+let anims = new Map();               // train id -> {fx,fy,tx,ty}
+let trails = new Map();              // train id -> [{x,y,d}]
+let effects = [];
+let tickStart = 0, tickDur = 300, pendingEnd = null;
+let rafId = 0;
+
+function openLevel(l) {
+  def = l; lv = TK.parse(l);
+  track = {}; world = null; phase = 'edit'; paused = false;
+  anims.clear(); trails.clear(); effects = []; pendingEnd = null;
+  $('atlas').hidden = true; $('play').hidden = false;
+  $('lvlname').textContent = l.name;
+  $('lvlid').textContent = `${LEVELS.indexOf(l) + 1} / ${LEVELS.length}`;
+  $('blurb').textContent = l.blurb || '';
+  $('banner').hidden = true;
+  goalBar(); hud(); resize();
+  cancelAnimationFrame(rafId); rafId = requestAnimationFrame(frame);
+}
+function goalBar() {
+  const g = $('goal'), P = COL(); g.innerHTML = '';
+  const add = h => g.insertAdjacentHTML('beforeend', h);
+  for (const en of lv.entries)
+    add(`<span class="dot" style="background:${P.c[en.c]}"></span>` +
+        ((en.t0 || 0) ? `<span>+${en.t0}</span>` : ''));
+  add(`<span>→</span>`);
+  for (const ex of lv.exits) {
+    add(`<span class="ring" style="color:${P.c[ex.c]}"></span>`);
+    if (ex.want && ex.want.length) {
+      add(`<span style="font-size:11px">wants</span>`);
+      for (const c of ex.want) add(`<span class="mini" style="background:${P.c[c]}"></span>`);
+      add(`<span style="font-size:11px">in order</span>`);
+    }
+  }
+}
+function hud() {
+  const used = TK.cost(track);
+  const el = $('pieces');
+  el.innerHTML = `<b>${used}</b> / ${lv.budget} pieces`;
+  el.className = used >= lv.budget ? 'full' : '';
+  $('go').textContent = phase === 'run' && !paused ? 'STOP' : 'GO';
+  $('go').className = phase === 'run' && !paused ? 'stop' : '';
+}
+function resize() {
+  const wrap = $('wrap');
+  const availW = Math.min(wrap.clientWidth, 560) - 4;
+  const availH = wrap.clientHeight - 4;
+  cell = Math.max(30, Math.min(72, Math.floor(Math.min(availW / lv.W, availH / lv.H))));
+  dpr = Math.min(devicePixelRatio || 1, 2.5);
+  cv.style.width = lv.W * cell + 'px'; cv.style.height = lv.H * cell + 'px';
+  cv.width = lv.W * cell * dpr; cv.height = lv.H * cell * dpr;
+}
+addEventListener('resize', () => { if (def && !$('play').hidden) resize(); });
+
+// ---- drawing ---------------------------------------------------------------
+const px = (x, y) => [(x + .5) * cell, (y + .5) * cell];
+function portPt(x, y, p, r) {
+  const [cx, cy] = px(x, y);
+  return [cx + TK.DX[p] * r, cy + TK.DY[p] * r];
+}
+function trackLine(x, y, p1, p2, color, w) {
+  const [cx, cy] = px(x, y);
+  const [ax, ay] = portPt(x, y, p1, cell / 2), [bx, by] = portPt(x, y, p2, cell / 2);
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(ax, ay);
+  ctx.quadraticCurveTo(cx, cy, bx, by);
+  ctx.stroke();
+}
+function stub(x, y, p, color, w) {
+  const [cx, cy] = px(x, y);
+  const [ax, ay] = portPt(x, y, p, cell / 2);
+  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ax, ay); ctx.stroke();
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+function drawBoard(now) {
+  const P = COL();
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  const tw = Math.max(3.5, cell * .14);
+  // terrain
+  for (let y = 0; y < lv.H; y++) for (let x = 0; x < lv.W; x++) {
+    const t = lv.ter(x, y);
+    const [cx, cy] = px(x, y);
+    if (t === '#') {
+      ctx.fillStyle = P.rock;
+      roundRect(cx - cell * .42, cy - cell * .42, cell * .84, cell * .84, cell * .18);
+      ctx.fill();
+      ctx.strokeStyle = P.line || P.track; ctx.globalAlpha = .35; ctx.lineWidth = 1.5;
+      ctx.stroke(); ctx.globalAlpha = 1;
+    } else if (t === '.' && lv.canPaint(x, y) && !(track[TK.key(x, y)] || []).length) {
+      ctx.fillStyle = P.muted; ctx.globalAlpha = .28;
+      ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  }
+  // painted track
+  for (const k in track) {
+    const [x, y] = k.split(',').map(Number);
+    for (const s of track[k]) trackLine(x, y, s[0], s[1], P.a, tw);
+  }
+  // things
+  for (const th of lv.things) drawThing(th, now, P);
+  drawTrains(now, P);
+  for (const e of effects) drawEffect(e, now, P);
+  effects = effects.filter(e => now - e.t0 < 700);
+}
+function drawThing(th, now, P) {
+  const [cx, cy] = px(th.x, th.y);
+  const tw = Math.max(3.5, cell * .14);
+  const col = P.c[th.c] || P.a;
+  if (th.k === 'entry') {
+    stub(th.x, th.y, th.p, P.track, tw);
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, cy, cell * .24, 0, 7); ctx.fill();
+    // chevron toward port
+    const a = { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI }[th.p];
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(a);
+    ctx.fillStyle = P.bg2;
+    ctx.beginPath();
+    ctx.moveTo(cell * .12, 0); ctx.lineTo(-cell * .05, -cell * .11);
+    ctx.lineTo(-cell * .05, cell * .11); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    if (th.t0) {
+      ctx.fillStyle = P.ink; ctx.font = `700 ${Math.max(9, cell * .22)}px system-ui`;
+      ctx.textAlign = 'center';
+      ctx.fillText('+' + th.t0, cx + cell * .26, cy - cell * .26);
+    }
+    if (phase === 'edit' && !Object.keys(track).length) {   // draw-from-here hint
+      ctx.strokeStyle = col; ctx.globalAlpha = .45 + .35 * Math.sin(now / 300);
+      ctx.setLineDash([4, 5]); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, cell * .38, 0, 7); ctx.stroke();
+      ctx.setLineDash([]); ctx.globalAlpha = 1;
+    }
+  } else if (th.k === 'exit') {
+    stub(th.x, th.y, th.p, P.track, tw);
+    const done = world && world.done[TK.key(th.x, th.y)];
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(3, cell * .1);
+    ctx.globalAlpha = done ? 1 : .85 + .15 * Math.sin(now / 300);
+    ctx.beginPath(); ctx.arc(cx, cy, cell * .23, 0, 7); ctx.stroke();
+    ctx.globalAlpha = 1;
+    if (done) {
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(cx, cy, cell * .1, 0, 7); ctx.fill();
+    }
+    if (th.want) th.want.forEach((c, i) => {
+      ctx.fillStyle = P.c[c];
+      ctx.beginPath();
+      ctx.arc(cx - (th.want.length - 1) * cell * .09 + i * cell * .18, cy + cell * .36,
+              cell * .07, 0, 7);
+      ctx.fill();
+    });
+  } else if (th.k === 'ball') {
+    if (world && world.taken[TK.key(th.x, th.y)]) return;
+    const bob = Math.sin(now / 400 + th.x) * cell * .03;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(cx, cy - cell * .1 + bob, cell * .16, 0, 7); ctx.fill();
+    ctx.strokeStyle = P.bg2; ctx.lineWidth = 1.5; ctx.stroke();
+  } else if (th.k === 'gate') {
+    // padlock: shackle + body
+    ctx.strokeStyle = col; ctx.lineWidth = Math.max(2.5, cell * .07);
+    ctx.beginPath(); ctx.arc(cx, cy - cell * .12, cell * .11, Math.PI, 0); ctx.stroke();
+    ctx.fillStyle = col;
+    roundRect(cx - cell * .15, cy - cell * .12, cell * .3, cell * .24, cell * .05);
+    ctx.fill();
+    ctx.fillStyle = P.bg2;
+    ctx.beginPath(); ctx.arc(cx, cy - cell * .01, cell * .04, 0, 7); ctx.fill();
+  } else if (th.k === 'fork') {
+    stub(th.x, th.y, th.in, P.track, cell * .14);
+    for (const [p] of th.outs) stub(th.x, th.y, p, P.track, cell * .14);
+    ctx.fillStyle = P.raised || P.panel;
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(Math.PI / 4);
+    roundRect(-cell * .17, -cell * .17, cell * .34, cell * .34, cell * .06);
+    ctx.fill();
+    ctx.strokeStyle = P.track; ctx.lineWidth = 2; ctx.stroke();
+    ctx.restore();
+    for (const [p, c] of th.outs) {
+      const [qx, qy] = portPt(th.x, th.y, p, cell * .33);
+      ctx.fillStyle = P.c[c];
+      ctx.beginPath(); ctx.arc(qx, qy, cell * .09, 0, 7); ctx.fill();
+      ctx.strokeStyle = P.bg2; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+  } else if (th.k === 'join') {
+    for (const p of th.ins) stub(th.x, th.y, p, P.track, cell * .14);
+    stub(th.x, th.y, th.out, P.track, cell * .14);
+    ctx.fillStyle = P.panel;
+    ctx.beginPath(); ctx.arc(cx, cy, cell * .21, 0, 7); ctx.fill();
+    ctx.strokeStyle = P.track; ctx.lineWidth = 2.5; ctx.stroke();
+    // arrow on out port
+    const [qx, qy] = portPt(th.x, th.y, th.out, cell * .3);
+    const a = { N: -Math.PI / 2, E: 0, S: Math.PI / 2, W: Math.PI }[th.out];
+    ctx.save(); ctx.translate(qx, qy); ctx.rotate(a);
+    ctx.fillStyle = P.muted;
+    ctx.beginPath();
+    ctx.moveTo(cell * .09, 0); ctx.lineTo(-cell * .04, -cell * .08);
+    ctx.lineTo(-cell * .04, cell * .08); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+}
+function trainPos(t, now) {
+  const a = anims.get(t.id);
+  if (a) {
+    const p = Math.min(1, (now - tickStart) / tickDur);   // constant velocity
+    const [ax, ay] = px(a.fx, a.fy), [bx, by] = px(a.tx, a.ty);
+    return [ax + (bx - ax) * p, ay + (by - ay) * p];
+  }
+  return px(t.x, t.y);
+}
+function drawTrains(now, P) {
+  if (!world) {          // idle: ghost trains at entries
+    for (const en of lv.entries) {
+      const [cx, cy] = px(en.x, en.y);
+      ctx.globalAlpha = .45;
+      loco(cx, cy, P.c[en.c]);
+      ctx.globalAlpha = 1;
+    }
+    return;
+  }
+  for (const t of world.trains) {
+    if (!t.alive) continue;
+    const [cx, cy] = trainPos(t, now);
+    let tr = trails.get(t.id);
+    if (!tr) { tr = []; trails.set(t.id, tr); }
+    if (!tr.length || Math.hypot(cx - tr[0].x, cy - tr[0].y) > 2) {
+      const d = tr.length ? tr[0].d + Math.hypot(cx - tr[0].x, cy - tr[0].y) : 0;
+      tr.unshift({ x: cx, y: cy, d });
+      if (tr.length > 260) tr.pop();
+    }
+    const gap = cell * .5;
+    for (let i = 0; i < t.man.length; i++) {
+      const want = tr[0].d - (i + 1) * gap;
+      let pt = tr[tr.length - 1];
+      for (let j = 0; j < tr.length; j++) if (tr[j].d <= want) { pt = tr[j]; break; }
+      ctx.fillStyle = COL().c[t.man[i]];
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, cell * .14, 0, 7); ctx.fill();
+      ctx.strokeStyle = COL().bg2; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    loco(cx, cy, COL().c[t.c], t.wait);
+  }
+}
+function loco(cx, cy, color, waiting) {
+  ctx.shadowColor = color; ctx.shadowBlur = 12;
+  ctx.fillStyle = color;
+  roundRect(cx - cell * .2, cy - cell * .2, cell * .4, cell * .4, cell * .11);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(0,0,0,.4)';
+  ctx.beginPath(); ctx.arc(cx, cy, cell * .07, 0, 7); ctx.fill();
+  if (waiting) {
+    ctx.fillStyle = COL().ink; ctx.font = `${cell * .3}px system-ui`;
+    ctx.textAlign = 'center'; ctx.fillText('…', cx, cy - cell * .28);
+  }
+}
+function drawEffect(e, now, P) {
+  const p = (now - e.t0) / 700; if (p > 1) return;
+  const [cx, cy] = px(e.x, e.y);
+  if (e.kind === 'ring') {
+    ctx.strokeStyle = e.color || P.a; ctx.globalAlpha = 1 - p; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(cx, cy, cell * (.2 + p * .5), 0, 7); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (e.kind === 'buzz') {
+    ctx.strokeStyle = P.bad; ctx.globalAlpha = 1 - p; ctx.lineWidth = 3;
+    const s = cell * .18;
+    ctx.beginPath();
+    ctx.moveTo(cx - s, cy - s); ctx.lineTo(cx + s, cy + s);
+    ctx.moveTo(cx + s, cy - s); ctx.lineTo(cx - s, cy + s);
+    ctx.stroke(); ctx.globalAlpha = 1;
+  } else if (e.kind === 'burst') {
+    ctx.strokeStyle = P.bad; ctx.globalAlpha = 1 - p; ctx.lineWidth = 3;
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      ctx.beginPath();
+      ctx.moveTo(cx + Math.cos(a) * cell * .1, cy + Math.sin(a) * cell * .1);
+      ctx.lineTo(cx + Math.cos(a) * cell * (.15 + p * .45),
+                 cy + Math.sin(a) * cell * (.15 + p * .45));
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ---- run loop ---------------------------------------------------------------
+function startRun(pause) {
+  world = TK.initWorld(lv, track);
+  phase = 'run'; paused = !!pause;
+  anims.clear(); trails.clear(); effects = []; pendingEnd = null;
+  tickStart = performance.now(); tickDur = 1;
+  hud();
+}
+function stopRun() {
+  world = null; phase = 'edit'; paused = false;
+  anims.clear(); trails.clear(); pendingEnd = null; hud();
+}
+function doTick(now) {
+  const ev = [];
+  const status = TK.step(lv, world, ev);
+  anims.clear();
+  const P = COL();
+  for (const e of ev) {
+    if (e.t === 'move') anims.set(e.id, { fx: e.fx, fy: e.fy, tx: e.x, ty: e.y });
+    else if (e.t === 'pickup' || e.t === 'consume' || e.t === 'arrive')
+      effects.push({ x: e.x, y: e.y, t0: now, kind: 'ring', color: P.c[e.c] });
+    else if (e.t === 'split' || e.t === 'merge')
+      effects.push({ x: e.x, y: e.y, t0: now, kind: 'ring' });
+    else if (e.t === 'crash' || e.t === 'derail' || e.t === 'locked' || e.t === 'jam' ||
+             e.t === 'wrongStation' || e.t === 'wrongCargo') {
+      if (e.x != null) effects.push({ x: e.x, y: e.y, t0: now, kind: 'burst' });
+    }
+  }
+  hud();
+  tickStart = now;
+  tickDur = 300 / (paused ? 1 : speed);
+  if (status !== 'running')
+    pendingEnd = { status, at: now + 420 };
+}
+function frame(now) {
+  rafId = requestAnimationFrame(frame);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  drawBoard(now);
+  if (world && phase === 'run' && now - tickStart >= tickDur) {
+    if (pendingEnd) { if (now >= pendingEnd.at) finish(pendingEnd.status); }
+    else if (!paused) doTick(now);
+  }
+}
+function finish(status) {
+  phase = 'done';
+  hap(status === 'win' ? [15, 30, 15, 30, 50] : [60, 40, 60]);
+  const b = $('banner');
+  if (status === 'win') {
+    const pieces = TK.cost(track);
+    const best = solves[def.id] ? Math.min(solves[def.id].pieces, pieces) : pieces;
+    solves[def.id] = { pieces: best };
+    store.save(solves);
+    const i = LEVELS.indexOf(def), next = LEVELS[i + 1];
+    b.innerHTML = `<h3>Right on time ✨</h3>
+      <p>${pieces} pieces of a ${lv.budget}-piece budget.</p>
+      <div class="row">
+        <button class="ghostb" id="bAgain">Replay</button>
+        <button id="bNext">${next ? 'Next ›' : 'Atlas'}</button>
+      </div>`;
+    b.hidden = false;
+    $('bNext').onclick = () => next ? openLevel(next) : goAtlas();
+    $('bAgain').onclick = () => { b.hidden = true; world = null; phase = 'edit'; hud(); };
+  } else {
+    const [h, p] = FAILS[status] || [status, ''];
+    b.innerHTML = `<h3>${h}</h3><p>${p}</p>
+      <div class="row"><button id="bRetry">Back to the drawing board</button></div>`;
+    b.hidden = false;
+    $('bRetry').onclick = () => { b.hidden = true; world = null; phase = 'edit'; hud(); };
+  }
+  pendingEnd = null; hud();
+}
+function goAtlas() {
+  cancelAnimationFrame(rafId);
+  world = null; def = null;
+  $('play').hidden = true; $('atlas').hidden = false;
+  buildAtlas();
+}
+
+// ---- paint input -------------------------------------------------------------
+let strokeCells = null, strokeBase = null, gestureStrokes = null, buzzedAt = 0;
+
+function cellAt(e) {
+  const r = cv.getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) / cell);
+  const y = Math.floor((e.clientY - r.top) / cell);
+  if (x < 0 || y < 0 || x >= lv.W || y >= lv.H) return null;
+  return { x, y };
+}
+function applyGesture() {
+  const t = TK.cloneTrack(strokeBase);
+  let ok = true;
+  for (const s of gestureStrokes) if (!TK.stroke(lv, t, s, lv.budget)) ok = false;
+  if (!TK.stroke(lv, t, strokeCells, lv.budget)) ok = false;
+  track = t;
+  if (!ok && performance.now() - buzzedAt > 350) {
+    buzzedAt = performance.now();
+    const last = strokeCells[strokeCells.length - 1];
+    effects.push({ x: last.x, y: last.y, t0: buzzedAt, kind: 'buzz' });
+    hap(30);
+  }
+  hud();
+}
+cv.addEventListener('pointerdown', e => {
+  if (!lv) return;
+  cv.setPointerCapture(e.pointerId);
+  if (phase !== 'edit') {
+    const c = cellAt(e);
+    if (c) effects.push({ x: c.x, y: c.y, t0: performance.now(), kind: 'buzz' });
+    return;
+  }
+  const c = cellAt(e);
+  if (!c) return;
+  strokeCells = [c]; strokeBase = TK.cloneTrack(track); gestureStrokes = [];
+});
+cv.addEventListener('pointermove', e => {
+  if (!strokeCells || phase !== 'edit') return;
+  const c = cellAt(e);
+  if (!c) return;
+  let last = strokeCells[strokeCells.length - 1];
+  if (c.x === last.x && c.y === last.y) return;
+  // walk one 4-step at a time toward c
+  let guard = 0;
+  while ((last.x !== c.x || last.y !== c.y) && guard++ < 24) {
+    const dx = c.x - last.x, dy = c.y - last.y;
+    const stepc = Math.abs(dx) >= Math.abs(dy)
+      ? { x: last.x + Math.sign(dx), y: last.y }
+      : { x: last.x, y: last.y + Math.sign(dy) };
+    const prev = strokeCells[strokeCells.length - 2];
+    if (prev && prev.x === stepc.x && prev.y === stepc.y) strokeCells.pop();  // backtrack
+    else strokeCells.push(stepc);
+    last = strokeCells[strokeCells.length - 1] || stepc;
+    if (!strokeCells.length) strokeCells = [stepc];
+    if (lv.fixed(stepc.x, stepc.y) && strokeCells.length > 1) {
+      gestureStrokes.push(strokeCells);
+      strokeCells = [stepc];
+    }
+  }
+  applyGesture();
+});
+function endStroke(e) {
+  if (!strokeCells) return;
+  if (phase === 'edit') {
+    const moved = gestureStrokes.length > 0 || strokeCells.length > 1;
+    if (!moved) {
+      const c = strokeCells[0], k = TK.key(c.x, c.y);
+      if ((strokeBase[k] || []).length) {
+        track = TK.cloneTrack(strokeBase);
+        delete track[k];
+        effects.push({ x: c.x, y: c.y, t0: performance.now(), kind: 'ring' });
+        hap(12);
+      }
+    } else { applyGesture(); hap(8); }
+    hud();
+  }
+  strokeCells = null; strokeBase = null; gestureStrokes = null;
+}
+cv.addEventListener('pointerup', endStroke);
+cv.addEventListener('pointercancel', endStroke);
+
+// ---- buttons -------------------------------------------------------------------
+$('go').onclick = () => {
+  if (phase === 'done') { $('banner').hidden = true; world = null; phase = 'edit'; hud(); return; }
+  if (phase === 'run') {
+    if (paused) { paused = false; tickStart = 0; hud(); }
+    else stopRun();
+    return;
+  }
+  startRun(false);
+};
+$('stepb').onclick = () => {
+  if (phase === 'done') return;
+  if (phase === 'edit') { startRun(true); doTick(performance.now()); return; }
+  paused = true; hud();
+  if (!pendingEnd) doTick(performance.now());
+  else finish(pendingEnd.status);
+};
+$('clearb').onclick = () => {
+  if (phase !== 'edit') return;
+  track = {}; hud();
+};
+$('speed').onclick = () => {
+  speed = speed === 1 ? 3 : 1;
+  $('speed').textContent = speed + '×';
+};
+$('back').onclick = goAtlas;
+
+buildAtlas();
+})();
+</script>
+</body>
+</html>
