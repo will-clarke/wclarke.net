@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "hydra",
+      "name": "Hydra",
+      "accent": "#59f2a6",
+      "tagline": "Cut it, get two. Pilot every snake at once with one relative command - pin one against a wall to desync the pack, cleave a snake into halves that crawl apart, push boxes, grow on pellets, and slide backward to fuse tails together again. Cover every diamond."
+    },
+    {
       "slug": "terminus",
       "name": "Terminus",
       "accent": "#66ffa3",

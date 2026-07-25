@@ -102,8 +102,6 @@ const SEED_CONTENT = {
             blurb: 'an artificial-life sandbox with no fitness function: things survive because they survive. runs on the shed gpu. the clip probes one creature’s brain mid-swarm.' },
   '1,-1': { glyph: '💎', title: 'polyhedra playground', act: 'play', href: '/games/polyhedra/', accent: '#8affd4',
             blurb: 'dual, truncate, gyro: conway operators on spinning solids. export any of them and 3d print it.' },
-  '2,-1': { glyph: '🚉', title: 'terminus · train puzzle', act: 'play', href: '/games/terminus/', accent: '#66ffa3',
-            blurb: 'draw each track piece by scarce piece, then run every train at once. lines may cross; trains may not.' },
   '0,2':  { glyph: '△', title: 'choose two', act: 'visit', href: '/choosetwo/',
             blurb: 'trilemmas as svg triangles - pick any two: cap theorem, zooko, career / family / hobbies, and more.' },
   '0,-2': { glyph: '🎼', title: 'ai music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
@@ -272,10 +270,11 @@ const PLAYED = [
 
 // games will actually rates; the rest of games.json lands in the
 // 'unfinished concepts' sub-room at the games room's centre cell
-const DECENT_SLUGS = ['mirror', 'tile', 'shipshape', 'loom', 'drip'];
+const DECENT_SLUGS = ['hydra', 'mirror', 'tile', 'shipshape', 'loom', 'drip'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
-  drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉' };
+  drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉',
+  hydra: '🐉' };
 const PINNED_GAMES = [
   { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/', accent: '#ff9a3a',
     blurb: 'a little factory: emitters, colourers, portals, fans. build it, press play, watch it be wrong, rewind. 30 levels.' },
@@ -289,7 +288,7 @@ const PINNED_GAMES = [
     blurb: 'sokoban, except the slime teleports.' },
 ];
 // featured at the top level of the comb, so not repeated in the games room
-const FEATURED_SLUGS = ['recurr', 'terminus'];
+const FEATURED_SLUGS = ['recurr'];
 // first matching pattern names a post's glyph; ✍ is the fallback
 const POST_GLYPHS = [
   [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],

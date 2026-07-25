@@ -30,10 +30,22 @@ KEEP_GAMES := functional-sokoban paint-machine polyhedra recursive-sokoban \
               slime-teleports worm-division
 KEEP_EXCLUDES := $(foreach g,$(KEEP_GAMES),--exclude=$(g))
 
-# Build-based games: built in ../games, then only their dist/ is copied in.
-# Excluded from the generic static sync so the raw project tree never lands.
+# Build-based games that emit a dist/: built in ../games, then only their dist/
+# is copied in. Fully excluded from the generic static sync so their raw project
+# tree never lands. (hydra is build-based too but bundles into a self-contained
+# index.html at its root, so it rides the static sync -- SRC_EXCLUDES below keep
+# its source out.)
 BUILD_GAMES    := fathom shipshape lanternwake
 BUILD_EXCLUDES := $(foreach g,$(BUILD_GAMES),--exclude=$(g))
+
+# Source/tooling cruft that must never reach the site. Static games are single
+# self-contained index.html files; anything below is build source (hydra's TS,
+# node_modules, configs) or a dev-only test harness (harness.mjs).
+SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
+                --exclude=package-lock.json --exclude=tsconfig.json \
+                --exclude='*.ts' --exclude='*.mjs' \
+                --exclude=src --exclude=test --exclude=tools \
+                --exclude=web --exclude=public --exclude=scripts --exclude=dist
 
 .DEFAULT_GOAL := help
 
@@ -59,7 +71,7 @@ build:
 ## sync-games: copy ../games (self-contained static games) -> games/
 sync-games:
 	@echo "==> games/  <- $(GAMES_SRC)  (keeping: $(KEEP_GAMES))"
-	@rsync -a --delete $(KEEP_EXCLUDES) $(BUILD_EXCLUDES) \
+	@rsync -a --delete $(KEEP_EXCLUDES) $(BUILD_EXCLUDES) $(SRC_EXCLUDES) \
 	  --exclude='.git' --exclude='.gitignore' --exclude='Makefile' \
 	  --exclude='*.md' --exclude='_template' --exclude='scratch-*.js' \
 	  --exclude='.playwright-mcp' --exclude='*.png' --exclude='test.js' \
