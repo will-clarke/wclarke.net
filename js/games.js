@@ -17,6 +17,8 @@
   // mirrors games.json (order matters - it drives the spiral). The fetch below
   // refreshes accents/names in place, so this only needs to be roughly current.
   var FALLBACK = [
+    { slug: "hydra", name: "Hydra", accent: "#59f2a6" },
+    { slug: "terminus", name: "Terminus", accent: "#66ffa3" },
     { slug: "recurr", name: "Recurr", accent: "#ff7ac2" },
     { slug: "drip", name: "Drip", accent: "#e455ff" },
     { slug: "cascade", name: "Cascade", accent: "#3ad9ff" },
@@ -30,6 +32,9 @@
     { slug: "fracture", name: "Fracture", accent: "#ff5a6e" },
     { slug: "seed", name: "Seed", accent: "#57e08a" },
     { slug: "loom", name: "Loom", accent: "#b98cff" },
+    { slug: "mirror", name: "Mirror", accent: "#8fd0ff" },
+    { slug: "tile", name: "Tile", accent: "#9f86ff" },
+    { slug: "allotment", name: "Allotment", accent: "#8fe36b" },
   ];
 
   // axial neighbour directions, in ring-traversal order (matches hexfield's grid)
