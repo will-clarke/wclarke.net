@@ -34,7 +34,7 @@
     { slug: "loom", name: "Loom", accent: "#b98cff" },
     { slug: "mirror", name: "Mirror", accent: "#8fd0ff" },
     { slug: "tile", name: "Tile", accent: "#9f86ff" },
-    { slug: "allotment", name: "Allotment", accent: "#8fe36b" },
+    { slug: "allotmatic", name: "Allotmatic", accent: "#7fb84a" },
   ];
 
   // axial neighbour directions, in ring-traversal order (matches hexfield's grid)
