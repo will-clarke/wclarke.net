@@ -103,10 +103,10 @@
       "tagline": "One shape per level. Tap an empty cell to stamp it - its glowing eye lands where you touch; tap again to turn it through every way it fits there; hold to dissolve it. Fill the whole region with copies of that single polyomino, where hue is orientation so a finished tiling glows with its own hidden lattice. Fourteen levels from the deficient-board theorem to one-sided chirality, plus grown puzzles to share."
     },
     {
-      "slug": "allotment",
-      "name": "Allotment",
-      "accent": "#8fe36b",
-      "tagline": "A night-garden farm where every act of automation is a geometric packing puzzle. Sow polyomino crops by hand, paint water across glistening soil, tap ripe rows - then earn your way out of the chores with oddly-shaped sprinklers whose auras you must tile over the beds. Each new aura or crop shape makes the layout you were proud of an hour ago pleasantly obsolete. Make the whole plot tend itself."
+      "slug": "allotmatic",
+      "name": "Allotmatic",
+      "accent": "#7fb84a",
+      "tagline": "A cosy pixel-art allotment where every act of automation is a geometric packing puzzle. Drag splashes from the well, tap ripe rows, send the pony cart to town - then research your way out of the chores with oddly-shaped sprinklers whose auras you must tile over the beds. Each new aura or crop shape makes the layout you were proud of an hour ago pleasantly obsolete. Make the whole plot tend itself, to a jaunty folk tune."
     }
   ]
 }
