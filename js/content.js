@@ -231,9 +231,9 @@ const SEED_CONTENT = {
             blurb: 'a keyboard piece from a model trained in the shed. nobody wrote it; it came out sounding like bach anyway. tap to play.' },
   '2,-2': { glyph: '🎬', title: 'classiccult · film finder', act: 'visit', href: 'https://classiccult.pages.dev/', accent: '#ffd166',
             blurb: 'every classic & cult screening in london, scraped nightly onto one page. no backend, nothing to pay for. i moved to dorset shortly after finishing it.' },
-  '1,-2': { note: 'welcome to my hexagon! explore around if you like - it goes deeper than it looks.', glyph: '👋' },
+  '1,-2': { note: 'welcome to my hexagon! explore around if you like.', glyph: '👋' },
   // ---- my shed ----
-  '-1,-1': { section: true, glyph: '🪓', title: 'my shed' },
+  '-1,-1': { section: true, glyph: '🪓', title: 'shed' },
   '-1,-1|1,0':  { note: 'no central heating. the house runs on logs; the logs run on me. winter is a supply chain and i am most of it.', glyph: '🔥' },
   '-1,-1|0,1':  { note: 'ambitions of proper woodworking - steps, tables, one day a log cabin. current verified output: kindling.', glyph: '🪵' },
   '-1,-1|1,1':  { note: 'there is a rock tumbler running in the shed. it will bore me eventually; until then the house hums and produces shiny pebbles nobody asked for.', glyph: '🪨' },
