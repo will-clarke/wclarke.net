@@ -24,7 +24,8 @@ const SEED_CONTENT = {
   '0,0|0,-1': { glyph: '✉', title: 'say hello', act: 'email', href: 'mailto:wmmclarke@gmail.com',
                 blurb: 'wmmclarke@gmail.com' },
   '0,0|2,-1': { glyph: '🫠', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
-                blurb: 'the professional mask.' },
+                blurb: 'look how professional i am.' },
+  '0,0|1,-1': { note: 'we’ve got seven chickens and three kids. the chickens are less bother.', glyph: '🐔' },
   '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'read', href: '/stats', slug: 'stats',
                  inline: true, blurb: 'numbers about this site.',
                  html: `
@@ -115,10 +116,10 @@ const SEED_CONTENT = {
     generated sites, and the 3D printer's automated config backups are
     excluded. 2014's JavaScript is mostly jQuery plugins committed by hand,
     which was the style at the time.</p>` },
-  '0,0|2,-2': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
-                blurb: 'most of the code. quality varies.' },
   // ---- code: github and the projects that live there ----
   '0,0|2,0': { section: true, glyph: '🐙', title: 'code' },
+  '0,0|2,0|0,1': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
+                   blurb: 'most of the code. quality varies.' },
   '0,0|2,0|1,0': { glyph: '⚙', title: 'sourcehut', act: 'visit', href: 'https://git.sr.ht/~will-clarke',
                    blurb: 'a mirror; some older code lives here too.' },
   '0,0|2,0|-1,1': { glyph: '🥔', title: 't8r8r', act: 'visit', href: 'https://t8r8r.fly.dev',
