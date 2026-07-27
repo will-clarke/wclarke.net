@@ -1,0 +1,6 @@
+# The whole site is the honeycomb. Real assets (games, museum, choosetwo, css,
+# js, media, *.json, *.xml) are served directly and take precedence over this.
+# Every other path falls through to the comb, which routes it by slug: see the
+# slug router + PAGE_ALIASES in index.html. So /culprit, /posts/<slug>, /about,
+# /writing … all open inside the hive instead of a standalone page.
+/*  /index.html  200

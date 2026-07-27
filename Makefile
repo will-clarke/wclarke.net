@@ -15,10 +15,10 @@
 # BUILD_GAMES): `make sync` builds them in ../games and copies only their
 # built dist/ into games/<slug>/ -- never the source tree or node_modules.
 #
-# games/index.html is the honeycomb cabinet (js/games.js), a wclarke.net-native
-# page that reuses this site's hex engine (/css, /js) - so it is owned here and
-# EXCLUDED from the sync, not pulled from ../games. games/shots/ (the dive-in
-# screenshots it shows) is excluded too. games.json still syncs in as data.
+# There is no games/index.html any more (the standalone hex cabinet was
+# retired - the comb's own games room replaces it). The sync still excludes
+# /index.html and /shots so ../games can never (re)introduce a games/ landing
+# page or its screenshots. games.json still syncs in as data for the comb.
 
 GAMES_SRC := ../games
 PORT      ?= 8000

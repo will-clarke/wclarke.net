@@ -25,8 +25,96 @@ const SEED_CONTENT = {
                 blurb: 'wmmclarke@gmail.com' },
   '0,0|2,-1': { glyph: '🫠', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
                 blurb: 'the professional mask.' },
-  '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'view', href: '/stats.html',
-                 blurb: 'numbers about this site.' },
+  '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'read', href: '/stats', slug: 'stats',
+                 inline: true, blurb: 'numbers about this site.',
+                 html: `
+    <h1>Twelve and a half years of typing</h1>
+    <p class="lede">I pointed a script at every git repository of mine I could
+    find - 68 of them, across GitHub and sourcehut, mirrors deduplicated - and
+    counted everything since the first commit in February 2014.</p>
+
+    <div class="stat-row">
+      <div class="stat"><b>3,497</b><span>commits</span></div>
+      <div class="stat"><b>622,122</b><span>lines added</span></div>
+      <div class="stat"><b>229,159</b><span>lines removed</span></div>
+      <div class="stat"><b>68</b><span>repositories</span></div>
+    </div>
+
+    <h2>Commits per year</h2>
+    <div class="years" role="img" aria-label="Bar chart of commits per year, 2014 to 2026. Values in the table below.">
+      <div class="col"><span class="val" style="--h:23%">186</span><div class="bar" style="--h:23%" title="2014: 186 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:9.9%" title="2015: 80 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:9.6%" title="2016: 78 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:7.9%" title="2017: 64 commits"></div></div>
+      <div class="col"><span class="val" style="--h:5.4%">44</span><div class="bar" style="--h:5.4%" title="2018: 44 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:17.3%" title="2019: 140 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:31.8%" title="2020: 257 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:42%" title="2021: 340 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:18%" title="2022: 146 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:37.6%" title="2023: 304 commits"></div></div>
+      <div class="col"><div class="bar" style="--h:68%" title="2024: 550 commits"></div></div>
+      <div class="col"><span class="val" style="--h:100%">809</span><div class="bar" style="--h:100%" title="2025: 809 commits"></div></div>
+      <div class="col partial"><span class="val" style="--h:61.7%">499</span><div class="bar" style="--h:61.7%" title="2026: 499 commits, by July"></div></div>
+    </div>
+    <div class="year-labels">
+      <span>'14</span><span>'15</span><span>'16</span><span>'17</span><span>'18</span><span>'19</span><span>'20</span><span>'21</span><span>'22</span><span>'23</span><span>'24</span><span>'25</span><span>'26</span>
+    </div>
+
+    <p>The low point is 2018: forty-four commits, a big year for the day job.
+    The recent cliff face is what it looks like. 2026 is the faded bar - half a
+    year old and already in third place.</p>
+
+    <h2>What the lines were</h2>
+    <p class="section-lede">"Lines added" is a terrible metric, so naturally
+    I've charted it.</p>
+
+    <div class="langs">
+      <div class="row"><span class="name">prose</span><div class="track"><div class="fill" style="width:100%"></div></div><span class="num">135,790</span></div>
+      <div class="row"><span class="name">shell / config</span><div class="track"><div class="fill" style="width:77%"></div></div><span class="num">104,325</span></div>
+      <div class="row"><span class="name">javascript</span><div class="track"><div class="fill" style="width:62%"></div></div><span class="num">84,718</span></div>
+      <div class="row"><span class="name">html / css</span><div class="track"><div class="fill" style="width:43%"></div></div><span class="num">57,875</span></div>
+      <div class="row"><span class="name">ruby</span><div class="track"><div class="fill" style="width:35%"></div></div><span class="num">46,973</span></div>
+      <div class="row"><span class="name">c</span><div class="track"><div class="fill" style="width:33%"></div></div><span class="num">44,163</span></div>
+      <div class="row"><span class="name">python</span><div class="track"><div class="fill" style="width:16%"></div></div><span class="num">21,812</span></div>
+      <div class="row"><span class="name">go</span><div class="track"><div class="fill" style="width:7.3%"></div></div><span class="num">9,960</span></div>
+      <div class="row"><span class="name">lua</span><div class="track"><div class="fill" style="width:6.4%"></div></div><span class="num">8,681</span></div>
+      <div class="row"><span class="name">elixir</span><div class="track"><div class="fill" style="width:3.6%"></div></div><span class="num">4,871</span></div>
+      <div class="row"><span class="name">rust</span><div class="track"><div class="fill" style="width:2.8%"></div></div><span class="num">3,771</span></div>
+      <div class="row"><span class="name">haskell</span><div class="track"><div class="fill" style="width:2.5%"></div></div><span class="num">3,432</span></div>
+      <div class="row"><span class="name">elm</span><div class="track"><div class="fill" style="width:1.6%"></div></div><span class="num">2,234</span></div>
+      <div class="row"><span class="name">everything else</span><div class="track"><div class="fill" style="width:69%"></div></div><span class="num">93,517</span></div>
+    </div>
+
+    <p>The biggest language I write is English. The most-committed repository,
+    out of 68, is <code>dotfiles</code>, with 504 commits. I'm not sure what
+    either of those says.</p>
+
+    <details>
+      <summary>the full table</summary>
+      <table>
+        <tr><th>year</th><th>commits</th><th>lines added</th><th>lines removed</th></tr>
+        <tr><td>2014</td><td>186</td><td>81,509</td><td>57,122</td></tr>
+        <tr><td>2015</td><td>80</td><td>3,197</td><td>455</td></tr>
+        <tr><td>2016</td><td>78</td><td>6,782</td><td>2,626</td></tr>
+        <tr><td>2017</td><td>64</td><td>2,912</td><td>1,527</td></tr>
+        <tr><td>2018</td><td>44</td><td>42,688</td><td>2,935</td></tr>
+        <tr><td>2019</td><td>140</td><td>4,530</td><td>2,778</td></tr>
+        <tr><td>2020</td><td>257</td><td>23,612</td><td>6,637</td></tr>
+        <tr><td>2021</td><td>340</td><td>36,355</td><td>21,161</td></tr>
+        <tr><td>2022</td><td>146</td><td>47,971</td><td>28,329</td></tr>
+        <tr><td>2023</td><td>304</td><td>18,376</td><td>4,662</td></tr>
+        <tr><td>2024</td><td>550</td><td>96,186</td><td>46,230</td></tr>
+        <tr><td>2025</td><td>809</td><td>112,104</td><td>29,793</td></tr>
+        <tr><td>2026 (to July)</td><td>499</td><td>145,900</td><td>24,904</td></tr>
+      </table>
+    </details>
+
+    <p class="footnote">Method: commits matched against the twelve email
+    addresses I've apparently had, deduplicated by hash across mirrored repos.
+    Lockfiles, <code>node_modules</code> (committed once, in 2023, on purpose),
+    generated sites, and the 3D printer's automated config backups are
+    excluded. 2014's JavaScript is mostly jQuery plugins committed by hand,
+    which was the style at the time.</p>` },
   '0,0|2,-2': { glyph: '🐙', title: 'github', act: 'visit', href: 'https://github.com/will-clarke',
                 blurb: 'most of the code. quality varies.' },
   // ---- code: github and the projects that live there ----
@@ -59,7 +147,7 @@ const SEED_CONTENT = {
   '0,0|1,1|2,-1': { note: 'forward3d (2012-2014): hired as a data analyst; taught myself ruby and quietly automated most of my own job.', glyph: '🤖' },
   '0,0|1,1|-2,1': { note: 'before any of that: a masters in anthropology & archaeology at durham. the trowel-to-keyboard pipeline.', glyph: '🏺' },
   '0,0|1,1|2,-2': { note: 'in 2014 this cv was a pure ruby script. it got weirder from there.',
-                    glyph: '💎', href: '/posts/2014-10-12--my-cv...-in-pure-ruby.html', inline: true, act: 'read the post' },
+                    glyph: '💎', href: '/posts/2014-10-12--my-cv...-in-pure-ruby', inline: true, act: 'read the post' },
   // ---- interests: the deepest branch on the site, on purpose ----
   '0,-1|2,-1|1,-1|-1,1': { section: true, glyph: '🧭', title: 'interests' },
   '0,-1|2,-1|1,-1|-1,1|0,-1': { note: 'outside: walks, the garden, cycling, squash when the knee agrees. dorset does most of the heavy lifting.', glyph: '🥾' },
@@ -93,8 +181,43 @@ const SEED_CONTENT = {
   '-1,1': { section: true, glyph: '✍', title: 'tech blog' },
   '0,1':  { section: true, glyph: '📐', title: 'draggable maths' },
   '-1,0': { glyph: '🍽', title: 'culprit · food tracker', accent: '#7fe0a0',
-            href: '/culprit.html', inline: true, act: 'peek inside',
-            blurb: 'a food & symptom tracker: photograph meals, log symptoms, and let the correlations do the rest. image recognition runs locally on the home server - nothing leaves the house.' },
+            href: '/culprit', slug: 'culprit', inline: true, act: 'peek inside',
+            blurb: 'a food & symptom tracker: photograph meals, log symptoms, and let the correlations do the rest. image recognition runs locally on the home server - nothing leaves the house.',
+            html: `
+    <p class="lede">A food &amp; symptom tracker for a suspicious gut:
+    photograph meals, log how you feel, and let the correlations do the
+    detective work. Image recognition runs locally on the home server -
+    nothing leaves the house. Which also means there is no public demo,
+    so these screenshots will have to incriminate it instead.</p>
+
+    <div class="shots">
+      <figure>
+        <img src="/images/culprit/capture.jpeg" alt="Culprit's capture tab: a camera viewfinder with food/field/note tags and a five-emoji mood picker" width="390" height="844" loading="lazy">
+        <figcaption><b>capture</b>Point the camera at a meal, tag it, stamp a
+        mood. The viewfinder is black here because the server has no
+        camera - or, arguably, because it was taken by a headless browser.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/feel.jpeg" alt="Culprit's feel tab: quick symptom and feeling check-ins" width="390" height="844" loading="lazy">
+        <figcaption><b>feel</b>Quick check-ins through the day: symptoms,
+        energy, general state of the machinery.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/review.jpeg" alt="Culprit's review tab: a chronological log of captures with daily weather and air-quality entries" width="390" height="844" loading="lazy">
+        <figcaption><b>review</b>The log. Weather and air quality record
+        themselves daily, so the correlations have someone else to
+        blame too.</figcaption>
+      </figure>
+      <figure>
+        <img src="/images/culprit/trends.jpeg" alt="Culprit's trends tab: thirty-day sparklines for mood, energy and stress" width="390" height="844" loading="lazy">
+        <figcaption><b>trends</b>Thirty days of mood, energy and stress as
+        sparklines. Direction of travel is the whole point.</figcaption>
+      </figure>
+    </div>
+
+    <p class="footnote">The image recognition is a local model on the shed's
+    GPU. The app only resolves indoors, which is the correct amount of cloud
+    for a database of what I had for lunch.</p>` },
   // ---- best-of, promoted out of their rooms to the top level ----
   '2,0':  { glyph: '🌀', title: 'fun fractal game', act: 'play', href: '/games/recurr/', accent: '#ff7ac2',
             blurb: 'a mark made of itself: every cell is the whole mark, smaller. match the fractal in par.' },

@@ -1,35 +1,49 @@
 # wclarke.net
 
-A hand-written static site. Everything is plain HTML/CSS in a flat repo root -
-no build step, no generator, no dependencies. To change something, edit the
-file; to add a post, drop an `.html` file in `posts/` and add a link to
-`posts.html` (and `index.xml` if you care about RSS).
+A hand-written static site with no build step, no generator, no dependencies.
+The whole thing is one canvas app (the honeycomb); to add a blog post, add an
+`<item>` to `index.xml` and the writing room picks it up.
 
 I've no idea what I write here. Or why. ¯\_(ツ)_/¯
+
+The whole site is the honeycomb. There are no page templates: everything is
+`index.html` plus the content it fetches. Retired in the July 2026 "everything
+is hexagons" pass: `about/projects/writing/posts/tags/stats/culprit.html`, the
+`posts/ stories/ tags/` trees, the `/games` hex cabinet (`games/index.html`,
+`js/games.js`, `js/hexfield.js`, `games/shots/`) and `404.html`.
 
 ## Layout
 
 ```
-index.html        THE HONEYCOMB: the whole homepage is one self-contained
-                  canvas app - an infinitely recursive hex grid with the
-                  site's content embedded in it (see section below)
-projects.html     the cabinet (games, live toys, meta, website history)
-about.html
-404.html
-css/style.css     one shared, restyleable stylesheet
-writing.html      hub linking both posts and stories
-posts/            the blog
-posts.html        blog index (still live; not in nav - reached via writing.html)
-stories/          short fiction (indexed from writing.html)
-tags/ tags.html   per-tag pages + index
+index.html        THE HONEYCOMB: the whole site is one self-contained canvas
+                  app - an infinitely recursive hex grid with the content
+                  embedded in it (see section below)
+js/content.js     the editorial content (SEED_CONTENT + shelves); culprit and
+                  stats HTML live here as inline `html:` fields
+_redirects        Cloudflare Pages catch-all: every non-asset path → the comb,
+                  which routes it by slug (see the slug router below)
+css/style.css     kept only for the museum's 2021-ssssg exhibit + choosetwo/
+index.xml         RSS: also the source of the writing room's post bodies
+stories.json      short fiction (html embedded per story)
 choosetwo/        self-hosted static copy of choosetwo.org (domain lapsed)
-games/<name>/      games at /games/<name>/: 5 sokoban WASM builds + the
+games/<name>/     games at /games/<name>/: sokoban WASM builds + the
                   ../games strategy set (imported via `make sync`)
+games/games.json  drives the comb's games room
 Makefile          `make sync` imports web content from sibling repos
-museum/           every dead version of this site since 2014, raw HTML
-stats.html        commit stats
-index.xml sitemap.txt robots.txt
+museum/           every dead version of this site since 2014, raw HTML,
+                  full-page exhibits (not inline)
+sitemap.txt robots.txt
 ```
+
+## Clean URLs (the slug router)
+
+`_redirects` (`/* /index.html 200`) hands every unmatched path to the comb;
+real assets still win. Each content item with a `slug` registers `slug → cell`
+in `SLUGS`, so `/culprit`, `/stats`, `/posts/<slug>` fly to their hex and open
+inline. `PAGE_ALIASES` maps the retired page URLs (`/about`, `/writing`,
+`/games`…) to a room. To confirm this locally you need a server that mimics the
+catch-all (plain `python -m http.server` won't); otherwise it only takes effect
+on Cloudflare Pages.
 
 ## The honeycomb homepage (index.html)
 
@@ -117,9 +131,6 @@ redeploys automatically. `.assetsignore` keeps repo-only files (this README,
 WASM on a static host is fine: the games are single-threaded (no COOP/COEP
 headers needed) and `.wasm` serves as `application/wasm`.
 
-Note: the `tags/` pages are re-included via `.gitignore` (`!/tags/`) because the
-global ctags ignore would otherwise silently drop them.
-
 ## Importing from sibling repos (`make sync`)
 
 The site has no build step, but some content is built and maintained in sibling
@@ -167,7 +178,8 @@ Known gaps (solver-verified, but only lightly human-playtested):
 - [The museum](museum/) - every dead version of this site since 2014, restored
   and served as raw HTML (2014-rails, 2014-jekyll, 2020-org, 2021-ssssg).
   Trackers/Disqus stripped; phone number in the "CV in Pure Ruby" post redacted.
-- [Stats](stats.html) - twelve and a half years of commits across 68 repos.
+- [Stats](/stats) - twelve and a half years of commits across 68 repos (an
+  inline hex now, not a page).
 
 ## Backlog / next ideas
 

@@ -94,6 +94,41 @@
   #reader-body blockquote {
     margin:1em 0; padding:.2em 1em; border-left:3px solid #55401d; color:#b8a077;
   }
+  #reader-body .lede { font-size:1.06em; color:#e6d0a4; }
+  #reader-body .footnote, #reader-body .section-lede { font-size:.86em; color:#8f7444; }
+  #reader-body table {
+    border-collapse:collapse; width:100%; font-size:.78em;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; margin:.6em 0;
+  }
+  #reader-body th, #reader-body td { border:1px solid #33260f; padding:.3em .6em; text-align:left; }
+  #reader-body details { margin:1.2em 0; }
+  #reader-body summary {
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.8em;
+    color:#8f7444; cursor:pointer;
+  }
+  /* ---- stats charts, ported from the retired /stats page ---- */
+  #reader-body .stat-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(8rem,1fr)); gap:.9rem; margin:1.5rem 0 2rem; }
+  #reader-body .stat { border:1px solid #33260f; border-radius:4px; padding:.8rem 1rem; }
+  #reader-body .stat b { display:block; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:1.35rem; color:#ffe6ac; }
+  #reader-body .stat span { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:#8f7444; }
+  #reader-body .years { display:grid; grid-template-columns:repeat(13,1fr); align-items:end; gap:4px; height:11rem; margin:2rem 0 0; border-bottom:1px solid #33260f; }
+  #reader-body .years .col { position:relative; height:100%; display:flex; align-items:flex-end; justify-content:center; }
+  #reader-body .years .bar { width:100%; max-width:1.7rem; background:#e8b558; border-radius:3px 3px 0 0; height:var(--h); }
+  #reader-body .years .col.partial .bar { opacity:.45; }
+  #reader-body .years .col .val { position:absolute; bottom:calc(var(--h) + .3rem); left:0; right:0; text-align:center; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.65rem; color:#8f7444; }
+  #reader-body .year-labels { display:grid; grid-template-columns:repeat(13,1fr); gap:4px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.65rem; color:#8f7444; text-align:center; margin-bottom:1.5rem; }
+  #reader-body .langs { margin:1.5rem 0; }
+  #reader-body .langs .row { display:grid; grid-template-columns:7.5rem 1fr 4.5rem; align-items:center; gap:.6rem; margin:.35rem 0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.75rem; }
+  #reader-body .langs .name { color:#d9c39a; text-align:right; }
+  #reader-body .langs .track { height:.7rem; background:#241a0e; border-radius:3px; }
+  #reader-body .langs .fill { height:100%; background:#e8b558; border-radius:0 3px 3px 0; min-width:2px; }
+  #reader-body .langs .num { color:#8f7444; }
+  /* ---- culprit screenshots, ported from the retired /culprit page ---- */
+  #reader-body .shots { display:grid; grid-template-columns:repeat(auto-fit,minmax(11rem,1fr)); gap:1.2rem; margin:1.5rem 0; }
+  #reader-body .shots figure { margin:0; border:1px solid #33260f; border-radius:6px; padding:.6rem; }
+  #reader-body .shots img { width:100%; height:auto; display:block; border-radius:4px; }
+  #reader-body .shots figcaption { font-size:.8rem; color:#8f7444; padding:.6rem .2rem .1rem; }
+  #reader-body .shots figcaption b { display:block; margin-bottom:.2em; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.7rem; font-weight:normal; letter-spacing:.08em; text-transform:uppercase; color:#d9c39a; }
   #reader-panel > footer {
     display:flex; justify-content:space-between; align-items:center;
     padding:12px 24px; border-top:1px solid #33260f;
@@ -141,9 +176,8 @@
 <noscript>
   <p style="color:#d8b06a;padding:2em;font-family:monospace">
     This page is an interactive honeycomb and needs JavaScript.
-    Without it: <a href="/games/" style="color:#ffd98a">games</a> ·
-    <a href="/writing.html" style="color:#ffd98a">writing</a> ·
-    <a href="/about.html" style="color:#ffd98a">about</a>
+    Without it, wander <a href="/museum/" style="color:#ffd98a">the museum</a>
+    of older, calmer versions of this site.
   </p>
 </noscript>
 
@@ -159,7 +193,6 @@
     </header>
     <article id="reader-body"></article>
     <footer>
-      <a id="reader-raw" href="#">open as plain page ↗</a>
       <span class="dim">esc closes</span>
     </footer>
   </div>
@@ -290,7 +323,12 @@ const trCache = new Map();   // lazily computed cell traits, by canonical key
 // you zoom); {section: true} makes a labelled deep cell whose interior
 // comb holds more items. Cells without content stay procedural honey.
 const CONTENT = new Map();
+// clean-URL routing: slug -> cell path, so /culprit, /stats, /posts/<slug>
+// each fly to their hex and open inline. POSTS holds the blog by slug.
+const SLUGS = new Map();
+const POSTS = new Map();
 function addContent(key, item){
+  if (item && item.slug) SLUGS.set(item.slug, key);
   CONTENT.set(key, item);
   trCache.delete(key);
 }
@@ -354,15 +392,40 @@ const contentReady = Promise.allSettled([
       const doc = new DOMParser().parseFromString(t, 'text/xml');
       const items = [...doc.querySelectorAll('item')].map(el => {
         const g = tag => (el.querySelector(tag) || {}).textContent || '';
-        // inert parse: a live innerHTML would fetch the posts' images
+        const link = g('link');
+        // the full post body lives in the RSS description; it renders inline
+        // in the reader now that the standalone post pages are gone
         const body = new DOMParser().parseFromString(g('description'), 'text/html').body;
+        // drop the trailing "Tags" footer (its /tags/ pages no longer exist)
+        const tagsH = body.querySelector('#tags');
+        if (tagsH){
+          const after = tagsH.nextElementSibling, before = tagsH.previousElementSibling;
+          if (after && after.tagName === 'P') after.remove();
+          tagsH.remove();
+          if (before && before.tagName === 'HR') before.remove();
+        }
+        // rewrite inter-post links to clean slug routes (the router resolves them)
+        for (const a of body.querySelectorAll('a[href]')){
+          const h = a.getAttribute('href') || '';
+          const m = h.match(/^(?:https?:\/\/[^/]+)?(\/posts\/[^"'#?]+?)\.html(.*)$/);
+          if (m) a.setAttribute('href', m[1] + m[2]);
+        }
         const plain = (body.textContent || '').trim().replace(/\s+/g, ' ');
         const title = g('title');
-        return { glyph: postGlyph(title), title: title.toLowerCase(), act: 'read',
-                 href: g('link'), inline: true,
+        // real date lives in the slug (YYYY-MM-DD…); pubDate is just a build stamp
+        const slug = link.replace(/^https?:\/\/[^/]+/, '').replace(/^\//, '').replace(/\.html$/, '');
+        const dm = slug.match(/(\d{4}-\d{2}-\d{2})/);
+        const it = { glyph: postGlyph(title), title: title.toLowerCase(), act: 'read',
+                 href: '/' + slug, slug, inline: true, html: body.innerHTML,
+                 date: dm ? dm[1] : '',
                  blurb: plain.length > 150 ? plain.slice(0, 147) + '…' : plain };
+        POSTS.set(slug, it);
+        return it;
       });
       fillSection('-1,1', items, 'older posts', '✍');
+      // the employers room embeds the "cv in pure ruby" post inline
+      const cv = CONTENT.get('0,0|1,1|2,-2'), cvPost = POSTS.get('posts/2014-10-12--my-cv...-in-pure-ruby');
+      if (cv && cvPost) Object.assign(cv, { html: cvPost.html, href: cvPost.href, slug: cvPost.slug, date: cvPost.date });
     })
     .catch(() => {}),
   fetch('/intuition.json')
@@ -1283,11 +1346,12 @@ function openReader(it){
   document.getElementById('reader-glyph').textContent = it.glyph || '✍';
   document.getElementById('reader-title').textContent = it.title;
   document.getElementById('reader-date').textContent = it.date || '';
-  document.getElementById('reader-raw').href = url.pathname;
   const body = document.getElementById('reader-body');
   readerEl.hidden = false;
   readerOpen = true;
-  history.pushState({ reader: 1 }, '');   // back button folds the reader away
+  // shareable clean URL for slugged content (/culprit, /posts/…); back folds
+  // the reader away and restores whatever address we opened from
+  history.pushState({ reader: 1 }, '', it.slug ? '/' + encodeURI(it.slug) : location.pathname + location.hash);
   hoverKey = null; hovered = null;
   // stories carry their own prose in the comb (stories.json), so render it
   // straight in rather than fetching a page
@@ -1802,9 +1866,14 @@ function frame(t){
     // rising replaces, so esc never spams the stack.
     const deep = ch.length ? ch[ch.length - 1].key : '';
     const hash = deep && deep[0] !== '^' ? '#' + deep.replaceAll('|', '/') : '';
-    if (hash !== location.hash){
+    if (readerOpen){
+      // freeze the address bar while reading, so a slug URL (/culprit,
+      // /posts/<slug>) survives the camera settling onto its hex behind
+    } else if (hash !== location.hash){
       const segs = h => h ? h.slice(1).split('/').length : 0;
-      const url = location.pathname + location.search + (hash || '');
+      // always root the address at '/', so once you navigate the comb any
+      // clean slug path we arrived on (e.g. /culprit) drops back to /#…
+      const url = '/' + location.search + (hash || '');
       if (segs(hash) > segs(location.hash) && !histLock) history.pushState(null, '', url);
       else history.replaceState(null, '', url);
     } else histLock = false;   // arrived where history pointed
@@ -1844,23 +1913,47 @@ for (const ev of ['gesturestart', 'gesturechange', 'gestureend'])
 
 refreshCrumbs([]);
 
-// deep link: #q,r/q,r/... drops you straight into that room (resolved
-// once the async sections have landed, so plaque links work too)
+// old top-level page URLs now land you in the nearest comb room
+const PAGE_ALIASES = {
+  about: '0,0', projects: '1,0', games: '1,0', writing: '-1,1',
+  posts: '-1,1', tags: '-1,1', stories: '0,-1|2,-1|1,-1|-1,1|1,-1',
+};
+const keyToCells = k => k.split('|').map(s => { const [q, r] = s.split(',').map(Number); return { q, r }; });
+
+// entry point: a clean slug path (/culprit, /posts/<slug>, /about …) routes
+// into the comb and opens its hex inline; otherwise fall back to the
+// #q,r/q,r/… hash deep-link contract. resolved once the async sections land.
 contentReady.then(() => {
   let introTarget = { x: 0, y: 0, z: roomZ() };
-  const hashCells = parseHashCells(location.hash) || [];
-  if (hashCells.length){
-    const last = hashCells[hashCells.length - 1];
-    const lastKey = hashCells.map(c => c.q + ',' + c.r).join('|');
-    const it = CONTENT.get(lastKey);
-    if (it && !it.section){          // land on the plaque itself
-      path = hashCells.slice(0, -1);
+  let routedItem = null;
+  const landOnCell = key => {
+    const cells = keyToCells(key), it = CONTENT.get(key);
+    if (it && !it.section){
+      const last = cells[cells.length - 1];
+      path = cells.slice(0, -1);
       introTarget = { x: cellX(last.q, last.r), y: cellY(last.q, last.r), z: 0.62 * minVp() };
-    } else {                         // land inside the room
-      path = hashCells;
-      introTarget = { x: 0, y: 0, z: roomZ() };
+      return it;
     }
+    path = cells; introTarget = { x: 0, y: 0, z: roomZ() };
+    return null;
+  };
+
+  const rawPath = decodeURIComponent(location.pathname).replace(/^\/+|\/+$/g, '').replace(/\.html$/, '');
+  const cellKey = rawPath && (SLUGS.get(rawPath) || SLUGS.get('posts/' + rawPath));
+  if (cellKey){
+    routedItem = landOnCell(cellKey);
+    // re-root the address at the room we land in, so back folds the reader
+    // away to the comb instead of leaving the site
+    const ph = path.length ? '#' + path.map(c => c.q + ',' + c.r).join('/') : '';
+    history.replaceState(null, '', '/' + ph);
+  } else if (rawPath && PAGE_ALIASES[rawPath]){
+    landOnCell(PAGE_ALIASES[rawPath]);
+    history.replaceState(null, '', '/#' + PAGE_ALIASES[rawPath].replaceAll('|', '/'));
+  } else {
+    const hashCells = parseHashCells(location.hash) || [];
+    if (hashCells.length) landOnCell(hashCells.map(c => c.q + ',' + c.r).join('|'));
   }
+
   view.x = introTarget.x; view.y = introTarget.y;
   view.z = introTarget.z * 0.42;
   goal.x = view.x; goal.y = view.y; goal.z = view.z;
@@ -1869,6 +1962,7 @@ contentReady.then(() => {
     flyTo(introTarget.x, introTarget.y, introTarget.z, 1.9);
     document.body.classList.add('ready');
     requestAnimationFrame(frame);
+    if (routedItem) openItem(routedItem);
   });
 });
 </script>

@@ -49,8 +49,30 @@ instead of navigating.
   protected from its `--delete`. Never edit `games/<slug>/` by hand for
   synced games - fix the source repo.
 
-## Other pages
+## Everything is the comb now (no standalone pages)
 
-Posts are pandoc HTML in `posts/` (add to `posts.html` + `index.xml`;
-the honeycomb's writing room reads `index.xml`). The museum, stats,
-stories, tags are plain HTML - just edit them.
+There are no hand-written page templates any more - the site is `index.html`
+(the comb) plus content it fetches. The old `about/projects/writing/posts/
+tags/stats/culprit.html`, the `posts/ stories/ tags/` trees and the `/games`
+cabinet are gone.
+
+- **Posts** render inline in the writing room straight from `index.xml`'s
+  full-HTML `<description>` (real date parsed from the slug; the "Tags"
+  footer is stripped). To add a post, add an `<item>` to `index.xml`. There
+  are no `posts/*.html` files.
+- **Culprit** and **stats** are inline hexes: their HTML lives on their
+  `SEED_CONTENT` entries in `js/content.js` (`html:` field), styled by the
+  `#reader-body` rules in `index.html`.
+- **Stories** already live in `stories.json` (`html:` per story).
+- **The museum** stays as full-page exhibits (opened by navigating, not
+  inline) - the old sites keep their own designs. `css/style.css` survives
+  only because the 2021-ssssg exhibit and `choosetwo/` still link it.
+
+## Clean URLs / slug router
+
+`_redirects` sends every non-asset path to `index.html`; the comb then routes
+it. Any content item with a `slug` (culprit, stats, every post) registers
+`slug -> cell` in `SLUGS`, so `/culprit`, `/stats`, `/posts/<slug>` fly to
+their hex and open the reader. `PAGE_ALIASES` maps the retired page URLs
+(`/about`, `/writing`, `/games`, …) to a room. Opening a slugged hex mirrors
+its clean URL; the address bar is frozen while the reader is open.
