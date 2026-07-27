@@ -25,7 +25,7 @@ const SEED_CONTENT = {
                 blurb: 'wmmclarke@gmail.com' },
   '0,0|2,-1': { glyph: '🫠', title: 'linkedin', act: 'visit', href: 'https://www.linkedin.com/in/wmmclarke/',
                 blurb: 'look how professional i am.' },
-  '0,0|1,-1': { note: 'we’ve got seven chickens and three kids. the chickens are less bother.', glyph: '🐔' },
+  '0,0|1,-1': { note: 'we have seven chickens.', glyph: '🐔' },
   '0,0|-1,-1': { glyph: '📈', title: 'stats', act: 'read', href: '/stats', slug: 'stats',
                  inline: true, blurb: 'numbers about this site.',
                  html: `
