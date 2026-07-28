@@ -91,6 +91,18 @@
       "tagline": "Author up to three rewrite rules. The loom runs them tick by tick, leftmost match first, until the bead thread matches the target - or unravels to nothing, or grows forever. Markov algorithms wearing a bead necklace."
     },
     {
+      "slug": "trine",
+      "name": "Trine",
+      "accent": "#b48cff",
+      "tagline": "Drag a mirror line anywhere - the shard flips across it, with a live ghost showing the landing. Stroke near a placed mirror to redraw just that one, and the whole chain of flips reshapes under your finger - grab one mirror of a turn and watch the shard orbit the crossing. Lines snap to neat angles; any pose is at most three flips away: that's a theorem, and the game makes you feel it. Sweep the stars, keep every flip clear of the voids, land home at par."
+    },
+    {
+      "slug": "kaleid",
+      "name": "Kaleid",
+      "accent": "#9fa8ff",
+      "tagline": "Plant a seed under the veil and the level's symmetry group blooms it into every copy at once - five turns, or five turns folded in mirrors. Reading the target's orbits IS the puzzle: a mark on an unseen fold line makes half as many copies, the still centre makes one, and par counts the families. Late scopes come unlabelled - read off 'five-fold, no mirror' like a crystallographer, then paint."
+    },
+    {
       "slug": "mirror",
       "name": "Mirror",
       "accent": "#8fd0ff",

@@ -1,0 +1,918 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%239fa8ff'%3EK%3C/text%3E%3C/svg%3E" />
+<title>Kaleid</title>
+<style>
+  :root{
+    --a:#9fa8ff;            /* accent / first orbit hue */
+    --bad:#ff7ac2;          /* overspill */
+    --gold:#ffd27a;         /* solved at par */
+    --ok:#5cffb0;           /* win */
+  }
+  :root[data-theme="dark"]{
+    --veil:rgba(9,12,18,.62);
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+    --veil-fill:rgba(3,5,10,.52);
+  }
+  :root[data-theme="light"]{
+    --veil:rgba(225,231,242,.62);
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
+    --a:#4d5bd4; --gold:#c98a1e;
+    --veil-fill:rgba(28,38,66,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:60px 12px 40px;gap:13px;
+    touch-action:manipulation;
+  }
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+    justify-content:flex-end;gap:8px;padding:12px 14px;pointer-events:none}
+  .topbar .navbtn{pointer-events:auto}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;border-radius:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
+  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .navbtn:active{transform:translateY(0)}
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.22em;font-size:16px;text-transform:uppercase;text-align:center}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-6px;text-align:center;max-width:440px}
+
+  .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:13px}
+
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
+  .levelbar .name{font-weight:600;letter-spacing:.04em}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{background:var(--raised);border-color:var(--line-strong);color:var(--ink)}
+  button.nb:disabled{opacity:.3;cursor:default}
+  [hidden]{display:none!important}
+
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;
+    background:var(--line-strong);transition:.15s}
+  .dot:hover{background:var(--muted)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.par{background:var(--gold);box-shadow:0 0 8px -1px var(--gold)}
+  .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  .chips{display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap;min-height:30px}
+  .chips .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;opacity:.45}
+  .chip{
+    background:var(--surface);border:1px solid var(--line);color:var(--muted);
+    border-radius:999px;padding:4px 12px;font-size:12.5px;letter-spacing:.05em;
+    cursor:pointer;transition:.15s;font-weight:600;
+  }
+  .chip b{font-weight:700}
+  .chip.fixed{cursor:default;color:var(--ink)}
+  .chip.pick:hover{border-color:var(--line-strong)}
+  .chip.on{color:var(--a);border-color:var(--a);box-shadow:0 0 12px -6px var(--a)}
+
+  .frame{
+    position:relative;border-radius:16px;overflow:hidden;width:100%;
+    background:var(--raised);border:1px solid var(--line);
+    box-shadow:0 16px 46px -22px var(--shadow), inset 0 0 0 1px var(--line);
+    aspect-ratio:1;transition:box-shadow .3s,border-color .3s;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .frame canvas{width:100%;height:100%;display:block}
+  .frame.over{border-color:var(--bad);box-shadow:0 0 34px -10px var(--bad), inset 0 0 0 1px rgba(255,122,194,.35)}
+  .frame.win{border-color:var(--ok);box-shadow:0 0 40px -6px var(--ok), inset 0 0 0 1px rgba(92,255,176,.3)}
+  .frame.pop{animation:pop .55s ease}
+  @keyframes pop{0%{transform:scale(1)}28%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .badge{
+    position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:14px;z-index:3;
+    background:var(--ok);color:#04120b;font-weight:700;opacity:0;transform:scale(.4);
+    transition:.28s cubic-bezier(.3,1.6,.5,1);
+  }
+  .frame.win .badge{opacity:1;transform:scale(1)}
+  .burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:2}
+  .burst.go::after{
+    content:"";position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 0 0 2.5px var(--ok);
+    animation:ring .72s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes ring{from{width:16px;height:16px;opacity:.85}to{width:160%;height:160%;opacity:0}}
+
+  .win-row{display:flex;align-items:center;justify-content:center;gap:12px;min-height:28px}
+  .win-msg{text-align:center;font-size:13px;letter-spacing:.05em;color:var(--ok);
+    opacity:0;transition:.3s;font-weight:600}
+  .win-msg.show{opacity:1}
+  .nextup{display:none;background:transparent;border:1px solid var(--ok);color:var(--ok);
+    border-radius:999px;padding:4px 14px;font-size:12px;letter-spacing:.08em;font-weight:600;
+    cursor:pointer;opacity:1;transition:opacity .5s,transform .5s,box-shadow .15s,background .15s}
+  .nextup.show{display:inline-block}
+  @starting-style{.nextup.show{opacity:0;transform:translateY(3px)}}
+  .nextup:hover{box-shadow:0 0 14px -4px var(--ok)}
+
+  .hint{font-size:12.5px;opacity:.62;text-align:center;max-width:420px;min-height:34px;line-height:1.5}
+  .hint b{color:var(--a);font-weight:600}
+  .par{font-size:12px;letter-spacing:.06em;opacity:.85;text-align:center}
+  .par b{font-weight:600}
+  .par .under{color:var(--a)}
+  .par .over{color:var(--bad)}
+  .par .parwin{color:var(--gold)}
+  .editwrap{display:flex;flex-direction:column;gap:9px;align-items:center}
+
+  .overlay{position:fixed;inset:0;z-index:100;background:var(--veil);
+    display:flex;align-items:center;justify-content:center;padding:18px;
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .sheet{max-width:400px;width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px 16px;box-shadow:0 24px 60px -18px var(--shadow);
+    font-size:13.5px;line-height:1.55}
+  .sheet h2{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+  .sheet ul{margin:0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+  .sheet li{opacity:.88}
+  .sheet b{color:var(--a);font-weight:600}
+  .sheet .k{display:inline-block;padding:0 6px;border:1px solid var(--line-strong);
+    border-radius:6px;font-size:12px;background:var(--raised)}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <button class="navbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
+    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
+  </div>
+
+  <div class="overlay" id="help" hidden>
+    <div class="sheet">
+      <h2>How to play</h2>
+      <ul>
+        <li><span class="k">drag</span> inside the <b>veil</b> - the dark wedge - and your seed of light blooms into every copy the kaleidoscope makes. Let go to plant it.</li>
+        <li>The faint rings are the <b>target</b>. Under the veil it is hidden - infer it from the copies you can see. Match the whole pattern exactly to win.</li>
+        <li><span class="k">tap</span> a planted seed to unplant it; <span class="k">drag</span> one to move it and its whole bloom follows. Copies landing where the target isn't turn <b>pink</b>.</li>
+        <li><b>C5</b> means five turns; <b>D5</b> adds mirrors. A seed placed exactly <b>on a fold</b> makes half as many copies - and the still centre makes just one.</li>
+        <li><b>par</b> is the number of families in the target - one seed each. In late levels the scope is unlabelled: pick it, then paint. Solve at par for gold.</li>
+      </ul>
+      <button class="nb" id="helpClose">got it</button>
+    </div>
+  </div>
+
+  <h1><b>K</b>aleid</h1>
+  <div class="sub">Plant seeds under the veil. The kaleidoscope blooms every copy. Match the mandala.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Turn</span></div>
+      <div class="nav" id="navPlay">
+        <button class="nb" id="prev" title="Previous">‹</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next" title="Next">›</button>
+        <button class="nb" id="toSand" title="Free play">✎</button>
+        <button class="nb" id="toRandom" title="Random puzzle">⚄</button>
+      </div>
+      <div class="nav" id="navSand" hidden>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="clear">clear</button>
+        <button class="nb" id="sshare" title="Share this creation as a puzzle link">⧉ link</button>
+        <button class="nb" id="exitSand">✕ exit</button>
+      </div>
+      <div class="nav" id="navRandom" hidden>
+        <button class="nb" id="rnew">⚄ new</button>
+        <button class="nb undoB" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="rreset">reset</button>
+        <button class="nb" id="rshare">⧉ link</button>
+        <button class="nb" id="rexit">✕ exit</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="chips" id="chips"></div>
+
+    <div class="frame" id="frame">
+      <canvas id="board"></canvas>
+      <div class="burst" id="burst"></div>
+      <div class="badge">✓</div>
+    </div>
+
+    <div class="win-row">
+      <div class="win-msg" id="winMsg">solved</div>
+      <button class="nextup" id="nextUp" type="button">next ›</button>
+    </div>
+
+    <div class="editwrap">
+      <div class="hint" id="hint"></div>
+      <div class="par" id="par"></div>
+    </div>
+  </div>
+
+<script>
+/* ===== KERNEL (verbatim with kaleid/harness.mjs) ==================== */
+/* point: [r,s] - ring 0..4 (0 = centre, s must be 0), angle step s mod A.
+   group G: {kind:'C'|'D', n, A} - A divisible by n, and by 2n for 'D'. */
+function pid(A, r, s){ return r===0 ? 0 : r*A + s; }
+function orbit(G, r, s){
+  if(r===0) return [[0,0]];
+  const R=G.A/G.n, seen=new Set(), out=[];
+  for(let k=0;k<G.n;k++){
+    const a=(s+k*R)%G.A;
+    if(!seen.has(a)){ seen.add(a); out.push([r,a]); }
+    if(G.kind==='D'){
+      const b=((k*R-s)%G.A+G.A)%G.A;
+      if(!seen.has(b)){ seen.add(b); out.push([r,b]); }
+    }
+  }
+  return out;
+}
+function expand(G, seeds){
+  const out=new Set();
+  for(const p of seeds) for(const q of orbit(G,p[0],p[1])) out.add(pid(G.A,q[0],q[1]));
+  return out;
+}
+function inVeil(G, veil, r, s){
+  if(r===0) return true;
+  return ((s-veil.a0)%G.A+G.A)%G.A < veil.w;
+}
+/* analyse target under group H: is it exactly paintable, and at what cost?
+   H-orbits partition the disc, so: solvable iff every H-orbit touching the
+   target lies inside it AND has a point inside the veil. minSeeds = #orbits. */
+function analyse(H, veil, targetIds){
+  const seen=new Set(); let orbits=0;
+  for(const id of targetIds){
+    if(seen.has(id)) continue;
+    const r=id===0?0:Math.floor(id/H.A), s=id===0?0:id%H.A;
+    let reach=false;
+    for(const [rr,ss] of orbit(H,r,s)){
+      const q=pid(H.A,rr,ss);
+      if(!targetIds.has(q)) return {solvable:false, minSeeds:-1};
+      seen.add(q);
+      if(inVeil(H,veil,rr,ss)) reach=true;
+    }
+    if(!reach) return {solvable:false, minSeeds:-1};
+    orbits++;
+  }
+  return {solvable:true, minSeeds:orbits};
+}
+/* ===== end kernel =================================================== */
+
+const grp=(kind,n,A)=>({kind,n,A});
+function groupName(kind,n){ return kind+n; }
+function groupDesc(kind,n){
+  const W=['','','two','three','four','five','six','seven','eight','nine','ten'];
+  return (W[n]||n)+' turns'+(kind==='D'?' · mirrored':'');
+}
+
+/* ===== levels (validated by kaleid/harness.mjs) ====================== */
+const LEVELS=[
+  { name:"Turn",       kind:'C', n:4, A:32, veil:{a0:11,w:10}, seeds:[[3,2]],
+    hint:"This scope turns everything <b>four ways</b>. Paint only inside the <b>veil</b> - the dark wedge where the target hides. <b>Drag</b> there, line your copies over the ghost rings, let go to plant." },
+  { name:"Trefoil",    kind:'C', n:3, A:24, veil:{a0:9,w:9}, seeds:[[2,3],[4,6]],
+    hint:"Two clusters, two seeds - <b>par counts the families</b>. Each seed paints one whole family; radius never changes, only the angle turns." },
+  { name:"Cinquefoil", kind:'C', n:5, A:40, veil:{a0:14,w:10}, seeds:[[0,0],[3,2],[3,5]],
+    hint:"Two families of five woven onto <b>one ring</b>. And tap the <b>still point</b> - dead centre, the only mark with no copies at all." },
+  { name:"Coil",       kind:'C', n:6, A:48, veil:{a0:20,w:12}, seeds:[[2,2],[3,5],[4,8]],
+    hint:"Six spiral arms - but a spiral is only three seeds stepping outward, each a little further round." },
+  { name:"Fold",       kind:'D', n:3, A:24, veil:{a0:10,w:8}, seeds:[[3,1]],
+    hint:"A new scope: it turns <b>and mirrors</b>. Copies arrive in facing pairs - six marks from a single seed." },
+  { name:"Spire",      kind:'D', n:4, A:32, veil:{a0:13,w:9}, seeds:[[2,16],[4,2]],
+    hint:"A free seed makes <b>eight</b> copies - the four-mark cross refuses it. Slide until twin previews <b>merge on the fold</b>, then plant." },
+  { name:"Frost",      kind:'D', n:6, A:48, veil:{a0:22,w:10}, seeds:[[0,0],[2,4],[4,8]],
+    hint:"Both hexagons sit on fold lines - but <b>different</b> folds. Petal-folds and gap-folds alternate every thirty degrees." },
+  { name:"Bramble",    kind:'D', n:5, A:40, veil:{a0:6,w:9}, seeds:[[3,0],[3,3]],
+    hint:"Fifteen thorns on one ring: ten walk free, five sit exactly <b>on the folds</b>. Two seeds." },
+  { name:"Rosette",    kind:'D', n:6, A:48, veil:{a0:8,w:20}, seeds:[[0,0],[4,1],[3,12],[2,22]],
+    hint:"A wide veil hides half the mandala. Read the rhythm from what remains - <b>four</b> families, one of them still." },
+  { name:"Riddle",     kind:'C', n:4, A:48, veil:{a0:18,w:12}, seeds:[[3,2],[2,9],[0,0]],
+    choices:[['C',8],['D',4],['C',4]],
+    hint:"An unlabelled scope: <b>pick the kaleidoscope</b>. Count the repeats, hunt for mirror pairs - a wrong scope spills pink at the first touch." },
+  { name:"Handed",     kind:'D', n:5, A:40, veil:{a0:15,w:8}, seeds:[[4,3],[2,0],[0,0]],
+    choices:[['C',5],['D',5],['C',10]],
+    hint:"Mirrored, or merely turned? Facing pairs mean a mirror - and fewer seeds. Only the true scope solves at <b>par</b>." },
+  { name:"Sixfold",    kind:'D', n:3, A:48, veil:{a0:9,w:9}, seeds:[[4,3],[3,16],[2,6],[0,0]],
+    choices:[['C',6],['D',3],['C',3]],
+    hint:"Six marks per cluster: six turns, or three turns <b>folded</b>? Evenly spaced says turned; facing pairs say folded. The finale." },
+];
+
+/* ===== state ======================================================== */
+let mode='play';                 // play | sand | random
+let li=0;
+let GA=null;                     // active group {kind,n,A}
+let trueG=null;                  // the level's real group
+let choices=null;                // guess-level candidates [[kind,n],...]
+let gi=0;                        // active choice index
+let veil=null;                   // {a0,w} in steps, or null (sandbox)
+let seeds=[];                    // player seeds [[r,s],...]
+let painted=new Set();           // ids under GA (derived)
+let target=new Set();            // target ids under trueG
+let curPar=0;
+let solved={};
+let prevWin=false, advTimer=null;
+let undoStack=[];                // [{seeds, gi, kindN?}]
+
+/* animation state */
+let births=new Map();            // id -> start time (ms)
+let winAnim=null;                // {t0}
+let veilFlash=0;                 // t0 of "paint inside the veil" nudge
+let drag=null;                   // {kind:'new'|'move', idx?, cur:[r,s]|null, moved, hueIdx}
+let rafId=null;
+
+try{ solved=JSON.parse(localStorage.getItem('kaleid-solved')||'{}'); }catch(e){ solved={}; }
+
+const $=id=>document.getElementById(id);
+const C=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||7); }catch(e){} }
+
+const HUES_DARK =['#9fa8ff','#7ee6c8','#ffd27a','#f0a3ff','#7ec8ff','#c5f27e'];
+const HUES_LIGHT=['#4d5bd4','#0f9f7d','#c98a1e','#a44ad1','#1f7fc4','#6d9a1f'];
+function hues(){ return document.documentElement.getAttribute('data-theme')==='light'?HUES_LIGHT:HUES_DARK; }
+
+/* ===== canvas geometry ============================================== */
+const DPR=Math.min(2, window.devicePixelRatio||1);
+const board=$('board');
+board.width=486*DPR; board.height=486*DPR;
+const W=board.width, CX=W/2;
+const ROUT=W*(213/486);
+const RF=[0,.34,.56,.78,1];
+const MR=W*(10.5/486);           // mark radius
+function ptXY(r,s){
+  if(r===0) return [CX,CX];
+  const th=s/GA.A*2*Math.PI, rad=RF[r]*ROUT;
+  return [CX+rad*Math.sin(th), CX-rad*Math.cos(th)];
+}
+function pointerPolar(e){
+  const rect=board.getBoundingClientRect();
+  const px=(e.clientX-rect.left)/rect.width*W, py=(e.clientY-rect.top)/rect.height*W;
+  const dx=px-CX, dy=py-CX;
+  const rho=Math.hypot(dx,dy)/ROUT;
+  let th=Math.atan2(dx,-dy); if(th<0) th+=2*Math.PI;
+  return {rho, steps:th/(2*Math.PI)*GA.A, px, py};
+}
+function snapPoint(P){
+  if(P.rho>1.13) return null;
+  if(P.rho<RF[1]*0.45) return [0,0];
+  let best=1;
+  for(let r=2;r<=4;r++) if(Math.abs(P.rho-RF[r])<Math.abs(P.rho-RF[best])) best=r;
+  return [best, Math.round(P.steps)%GA.A];
+}
+function placeable(p){
+  if(mode==='sand') return true;
+  return p[0]===0 ? true : inVeil(GA, veil, p[0], p[1]);
+}
+function grabSeed(P){
+  let best=-1, bd=MR*2.6;
+  for(let i=0;i<seeds.length;i++){
+    const [x,y]=ptXY(seeds[i][0],seeds[i][1]);
+    const d=Math.hypot(P.px-x,P.py-y);
+    if(d<bd){ bd=d; best=i; }
+  }
+  return best;
+}
+
+/* ===== rendering ==================================================== */
+function veilAngles(){
+  const a0=(veil.a0-0.5)/GA.A*2*Math.PI - Math.PI/2;
+  const a1=(veil.a0+veil.w-0.5)/GA.A*2*Math.PI - Math.PI/2;
+  return [a0,a1];
+}
+function drawMark(ctx, x, y, col, alpha, scale, isSeed){
+  const r=MR*(scale==null?1:scale);
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  ctx.shadowColor=col; ctx.shadowBlur=MR*1.6;
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  ctx.shadowBlur=0;
+  const g=ctx.createRadialGradient(x-r*0.3,y-r*0.35,r*0.1,x,y,r*1.15);
+  g.addColorStop(0,'rgba(255,255,255,0.5)'); g.addColorStop(1,'rgba(255,255,255,0)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+  if(isSeed){
+    ctx.fillStyle='rgba(0,0,0,0.36)';
+    ctx.beginPath(); ctx.arc(x,y,Math.max(1.5,r*0.32),0,7); ctx.fill();
+  }
+  ctx.restore();
+}
+function seedHue(i){ return hues()[i%hues().length]; }
+function paintedExcept(skip){
+  return expand(GA, seeds.filter((_,i)=>i!==skip));
+}
+function orbitOwner(){                    // id -> seed index (for hues)
+  const m=new Map();
+  seeds.forEach((p,i)=>{ if(drag&&drag.kind==='move'&&drag.idx===i) return;
+    for(const q of orbit(GA,p[0],p[1])) m.set(pid(GA.A,q[0],q[1]), i); });
+  return m;
+}
+
+function render(now){
+  const ctx=board.getContext('2d');
+  ctx.clearRect(0,0,W,W);
+  const colMuted=C('--muted'), colLine=C('--line'), colBad=C('--bad');
+
+  /* ring guides */
+  ctx.lineWidth=1; ctx.strokeStyle=colLine;
+  for(let r=1;r<=4;r++){ ctx.beginPath(); ctx.arc(CX,CX,RF[r]*ROUT,0,7); ctx.stroke(); }
+
+  /* veil wedge */
+  if(veil){
+    const [a0,a1]=veilAngles();
+    ctx.beginPath();
+    ctx.moveTo(CX+Math.cos(a0)*W*0.028, CX+Math.sin(a0)*W*0.028);
+    ctx.arc(CX,CX,ROUT*1.07,a0,a1);
+    ctx.arc(CX,CX,W*0.028,a1,a0,true);
+    ctx.closePath();
+    ctx.fillStyle=C('--veil-fill'); ctx.fill();
+    let ea=0.3;
+    if(veilFlash){ const t=(now-veilFlash)/450; if(t<1) ea=0.3+0.6*(1-t); else veilFlash=0; }
+    ctx.save();
+    ctx.globalAlpha=ea; ctx.strokeStyle=colMuted; ctx.lineWidth=1.5; ctx.setLineDash([5*DPR,6*DPR]);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* painted set for drawing (a mid-move seed's orbit lifts off the board) */
+  const owner=orbitOwner();
+  const drawSet = (drag&&drag.kind==='move') ? paintedExcept(drag.idx) : painted;
+  const seedIds=new Set(seeds.filter((_,i)=>!(drag&&drag.kind==='move'&&drag.idx===i))
+                             .map(p=>pid(GA.A,p[0],p[1])));
+
+  /* target ghosts - hidden under the veil (centre always shows) */
+  ctx.lineWidth=1.5; ctx.strokeStyle=colMuted;
+  for(const id of target){
+    if(drawSet.has(id)) continue;
+    const r=id===0?0:Math.floor(id/GA.A), s=id===0?0:id%GA.A;
+    if(mode!=='sand' && r>0 && veil && inVeil(GA,veil,r,s)) continue;
+    const [x,y]=ptXY(r,s);
+    ctx.globalAlpha=0.32;
+    ctx.beginPath(); ctx.arc(x,y,MR*0.92,0,7); ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  /* centre pip */
+  if(!target.has(0) && !painted.has(0)){
+    ctx.globalAlpha=0.4; ctx.strokeStyle=colMuted; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(CX,CX,2.5*DPR,0,7); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  /* painted marks */
+  for(const id of drawSet){
+    const r=id===0?0:Math.floor(id/GA.A), s=id===0?0:id%GA.A;
+    let scale=1, alpha=1;
+    if(births.has(id)){
+      const prog=(now-births.get(id))/240;
+      if(prog<0) continue;
+      if(prog>=1) births.delete(id);
+      else{ const e=1-Math.pow(1-prog,3); scale=0.3+0.7*e; alpha=e; }
+    }
+    if(winAnim){
+      const wt=now-winAnim.t0-(s/GA.A)*640;
+      if(wt>0&&wt<320) scale*=1+0.22*Math.sin(Math.PI*wt/320);
+    }
+    const hidden = mode!=='sand' && r>0 && veil && inVeil(GA,veil,r,s);
+    const wrong = mode!=='sand' && !hidden && !target.has(id);
+    const col = wrong ? colBad : seedHue(owner.get(id)||0);
+    const [x,y]=ptXY(r,s);
+    drawMark(ctx,x,y,col,alpha*(hidden?0.85:1),scale,seedIds.has(id));
+  }
+
+  /* live preview */
+  if(drag && drag.cur){
+    const hue=seedHue(drag.hueIdx);
+    for(const [r,s] of orbit(GA,drag.cur[0],drag.cur[1])){
+      const id=pid(GA.A,r,s);
+      const hidden = mode!=='sand' && r>0 && veil && inVeil(GA,veil,r,s);
+      const wrong = mode!=='sand' && !hidden && !target.has(id);
+      const [x,y]=ptXY(r,s);
+      drawMark(ctx,x,y,wrong?colBad:hue,0.55,0.92,false);
+    }
+    const [gx,gy]=ptXY(drag.cur[0],drag.cur[1]);
+    ctx.save(); ctx.globalAlpha=0.8; ctx.strokeStyle=hue; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.arc(gx,gy,MR*1.7,0,7); ctx.stroke(); ctx.restore();
+  }
+}
+
+function isAnimating(now){
+  if(births.size) return true;
+  if(veilFlash && now-veilFlash<450) return true;
+  if(winAnim && now-winAnim.t0<1100) return true;
+  return false;
+}
+function frameStep(now){
+  render(now);
+  if(isAnimating(now)) rafId=requestAnimationFrame(frameStep);
+  else rafId=null;
+}
+function kick(){ if(rafId==null) rafId=requestAnimationFrame(frameStep); }
+function draw(){ render(performance.now()); }
+
+/* ===== gestures ===================================================== */
+board.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  if(mode!=='sand' && prevWin) return;
+  const P=pointerPolar(e);
+  const gidx=grabSeed(P);
+  if(gidx>=0){
+    drag={kind:'move', idx:gidx, cur:seeds[gidx].slice(), from:seeds[gidx].slice(), moved:false, hueIdx:gidx};
+  }else{
+    const p=snapPoint(P);
+    if(!p){ return; }
+    if(!placeable(p)){ veilFlash=performance.now(); kick(); return; }
+    drag={kind:'new', cur:p, moved:false, hueIdx:seeds.length};
+  }
+  try{ board.setPointerCapture(e.pointerId); }catch(_){}
+  draw();
+});
+board.addEventListener('pointermove', e=>{
+  if(!drag) return;
+  const P=pointerPolar(e);
+  const p=snapPoint(P);
+  if(p && (drag.cur==null || p[0]!==drag.cur[0] || p[1]!==drag.cur[1])) drag.moved=true;
+  drag.cur = (p && placeable(p)) ? p : null;
+  draw();
+});
+function endDrag(e, cancel){
+  if(!drag) return;
+  const d=drag; drag=null;
+  if(cancel){ draw(); return; }
+  if(d.kind==='move'){
+    if(!d.moved){ removeSeed(d.idx); return; }
+    if(d.cur && !(d.cur[0]===d.from[0]&&d.cur[1]===d.from[1])
+       && !paintedExcept(d.idx).has(pid(GA.A,d.cur[0],d.cur[1]))){
+      pushUndo(); seeds[d.idx]=d.cur; relight(); haptic(7);
+      updateStatus(); if(mode!=='sand') checkWin(); draw();
+      return;
+    }
+    draw(); return;
+  }
+  if(d.cur && !painted.has(pid(GA.A,d.cur[0],d.cur[1]))){ commitSeed(d.cur); return; }
+  draw();
+}
+board.addEventListener('pointerup',    e=>endDrag(e,false));
+board.addEventListener('pointercancel',e=>endDrag(e,true));
+board.addEventListener('contextmenu', e=>e.preventDefault());
+
+/* ===== mutations ==================================================== */
+function pushUndo(){
+  undoStack.push({seeds:seeds.map(p=>p.slice()), gi, sand:mode==='sand'?{kind:GA.kind,n:GA.n}:null});
+  if(undoStack.length>120) undoStack.shift();
+  setUndoBtns();
+}
+function relight(){ painted=expand(GA, seeds); }
+function commitSeed(p){
+  pushUndo();
+  seeds.push(p);
+  const now=performance.now();
+  const add=orbit(GA,p[0],p[1]);
+  for(const [r,s] of add){
+    const id=pid(GA.A,r,s);
+    if(painted.has(id)) continue;
+    let d=Math.abs(s-p[1]); d=Math.min(d,GA.A-d);
+    births.set(id, now + d*(360/GA.A)*2.4);
+  }
+  relight(); haptic(7);
+  updateStatus(); if(mode!=='sand') checkWin(); kick();
+}
+function removeSeed(i){
+  pushUndo();
+  seeds.splice(i,1);
+  relight(); births.clear(); haptic();
+  updateStatus(); if(mode!=='sand') checkWin(); draw();
+}
+function setGroup(i){
+  if(i===gi) return;
+  pushUndo();
+  gi=i;
+  GA=grp(choices[gi][0], choices[gi][1], trueG.A);
+  relight(); births.clear(); haptic();
+  buildChips(); updateStatus(); checkWin(); draw();
+}
+function undo(){
+  if(!undoStack.length) return;
+  const s=undoStack.pop();
+  seeds=s.seeds; gi=s.gi;
+  if(mode==='sand'&&s.sand){ GA=grp(s.sand.kind,s.sand.n,8*s.sand.n); }
+  else if(choices){ GA=grp(choices[gi][0],choices[gi][1],trueG.A); }
+  relight(); births.clear(); winAnim=null; prevWin=false;
+  $('frame').classList.remove('win','over'); $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  clearTimeout(advTimer); advTimer=null;
+  setUndoBtns(); buildChips(); updateStatus(); if(mode!=='sand') checkWin(); draw();
+}
+function resetLevel(){
+  pushUndo(); seeds=[];
+  if(choices){ gi=0; GA=grp(choices[0][0],choices[0][1],trueG.A); }
+  relight(); births.clear(); winAnim=null; prevWin=false;
+  $('frame').classList.remove('win','over'); $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  clearTimeout(advTimer); advTimer=null;
+  buildChips(); updateStatus(); if(mode!=='sand') checkWin(); draw();
+}
+function setUndoBtns(){ document.querySelectorAll('.undoB').forEach(b=>b.disabled=!undoStack.length); }
+
+/* ===== win / status ================================================= */
+function overspill(){ for(const id of painted) if(!target.has(id)) return true; return false; }
+function isWin(){
+  if(painted.size!==target.size) return false;
+  for(const id of painted) if(!target.has(id)) return false;
+  return true;
+}
+function updateStatus(){
+  if(mode==='sand'){ $('par').innerHTML=`seeds <b>${seeds.length}</b>`; $('frame').classList.remove('over'); return; }
+  const over=overspill(), win=isWin();
+  $('frame').classList.toggle('over', over && !win);
+  const cls = win ? 'parwin' : (seeds.length<=curPar ? 'under' : 'over');
+  $('par').innerHTML=`seeds <b class="${cls}">${seeds.length}</b> &nbsp;·&nbsp; par <b>${curPar}</b>`;
+}
+function checkWin(){
+  const win=isWin();
+  const frame=$('frame');
+  frame.classList.toggle('win', win);
+  $('winMsg').classList.toggle('show', win);
+  if(win && !prevWin){
+    winAnim={t0:performance.now()}; kick(); celebrate(); haptic(18);
+    const atPar = seeds.length<=curPar;
+    if(mode==='play'){
+      const val=atPar?2:1;
+      if((solved[LEVELS[li].name]||0)<val){ solved[LEVELS[li].name]=val;
+        try{ localStorage.setItem('kaleid-solved', JSON.stringify(solved)); }catch(e){} }
+      markDots();
+      const last=li===LEVELS.length-1;
+      $('winMsg').textContent = last ? 'every scope mastered ✦' : (atPar?`solved · par ${curPar}`:`solved · ${seeds.length} seeds`);
+      if(!last) advTimer=setTimeout(()=>$('nextUp').classList.add('show'), 1100);
+    } else {
+      $('winMsg').textContent = atPar?`solved · par ${curPar} ✦`:`solved · ${seeds.length} seeds`;
+    }
+  }
+  if(!win && prevWin){ clearTimeout(advTimer); advTimer=null; $('nextUp').classList.remove('show'); winAnim=null; }
+  prevWin=win;
+}
+function celebrate(){
+  const frame=$('frame'), burst=$('burst');
+  frame.classList.remove('pop'); void frame.offsetWidth; frame.classList.add('pop');
+  burst.classList.remove('go');  void burst.offsetWidth; burst.classList.add('go');
+}
+
+/* ===== dots / chips ================================================= */
+function buildDots(){
+  const host=$('dots'); host.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const d=document.createElement('div'); d.className='dot'; d.title=L.name;
+    d.onclick=(j=>()=>loadLevel(j))(i);
+    host.appendChild(d);
+  });
+  markDots();
+}
+function markDots(){
+  [...$('dots').children].forEach((d,i)=>{
+    const v=solved[LEVELS[i].name]||0;
+    d.classList.toggle('solved', v>=1);
+    d.classList.toggle('par', v===2);
+    d.classList.toggle('cur', mode==='play' && i===li);
+  });
+}
+const SAND_GROUPS=[['C',3],['C',4],['C',5],['C',6],['D',3],['D',4],['D',5],['D',6]];
+function buildChips(){
+  const host=$('chips'); host.innerHTML='';
+  const mk=(html,cls)=>{ const c=document.createElement('button'); c.type='button'; c.className='chip '+cls; c.innerHTML=html; host.appendChild(c); return c; };
+  if(mode==='sand'){
+    SAND_GROUPS.forEach(([k,n],i)=>{
+      const c=mk(`<b>${k}${n}</b>`, 'pick'+(GA.kind===k&&GA.n===n?' on':''));
+      c.onclick=()=>{ pushUndo(); GA=grp(k,n,8*n); relight(); births.clear(); buildChips(); updateStatus(); draw(); };
+    });
+    return;
+  }
+  if(choices){
+    const l=document.createElement('span'); l.className='lbl'; l.textContent='scope'; host.appendChild(l);
+    choices.forEach(([k,n],i)=>{
+      const c=mk(`<b>${k}${n}</b>`, 'pick'+(i===gi?' on':''));
+      c.onclick=()=>setGroup(i);
+    });
+  } else {
+    mk(`❋ <b>${groupName(GA.kind,GA.n)}</b> — ${groupDesc(GA.kind,GA.n)}`, 'fixed');
+  }
+}
+
+/* ===== nav / mode entry ============================================= */
+function setNav(m){
+  $('navPlay').hidden  = m!=='play';
+  $('navSand').hidden  = m!=='sand';
+  $('navRandom').hidden= m!=='random';
+}
+function clearHash(){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){ location.hash=''; } }
+function freshBoard(){
+  births.clear(); winAnim=null; drag=null; veilFlash=0; undoStack=[]; prevWin=false;
+  $('frame').classList.remove('win','over','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  clearTimeout(advTimer); advTimer=null;
+}
+
+function loadLevel(i){
+  freshBoard();
+  if(mode==='random') clearHash();
+  mode='play'; setNav('play');
+  li=(i+LEVELS.length)%LEVELS.length;
+  const L=LEVELS[li];
+  trueG=grp(L.kind,L.n,L.A);
+  choices=L.choices||null; gi=0;
+  GA=choices ? grp(choices[0][0],choices[0][1],L.A) : trueG;
+  veil={a0:L.veil.a0, w:L.veil.w};
+  target=expand(trueG, L.seeds);
+  curPar=L.seeds.length;
+  seeds=[]; relight();
+  $('lvnum').textContent=String(li+1).padStart(2,'0');
+  $('lvname').textContent=L.name;
+  $('hint').innerHTML=L.hint;
+  $('prev').disabled=li===0; $('next').disabled=li===LEVELS.length-1;
+  setUndoBtns(); buildDots(); buildChips(); updateStatus(); checkWin(); draw();
+}
+
+/* ===== sandbox ====================================================== */
+function enterSandbox(){
+  freshBoard();
+  if(mode==='random') clearHash();
+  mode='sand'; setNav('sand');
+  trueG=null; choices=null; gi=0;
+  GA=grp('D',6,48); veil=null; target=new Set(); curPar=0;
+  seeds=[]; relight();
+  $('lvnum').textContent=''; $('lvname').textContent='Free play';
+  $('hint').innerHTML='<b>Tap</b> anywhere to plant - no veil here. Switch the scope and watch the same seeds re-bloom. Then <b>⧉ link</b> your mandala as a puzzle.';
+  setUndoBtns(); markDots(); buildChips(); updateStatus(); draw();
+}
+
+/* ===== random / shared puzzle ======================================= */
+const RINGPX=[0,72,119,166,213];
+const MIN_ARC=15;
+function randInt(a,b){ return a + Math.floor(Math.random()*(b-a+1)); }
+function genRandom(){
+  const pool=[['C',3],['C',4],['C',5],['C',6],['D',3],['D',4],['D',5],['D',6]];
+  for(let tries=0; tries<600; tries++){
+    const [kind,n]=pool[randInt(0,pool.length-1)];
+    const A=8*n, g={kind,n,A};
+    const w=randInt(Math.ceil(A/n)+2, Math.min(A-Math.ceil(A/n)-3, Math.floor(A*0.45)));
+    const vl={a0:randInt(0,A-1), w};
+    const sd=[]; const used=new Set();
+    if(Math.random()<0.4) sd.push([0,0]);
+    const want=randInt(2,3)+(Math.random()<0.3?1:0);
+    let guard=0;
+    while(sd.filter(p=>p[0]>0).length<want && guard++<60){
+      const r=randInt(1,4);
+      const s=kind==='D'&&Math.random()<0.35 ? randInt(0,2*n-1)*(A/(2*n)) : randInt(0,A-1);
+      if(used.has(pid(A,r,s))) continue;
+      const orb=orbit(g,r,s);
+      if(orb.some(q=>used.has(pid(A,q[0],q[1])))) continue;
+      sd.push([r,s]); for(const q of orb) used.add(pid(A,q[0],q[1]));
+    }
+    if(sd.filter(p=>p[0]>0).length<2) continue;
+    const tg=expand(g,sd);
+    const a=analyse(g,vl,tg);
+    if(!a.solvable || a.minSeeds!==sd.length) continue;
+    let cramped=false;
+    for(let r=1;r<=4;r++){
+      const st=[...tg].filter(id=>id!==0&&Math.floor(id/A)===r).map(id=>id%A).sort((x,y)=>x-y);
+      for(let j=0;j<st.length;j++){
+        const gap=(st[(j+1)%st.length]-st[j]+A)%A || A;
+        if(st.length>1 && 2*Math.PI*RINGPX[r]*gap/A<MIN_ARC) cramped=true;
+      }
+    }
+    if(cramped) continue;
+    return {kind,n,A,veil:vl,seeds:sd};
+  }
+  return null;
+}
+function enterRandom(puz){
+  if(!puz) return;
+  freshBoard();
+  mode='random'; setNav('random');
+  trueG=grp(puz.kind,puz.n,puz.A); choices=null; gi=0; GA=trueG;
+  veil={a0:puz.veil.a0, w:puz.veil.w};
+  target=expand(trueG, puz.seeds);
+  curPar=puz.seeds.length;
+  seeds=[]; relight();
+  try{ history.replaceState(null,'','#p='+encodePuzzle(puz)); }catch(e){}
+  $('lvnum').textContent=''; $('lvname').textContent='Puzzle';
+  $('hint').innerHTML=`Scope <b>${groupName(puz.kind,puz.n)}</b> — ${groupDesc(puz.kind,puz.n)}. Rebuild the mandala from under the veil, then <b>⧉ link</b> it onward.`;
+  setUndoBtns(); markDots(); buildChips(); updateStatus(); checkWin(); draw();
+}
+
+/* ===== share encode / decode ======================================= */
+function encodePuzzle(p){
+  return [p.kind+p.n, p.A, p.veil.a0, p.veil.w, p.seeds.map(q=>q[0]+'-'+q[1]).join('.')].join('~');
+}
+function decodePuzzle(str){
+  const parts=str.split('~'); if(parts.length!==5) return null;
+  const m=parts[0].match(/^([CD])(\d+)$/); if(!m) return null;
+  const kind=m[1], n=+m[2], A=+parts[1], a0=+parts[2], w=+parts[3];
+  if(!(n>=2&&n<=12)) return null;
+  if(!(A>=8&&A<=96) || A%n || (kind==='D'&&A%(2*n))) return null;
+  if(!(a0>=0&&a0<A) || !(w>=1&&w<=A-Math.ceil(A/n))) return null;
+  const sd=[];
+  for(const tok of parts[4].split('.')){
+    const mm=tok.match(/^(\d)-(\d+)$/); if(!mm) return null;
+    const r=+mm[1], s=+mm[2];
+    if(r>4||s>=A||(r===0&&s!==0)) return null;
+    sd.push([r,s]);
+  }
+  if(!sd.length||sd.length>8) return null;
+  const g={kind,n,A}, tg=expand(g,sd);
+  const a=analyse(g,{a0,w},tg);
+  if(!a.solvable || a.minSeeds!==sd.length) return null;
+  return {kind,n,A,veil:{a0,w},seeds:sd};
+}
+function fromHash(){
+  const m=(location.hash||'').match(/p=([^&]+)/);
+  if(!m) return null;
+  try{ return decodePuzzle(decodeURIComponent(m[1])); }catch(e){ return null; }
+}
+function copyLink(btn, url){
+  const done=()=>{ btn.textContent='copied ✓'; setTimeout(()=>btn.textContent='⧉ link',1400); };
+  try{ navigator.clipboard.writeText(url).then(done,done); }catch(e){ done(); }
+}
+function sandboxShare(){
+  const t=$('sshare');
+  if(seeds.length<2){ t.textContent='2+ seeds!'; setTimeout(()=>t.textContent='⧉ link',1300); return; }
+  const A=GA.A, tg=expand(GA,seeds);
+  for(let tries=0;tries<400;tries++){
+    const w=randInt(Math.ceil(A/GA.n)+2, Math.min(A-Math.ceil(A/GA.n)-3, Math.floor(A*0.45)));
+    const vl={a0:randInt(0,A-1), w};
+    const a=analyse(GA,vl,tg);
+    if(a.solvable && a.minSeeds===seeds.length){
+      const url=location.origin+location.pathname+'#p='+encodePuzzle({kind:GA.kind,n:GA.n,A,veil:vl,seeds});
+      copyLink(t,url); return;
+    }
+  }
+  t.textContent='too tangled'; setTimeout(()=>t.textContent='⧉ link',1300);
+}
+
+/* ===== controls ===================================================== */
+$('prev').onclick=()=>loadLevel(li-1);
+$('next').onclick=()=>loadLevel(li+1);
+$('nextUp').onclick=()=>loadLevel(li+1);
+$('reset').onclick=resetLevel;
+$('toSand').onclick=enterSandbox;
+$('toRandom').onclick=()=>enterRandom(genRandom());
+$('exitSand').onclick=()=>loadLevel(li);
+$('clear').onclick=()=>{ pushUndo(); seeds=[]; relight(); births.clear(); updateStatus(); draw(); };
+$('rnew').onclick=()=>enterRandom(genRandom());
+$('rreset').onclick=resetLevel;
+$('rexit').onclick=()=>loadLevel(li);
+$('rshare').onclick=()=>copyLink($('rshare'), location.href);
+$('sshare').onclick=sandboxShare;
+document.querySelectorAll('.undoB').forEach(b=>b.onclick=undo);
+
+function closeHelp(){ $('help').hidden=true; try{ localStorage.setItem('kaleid-help','1'); }catch(e){} }
+$('helpBtn').onclick=()=>{ $('help').hidden=false; };
+$('helpClose').onclick=closeHelp;
+$('help').addEventListener('click', e=>{ if(e.target===$('help')) closeHelp(); });
+try{ if(!localStorage.getItem('kaleid-help')) $('help').hidden=false; }catch(e){}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeHelp(); return; }
+  if(e.key==='z'||e.key==='u'){ undo(); return; }
+  if(mode!=='play') return;
+  if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
+  if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+  if(e.key==='Enter' && prevWin && li<LEVELS.length-1) loadLevel(li+1);
+});
+window.addEventListener('hashchange', ()=>{ const h=fromHash(); if(h) enterRandom(h); });
+
+/* ===== theme ======================================================== */
+window.addEventListener('themechange', draw);
+(function(){
+  const btn=$('themeToggle'); if(!btn) return;
+  const glyph=()=>btn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';
+  glyph();
+  btn.addEventListener('click', ()=>{
+    const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ localStorage.setItem('theme',next); }catch(e){}
+    glyph(); window.dispatchEvent(new Event('themechange'));
+  });
+})();
+
+/* ===== boot ========================================================= */
+buildDots();
+(function(){ const h=fromHash(); if(h) enterRandom(h); else loadLevel(0); })();
+</script>
+</body>
+</html>

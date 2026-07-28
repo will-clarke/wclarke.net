@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<meta name="color-scheme" content="light dark" />
+<script>
+  (function(){try{
+    var t=localStorage.getItem('theme');
+    if(t!=='light'&&t!=='dark'){
+      t=(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';
+    }
+    document.documentElement.setAttribute('data-theme',t);
+  }catch(e){document.documentElement.setAttribute('data-theme','dark');}})();
+</script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23171b23'/%3E%3Ctext x='16' y='22' font-family='system-ui,sans-serif' font-size='19' font-weight='700' text-anchor='middle' fill='%23b48cff'%3ET%3C/text%3E%3C/svg%3E" />
+<title>Trine</title>
+<style>
+  :root{
+    --a:#b48cff;            /* the shard */
+    --gold:#ffd27a;         /* stars, par, snap */
+    --bad:#ff6e9c;          /* voids, invalid */
+    --ok:#5cffb0;           /* win */
+  }
+  :root[data-theme="dark"]{
+    --veil:rgba(9,12,18,.62);
+    --bg:#171b23; --bg-top:#212734;
+    --surface:#232a38; --raised:#2b3342;
+    --ink:#eaeef6; --muted:#a2adc0;
+    --line:rgba(255,255,255,.14); --line-strong:rgba(255,255,255,.26);
+    --shadow:rgba(0,0,0,.45);
+  }
+  :root[data-theme="light"]{
+    --veil:rgba(225,231,242,.62);
+    --bg:#eef1f7; --bg-top:#ffffff;
+    --surface:#ffffff; --raised:#f3f6fb;
+    --ink:#1b2431; --muted:#5a6575;
+    --line:rgba(22,30,48,.15); --line-strong:rgba(22,30,48,.28);
+    --shadow:rgba(30,40,70,.16);
+    --a:#7b53d6; --gold:#c98a1e; --bad:#d6336c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    background:radial-gradient(120% 120% at 50% 0%, var(--bg-top) 0%, var(--bg) 62%);
+    color:var(--ink);
+    font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    min-height:100%;padding:60px 12px 40px;gap:13px;
+    touch-action:manipulation;
+  }
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+    justify-content:flex-end;gap:8px;padding:12px 14px;pointer-events:none}
+  .topbar .navbtn{pointer-events:auto}
+  .navbtn{display:inline-flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;border-radius:11px;
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    font-size:18px;line-height:1;cursor:pointer;text-decoration:none;
+    box-shadow:0 2px 10px var(--shadow);transition:transform .15s,border-color .15s,background .15s}
+  .navbtn:hover{border-color:var(--line-strong);transform:translateY(-1px)}
+  .navbtn:active{transform:translateY(0)}
+  h1{margin:2px 0 0;font-weight:700;letter-spacing:.22em;font-size:16px;text-transform:uppercase;text-align:center}
+  h1 b{color:var(--a);text-shadow:0 0 18px var(--a);font-weight:700}
+  .sub{opacity:.5;font-size:12px;letter-spacing:.04em;margin-top:-6px;text-align:center;max-width:440px}
+
+  .wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:13px}
+
+  .levelbar{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:34px;flex-wrap:wrap}
+  .levelbar .name{font-weight:600;letter-spacing:.04em}
+  .levelbar .name small{opacity:.5;font-weight:400;margin-right:6px;letter-spacing:.1em}
+  .nav{display:flex;gap:6px}
+  button.nb{
+    background:var(--surface);border:1px solid var(--line);color:var(--ink);
+    border-radius:10px;padding:6px 11px;font-size:14px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  button.nb:hover{background:var(--raised);border-color:var(--line-strong);color:var(--ink)}
+  button.nb:disabled{opacity:.3;cursor:default}
+  [hidden]{display:none!important}
+
+  .dots{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+  .dot{width:9px;height:9px;border-radius:50%;cursor:pointer;
+    background:var(--line-strong);transition:.15s}
+  .dot:hover{background:var(--muted)}
+  .dot.solved{background:var(--ok);box-shadow:0 0 8px -1px var(--ok)}
+  .dot.par{background:var(--gold);box-shadow:0 0 8px -1px var(--gold)}
+  .dot.cur{transform:scale(1.5);background:var(--a);box-shadow:0 0 9px -1px var(--a)}
+
+  .frame{
+    position:relative;border-radius:16px;overflow:hidden;width:100%;
+    background:var(--raised);border:1px solid var(--line);
+    box-shadow:0 16px 46px -22px var(--shadow), inset 0 0 0 1px var(--line);
+    aspect-ratio:1;transition:box-shadow .3s,border-color .3s;
+    touch-action:none;user-select:none;-webkit-user-select:none;
+  }
+  .frame canvas{width:100%;height:100%;display:block}
+  .frame.win{border-color:var(--ok);box-shadow:0 0 40px -6px var(--ok), inset 0 0 0 1px rgba(92,255,176,.3)}
+  .frame.pop{animation:pop .55s ease}
+  @keyframes pop{0%{transform:scale(1)}28%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .badge{
+    position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:14px;z-index:3;
+    background:var(--ok);color:#04120b;font-weight:700;opacity:0;transform:scale(.4);
+    transition:.28s cubic-bezier(.3,1.6,.5,1);
+  }
+  .frame.win .badge{opacity:1;transform:scale(1)}
+  .burst{position:absolute;left:50%;top:50%;pointer-events:none;z-index:2}
+  .burst.go::after{
+    content:"";position:absolute;left:0;top:0;width:16px;height:16px;border-radius:50%;
+    transform:translate(-50%,-50%);box-shadow:0 0 0 2.5px var(--ok);
+    animation:ring .72s cubic-bezier(.2,.7,.3,1) forwards;
+  }
+  @keyframes ring{from{width:16px;height:16px;opacity:.85}to{width:160%;height:160%;opacity:0}}
+
+  .win-row{display:flex;align-items:center;justify-content:center;gap:12px;min-height:28px}
+  .win-msg{text-align:center;font-size:13px;letter-spacing:.05em;color:var(--ok);
+    opacity:0;transition:.3s;font-weight:600}
+  .win-msg.show{opacity:1}
+  .nextup{display:none;background:transparent;border:1px solid var(--ok);color:var(--ok);
+    border-radius:999px;padding:4px 14px;font-size:12px;letter-spacing:.08em;font-weight:600;
+    cursor:pointer;opacity:1;transition:opacity .5s,transform .5s,box-shadow .15s,background .15s}
+  .nextup.show{display:inline-block}
+  @starting-style{.nextup.show{opacity:0;transform:translateY(3px)}}
+  .nextup:hover{box-shadow:0 0 14px -4px var(--ok)}
+
+  .hint{font-size:12.5px;opacity:.62;text-align:center;max-width:420px;min-height:34px;line-height:1.5}
+  .hint b{color:var(--a);font-weight:600}
+  .par{font-size:12px;letter-spacing:.06em;opacity:.85;text-align:center}
+  .par b{font-weight:600}
+  .par .under{color:var(--a)}
+  .par .over{color:var(--bad)}
+  .par .parwin{color:var(--gold)}
+  .par .stars{color:var(--gold)}
+
+  .overlay{position:fixed;inset:0;z-index:100;background:var(--veil);
+    display:flex;align-items:center;justify-content:center;padding:18px;
+    -webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+  .sheet{max-width:400px;width:100%;background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:18px 20px 16px;box-shadow:0 24px 60px -18px var(--shadow);
+    font-size:13.5px;line-height:1.55}
+  .sheet h2{margin:0 0 10px;font-size:12px;letter-spacing:.2em;text-transform:uppercase;opacity:.7}
+  .sheet ul{margin:0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:8px}
+  .sheet li{opacity:.88}
+  .sheet b{color:var(--a);font-weight:600}
+  .sheet .k{display:inline-block;padding:0 6px;border:1px solid var(--line-strong);
+    border-radius:6px;font-size:12px;background:var(--raised)}
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <button class="navbtn" id="helpBtn" type="button" aria-label="How to play" title="How to play">?</button>
+    <button class="navbtn" id="themeToggle" type="button" aria-label="Toggle light or dark" title="Light / dark"></button>
+  </div>
+
+  <div class="overlay" id="help" hidden>
+    <div class="sheet">
+      <h2>How to play</h2>
+      <ul>
+        <li><span class="k">drag</span> anywhere to draw a <b>mirror line</b> - the shard flips across it, and the ghost preview shows the landing before you let go.</li>
+        <li>Stroke <b>near a placed mirror</b> to redraw just that one - the whole chain of flips recomputes live as you drag. Nothing is ever locked in.</li>
+        <li>Land the shard exactly on the faint <b>target</b>. Lines snap to neat angles and quarter-steps; when the result fits, it locks gold.</li>
+        <li>Every flip swaps the shard's <b>handedness</b> - some targets need an even count of flips, some an odd one.</li>
+        <li>Faint outlines show each stop along the chain. A stop that touches a <b>void</b> or leaves the board glows red - the level won't close until every flip is clean.</li>
+        <li>Sweep over <b>✦ stars</b> along the way. <b>par</b> is the fewest mirrors - gold dot at par. Any pose is at most <b>three</b> flips away; errands cost extra.</li>
+      </ul>
+      <button class="nb" id="helpClose">got it</button>
+    </div>
+  </div>
+
+  <h1><b>T</b>rine</h1>
+  <div class="sub">Drag a mirror. The shard flips. Any pose is three flips away - at most.</div>
+
+  <div class="wrap">
+    <div class="levelbar">
+      <div class="name"><small id="lvnum">01</small><span id="lvname">Glance</span></div>
+      <div class="nav">
+        <button class="nb" id="prev" title="Previous">‹</button>
+        <button class="nb" id="undoBtn" title="Undo" aria-label="Undo">↶</button>
+        <button class="nb" id="reset">reset</button>
+        <button class="nb" id="next" title="Next">›</button>
+      </div>
+    </div>
+
+    <div class="dots" id="dots"></div>
+
+    <div class="frame" id="frame">
+      <canvas id="board"></canvas>
+      <div class="burst" id="burst"></div>
+      <div class="badge">✓</div>
+    </div>
+
+    <div class="win-row">
+      <div class="win-msg" id="winMsg">solved</div>
+      <button class="nextup" id="nextUp" type="button">next ›</button>
+    </div>
+
+    <div class="hint" id="hint"></div>
+    <div class="par" id="par"></div>
+  </div>
+
+<script>
+/* ===== geometry kernel ============================================== */
+const B=12;                          // board is B x B units
+const MARGIN=0.12;                   // poses must stay inside
+const SNAP=1.0;                      // final-pose error that magnetises
+const WINTOL=0.05;
+const GRAB=0.42;                     // stroke starting this close to a mirror edits it
+const ANG=Math.PI/12;                // lines snap to 15 degree steps
+const OFF=0.25;                      // ...and quarter-unit offsets
+
+function lnFrom(s){                  // [ax,ay,bx,by] -> {a:[x,y], d:[ux,uy]}
+  const dx=s[2]-s[0], dy=s[3]-s[1], L=Math.hypot(dx,dy);
+  return {a:[s[0],s[1]], d:[dx/L,dy/L]};
+}
+function reflectPt(ln,p){
+  const vx=p[0]-ln.a[0], vy=p[1]-ln.a[1], dot=vx*ln.d[0]+vy*ln.d[1];
+  return [ln.a[0]+2*dot*ln.d[0]-vx, ln.a[1]+2*dot*ln.d[1]-vy];
+}
+function reflPose(pose,ln){
+  return {v:pose.v.map(p=>reflectPt(ln,p)), eye:reflectPt(ln,pose.eye)};
+}
+function clonePose(p){ return {v:p.v.map(q=>q.slice()), eye:p.eye.slice()}; }
+function poseErr(p,q){
+  let m=0;
+  for(let i=0;i<p.v.length;i++) m=Math.max(m, Math.hypot(p.v[i][0]-q.v[i][0], p.v[i][1]-q.v[i][1]));
+  return m;
+}
+function pointInPoly(verts,x,y){
+  let inside=false;
+  for(let i=0,j=verts.length-1;i<verts.length;j=i++){
+    const [xi,yi]=verts[i], [xj,yj]=verts[j];
+    if((yi>y)!==(yj>y) && x < (xj-xi)*(y-yi)/(yj-yi)+xi) inside=!inside;
+  }
+  return inside;
+}
+function distPtSeg(px,py,ax,ay,bx,by){
+  const dx=bx-ax, dy=by-ay, L2=dx*dx+dy*dy;
+  let t=L2? ((px-ax)*dx+(py-ay)*dy)/L2 : 0;
+  t=Math.max(0,Math.min(1,t));
+  return Math.hypot(px-(ax+t*dx), py-(ay+t*dy));
+}
+function polyHitsCircle(verts,c){
+  if(pointInPoly(verts,c.x,c.y)) return true;
+  for(let i=0,j=verts.length-1;i<verts.length;j=i++){
+    if(distPtSeg(c.x,c.y,verts[j][0],verts[j][1],verts[i][0],verts[i][1])<c.r) return true;
+  }
+  return false;
+}
+function inBounds(verts){
+  return verts.every(([x,y])=>x>=MARGIN&&x<=B-MARGIN&&y>=MARGIN&&y<=B-MARGIN);
+}
+/* the mirror mapping `from` exactly onto `to`, if a pure reflection does */
+function exactAxis(from,to){
+  let bi=0,bd=-1;
+  for(let i=0;i<from.v.length;i++){
+    const d=Math.hypot(from.v[i][0]-to.v[i][0], from.v[i][1]-to.v[i][1]);
+    if(d>bd){bd=d;bi=i;}
+  }
+  if(bd<1e-6) return null;
+  const p=from.v[bi], q=to.v[bi];
+  const mid=[(p[0]+q[0])/2,(p[1]+q[1])/2];
+  const dx=q[0]-p[0], dy=q[1]-p[1], L=Math.hypot(dx,dy);
+  const ln={a:mid, d:[-dy/L, dx/L]};
+  return poseErr(reflPose(from,ln),to)<WINTOL ? ln : null;
+}
+/* snap a raw stroke to the line lattice: 15 degree angles, through the
+   nearest quarter-lattice point to the stroke's midpoint (so diagonals
+   through lattice points stay exact) */
+function snapStroke(a,b){
+  let ang=Math.atan2(b[1]-a[1], b[0]-a[0]);
+  ang=Math.round(ang/ANG)*ANG;
+  const d=[Math.cos(ang), Math.sin(ang)];
+  const mid=[(a[0]+b[0])/2, (a[1]+b[1])/2];
+  const p0=[Math.round(mid[0]/OFF)*OFF, Math.round(mid[1]/OFF)*OFF];
+  return {p0, p1:[p0[0]+d[0], p0[1]+d[1]]};
+}
+function distToLine(ln,p){
+  const nn=[-ln.d[1], ln.d[0]];
+  return Math.abs((p[0]-ln.a[0])*nn[0]+(p[1]-ln.a[1])*nn[1]);
+}
+/* clip an infinite line to the board rect -> [pt,pt] (always intersects in play) */
+function clipChord(ln){
+  let t0=-1e9, t1=1e9, ok=true;
+  const upd=(p,q)=>{
+    if(Math.abs(p)<1e-12){ if(q<0) ok=false; return; }
+    const r=q/p;
+    if(p<0){ if(r>t1) ok=false; else if(r>t0) t0=r; }
+    else   { if(r<t0) ok=false; else if(r<t1) t1=r; }
+  };
+  upd(-ln.d[0], ln.a[0]-0); upd(ln.d[0], B-ln.a[0]);
+  upd(-ln.d[1], ln.a[1]-0); upd(ln.d[1], B-ln.a[1]);
+  if(!ok) return null;
+  return [[ln.a[0]+t0*ln.d[0], ln.a[1]+t0*ln.d[1]], [ln.a[0]+t1*ln.d[0], ln.a[1]+t1*ln.d[1]]];
+}
+
+/* ===== the shard ==================================================== */
+/* chiral flag - slim tall mast, chunky short foot: unmistakably lopsided,
+   so its mirror twin reads at a glance */
+const BASE={
+  v:[[0,0],[2.2,0],[2.2,1.5],[1.0,1.5],[1.0,3],[0,3]],
+  eye:[0.55,0.55],
+};
+function tp(dx,dy){
+  return {v:BASE.v.map(([x,y])=>[x+dx,y+dy]), eye:[BASE.eye[0]+dx,BASE.eye[1]+dy]};
+}
+
+/* ===== levels ======================================================= */
+/* target = start reflected through sol in order; par = sol.length.
+   gems {pose:k} resolve to the eye of the pose after move k, so they are
+   guaranteed to sit inside that authored waypoint. Par lower bounds:
+   handedness parity (odd sol = orientation-reversing target) plus gems
+   spaced wider than the shard's diameter (~3.97) so no pose covers two.
+   All sol lines sit on the 15-degree / quarter-unit snap lattice. */
+const LEVELS=[
+  { name:"Glance", start:tp(1.6,4.5), sol:[[6,0,6,12]],
+    hint:"<b>Drag</b> anywhere to draw a mirror - the ghost shows where the shard lands. Set it glowing gold on the target and let go." },
+  { name:"Askew", start:tp(1.6,1.6), sol:[[0,12,12,0]],
+    hint:"The mirror can lie at <b>any angle</b>. When the preview locks onto the target it snaps true." },
+  { name:"Slide", start:tp(1.2,4.5), sol:[[4,0,4,12],[7.25,0,7.25,12]],
+    hint:"No single mirror can do this - every flip makes the mirror <b>twin</b>. Two parallel mirrors slide it unturned. Stroke <b>near a placed mirror</b> to redraw just that one." },
+  { name:"Turn", start:tp(2,7.4), sol:[[0,6,12,6],[0,0,12,12]],
+    hint:"Two mirrors that <b>cross</b> make a turn about their crossing point. Redraw one of them and <b>watch the shard orbit</b>." },
+  { name:"Waltz", start:tp(2,2), sol:[[0,6,12,6],[6,0,6,12]],
+    hint:"A <b>half-turn</b>. A right angle between the mirrors, and their crossing point is the pivot - so put the cross where it must be." },
+  { name:"Stray", start:tp(1.4,1.4), sol:[[0,6,12,6],[3,0,3,12],[5.25,0,5.25,12]],
+    hint:"Mirrored <b>and</b> shifted - a glide. This one needs three. Any pose on the board is at most three flips away: that's a theorem." },
+  { name:"Lantern", start:tp(2,6.4), sol:[[0,0,12,12],[6,0,6,12]], gems:[{pose:1}],
+    hint:"A chain stop must land <b>over a star</b> to sweep it. Grab it with the first flip, close home with the second." },
+  { name:"Beacons", start:tp(1.4,1.4), sol:[[6,0,6,12],[0,6,12,6],[4,12,12,4]], gems:[{pose:1},{pose:2}],
+    hint:"Two stars, three flips. Plan the tour so the <b>last</b> flip closes home - then refine the middle until both stars light." },
+  { name:"Needle", start:tp(1.4,4.5), sol:[[4,0,4,12],[0,5,12,5],[0,6.5,12,6.5]],
+    gems:[[6,6.7]], voids:[[4.85,6.55,0.45],[7.15,6.55,0.45]],
+    hint:"<b>Voids</b> burn - a stop that touches one glows red and the level won't close. Only the thin arm fits the gap." },
+  { name:"Orbit", start:tp(4.7,1.2), sol:[[0,12,12,0],[0,0,12,12],[4.5,0,4.5,12],[3,0,3,12]], gems:[{pose:1},{pose:2}],
+    hint:"Two stars and an <b>even</b> journey - turns and slides keep the shard's hand. Count your flips." },
+  { name:"Constellation", start:tp(1.4,1.2), sol:[[6,0,6,12],[0,6,12,6],[6,0,6,12],[0,9,12,9],[0,8,12,8]],
+    gems:[{pose:1},{pose:2},{pose:3}],
+    hint:"One flip would carry you home... but the <b>stars</b> remain. Sweep all three, then close. Five is perfect." },
+];
+
+function buildLevel(L){
+  const poses=[clonePose(L.start)];
+  let p=L.start;
+  for(const s of L.sol){ p=reflPose(p, lnFrom(s)); poses.push(p); }
+  return {
+    target: clonePose(poses[poses.length-1]),
+    gems: (L.gems||[]).map(g=> Array.isArray(g)
+      ? {x:g[0], y:g[1], t0:0}
+      : {x:poses[g.pose].eye[0], y:poses[g.pose].eye[1], t0:0}),
+    voids: (L.voids||[]).map(v=>({x:v[0], y:v[1], r:v[2]})),
+  };
+}
+
+/* ===== state ======================================================== */
+let li=0, start=null, target=null, gems=[], voids=[], curPar=0;
+let mirrors=[];       // [{p0:[x,y], p1:[x,y]}] - the whole editable chain
+let chain=null;       // computed from mirrors: {lines, poses, bad, gemsCov, final}
+let gemPrev=[];       // covered flags before the latest release (for pop anims)
+let solved={};
+let prevWin=false, advTimer=null, winTimer=null;
+let undoStack=[];
+
+let flip=null;        // {t0,dur,from,ln} appended-mirror animation
+let winAnim=null;     // {t0}
+let preview=null;     // {ms, ch, k, snapped, isNew} while dragging
+let rafId=null;
+
+try{ solved=JSON.parse(localStorage.getItem('trine-solved')||'{}'); }catch(e){ solved={}; }
+
+const $=id=>document.getElementById(id);
+const C=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+function haptic(ms){ try{ if(navigator.vibrate) navigator.vibrate(ms||7); }catch(e){} }
+
+function lineOfM(m){ return lnFrom([m.p0[0],m.p0[1],m.p1[0],m.p1[1]]); }
+function computeChain(ms){
+  const lines=ms.map(lineOfM);
+  const poses=[clonePose(start)];
+  let p=poses[0];
+  for(const ln of lines){ p=reflPose(p,ln); poses.push(p); }
+  const bad=[null];                                  // bad[i] for poses[i]; start assumed clean
+  for(let i=1;i<poses.length;i++){
+    let w=null;
+    if(!inBounds(poses[i].v)) w='edge';
+    else for(const vd of voids){ if(polyHitsCircle(poses[i].v,vd)){ w='void'; break; } }
+    bad.push(w);
+  }
+  const gemsCov=gems.map(g=>{
+    for(let i=1;i<poses.length;i++) if(pointInPoly(poses[i].v, g.x, g.y)) return true;
+    return false;
+  });
+  return {lines, poses, bad, gemsCov, final:poses[poses.length-1]};
+}
+
+/* ===== canvas ======================================================= */
+const DPR=Math.min(2, window.devicePixelRatio||1);
+const board=$('board');
+board.width=486*DPR; board.height=486*DPR;
+const PADF=12/486;
+
+function geo(){ const W=board.width, pad=W*PADF, S=(W-2*pad)/B; return {W,pad,S}; }
+function px(x,y){ const {pad,S}=geo(); return [pad+x*S, pad+y*S]; }
+function pointerPos(e){
+  const r=board.getBoundingClientRect();
+  const nx=(e.clientX-r.left)/r.width, ny=(e.clientY-r.top)/r.height;
+  return [ (nx-PADF)/(1-2*PADF)*B, (ny-PADF)/(1-2*PADF)*B ];
+}
+
+/* ===== rendering ==================================================== */
+function tracePoly(ctx, verts){
+  ctx.beginPath();
+  verts.forEach(([x,y],i)=>{ const [a,b]=px(x,y); i? ctx.lineTo(a,b) : ctx.moveTo(a,b); });
+  ctx.closePath();
+}
+function drawChord(ctx, ln){
+  const [a1,b1]=px(ln.a[0]-ln.d[0]*40, ln.a[1]-ln.d[1]*40);
+  const [a2,b2]=px(ln.a[0]+ln.d[0]*40, ln.a[1]+ln.d[1]*40);
+  ctx.beginPath(); ctx.moveTo(a1,b1); ctx.lineTo(a2,b2); ctx.stroke();
+}
+function flipVerts(from, ln, e){
+  const c=Math.cos(Math.PI*e);
+  const mor=p=>{
+    const vx=p[0]-ln.a[0], vy=p[1]-ln.a[1], dot=vx*ln.d[0]+vy*ln.d[1];
+    const fx=ln.a[0]+dot*ln.d[0], fy=ln.a[1]+dot*ln.d[1];   // foot on axis
+    return [fx+(p[0]-fx)*c, fy+(p[1]-fy)*c];
+  };
+  return {v:from.v.map(mor), eye:mor(from.eye)};
+}
+function drawShard(ctx, pose, col, alpha, glow){
+  const {S}=geo();
+  ctx.save();
+  ctx.globalAlpha=alpha;
+  if(glow){ ctx.shadowColor=col; ctx.shadowBlur=S*0.55; }
+  ctx.fillStyle=col;
+  tracePoly(ctx, pose.v); ctx.fill();
+  ctx.restore();
+  const [ex,ey]=px(pose.eye[0], pose.eye[1]);
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.fillStyle='rgba(10,10,20,0.5)';
+  ctx.beginPath(); ctx.arc(ex,ey,S*0.16,0,7); ctx.fill();
+  ctx.restore();
+}
+function drawGhostPose(ctx, pose, col, alpha){
+  const {S}=geo();
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=col; ctx.lineWidth=1.5;
+  tracePoly(ctx, pose.v); ctx.stroke();
+  const [ex,ey]=px(pose.eye[0], pose.eye[1]);
+  ctx.beginPath(); ctx.arc(ex,ey,S*0.12,0,7); ctx.stroke();
+  ctx.restore();
+}
+function drawStar(ctx, x, y, r, col, alpha){
+  const [cx,cy]=px(x,y);
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.fillStyle=col; ctx.shadowColor=col; ctx.shadowBlur=r*0.9;
+  ctx.beginPath();
+  for(let i=0;i<8;i++){
+    const ang=i*Math.PI/4 - Math.PI/2, rr=(i%2===0)? r : r*0.42;
+    const sx=cx+Math.cos(ang)*rr, sy=cy+Math.sin(ang)*rr;
+    i? ctx.lineTo(sx,sy) : ctx.moveTo(sx,sy);
+  }
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+function render(now){
+  const ctx=board.getContext('2d'), {W,pad,S}=geo();
+  ctx.clearRect(0,0,W,W);
+  const colA=C('--a'), colBad=C('--bad'), colGold=C('--gold'), colOk=C('--ok'), colMuted=C('--muted');
+
+  const view = preview
+    ? {ms:preview.ms, ch:preview.ch, hot:preview.k, snapped:preview.snapped, live:true}
+    : {ms:mirrors, ch:chain, hot:mirrors.length-1, snapped:false, live:false};
+
+  ctx.save();
+  ctx.beginPath(); ctx.rect(pad*0.35, pad*0.35, W-pad*0.7, W-pad*0.7); ctx.clip();
+
+  /* faint lattice */
+  ctx.fillStyle=colMuted; ctx.globalAlpha=0.10;
+  for(let i=1;i<B;i++) for(let j=1;j<B;j++){
+    const [a,b]=px(i,j); ctx.fillRect(a-1,b-1,2,2);
+  }
+  ctx.globalAlpha=1;
+
+  /* voids */
+  const anyVoidBad = view.ch.bad.some(w=>w==='void');
+  for(const vd of voids){
+    const [cx,cy]=px(vd.x,vd.y), R=vd.r*S;
+    const g=ctx.createRadialGradient(cx,cy,R*0.1,cx,cy,R*1.6);
+    g.addColorStop(0, colBad); g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.globalAlpha=anyVoidBad?0.55:0.3; ctx.fillStyle=g;
+    ctx.beginPath(); ctx.arc(cx,cy,R*1.6,0,7); ctx.fill();
+    ctx.globalAlpha=anyVoidBad?0.95:0.7; ctx.strokeStyle=colBad; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
+
+  /* target ghost */
+  ctx.save();
+  ctx.setLineDash(view.snapped?[]:[7,6]);
+  ctx.lineWidth=view.snapped?3:2;
+  ctx.strokeStyle=view.snapped?colGold:colA;
+  ctx.globalAlpha=view.snapped?0.95:0.5;
+  if(view.snapped){ ctx.shadowColor=colGold; ctx.shadowBlur=14; }
+  tracePoly(ctx, target.v); ctx.stroke();
+  const [tx,ty]=px(target.eye[0],target.eye[1]);
+  ctx.beginPath(); ctx.arc(tx,ty,S*0.16,0,7); ctx.stroke();
+  ctx.restore();
+
+  /* mirror lines + order chips */
+  ctx.lineCap='round';
+  for(let i=0;i<view.ms.length;i++){
+    const ln=view.ch.lines[i];
+    const isHot = view.live && i===view.hot;
+    let a = isHot? 0.9 : (i===view.hot? 0.32 : 0.16);
+    if(winAnim){
+      const wt=now-winAnim.t0-i*90;
+      if(wt>0&&wt<280) a=0.16+0.84*Math.sin(Math.PI*wt/280);
+    }
+    const col = isHot? (view.snapped? colGold : colA) : colA;
+    ctx.save(); ctx.globalAlpha=a; ctx.strokeStyle=col; ctx.lineWidth=isHot?2.5:2;
+    if(a>0.5){ ctx.shadowColor=col; ctx.shadowBlur=12; }
+    drawChord(ctx, ln); ctx.restore();
+  }
+  ctx.lineCap='butt';
+  if(view.ms.length>1){
+    for(let i=0;i<view.ms.length;i++){
+      const seg=clipChord(view.ch.lines[i]); if(!seg) continue;
+      const bx=seg[0][0]+ (seg[1][0]-seg[0][0])*0.06, by=seg[0][1]+(seg[1][1]-seg[0][1])*0.06;
+      const [cx,cy]=px(bx,by);
+      ctx.save();
+      ctx.globalAlpha=(view.live&&i===view.hot)?0.95:0.5;
+      ctx.fillStyle=C('--raised'); ctx.strokeStyle=colA; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.arc(cx,cy,S*0.26,0,7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=colA; ctx.font=`600 ${S*0.34}px system-ui,sans-serif`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(String(i+1), cx, cy+0.5);
+      ctx.restore();
+    }
+  }
+
+  /* the journey so far - start and every stop as faint outlines */
+  for(let i=0;i<view.ch.poses.length-1;i++){
+    const w=view.ch.bad[i];
+    drawGhostPose(ctx, view.ch.poses[i], w?colBad:colA, w?0.55:(view.live?0.22:0.15));
+  }
+
+  /* final shard (mid-flip or resting) */
+  const finBad=view.ch.bad[view.ch.poses.length-1];
+  if(flip && !view.live){
+    const t=Math.min(1,(now-flip.t0)/flip.dur);
+    const e=t*t*(3-2*t);
+    ctx.save(); ctx.globalAlpha=0.9; ctx.strokeStyle=colA; ctx.lineWidth=2.5; ctx.lineCap='round';
+    ctx.shadowColor=colA; ctx.shadowBlur=16*Math.sin(Math.PI*t)+6;
+    drawChord(ctx, flip.ln); ctx.restore(); ctx.lineCap='butt';
+    drawShard(ctx, flipVerts(flip.from, flip.ln, e), colA, 0.95, true);
+    if(t>=1) flip=null;
+  } else if(view.ch.poses.length>1 || !view.live){
+    const col = finBad? colBad : (view.snapped? colGold : colA);
+    drawShard(ctx, view.ch.final, col, view.live?0.8:0.95, true);
+  }
+
+  /* gems - on top: they are the objective */
+  gems.forEach((g,i)=>{
+    const cov=view.ch.gemsCov[i];
+    if(cov){
+      let r=S*0.30, al=0.9;
+      if(g.t0){
+        const t=(now-g.t0)/500;
+        if(t<1 && t>=0){ r=S*(0.30+0.5*Math.sin(Math.PI*t)); }
+        else if(t>=1) g.t0=0;
+      }
+      drawStar(ctx,g.x,g.y,r,colOk,al);
+    } else {
+      drawStar(ctx,g.x,g.y,S*0.34,colGold,0.95);
+    }
+  });
+
+  ctx.restore();
+}
+
+function isAnimating(now){
+  if(flip) return true;
+  for(const g of gems) if(g.t0 && now-g.t0<520) return true;
+  if(winAnim && now-winAnim.t0 < 400+mirrors.length*90+300) return true;
+  return false;
+}
+function frameStep(now){
+  render(now);
+  if(isAnimating(now)) rafId=requestAnimationFrame(frameStep);
+  else rafId=null;
+}
+function kick(){ if(rafId==null) rafId=requestAnimationFrame(frameStep); }
+function draw(){ render(performance.now()); }
+
+/* ===== input ======================================================== */
+let dragging=false, p0=null, editIdx=null;
+function grabIdx(p){
+  let best=null, bd=GRAB;
+  chain.lines.forEach((ln,i)=>{
+    const d=distToLine(ln,p);
+    if(d<bd){ bd=d; best=i; }
+  });
+  return best;
+}
+board.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  if(prevWin || flip) return;
+  p0=pointerPos(e); editIdx=grabIdx(p0); dragging=true; preview=null;
+  try{ board.setPointerCapture(e.pointerId); }catch(_){}
+});
+board.addEventListener('pointermove', e=>{
+  if(!dragging) return;
+  preview=makePreview(p0, pointerPos(e));
+  draw();
+});
+function makePreview(a,b){
+  if(Math.hypot(b[0]-a[0], b[1]-a[1])<0.45) return null;
+  const st=snapStroke(a,b);
+  const ms=mirrors.map(m=>({p0:m.p0.slice(), p1:m.p1.slice()}));
+  const isNew=editIdx==null, k=isNew? ms.length : editIdx;
+  if(isNew) ms.push({p0:st.p0, p1:st.p1}); else ms[k]={p0:st.p0, p1:st.p1};
+  let ch=computeChain(ms), snapped=false;
+  if(poseErr(ch.final,target)<SNAP){
+    /* magnet: pull the target back through the downstream mirrors, then
+       ask for the exact axis at position k */
+    let pulled=clonePose(target);
+    for(let i=ms.length-1;i>k;i--) pulled=reflPose(pulled, ch.lines[i]);
+    const ex=exactAxis(ch.poses[k], pulled);
+    if(ex){
+      ms[k]={p0:ex.a.slice(), p1:[ex.a[0]+ex.d[0], ex.a[1]+ex.d[1]]};
+      ch=computeChain(ms);
+      snapped=poseErr(ch.final,target)<WINTOL;
+    }
+  }
+  return {ms, ch, k, snapped, isNew};
+}
+function endDrag(e, cancel){
+  if(!dragging) return;
+  dragging=false; editIdx=null;
+  const p=preview; preview=null;
+  if(cancel || !p){ draw(); return; }
+  pushUndo();
+  if(p.isNew){
+    flip={t0:performance.now(), dur:520, from:clonePose(chain.final), ln:p.ch.lines[p.k]};
+  }
+  mirrors=p.ms;
+  recompute(p.isNew);
+  haptic(8);
+}
+board.addEventListener('pointerup', e=>endDrag(e,false));
+board.addEventListener('pointercancel', e=>endDrag(e,true));
+board.addEventListener('contextmenu', e=>e.preventDefault());
+
+/* ===== mutations ==================================================== */
+function pushUndo(){
+  undoStack.push(mirrors.map(m=>({p0:m.p0.slice(), p1:m.p1.slice()})));
+  if(undoStack.length>80) undoStack.shift();
+  $('undoBtn').disabled=false;
+}
+function recompute(animGems){
+  chain=computeChain(mirrors);
+  const tG=performance.now()+(flip?430:60);
+  chain.gemsCov.forEach((cov,i)=>{
+    if(cov && !gemPrev[i] && animGems!==false) gems[i].t0=tG;
+    if(!cov) gems[i].t0=0;
+  });
+  gemPrev=chain.gemsCov.slice();
+  updateStatus(); checkWin(); kick();
+}
+function undo(){
+  if(!undoStack.length) return;
+  mirrors=undoStack.pop();
+  flip=null; winAnim=null; prevWin=false; preview=null;
+  clearTimeout(advTimer); advTimer=null; clearTimeout(winTimer); winTimer=null;
+  $('frame').classList.remove('win');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  $('undoBtn').disabled=!undoStack.length;
+  recompute(false); draw();
+}
+function resetLevel(){ loadLevel(li); }
+
+/* ===== win / status ================================================= */
+function chainClean(){ return chain.bad.every(w=>!w); }
+function gemsDone(){ return chain.gemsCov.every(Boolean); }
+function onTarget(){ return poseErr(chain.final,target)<WINTOL; }
+function updateStatus(){
+  const win=prevWin;
+  const cls = win? 'parwin' : (mirrors.length<=curPar? 'under':'over');
+  let s=`mirrors <b class="${cls}">${mirrors.length}</b> &nbsp;·&nbsp; par <b>${curPar}</b>`;
+  if(gems.length){
+    const got=chain.gemsCov.filter(Boolean).length;
+    s+=` &nbsp;·&nbsp; <span class="stars">✦ <b>${got}/${gems.length}</b></span>`;
+  }
+  if(!win && onTarget()){
+    if(!gemsDone()) s+=` &nbsp;·&nbsp; <b class="over">the stars remain</b>`;
+    else if(!chainClean()){
+      const w=chain.bad.find(x=>x);
+      s+=` &nbsp;·&nbsp; <b class="over">${w==='void'?'a flip burns':'a flip leaves the board'}</b>`;
+    }
+  }
+  $('par').innerHTML=s;
+}
+function checkWin(){
+  if(prevWin) return;
+  if(!(onTarget() && gemsDone() && chainClean())) return;
+  prevWin=true;
+  const atPar=mirrors.length<=curPar;
+  const val=atPar?2:1;
+  if((solved[LEVELS[li].name]||0)<val){
+    solved[LEVELS[li].name]=val;
+    try{ localStorage.setItem('trine-solved', JSON.stringify(solved)); }catch(e){}
+  }
+  updateStatus();
+  winTimer=setTimeout(()=>{
+    winAnim={t0:performance.now()};
+    const frame=$('frame');
+    frame.classList.add('win');
+    frame.classList.remove('pop'); void frame.offsetWidth; frame.classList.add('pop');
+    const burst=$('burst'); burst.classList.remove('go'); void burst.offsetWidth; burst.classList.add('go');
+    haptic(18);
+    markDots();
+    const last=li===LEVELS.length-1;
+    $('winMsg').textContent = last? 'every shard home ✦'
+      : (atPar? `solved · par ${curPar}` : `solved · ${mirrors.length} mirrors`);
+    $('winMsg').classList.add('show');
+    if(!last) advTimer=setTimeout(()=>$('nextUp').classList.add('show'), 1000);
+    kick();
+  }, flip?540:120);
+}
+
+/* ===== dots / nav =================================================== */
+function buildDots(){
+  const host=$('dots'); host.innerHTML='';
+  LEVELS.forEach((L,i)=>{
+    const d=document.createElement('div'); d.className='dot'; d.title=L.name;
+    d.onclick=()=>loadLevel(i);
+    host.appendChild(d);
+  });
+  markDots();
+}
+function markDots(){
+  [...$('dots').children].forEach((d,i)=>{
+    const v=solved[LEVELS[i].name]||0;
+    d.classList.toggle('solved', v>=1);
+    d.classList.toggle('par', v===2);
+    d.classList.toggle('cur', i===li);
+  });
+}
+function loadLevel(i){
+  clearTimeout(advTimer); advTimer=null;
+  clearTimeout(winTimer); winTimer=null;
+  li=(i+LEVELS.length)%LEVELS.length;
+  const L=LEVELS[li], built=buildLevel(L);
+  start=clonePose(L.start); target=built.target; gems=built.gems; voids=built.voids;
+  mirrors=[]; curPar=L.sol.length;
+  undoStack=[]; $('undoBtn').disabled=true;
+  flip=null; winAnim=null; preview=null; prevWin=false; dragging=false; editIdx=null;
+  chain=computeChain(mirrors); gemPrev=chain.gemsCov.slice();
+  $('lvnum').textContent=String(li+1).padStart(2,'0');
+  $('lvname').textContent=L.name;
+  $('hint').innerHTML=L.hint;
+  $('prev').disabled=li===0; $('next').disabled=li===LEVELS.length-1;
+  $('frame').classList.remove('win','pop');
+  $('winMsg').classList.remove('show'); $('nextUp').classList.remove('show');
+  markDots(); updateStatus(); draw();
+}
+
+/* ===== controls ===================================================== */
+$('prev').onclick=()=>loadLevel(li-1);
+$('next').onclick=()=>loadLevel(li+1);
+$('nextUp').onclick=()=>loadLevel(li+1);
+$('reset').onclick=resetLevel;
+$('undoBtn').onclick=undo;
+
+function closeHelp(){ $('help').hidden=true; try{ localStorage.setItem('trine-help','1'); }catch(e){} }
+$('helpBtn').onclick=()=>{ $('help').hidden=false; };
+$('helpClose').onclick=closeHelp;
+$('help').addEventListener('click', e=>{ if(e.target===$('help')) closeHelp(); });
+try{ if(!localStorage.getItem('trine-help')) $('help').hidden=false; }catch(e){}
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closeHelp(); return; }
+  if(e.key==='z'||e.key==='u'){ undo(); return; }
+  if(e.key==='r'){ resetLevel(); return; }
+  if(e.key==='ArrowLeft' && li>0) loadLevel(li-1);
+  if(e.key==='ArrowRight' && li<LEVELS.length-1) loadLevel(li+1);
+  if(e.key==='Enter' && prevWin && li<LEVELS.length-1) loadLevel(li+1);
+});
+
+/* ===== theme ======================================================== */
+window.addEventListener('themechange', draw);
+(function(){
+  const btn=$('themeToggle'); if(!btn) return;
+  const glyph=()=>btn.textContent=document.documentElement.getAttribute('data-theme')==='dark'?'☀':'☾';
+  glyph();
+  btn.addEventListener('click', ()=>{
+    const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',next);
+    try{ localStorage.setItem('theme',next); }catch(e){}
+    glyph(); window.dispatchEvent(new Event('themechange'));
+  });
+})();
+
+/* ===== debug hook (level QA) ======================================== */
+function dbgStroke(s, idx){
+  editIdx = (idx==null? null : idx);
+  const pv=makePreview([s[0],s[1]],[s[2],s[3]]);
+  editIdx=null;
+  if(!pv) return 'too-short';
+  pushUndo();
+  mirrors=pv.ms; flip=null;
+  recompute(false);
+  return 'ok';
+}
+window.__T={
+  levels: LEVELS,
+  load: i=>loadLevel(i),
+  play: s=>dbgStroke(s, null),
+  redraw: (i,s)=>dbgStroke(s, i),
+  err: ()=>poseErr(chain.final,target),
+  win: ()=>prevWin,
+  mirrors: ()=>mirrors.length,
+  gems: ()=>chain.gemsCov.slice(),
+  bad: ()=>chain.bad.slice(1),
+};
+
+/* ===== boot ========================================================= */
+buildDots();
+loadLevel(0);
+</script>
+</body>
+</html>
