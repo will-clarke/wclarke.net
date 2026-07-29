@@ -58,12 +58,8 @@ function firstEmptyIn(S, side, order) {
 }
 
 // ------------------------------------------------------------ controller ---
-// opts.thinkEvery: seconds between decisions (default 0.8). Slower thinking
-// is the honest campaign difficulty knob - a sluggish opponent, not a
-// stat-cheating one.
-function makeController(rawParams, opts) {
+function makeController(rawParams) {
   const P = clampParams(rawParams);
-  const thinkEvery = (opts && opts.thinkEvery) || 0.8;
   const mem = { nextThink: 0 };
 
   // normalised hatch mix shares
@@ -77,7 +73,7 @@ function makeController(rawParams, opts) {
 
   return function control(S, side) {
     if (S.t < mem.nextThink) return null;
-    mem.nextThink = S.t + thinkEvery;
+    mem.nextThink = S.t + 0.8;
     const cfg = S.cfg;
     const foe = sim.other(side);
     const eco = sim.familyCount(S, side, 'eco');
@@ -232,134 +228,7 @@ const ARCHETYPES = {
     farmLvl: 1, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1,
     sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0.8,
   },
-  // the v0.5 evolved field-best (tune.js evolve, fit 0.97): balanced macro
-  // with guards and a real sapper share. Doubles as the campaign endboss
-  // and as the "strong player" reference when grading the level ladder.
-  optimum: {
-    wEco: 2.96, wDef: 0.91, wOff: 0.65,
-    farmTarget: 1, hatchTarget: 3, towersBase: 2, towersPer100s: 1.82, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.82, mixSoldier: 0.95, mixMajor: 0.57, mixSapper: 0.86,
-    sharpTrig: 6, spitTrig: 7, sapTrig: 6, guardTrig: 2, upgW: 0.77, lvlW: 1.19,
-  },
 };
 
-// -------------------------------------------------------------- campaign ---
-// The persona ladder (v0.6). Difficulty comes from honest knobs only:
-// weakened/slowed AI vectors early, head starts (money, pre-built
-// buildings) late. RULES stay symmetric; setups may not (level design).
-// Stars: win = 1, win with hill >= 100hp = 2, >= 200hp = 3.
-const LEVELS = [
-  // --- act 1: teach the three verbs ---
-  {
-    key: 'sprout', name: 'SEEDLING SNUG', act: 1,
-    blurb: 'A sleepy boomer with no walls at all.',
-    twist: 'He starts nearly broke. Breed ants and bury him.',
-    hue: '#d88a50',
-    ai: {
-      thinkEvery: 3,
-      params: {
-        wEco: 2.6, wDef: 0.5, wOff: 1,
-        farmTarget: 4, hatchTarget: 2, towersBase: 0, towersPer100s: 0.2, reactDef: 0,
-        farmLvl: 2, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0,
-      },
-    },
-    setup: { moneyE: 60 },
-  },
-  {
-    key: 'skitter', name: 'PRINCESS SKITTER', act: 1,
-    blurb: 'A hatchling rusher: all swarm, no plan.',
-    twist: 'Towers eat swarms. Build some, then out-grow her.',
-    hue: '#b8b0a0',
-    ai: {
-      thinkEvery: 2.5,
-      params: {
-        wEco: 0.8, wDef: 0.6, wOff: 2.2,
-        farmTarget: 1, hatchTarget: 4, towersBase: 0, towersPer100s: 0.3, reactDef: 0,
-        farmLvl: 1, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 0.8, lvlW: 0,
-      },
-    },
-    setup: { moneyE: 90 },
-  },
-  {
-    key: 'pebble', name: 'OLD PEBBLE', act: 1,
-    blurb: 'A stubborn little turtle behind stone.',
-    twist: 'Stone laughs at soldiers. Sapper broods EAT stone.',
-    hue: '#9cc088',
-    ai: {
-      thinkEvery: 2.5,
-      params: {
-        wEco: 1, wDef: 2.2, wOff: 0.8,
-        farmTarget: 2, hatchTarget: 1, towersBase: 2, towersPer100s: 0.6, reactDef: 1,
-        farmLvl: 1, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0.3,
-      },
-    },
-    setup: { moneyE: 90 },
-  },
-  // --- act 2: the real personas, telegraphed head starts ---
-  {
-    key: 'bloom', name: 'BARON BLOOM', act: 2, persona: 'bloom',
-    blurb: 'Plantations first, then majors with sapper escorts.',
-    twist: 'He starts with a farm down. Kill him before the giants hatch.',
-    hue: '#d88a50',
-    ai: { thinkEvery: 1.3, params: null },   // params filled from PERSONAS below
-    setup: { prebuildE: [{ slot: 4, type: 'farm' }] },
-  },
-  {
-    key: 'rustle', name: 'QUEEN RUSTLE', act: 2, persona: 'rustle',
-    blurb: 'Hatcheries everywhere, swarms on every drum.',
-    twist: 'Her first brood is already laid. Hold the early beats.',
-    hue: '#c84632',
-    ai: { thinkEvery: 1.3, params: null },
-    setup: { prebuildE: [{ slot: 3, type: 'hatch' }] },
-  },
-  {
-    key: 'tussock', name: 'WARDEN TUSSOCK', act: 2, persona: 'tussock',
-    blurb: 'Walls, sap and lane guards on a slow drum.',
-    twist: 'A sharpshooter already watches his lane. Crack the shell.',
-    hue: '#9cc088',
-    ai: { thinkEvery: 1.3, params: null },
-    setup: { prebuildE: [{ slot: 1, type: 'sharp' }] },
-  },
-  // --- act 3: the bosses ---
-  {
-    key: 'magnate', name: 'BLOOM THE MAGNATE', act: 3, persona: 'bloom',
-    blurb: 'The boomer, rich beyond reason.',
-    twist: 'A plantation stands and his purse is full (260g).',
-    hue: '#d88a50',
-    ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 260, prebuildE: [{ slot: 4, type: 'plant' }] },
-  },
-  {
-    key: 'endless', name: 'RUSTLE THE ENDLESS', act: 3, persona: 'rustle',
-    blurb: 'The rusher, and the drum never helps you first.',
-    twist: 'A swarm brood is already seething. 200g head start.',
-    hue: '#c84632',
-    ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 200, prebuildE: [{ slot: 3, type: 'swarmb' }] },
-  },
-  {
-    key: 'unbroken', name: 'TUSSOCK THE UNBROKEN', act: 3, persona: 'tussock',
-    blurb: 'The turtle, walled before you draw breath.',
-    twist: 'A veteran sharpshooter and a sap grove stand. 220g stocked.',
-    hue: '#9cc088',
-    ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 220, prebuildE: [{ slot: 1, type: 'sharp', lvl: 2 }, { slot: 2, type: 'sap' }] },
-  },
-  {
-    key: 'optimum', name: 'THE OPTIMUM', act: 3,
-    blurb: 'The tuner\'s champion: ten thousand simulated wars distilled.',
-    twist: 'No head start. No handicap. Just better macro than you.',
-    hue: '#ffd870',
-    ai: { thinkEvery: 0.8, params: null },   // filled from ARCHETYPES.optimum
-    setup: null,
-  },
-];
-for (const L of LEVELS) {
-  if (!L.ai.params) L.ai.params = L.persona ? PERSONAS[L.persona].params : ARCHETYPES[L.key];
-}
-
-return { PARAM_SPEC, PARAM_NAMES, clampParams, makeController, PERSONAS, ARCHETYPES, LEVELS };
+return { PARAM_SPEC, PARAM_NAMES, clampParams, makeController, PERSONAS, ARCHETYPES };
 });
