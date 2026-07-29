@@ -24,10 +24,11 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Ant War renderer (v0.4 nest-builder). All rules live in sim.js (shared with
-// the Node tuning harness); strategies and personas live in policy.js. This
-// file only draws, reads taps, and steps the sim at a fixed tick. There are
-// no manual sends: every tap is a build or an upgrade.
+// Ant War renderer (v0.6). All rules live in sim.js (shared with the Node
+// tuning harness); strategies, personas and campaign levels live in
+// policy.js. This file only draws, reads taps, and steps the sim at a fixed
+// tick. There are no manual sends: every tap is a build or an upgrade.
+// Campaign progress (stars) is the only persistent state (localStorage).
 // ---------------------------------------------------------------------------
 
 const sim = AntWarSim;
@@ -49,6 +50,25 @@ const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
   key, x: 24, y: 430 + i * 92, w: W - 48, h: 78,
 }));
 
+// campaign trail: a winding path up the screen, boss node centred on top
+const LEVEL_NODES = pol.LEVELS.map((L, i) => ({
+  x: i === pol.LEVELS.length - 1 ? 210 : (i % 2 === 0 ? 135 : 285),
+  y: 645 - i * 52,
+  r: i === pol.LEVELS.length - 1 ? 27 : 22,
+}));
+const SKIRMISH_BTN = { x: 110, y: 706, w: 200, h: 42 };
+const BRIEF_START = { x: 90, y: 470, w: 240, h: 52 };
+
+// KR-style stars, saved locally: 1 win, 2 hill >= 100hp, 3 hill >= 200hp
+let stars = {};
+try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } catch (e) {}
+function saveStars() {
+  try { localStorage.setItem('antwar-stars', JSON.stringify(stars)); } catch (e) {}
+}
+function levelUnlocked(i) {
+  return i === 0 || (stars[pol.LEVELS[i - 1].key] || 0) >= 1;
+}
+
 const cv = document.getElementById('c');
 const ctx = cv.getContext('2d');
 let viewScale = 1;
@@ -66,7 +86,11 @@ window.addEventListener('resize', resize);
 resize();
 
 // ----------------------------------------------------------------- state ---
-let phase = 'start';             // start | play | end
+let phase = 'menu';              // menu | brief | skirmish | play | end
+let mode = 'campaign';           // campaign | skirmish (what 'play' returns to)
+let currentLevel = -1;
+let briefLevel = -1;
+let earnedStars = 0;
 let S = null;
 let enemyCtrl = null;
 let personaKey = PERSONA_ORDER[0];
@@ -136,10 +160,7 @@ for (let i = 0; i < 70; i++) {
   });
 }
 
-function begin(key) {
-  personaKey = key;
-  S = sim.createState((Math.random() * 2 ** 31) | 0);
-  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+function resetMatchFx() {
   banners = [];
   openSlot = null;
   acc = 0;
@@ -149,6 +170,27 @@ function begin(key) {
   hillFlash = { p: 0, e: 0 };
   prevHP = { p: S.baseHP.p, e: S.baseHP.e };
   phase = 'play';
+}
+
+function begin(key) {           // skirmish: pick a persona, symmetric start
+  mode = 'skirmish';
+  personaKey = key;
+  S = sim.createState((Math.random() * 2 ** 31) | 0);
+  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  resetMatchFx();
+}
+
+function beginLevel(i) {        // campaign: level AI + level setup
+  mode = 'campaign';
+  currentLevel = i;
+  const L = pol.LEVELS[i];
+  S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null });
+  enemyCtrl = pol.makeController(L.ai.params, { thinkEvery: L.ai.thinkEvery });
+  resetMatchFx();
+}
+
+function opponentLabel() {
+  return mode === 'campaign' ? pol.LEVELS[currentLevel].name : pol.PERSONAS[personaKey].label;
 }
 
 function banner(text) { banners.push({ text, ttl: 2.4 }); }
@@ -181,13 +223,36 @@ cv.addEventListener('pointerdown', (e) => {
   const x = (e.clientX - rect.left) / viewScale;
   const y = (e.clientY - rect.top) / viewScale;
 
-  if (phase === 'start') {
-    for (const b of PERSONA_BTNS) {
-      if (inRect(x, y, b)) { begin(b.key); return; }
+  if (phase === 'menu') {
+    if (inRect(x, y, SKIRMISH_BTN)) { phase = 'skirmish'; return; }
+    for (let i = 0; i < LEVEL_NODES.length; i++) {
+      const n = LEVEL_NODES[i];
+      if (Math.hypot(x - n.x, y - n.y) < n.r + 8 && levelUnlocked(i)) {
+        briefLevel = i;
+        phase = 'brief';
+        return;
+      }
     }
     return;
   }
-  if (phase === 'end') { phase = 'start'; return; }
+  if (phase === 'brief') {
+    if (inRect(x, y, BRIEF_START)) { beginLevel(briefLevel); return; }
+    phase = 'menu';
+    return;
+  }
+  if (phase === 'skirmish') {
+    for (const b of PERSONA_BTNS) {
+      if (inRect(x, y, b)) { begin(b.key); return; }
+    }
+    phase = 'menu';              // tap anywhere else: back to the trail
+    return;
+  }
+  if (phase === 'end') {
+    if (mode === 'skirmish') { phase = 'skirmish'; return; }
+    if (matchResult === 'VICTORY') { phase = 'menu'; }
+    else { briefLevel = currentLevel; phase = 'brief'; }   // straight to retry
+    return;
+  }
 
   // build/upgrade popup gets first claim on the tap
   if (openSlot !== null) {
@@ -267,6 +332,12 @@ function advance(dtReal) {
   if (S.over) {
     matchResult = S.result === 'p' ? 'VICTORY' : (S.result === 'e' ? 'DEFEAT' : 'DRAW');
     if (matchResult === 'VICTORY') SFX.win(); else SFX.lose();
+    earnedStars = 0;
+    if (mode === 'campaign' && matchResult === 'VICTORY') {
+      earnedStars = S.baseHP.p >= 200 ? 3 : (S.baseHP.p >= 100 ? 2 : 1);
+      const key = pol.LEVELS[currentLevel].key;
+      if (earnedStars > (stars[key] || 0)) { stars[key] = earnedStars; saveStars(); }
+    }
     phase = 'end';
   }
 }
@@ -520,7 +591,7 @@ function drawHUD(time) {
   ctx.fillStyle = '#f0b0a0';
   ctx.font = 'bold 13px sans-serif';
   ctx.textAlign = 'left';
-  ctx.fillText(pol.PERSONAS[personaKey].label, 10, 11);
+  ctx.fillText(opponentLabel(), 10, 11);
   hpBar(10, 20, 180, 9, Math.max(0, S.baseHP.e) / CFG.BASE_HP, '#c84632');
   ctx.fillStyle = '#ffe9b0';
   ctx.textAlign = 'right';
@@ -651,14 +722,126 @@ function drawMatch(time) {
   drawPopup();
 }
 
-function drawStart() {
+function drawStars(cx, cy, got, size) {
+  ctx.font = 'bold ' + size + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < got ? '#ffd870' : 'rgba(0,0,0,0.35)';
+    ctx.fillText('★', cx + (i - 1) * (size + 2), cy);
+  }
+}
+
+function drawMenu() {
   drawGround();
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(0, 0, W, H);
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffd870';
+  ctx.font = 'bold 40px sans-serif';
+  ctx.fillText('ANT WAR', LANE_CX, 62);
+  const total = pol.LEVELS.reduce((a, L) => a + (stars[L.key] || 0), 0);
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('the campaign trail  -  ' + total + ' / ' + pol.LEVELS.length * 3 + ' ★', LANE_CX, 96);
+
+  // the winding trail
+  ctx.strokeStyle = 'rgba(255,233,176,0.35)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([2, 7]);
+  ctx.beginPath();
+  ctx.moveTo(LEVEL_NODES[0].x, LEVEL_NODES[0].y);
+  for (let i = 1; i < LEVEL_NODES.length; i++) ctx.lineTo(LEVEL_NODES[i].x, LEVEL_NODES[i].y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (let i = 0; i < LEVEL_NODES.length; i++) {
+    const n = LEVEL_NODES[i], L = pol.LEVELS[i];
+    const open = levelUnlocked(i);
+    const got = stars[L.key] || 0;
+    ctx.fillStyle = open ? '#3a2a1c' : 'rgba(30,22,14,0.9)';
+    ctx.strokeStyle = open ? L.hue : '#55483a';
+    ctx.lineWidth = got ? 4 : 2.5;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = open ? '#ffe9c0' : '#6a5c4a';
+    ctx.font = 'bold ' + (i === LEVEL_NODES.length - 1 ? 15 : 16) + 'px sans-serif';
+    ctx.fillText(i === LEVEL_NODES.length - 1 ? '☠' : String(i + 1), n.x, n.y + 1);
+    if (open) {
+      ctx.fillStyle = '#d8c0a0';
+      ctx.font = 'bold 10px sans-serif';
+      const side = n.x < LANE_CX ? 1 : -1;
+      ctx.textAlign = side === 1 ? 'left' : 'right';
+      ctx.fillText(L.name, n.x + side * (n.r + 10), n.y - 5);
+      ctx.textAlign = 'center';
+      if (got) drawStars(n.x + side * (n.r + 32), n.y + 9, got, 11);
+    }
+  }
+
+  ctx.fillStyle = '#3a2a1c';
+  ctx.strokeStyle = '#c8a060';
+  ctx.lineWidth = 2;
+  roundRect(SKIRMISH_BTN.x, SKIRMISH_BTN.y, SKIRMISH_BTN.w, SKIRMISH_BTN.h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ffe9c0';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText('SKIRMISH', LANE_CX, SKIRMISH_BTN.y + 21);
+}
+
+function wrapText(text, x, y, maxW, lh) {
+  const words = text.split(' ');
+  let line = '';
+  for (const w of words) {
+    const probe = line ? line + ' ' + w : w;
+    if (ctx.measureText(probe).width > maxW && line) {
+      ctx.fillText(line, x, y);
+      y += lh;
+      line = w;
+    } else line = probe;
+  }
+  if (line) ctx.fillText(line, x, y);
+  return y + lh;
+}
+
+function drawBrief() {
+  drawMenu();
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+  const L = pol.LEVELS[briefLevel];
+  ctx.fillStyle = '#2a1e12';
+  ctx.strokeStyle = L.hue;
+  ctx.lineWidth = 3;
+  roundRect(36, 240, W - 72, 310, 14);
+  ctx.fill(); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('LEVEL ' + (briefLevel + 1), LANE_CX, 272);
+  ctx.fillStyle = L.hue;
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText(L.name, LANE_CX, 300);
+  drawStars(LANE_CX, 330, stars[L.key] || 0, 16);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '14px sans-serif';
+  let ty = wrapText(L.blurb, LANE_CX, 370, W - 120, 20);
+  ctx.fillStyle = '#ffd870';
+  wrapText(L.twist, LANE_CX, ty + 8, W - 120, 20);
+  ctx.fillStyle = '#3a5c34';
+  ctx.strokeStyle = '#8ee06a';
+  ctx.lineWidth = 2;
+  roundRect(BRIEF_START.x, BRIEF_START.y, BRIEF_START.w, BRIEF_START.h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e8ffdc';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('DIG IN', LANE_CX, BRIEF_START.y + 27);
+}
+
+function drawSkirmish() {
+  drawGround();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ffd870';
   ctx.font = 'bold 44px sans-serif';
-  ctx.fillText('ANT WAR', LANE_CX, 130);
+  ctx.fillText('SKIRMISH', LANE_CX, 130);
   ctx.fillStyle = '#e8d8b8';
   ctx.font = '14px sans-serif';
   const lines = [
@@ -667,8 +850,8 @@ function drawStart() {
     'Tap a + slot: Farm (income), Tower (defence),',
     'or Hatchery (breeds attackers automatically).',
     'Tap buildings again to specialise, then level to 3.',
-    'NEW: Guard posts field lane-blocking defenders.',
-    'NEW: Sapper broods breed tower-DEMOLISHING ants.',
+    'Guard posts field lane-blocking defenders.',
+    'Sapper broods breed tower-DEMOLISHING ants.',
     '',
     'Every 18s the war drum beats and BOTH armies march.',
     'Storage is capped: idle gold stops earning.',
@@ -692,23 +875,29 @@ function drawStart() {
     ctx.font = '11px sans-serif';
     ctx.fillText(persona.intro, LANE_CX, b.y + 50);
   }
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('tap anywhere else for the campaign trail', LANE_CX, 740);
 }
 
 function drawEnd() {
   drawMatch(0);
   ctx.fillStyle = 'rgba(0,0,0,0.65)';
   ctx.fillRect(0, 0, W, H);
-  ctx.textAlign = 'center';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = matchResult === 'VICTORY' ? '#8ee06a' : (matchResult === 'DEFEAT' ? '#ff6a4a' : '#ffd870');
   ctx.font = 'bold 46px sans-serif';
-  ctx.fillText(matchResult, LANE_CX, 320);
+  ctx.fillText(matchResult, LANE_CX, 300);
+  if (mode === 'campaign' && matchResult === 'VICTORY') drawStars(LANE_CX, 352, earnedStars, 34);
   ctx.fillStyle = '#e8d8b8';
   ctx.font = '16px sans-serif';
   const mm = Math.floor(S.endT / 60), ss = Math.floor(S.endT % 60);
-  ctx.fillText('vs ' + pol.PERSONAS[personaKey].label + '  -  ' + mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 370);
+  ctx.fillText('vs ' + opponentLabel() + '  -  ' + mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 400);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 18px sans-serif';
-  ctx.fillText('TAP FOR OPPONENT SELECT', LANE_CX, 440);
+  const hint = mode === 'skirmish' ? 'TAP FOR OPPONENT SELECT'
+    : (matchResult === 'VICTORY' ? 'TAP FOR THE TRAIL' : 'TAP TO TRY AGAIN');
+  ctx.fillText(hint, LANE_CX, 452);
 }
 
 // ------------------------------------------------------------------ loop ---
@@ -719,8 +908,12 @@ function frame(now) {
   if (phase === 'play') {
     advance(dtReal);
     drawMatch(now / 1000);
-  } else if (phase === 'start') {
-    drawStart();
+  } else if (phase === 'menu') {
+    drawMenu();
+  } else if (phase === 'brief') {
+    drawBrief();
+  } else if (phase === 'skirmish') {
+    drawSkirmish();
   } else {
     drawEnd();
   }
