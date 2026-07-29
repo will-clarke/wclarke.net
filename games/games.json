@@ -119,6 +119,18 @@
       "name": "Allotmatic",
       "accent": "#7fb84a",
       "tagline": "A cosy pixel-art allotment where every act of automation is a geometric packing puzzle. Drag splashes from the well, tap ripe rows, send the pony cart to town - then research your way out of the chores with oddly-shaped sprinklers whose auras you must tile over the beds. Each new aura or crop shape makes the layout you were proud of an hour ago pleasantly obsolete. Make the whole plot tend itself, to a jaunty folk tune."
+    },
+    {
+      "slug": "antwar",
+      "name": "Ant War",
+      "accent": "#ffd870",
+      "tagline": "Two ant colonies, one screen, and only one verb: build. Farms for income, hatcheries that breed attackers on their own, guard posts whose defenders intercept on the lane, sapper broods that chew through towers - then every eighteen seconds the war drum beats and both armies march whether you are ready or not. No unit micro, no manual sending: just the shape of your nest against the shape of theirs."
+    },
+    {
+      "slug": "ants",
+      "name": "Colony Clash",
+      "accent": "#f0b429",
+      "tagline": "Tower defence in both directions along one shared pheromone trail. Every building is also a wall, so each placement re-routes the trail for their raiders and your ants alike - a long winding maze buys you more tower fire but costs you your own tempo. Farms pay more the nearer the midline you dare put them, raiders bite whatever they brush past, and late on you tear your own maze down to flood the gates open."
     }
   ]
 }

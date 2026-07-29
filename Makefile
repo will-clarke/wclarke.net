@@ -75,6 +75,7 @@ sync-games:
 	  --exclude='.git' --exclude='.gitignore' --exclude='Makefile' \
 	  --exclude='*.md' --exclude='_template' --exclude='scratch-*.js' \
 	  --exclude='.playwright-mcp' --exclude='*.png' --exclude='test.js' \
+	  --exclude='tune.js' --exclude='tuner-results.json' \
 	  --exclude='/index.html' --exclude='/shots' \
 	  $(GAMES_SRC)/ games/
 

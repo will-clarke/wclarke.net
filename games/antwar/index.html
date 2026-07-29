@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Ant War</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #241a12;
+    overflow: hidden;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  #wrap { display: flex; justify-content: center; align-items: center; height: 100%; }
+  canvas { display: block; touch-action: none; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<script src="sim.js"></script>
+<script src="policy.js"></script>
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Ant War renderer (v0.4 nest-builder). All rules live in sim.js (shared with
+// the Node tuning harness); strategies and personas live in policy.js. This
+// file only draws, reads taps, and steps the sim at a fixed tick. There are
+// no manual sends: every tap is a build or an upgrade.
+// ---------------------------------------------------------------------------
+
+const sim = AntWarSim;
+const pol = AntWarPolicy;
+const CFG = sim.CONFIG;
+
+const W = CFG.W, H = CFG.H;
+const LANE_CX = CFG.LANE_CX, LANE_HALF = CFG.LANE_HALF;
+const UI_TOP = 648;
+
+const LABELS = {
+  farm: 'Farm', grove: 'Grove', plant: 'Plant.',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard',
+  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper',
+};
+
+const PERSONA_ORDER = ['bloom', 'tussock', 'rustle'];
+const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
+  key, x: 24, y: 430 + i * 92, w: W - 48, h: 78,
+}));
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+let viewScale = 1;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  viewScale = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.width = Math.round(W * viewScale * dpr);
+  cv.height = Math.round(H * viewScale * dpr);
+  cv.style.width = (W * viewScale) + 'px';
+  cv.style.height = (H * viewScale) + 'px';
+  ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ----------------------------------------------------------------- state ---
+let phase = 'start';             // start | play | end
+let S = null;
+let enemyCtrl = null;
+let personaKey = PERSONA_ORDER[0];
+let matchResult = '';
+let banners = [];
+let openSlot = null;
+let acc = 0;
+let fullFlash = 0;
+let drumFlash = 0;
+let pebbles = [];
+let parts = [];                  // cosmetic particles (poofs, crumbles)
+let hillFlash = { p: 0, e: 0 };  // hill-crack feedback while besieged
+let prevHP = { p: 0, e: 0 };
+
+// ------------------------------------------------------------- feel layer --
+// tiny WebAudio blips; the context can only start on a user gesture
+let AC = null;
+function ensureAudio() {
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function blip(freq, dur, type, vol, slideTo) {
+  if (!AC || AC.state !== 'running') return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, AC.currentTime);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, AC.currentTime + dur);
+  g.gain.setValueAtTime(vol, AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(); o.stop(AC.currentTime + dur);
+}
+const SFX = {
+  drum()      { blip(85, 0.28, 'sine', 0.5, 42); blip(160, 0.1, 'triangle', 0.15, 70); },
+  build()     { blip(520, 0.07, 'triangle', 0.18, 700); },
+  towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
+  frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
+  win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
+  lose()      { blip(220, 0.7, 'sawtooth', 0.22, 80); },
+};
+function buzz(ms) {
+  if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+}
+
+function poof(x, y, color, n, spread) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const v = (0.3 + Math.random() * 0.7) * (spread || 40);
+    parts.push({
+      x, y,
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 15,
+      ttl: 0.35 + Math.random() * 0.35,
+      r: 1.5 + Math.random() * 2.5,
+      color,
+    });
+  }
+}
+
+for (let i = 0; i < 70; i++) {
+  pebbles.push({
+    x: Math.random() * W,
+    y: 40 + Math.random() * (UI_TOP - 60),
+    r: 1 + Math.random() * 2.5,
+    a: 0.05 + Math.random() * 0.1,
+  });
+}
+
+function begin(key) {
+  personaKey = key;
+  S = sim.createState((Math.random() * 2 ** 31) | 0);
+  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  banners = [];
+  openSlot = null;
+  acc = 0;
+  fullFlash = 0;
+  drumFlash = 0;
+  parts = [];
+  hillFlash = { p: 0, e: 0 };
+  prevHP = { p: S.baseHP.p, e: S.baseHP.e };
+  phase = 'play';
+}
+
+function banner(text) { banners.push({ text, ttl: 2.4 }); }
+
+// ------------------------------------------------------------------ input --
+function popupRects(slotIdx) {
+  const opts = sim.buildOptions(S, 'p', slotIdx);
+  if (!opts.length) return [];
+  const slot = S.slots.p[slotIdx];
+  const bw = 66, gap = 4;
+  const total = opts.length * bw + (opts.length - 1) * gap;
+  const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
+  const y = slot.y - 82;
+  return opts.map((type, i) => ({
+    type,
+    label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
+    cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
+    x: x0 + i * (bw + gap), y, w: bw, h: 52,
+  }));
+}
+
+function inRect(px, py, r) {
+  return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+}
+
+cv.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  ensureAudio();
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / viewScale;
+  const y = (e.clientY - rect.top) / viewScale;
+
+  if (phase === 'start') {
+    for (const b of PERSONA_BTNS) {
+      if (inRect(x, y, b)) { begin(b.key); return; }
+    }
+    return;
+  }
+  if (phase === 'end') { phase = 'start'; return; }
+
+  // build/upgrade popup gets first claim on the tap
+  if (openSlot !== null) {
+    for (const r of popupRects(openSlot)) {
+      if (inRect(x, y, r)) {
+        if (sim.applyAction(S, 'p', { kind: 'build', slot: openSlot, type: r.type })) SFX.build();
+        openSlot = null;
+        return;
+      }
+    }
+    openSlot = null;             // tap anywhere else just closes it
+    return;
+  }
+
+  for (let i = 0; i < S.slots.p.length; i++) {
+    const s = S.slots.p[i];
+    if (Math.hypot(x - s.x, y - s.y) < 30 && sim.buildOptions(S, 'p', i).length) {
+      openSlot = i;
+      return;
+    }
+  }
+});
+
+// ------------------------------------------------------------- sim driver --
+function advance(dtReal) {
+  acc += dtReal;
+  let guard = 8;                 // don't spiral after a background tab
+  while (acc >= CFG.TICK && guard-- > 0 && !S.over) {
+    const acts = enemyCtrl(S, 'e');
+    if (acts) for (const a of acts) sim.applyAction(S, 'e', a);
+    sim.step(S);
+    acc -= CFG.TICK;
+  }
+  if (guard <= 0) acc = 0;
+
+  for (const ev of S.events) {
+    if (ev.type === 'frenzy') { banner('FRENZY! Income doubled'); SFX.frenzy(); }
+    if (ev.type === 'decay') banner('SUDDEN DEATH! Hills are crumbling');
+    if (ev.type === 'march') { drumFlash = 1; SFX.drum(); buzz(30); }
+    if (ev.type === 'death') {
+      poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
+    }
+    if (ev.type === 'towerfall') {
+      poof(ev.x, ev.y, '#8a8274', 18, 70);
+      poof(ev.x, ev.y, '#5d4630', 10, 45);
+      banner(ev.side === 'p' ? 'Your tower is down!' : 'Enemy tower DEMOLISHED!');
+      SFX.towerfall();
+      buzz(ev.side === 'p' ? [40, 40, 40] : 60);
+    }
+  }
+  S.events.length = 0;
+
+  // hill-crack feedback: flash when a hill is being chewed (beyond decay)
+  const decayLoss = S.decay ? CFG.DECAY_RATE * dtReal : 0;
+  for (const side of ['p', 'e']) {
+    const chew = prevHP[side] - S.baseHP[side] - decayLoss;
+    if (chew > 0.005) hillFlash[side] = Math.min(1, hillFlash[side] + chew * 0.25 + 0.15);
+    hillFlash[side] = Math.max(0, hillFlash[side] - dtReal * 1.6);
+    prevHP[side] = S.baseHP[side];
+  }
+
+  for (const p of parts) {
+    p.x += p.vx * dtReal;
+    p.y += p.vy * dtReal;
+    p.vy += 60 * dtReal;
+    p.ttl -= dtReal;
+  }
+  parts = parts.filter(p => p.ttl > 0);
+
+  for (const b of banners) b.ttl -= dtReal;
+  banners = banners.filter(b => b.ttl > 0);
+  drumFlash = Math.max(0, drumFlash - dtReal * 1.5);
+
+  const atCap = S.money.p >= CFG.GOLD_CAP - 0.5;
+  fullFlash = Math.max(0, Math.min(2, fullFlash + (atCap ? 2 : -2) * dtReal));
+
+  if (S.over) {
+    matchResult = S.result === 'p' ? 'VICTORY' : (S.result === 'e' ? 'DEFEAT' : 'DRAW');
+    if (matchResult === 'VICTORY') SFX.win(); else SFX.lose();
+    phase = 'end';
+  }
+}
+
+// ------------------------------------------------------------------ draw ---
+function drawGround() {
+  ctx.fillStyle = '#7a5c3e';
+  ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
+  g.addColorStop(0, '#7a5c3e');
+  g.addColorStop(0.2, '#96754f');
+  g.addColorStop(0.8, '#96754f');
+  g.addColorStop(1, '#7a5c3e');
+  ctx.fillStyle = g;
+  ctx.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  for (const p of pebbles) {
+    ctx.globalAlpha = p.a;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawMound(b, color, hole, flash) {
+  const g = ctx.createRadialGradient(b.x, b.y - 8, 4, b.x, b.y, b.r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, '#5d4630');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
+  if (flash > 0.02) {
+    // cracks spider out while the hill is being chewed
+    ctx.strokeStyle = 'rgba(255,90,50,' + (0.35 + 0.5 * flash) + ')';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.26 + 0.4;
+      ctx.beginPath();
+      ctx.moveTo(b.x + Math.cos(a) * b.r * 0.25, b.y + Math.sin(a) * b.r * 0.18);
+      ctx.lineTo(b.x + Math.cos(a + 0.3) * b.r * 0.6, b.y + Math.sin(a + 0.3) * b.r * 0.45);
+      ctx.lineTo(b.x + Math.cos(a + 0.1) * b.r * 0.95, b.y + Math.sin(a + 0.1) * b.r * 0.68);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,120,70,' + 0.16 * flash + ')';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = hole;
+  ctx.beginPath(); ctx.ellipse(b.x, b.y - 6, b.r * 0.3, b.r * 0.2, 0, 0, 7); ctx.fill();
+}
+
+function drawAnt(u, time) {
+  const body = u.side === 'p' ? '#1d150c' : '#a8321e';
+  const dir = u.side === 'p' ? -1 : 1;
+  const mustering = u.state === 'muster';
+  ctx.save();
+  // musters mill about a little so the gathering army looks alive
+  const mx = mustering ? Math.sin(time * 1.7 + u.seed * 3) * 3 : 0;
+  const my = mustering ? Math.cos(time * 1.3 + u.seed * 2) * 2 : 0;
+  ctx.translate(u.x + mx, u.y + my);
+  ctx.strokeStyle = body;
+  ctx.lineWidth = 1;
+  const biting = u.state === 'siege';
+  const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
+    ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
+    ctx.stroke();
+  }
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
+  if (u.typeKey === 'guard') {
+    // gold thorax band: defenders read differently from attackers
+    ctx.fillStyle = '#ffd870';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.45, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'sapper') {
+    // pale mandibles: the demolition crew
+    ctx.strokeStyle = '#ffe9b0';
+    ctx.lineWidth = 1.5;
+    const hy = -dir * u.r * 2.3;
+    ctx.beginPath();
+    ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
+    ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
+    ctx.stroke();
+  }
+  if (u.slowed) {
+    ctx.strokeStyle = 'rgba(140,220,120,0.7)';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
+  }
+  const t = CFG.UNITS[u.typeKey];
+  const maxHp = u.maxHp || t.hp;
+  if (maxHp > 20 && u.hp < maxHp) {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(-9, -u.r * 3 - 4, 18, 3);
+    ctx.fillStyle = '#7ec850';
+    ctx.fillRect(-9, -u.r * 3 - 4, 18 * (u.hp / maxHp), 3);
+  }
+  ctx.restore();
+}
+
+function drawMushrooms(slot, side, spots) {
+  for (const [dx, dy, r] of spots) {
+    ctx.fillStyle = '#d8c9a3';
+    ctx.fillRect(slot.x + dx - 2, slot.y + dy - 2, 4, 8);
+    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy - 4, r, r * 0.65, 0, 0, 7); ctx.fill();
+  }
+}
+
+function drawEggs(slot, spots, eggColor) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (const [dx, dy, r] of spots) {
+    ctx.fillStyle = eggColor;
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, r * 0.8, r, 0, 0, 7); ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawSlot(slot, side, idx, time) {
+  if (slot.type === null) {
+    if (side === 'p') {
+      ctx.strokeStyle = 'rgba(255,255,220,0.45)';
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, 20, 0, 7); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,220,0.55)';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('+', slot.x, slot.y + 1);
+    }
+    return;
+  }
+
+  if (slot.type === 'farm') {
+    drawMushrooms(slot, side, [[-8, 4, 7], [7, 6, 6], [0, -6, 8]]);
+  } else if (slot.type === 'grove') {
+    drawMushrooms(slot, side, [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]]);
+  } else if (slot.type === 'plant') {
+    drawMushrooms(slot, side, [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]]);
+    ctx.fillStyle = '#d8c9a3';
+    ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
+    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+  } else if (slot.type === 'hatch') {
+    drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
+  } else if (slot.type === 'swarmb') {
+    drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8');
+  } else if (slot.type === 'soldierb') {
+    drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090');
+  } else if (slot.type === 'majorb') {
+    drawEggs(slot, [[0, 0, 13]], '#c8a878');
+  } else if (slot.type === 'sapperb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0');
+    // pick-axe mandible mark on the brood
+    ctx.strokeStyle = '#6a4a20';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(slot.x - 5, slot.y - 12); ctx.lineTo(slot.x, slot.y - 17); ctx.lineTo(slot.x + 5, slot.y - 12);
+    ctx.stroke();
+  } else {
+    // tower family: stone mound base
+    const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478' }[slot.type];
+    g.addColorStop(0, top);
+    g.addColorStop(1, '#6e685c');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19, 15, 0, 0, 7); ctx.fill();
+    if (slot.type === 'tower') {
+      ctx.fillStyle = '#2c2820';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'sharp') {
+      ctx.strokeStyle = '#3a342a';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 4); ctx.lineTo(slot.x, slot.y - 26); ctx.stroke();
+      ctx.fillStyle = '#2c2820';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 26, 3.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'spit') {
+      ctx.fillStyle = '#2c2820';
+      for (const dx of [-8, 0, 8]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx, slot.y - 6, 3.2, 0, 7); ctx.fill();
+      }
+    } else if (slot.type === 'sap') {
+      ctx.strokeStyle = 'rgba(140,220,120,' + (0.25 + 0.15 * Math.sin(time * 3)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.sap.range * (0.9 + 0.06 * Math.sin(time * 3)), 0, 7); ctx.stroke();
+      ctx.fillStyle = '#3a5c34';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'guard') {
+      // banner pole marks the mustering point of the lane guards
+      ctx.strokeStyle = '#6a5030';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 2); ctx.lineTo(slot.x, slot.y - 24); ctx.stroke();
+      ctx.fillStyle = '#ffd870';
+      ctx.beginPath();
+      ctx.moveTo(slot.x, slot.y - 24); ctx.lineTo(slot.x + 12, slot.y - 20); ctx.lineTo(slot.x, slot.y - 16);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+
+  // defence buildings show damage once sappers have chewed them
+  if (sim.FAMILIES.def.includes(slot.type)) {
+    const maxHp = CFG.TOWER_HP * Math.pow(CFG.LVL_POWER, slot.lvl - 1);
+    if (slot.hp < maxHp - 0.5) {
+      hpBar(slot.x - 14, slot.y + 12, 28, 4, Math.max(0, slot.hp) / maxHp, '#e0a040');
+    }
+  }
+
+  // level pips
+  if (slot.lvl > 1) {
+    ctx.fillStyle = '#ffd870';
+    for (let i = 0; i < slot.lvl; i++) {
+      ctx.beginPath(); ctx.arc(slot.x - 8 + i * 8, slot.y + 20, 2.5, 0, 7); ctx.fill();
+    }
+  }
+
+  // upgrade affordance for the player: any legal option they can pay for
+  if (side === 'p' && S) {
+    const opts = sim.buildOptions(S, 'p', idx);
+    if (opts.length) {
+      const cheapest = Math.min(...opts.map(t =>
+        t === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[t]));
+      if (S.money.p >= cheapest) {
+        ctx.fillStyle = 'rgba(255,220,120,' + (0.5 + 0.3 * Math.sin(time * 4)) + ')';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('▲', slot.x, slot.y - 26);
+      }
+    }
+  }
+}
+
+function hpBar(x, y, w, h, frac, fg) {
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = fg;
+  ctx.fillRect(x + 1, y + 1, Math.max(0, (w - 2) * frac), h - 2);
+}
+
+function goldLabel(side) {
+  return Math.floor(S.money[side]) + '/' + CFG.GOLD_CAP;
+}
+
+function drawHUD(time) {
+  ctx.textBaseline = 'middle';
+
+  // enemy panel (full information)
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0, 0, W, 34);
+  ctx.fillStyle = '#f0b0a0';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(pol.PERSONAS[personaKey].label, 10, 11);
+  hpBar(10, 20, 180, 9, Math.max(0, S.baseHP.e) / CFG.BASE_HP, '#c84632');
+  ctx.fillStyle = '#ffe9b0';
+  ctx.textAlign = 'right';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)', W - 10, 11);
+  ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   muster ' + sim.musterCount(S, 'e'), W - 10, 24);
+
+  // match clock
+  const remain = Math.max(0, CFG.HARD_END - S.t);
+  const mm = Math.floor(remain / 60), ss = Math.floor(remain % 60);
+  ctx.fillStyle = S.decay ? '#ff6a4a' : 'rgba(255,255,240,0.85)';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 46);
+
+  // bottom control panel
+  ctx.fillStyle = '#33261a';
+  ctx.fillRect(0, UI_TOP, W, H - UI_TOP);
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, UI_TOP, W, 2);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#cfe8b0';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('YOUR COLONY', 12, UI_TOP + 16);
+  hpBar(12, UI_TOP + 26, 200, 11, Math.max(0, S.baseHP.p) / CFG.BASE_HP, '#6aa84f');
+  const full = fullFlash > 0.5;
+  ctx.fillStyle = full && Math.sin(time * 6) > 0 ? '#ff9c50' : '#ffe9b0';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(goldLabel('p') + ' gold', W - 12, UI_TOP + 18);
+  ctx.font = '12px sans-serif';
+  ctx.fillText(
+    full ? 'STORAGE FULL - income wasted!' : '+' + sim.income(S, 'p').toFixed(1) + '/s' + (S.frenzy ? '  FRENZY x2' : ''),
+    W - 12, UI_TOP + 36);
+
+  // war drum countdown
+  const toBeat = Math.max(0, S.nextBeat - S.t);
+  const frac = 1 - toBeat / CFG.WAR_DRUM;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(12, UI_TOP + 62, W - 24, 30);
+  ctx.fillStyle = drumFlash > 0 ? 'rgba(255,216,112,' + (0.35 + drumFlash * 0.5) + ')' : 'rgba(200,160,96,0.35)';
+  ctx.fillRect(13, UI_TOP + 63, (W - 26) * frac, 28);
+  ctx.fillStyle = '#ffe9c0';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    drumFlash > 0.3 ? 'THE MARCH IS ON!' : 'war drum in ' + toBeat.toFixed(0) + 's   -   your muster: ' + sim.musterCount(S, 'p'),
+    LANE_CX, UI_TOP + 77);
+
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - then tap again to upgrade', LANE_CX, UI_TOP + 106);
+
+  // banners
+  let by = 200;
+  for (const b of banners) {
+    ctx.globalAlpha = Math.min(1, b.ttl);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.font = 'bold 17px sans-serif';
+    const tw = ctx.measureText(b.text).width;
+    ctx.fillRect(LANE_CX - tw / 2 - 12, by - 14, tw + 24, 28);
+    ctx.fillStyle = '#ffd870';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.text, LANE_CX, by);
+    ctx.globalAlpha = 1;
+    by += 34;
+  }
+}
+
+function drawPopup() {
+  if (openSlot === null) return;
+  const slot = S.slots.p[openSlot];
+  ctx.strokeStyle = '#ffe9b0';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(slot.x, slot.y, 24, 0, 7); ctx.stroke();
+  for (const r of popupRects(openSlot)) {
+    const afford = S.money.p >= r.cost;
+    ctx.fillStyle = 'rgba(20,14,8,0.92)';
+    ctx.strokeStyle = afford ? '#c8a060' : '#5a4a38';
+    roundRect(r.x, r.y, r.w, r.h, 7);
+    ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = afford ? 1 : 0.45;
+    ctx.fillStyle = '#ffe9c0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(r.label, r.x + r.w / 2, r.y + 16);
+    ctx.fillStyle = '#ffd870';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawMatch(time) {
+  drawGround();
+  drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
+  drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
+  for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
+  for (let i = 0; i < S.slots.p.length; i++) drawSlot(S.slots.p[i], 'p', i, time);
+  for (const sh of S.shots) {
+    ctx.strokeStyle = 'rgba(255,240,180,' + (sh.ttl / 0.09) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sh.x1, sh.y1); ctx.lineTo(sh.x2, sh.y2); ctx.stroke();
+    if (sh.splash) {
+      ctx.strokeStyle = 'rgba(255,200,120,' + (sh.ttl / 0.09) * 0.6 + ')';
+      ctx.beginPath(); ctx.arc(sh.x2, sh.y2, sh.splash, 0, 7); ctx.stroke();
+    }
+  }
+  for (const u of S.units) drawAnt(u, time);
+  for (const p of parts) {
+    ctx.globalAlpha = Math.min(1, p.ttl * 2.5);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  drawHUD(time);
+  drawPopup();
+}
+
+function drawStart() {
+  drawGround();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ffd870';
+  ctx.font = 'bold 44px sans-serif';
+  ctx.fillText('ANT WAR', LANE_CX, 130);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '14px sans-serif';
+  const lines = [
+    'Build your nest. Your ants fight for themselves.',
+    '',
+    'Tap a + slot: Farm (income), Tower (defence),',
+    'or Hatchery (breeds attackers automatically).',
+    'Tap buildings again to specialise, then level to 3.',
+    'NEW: Guard posts field lane-blocking defenders.',
+    'NEW: Sapper broods breed tower-DEMOLISHING ants.',
+    '',
+    'Every 18s the war drum beats and BOTH armies march.',
+    'Storage is capped: idle gold stops earning.',
+    'Income doubles at 3:00 left; hills crumble at 1:30.',
+  ];
+  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 180 + i * 22));
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 412);
+  for (const b of PERSONA_BTNS) {
+    const persona = pol.PERSONAS[b.key];
+    ctx.fillStyle = '#3a2a1c';
+    ctx.strokeStyle = '#c8a060';
+    ctx.lineWidth = 2;
+    roundRect(b.x, b.y, b.w, b.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd870';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(persona.label, LANE_CX, b.y + 24);
+    ctx.fillStyle = '#d8c0a0';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(persona.intro, LANE_CX, b.y + 50);
+  }
+}
+
+function drawEnd() {
+  drawMatch(0);
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center';
+  ctx.fillStyle = matchResult === 'VICTORY' ? '#8ee06a' : (matchResult === 'DEFEAT' ? '#ff6a4a' : '#ffd870');
+  ctx.font = 'bold 46px sans-serif';
+  ctx.fillText(matchResult, LANE_CX, 320);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '16px sans-serif';
+  const mm = Math.floor(S.endT / 60), ss = Math.floor(S.endT % 60);
+  ctx.fillText('vs ' + pol.PERSONAS[personaKey].label + '  -  ' + mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 370);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('TAP FOR OPPONENT SELECT', LANE_CX, 440);
+}
+
+// ------------------------------------------------------------------ loop ---
+let last = performance.now();
+function frame(now) {
+  const dtReal = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (phase === 'play') {
+    advance(dtReal);
+    drawMatch(now / 1000);
+  } else if (phase === 'start') {
+    drawStart();
+  } else {
+    drawEnd();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
