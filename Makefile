@@ -11,8 +11,14 @@
 # `make sync-intuition` regenerates /intuition.json (the honeycomb's
 # intuition room) from ../intuition's post index.
 #
+# The sync only ever ships ../games' COMMITTED state, never its working tree:
+# a game being edited over there must not land half-written on the site. HEAD
+# is unpacked into $(SNAPSHOT) with `git archive`, and both the static copy and
+# the dist builds come from that. Uncommitted work is listed as a warning and
+# skipped -- to ship it, commit it in ../games first.
+#
 # Most games are self-contained static HTML. A few are build-based (see
-# BUILD_GAMES): `make sync` builds them in ../games and copies only their
+# BUILD_GAMES): `make sync` builds them in the snapshot and copies only their
 # built dist/ into games/<slug>/ -- never the source tree or node_modules.
 #
 # There is no games/index.html any more (the standalone hex cabinet was
@@ -21,6 +27,7 @@
 # page or its screenshots. games.json still syncs in as data for the comb.
 
 GAMES_SRC := ../games
+SNAPSHOT  := /tmp/wclarke-net-games-snapshot
 PORT      ?= 8000
 PULL      ?= 1        # PULL=0 to skip the git pull (e.g. offline)
 
@@ -49,8 +56,8 @@ SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
 
 .DEFAULT_GOAL := help
 
-## sync: pull ../games, build the build-based games, and import into games/
-sync: pull build sync-games sync-built
+## sync: pull ../games, snapshot HEAD, build, and import into games/
+sync: pull snapshot build sync-games sync-built drop-snapshot
 	@echo
 	@echo "== done. review + commit to deploy: =="
 	@git status --short
@@ -64,26 +71,42 @@ else
 	@echo "==> skipping git pull (PULL=0)"
 endif
 
-## build: build the build-based games in ../games (-> each game's dist/)
-build:
-	@$(MAKE) -C $(GAMES_SRC) build
+## snapshot: unpack ../games' committed state (HEAD) into $(SNAPSHOT)
+snapshot:
+	@rm -rf $(SNAPSHOT)
+	@mkdir -p $(SNAPSHOT)
+	@git -C $(GAMES_SRC) archive HEAD | tar -x -C $(SNAPSHOT)
+	@echo "==> $(SNAPSHOT)  <- $(GAMES_SRC) @ $$(git -C $(GAMES_SRC) rev-parse --short HEAD)"
+	@dirty=$$(git -C $(GAMES_SRC) status --porcelain); \
+	 if [ -n "$$dirty" ]; then \
+	   echo "    uncommitted in $(GAMES_SRC) -- NOT synced (commit it there to ship it):"; \
+	   echo "$$dirty" | sed 's/^/      /'; \
+	 fi
 
-## sync-games: copy ../games (self-contained static games) -> games/
-sync-games:
-	@echo "==> games/  <- $(GAMES_SRC)  (keeping: $(KEEP_GAMES))"
+## drop-snapshot: remove $(SNAPSHOT)
+drop-snapshot:
+	@rm -rf $(SNAPSHOT)
+
+## build: build the build-based games in the snapshot (-> each game's dist/)
+build: snapshot
+	@$(MAKE) -C $(SNAPSHOT) build
+
+## sync-games: copy the snapshot (self-contained static games) -> games/
+sync-games: snapshot
+	@echo "==> games/  <- snapshot  (keeping: $(KEEP_GAMES))"
 	@rsync -a --delete $(KEEP_EXCLUDES) $(BUILD_EXCLUDES) $(SRC_EXCLUDES) \
-	  --exclude='.git' --exclude='.gitignore' --exclude='Makefile' \
+	  --exclude='.gitignore' --exclude='Makefile' \
 	  --exclude='*.md' --exclude='_template' --exclude='scratch-*.js' \
-	  --exclude='.playwright-mcp' --exclude='*.png' --exclude='test.js' \
+	  --exclude='*.png' --exclude='test.js' \
 	  --exclude='tune.js' --exclude='tuner-results.json' \
 	  --exclude='/index.html' --exclude='/shots' \
-	  $(GAMES_SRC)/ games/
+	  $(SNAPSHOT)/ games/
 
-## sync-built: copy each build-based game's dist/ -> games/<slug>/
+## sync-built: copy each build-based game's built dist/ -> games/<slug>/
 sync-built:
 	@for g in $(BUILD_GAMES); do \
-	  echo "==> games/$$g/  <- $(GAMES_SRC)/$$g/dist/"; \
-	  rsync -a --delete $(GAMES_SRC)/$$g/dist/ games/$$g/; \
+	  echo "==> games/$$g/  <- snapshot/$$g/dist/"; \
+	  rsync -a --delete $(SNAPSHOT)/$$g/dist/ games/$$g/; \
 	done
 
 ## sync-intuition: regenerate intuition.json from ../intuition's post index
@@ -99,4 +122,5 @@ serve:
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
-.PHONY: sync pull build sync-games sync-built sync-intuition serve help
+.PHONY: sync pull snapshot drop-snapshot build sync-games sync-built \
+        sync-intuition serve help

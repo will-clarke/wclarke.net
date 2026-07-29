@@ -102,6 +102,12 @@ const CONFIG = {
   DECAY_AT: 330,
   HARD_END: 420,
   DECAY_RATE: 4,
+
+  // campaign level setups: per-side start money and pre-built buildings.
+  // The RULES stay symmetric (that keeps self-play tuning and future PvP
+  // honest) - only the STARTING POSITION may differ, as level design.
+  // Shape: { moneyP, moneyE, prebuildP: [{slot,type,lvl}], prebuildE: [...] }
+  SETUP: null,
 };
 
 function mulberry32(a) {
@@ -149,7 +155,28 @@ function createState(seed, overrides) {
     S.slots.e[i].type = 'tower';
     S.slots.e[i].hp = cfg.TOWER_HP;
   }
+  if (cfg.SETUP) {
+    const su = cfg.SETUP;
+    if (su.moneyP != null) S.money.p = su.moneyP;
+    if (su.moneyE != null) S.money.e = su.moneyE;
+    for (const b of su.prebuildP || []) placeBuilding(S, 'p', b.slot, b.type, b.lvl);
+    for (const b of su.prebuildE || []) placeBuilding(S, 'e', b.slot, b.type, b.lvl);
+  }
   return S;
+}
+
+// pre-place a building without paying for it (campaign level setups only)
+function placeBuilding(S, side, slotIdx, type, lvl) {
+  const slot = S.slots[side][slotIdx];
+  slot.type = type;
+  slot.lvl = lvl || 1;
+  slot.cd = 0;
+  slot.hp = FAMILIES.def.includes(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
+  if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
+  if (type === 'guard') {
+    for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, slotIdx);
+    slot.prodCd = S.cfg.GUARD.respawn;
+  }
 }
 
 // ------------------------------------------------------------- queries ----
