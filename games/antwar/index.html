@@ -24,7 +24,7 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Ant War renderer (v0.8). All rules live in sim.js (shared with the Node
+// Ant War renderer (v0.9). All rules live in sim.js (shared with the Node
 // tuning harness); strategies, personas and campaign levels live in
 // policy.js. This file only draws, reads taps, and steps the sim at a fixed
 // tick. There are no manual sends: every tap is a build, an upgrade or a
@@ -43,8 +43,8 @@ const UI_TOP = 648;
 
 const LABELS = {
   farm: 'Farm', grove: 'Grove', plant: 'Plant.',
-  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard',
-  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar',
+  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
 };
 
 const PERSONA_ORDER = ['bloom', 'tussock', 'rustle'];
@@ -53,9 +53,10 @@ const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
 }));
 
 // campaign trail: a winding path up the screen, boss node centred on top
+// (spacing scales off the level count - v0.9 grew the ladder to 12)
 const LEVEL_NODES = pol.LEVELS.map((L, i) => ({
   x: i === pol.LEVELS.length - 1 ? 210 : (i % 2 === 0 ? 135 : 285),
-  y: 645 - i * 52,
+  y: 645 - i * Math.floor(495 / (pol.LEVELS.length - 1)),
   r: i === pol.LEVELS.length - 1 ? 27 : 22,
 }));
 const SKIRMISH_BTN = { x: 110, y: 706, w: 200, h: 42 };
@@ -89,7 +90,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'v0.8', mode, opponent, seed: S.seed,
+    v: 'v0.9', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -190,6 +191,7 @@ const SFX = {
   build()     { blip(520, 0.07, 'triangle', 0.18, 700); },
   sell()      { blip(620, 0.12, 'triangle', 0.18, 260); },
   towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
+  mortar()    { blip(110, 0.22, 'square', 0.16, 48); },
   frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
   win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
   lose()      { blip(220, 0.7, 'sawtooth', 0.22, 80); },
@@ -275,7 +277,9 @@ function popupRects(slotIdx) {
     entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
   }
   if (!entries.length) return [];
-  const bw = 66, gap = 4;
+  // shrink buttons when the tower tree offers all 5 specs + sell
+  const gap = 4;
+  const bw = Math.min(66, Math.floor((W - 12 - (entries.length - 1) * gap) / entries.length));
   const total = entries.length * bw + (entries.length - 1) * gap;
   const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
   const y = slot.y - 82;
@@ -375,6 +379,7 @@ function advance(dtReal) {
       poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
     }
     if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
+    if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
@@ -480,7 +485,7 @@ function drawAnt(u, time) {
   ctx.translate(u.x + mx, u.y + my);
   ctx.strokeStyle = body;
   ctx.lineWidth = 1;
-  const biting = u.state === 'siege';
+  const biting = u.state === 'siege' || u.state === 'hunt';
   const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
   for (let i = -1; i <= 1; i++) {
     ctx.beginPath();
@@ -504,6 +509,15 @@ function drawAnt(u, time) {
     ctx.beginPath();
     ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
     ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
+    ctx.stroke();
+  } else if (u.typeKey === 'predator') {
+    // rust pincers: the hunter
+    ctx.strokeStyle = '#ff9068';
+    ctx.lineWidth = 1.5;
+    const hy = -dir * u.r * 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(-u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
+    ctx.moveTo(u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
     ctx.stroke();
   }
   if (u.slowed) {
@@ -582,10 +596,19 @@ function drawSlot(slot, side, idx, time) {
     ctx.beginPath();
     ctx.moveTo(slot.x - 5, slot.y - 12); ctx.lineTo(slot.x, slot.y - 17); ctx.lineTo(slot.x + 5, slot.y - 12);
     ctx.stroke();
+  } else if (slot.type === 'predatorb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0b8a8');
+    // paired fang mark: the hunter brood
+    ctx.strokeStyle = '#a03828';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(slot.x - 6, slot.y - 17); ctx.lineTo(slot.x - 3, slot.y - 11);
+    ctx.moveTo(slot.x + 6, slot.y - 17); ctx.lineTo(slot.x + 3, slot.y - 11);
+    ctx.stroke();
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -619,6 +642,17 @@ function drawSlot(slot, side, idx, time) {
       ctx.beginPath();
       ctx.moveTo(slot.x, slot.y - 24); ctx.lineTo(slot.x + 12, slot.y - 20); ctx.lineTo(slot.x, slot.y - 16);
       ctx.closePath(); ctx.fill();
+    } else if (slot.type === 'mortar') {
+      // fat barrel tilted toward the enemy
+      const dir = side === 'p' ? -1 : 1;
+      ctx.strokeStyle = '#2c2820';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(slot.x - 4, slot.y - 2);
+      ctx.lineTo(slot.x + 5, slot.y - 2 + dir * 16);
+      ctx.stroke();
+      ctx.fillStyle = '#1c1814';
+      ctx.beginPath(); ctx.arc(slot.x + 5, slot.y - 2 + dir * 16, 4.2, 0, 7); ctx.fill();
     }
   }
 
@@ -787,6 +821,20 @@ function drawMatch(time) {
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
   for (let i = 0; i < S.slots.p.length; i++) drawSlot(S.slots.p[i], 'p', i, time);
   for (const sh of S.shots) {
+    if (sh.mortar) {
+      // lobbed arc + impact ring, fading over the longer ttl
+      const a = Math.max(0, sh.ttl / 0.5);
+      ctx.strokeStyle = 'rgba(70,56,40,' + 0.6 * a + ')';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(sh.x1, sh.y1);
+      ctx.quadraticCurveTo((sh.x1 + sh.x2) / 2, Math.min(sh.y1, sh.y2) - 90, sh.x2, sh.y2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,150,70,' + a + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sh.x2, sh.y2, 5 + 16 * (1 - a), 0, 7); ctx.stroke();
+      continue;
+    }
     ctx.strokeStyle = 'rgba(255,240,180,' + (sh.ttl / 0.09) + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(sh.x1, sh.y1); ctx.lineTo(sh.x2, sh.y2); ctx.stroke();
@@ -946,11 +994,11 @@ function drawSkirmish() {
     'Tap a + slot: Farm (income), Tower (defence),',
     'or Hatchery (breeds attackers automatically).',
     'Tap buildings again to specialise, then level to 3.',
-    'Guard posts field lane-blocking defenders.',
-    'Sapper broods breed tower-DEMOLISHING ants.',
-    'Selling refunds 70% of everything spent.',
+    'Guards block the lane; sappers DEMOLISH towers.',
+    'Mortars bombard enemy defences from your side.',
+    'Predator broods hunt enemy marchers mid-lane.',
+    'Selling refunds 70%. Idle gold above the cap is lost.',
     'Every 18s the war drum beats and BOTH armies march.',
-    'Storage is capped: idle gold stops earning.',
     'Income doubles at 3:00 left; hills crumble at 1:30.',
   ];
   lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 180 + i * 22));

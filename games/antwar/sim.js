@@ -15,6 +15,11 @@
 // v0.8 "open the opening": no free starting tower (richer start gold makes
 // the first build a real choice), and any building can be sold for a 70%
 // refund of everything spent on it.
+//
+// v0.9 "mortar + predator": mortar towers (tower tree) slowly bombard enemy
+// defence buildings from your own side - the reverse-sapper; predator broods
+// (hatchery tree) breed hunters that deploy mid-lane and intercept enemy
+// marchers there. Neither ever touches the hill.
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -60,14 +65,14 @@ const CONFIG = {
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
     farm: 80, grove: 90, plant: 120,
-    tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110,
-    hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110,
+    tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220,
+    hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
   },
   UPGRADE_TREE: {
     farm:  ['grove'],
     grove: ['plant'],
-    tower: ['sharp', 'spit', 'sap', 'guard'],
-    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb'],
+    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar'],
+    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
   // gold sink. Costs scale superlinearly with power on purpose - concentrated
@@ -83,17 +88,28 @@ const CONFIG = {
     soldierb: { unit: 'soldier', interval: 9 },
     majorb:   { unit: 'major',   interval: 18 },
     sapperb:  { unit: 'sapper',  interval: 10 },
+    predatorb: { unit: 'predator', interval: 8 },
   },
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
     sharp: { range: 175, dmg: 34, cooldown: 1.5 },
     spit:  { range: 105, dmg: 3,  cooldown: 0.45, splash: 28 },
     sap:   { range: 120, slow: 0.5 },
+    // mortars bombard enemy DEFENCE BUILDINGS only (bomb, not dmg, so the
+    // anti-unit firing loop skips them); range covers the whole field -
+    // placement is about protecting the mortar, not reaching the target
+    mortar: { range: 900, bomb: 24, cooldown: 5 },
   },
   // v0.5 contact update: every defence building has HP (sappers chew it);
   // guard posts field a squad of defender ants that intercept on the lane.
   TOWER_HP: 130,
   GUARD: { count: 2, respawn: 12, leash: 75, engage: 26 },
+  // v0.9: predators march to a hold point just past the midline on their own
+  // side, then hunt enemy marchers (and enemy predators) within the leash.
+  // The leash is deliberately small: a wave saturates the bubble and most
+  // of it streams past - hunters eat stragglers, sappers and elites, not
+  // whole armies (dps 10 / leash 110 was army denial; see README v0.9).
+  PREDATOR: { leash: 80, holdNear: 12, holdFar: 44 },
   UNITS: {
     worker:  { hp: 10,  spd: 66, dps: 2.5, r: 4.2 },
     soldier: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
@@ -102,6 +118,10 @@ const CONFIG = {
     // weak vs anti-swarm and barely dents the hill itself
     sapper:  { hp: 62,  spd: 50, dps: 3,   r: 5.0, vsTower: 22, sight: 90 },
     guard:   { hp: 90,  spd: 60, dps: 6,   r: 5.2 },
+    // predators never touch hill or towers: pure anti-marcher midfield.
+    // Beats a soldier 1v1 (barely), melts a sapper, loses to a major;
+    // slower than workers so chaff it hasn't grabbed simply outruns it
+    predator: { hp: 80, spd: 62, dps: 6,   r: 5.5 },
   },
   FRENZY_AT: 240,
   DECAY_AT: 330,
@@ -148,8 +168,8 @@ function createState(seed, overrides) {
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
     hatched: {                   // lifetime production tally (reaction reads)
-      p: { worker: 0, soldier: 0, major: 0, sapper: 0 },
-      e: { worker: 0, soldier: 0, major: 0, sapper: 0 },
+      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
+      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
     },
     over: false,
     result: null,                // 'p' | 'e' | 'draw'
@@ -196,8 +216,8 @@ function count(S, side, type) {
 }
 const FAMILIES = {
   eco: ['farm', 'grove', 'plant'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb'],
+  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
 };
 function familyCount(S, side, family) {
   const fams = FAMILIES[family];
@@ -215,7 +235,7 @@ function musterCount(S, side) {
   for (const u of S.units) if (u.side === side && u.state === 'muster') n++;
   return n;
 }
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'swarmb', 'soldierb', 'majorb', 'sapperb'];
+const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'];
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
 }
@@ -298,15 +318,23 @@ function siegeSpot(u, nest) {
 function spawnUnit(S, side, unitKey) {
   const t = S.cfg.UNITS[unitKey];
   const sp = musterSpot(S, side);
-  S.units.push({
+  const u = {
     side, typeKey: unitKey,
     x: sp.x, y: sp.y,
     hp: t.hp, spd: t.spd, dps: t.dps, r: t.r,
     seed: S.rng() * 10,
-    state: 'muster',             // muster -> march -> siege
+    state: 'muster',             // muster -> march -> siege (predators: -> hunt)
     sx: 0, sy: 0,
     slowed: false,
-  });
+  };
+  if (unitKey === 'predator') {
+    // hold point just past the midline on the owner's side, mirrored so
+    // mirror matches stay symmetric (midline maps to itself under y'=640-y)
+    const mid = (S.cfg.ENEMY_BASE.y + S.cfg.PLAYER_BASE.y) / 2;
+    const off = S.cfg.PREDATOR.holdNear + S.rng() * (S.cfg.PREDATOR.holdFar - S.cfg.PREDATOR.holdNear);
+    u.hy = side === 'p' ? mid + off : mid - off;
+  }
+  S.units.push(u);
   S.hatched[side][unitKey]++;
 }
 
@@ -441,14 +469,53 @@ function step(S) {
       continue;
     }
 
+    // predators deploy: march to the hold point, then hunt from it
+    if (u.typeKey === 'predator' && u.state === 'march') {
+      if (u.side === 'p' ? u.y <= u.hy : u.y >= u.hy) {
+        u.state = 'hunt';
+        u.ax = u.x; u.ay = u.hy;
+      }
+    }
+    if (u.state === 'hunt') {
+      // guard logic with a midfield anchor: hunt enemy marchers (and enemy
+      // hunters) inside the leash, else drift home. Never hill, never towers.
+      let tgt = null, bestD = cfg.PREDATOR.leash;
+      for (const v of S.units) {
+        if (v.side !== foe || v.hp <= 0) continue;
+        if (v.state !== 'march' && v.state !== 'hunt') continue;
+        const d = Math.hypot(v.x - u.ax, v.y - u.ay);
+        if (d < bestD) { bestD = d; tgt = v; }
+      }
+      if (tgt) {
+        const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
+        if (d > u.r + tgt.r + 3) {
+          u.x += (dx / d) * u.spd * factor * dt;
+          u.y += (dy / d) * u.spd * factor * dt;
+        } else {
+          tgt.hp -= u.dps * factor * dt;
+        }
+      } else {
+        const dx = u.ax - u.x, dy = u.ay - u.y, d = Math.hypot(dx, dy);
+        if (d > 2) {
+          u.x += (dx / d) * u.spd * factor * dt;
+          u.y += (dy / d) * u.spd * factor * dt;
+        }
+      }
+      continue;
+    }
+
     // a guard in engage range stops this attacker cold (towers keep firing
     // at the held attacker - that's the guard's job); only attackers in
-    // actual contact bite back, the rest just queue at the taunt ring
+    // actual contact bite back, the rest just queue at the taunt ring.
+    // Hunting predators hold ONLY the unit they are in contact with (a
+    // wolf grabs one ant; the wave streams past) - no taunt ring, or one
+    // predator would stall a whole march with nobody shooting at it.
     let g = null, gd = cfg.GUARD.engage;
     for (const v of S.units) {
-      if (v.side !== foe || v.hp <= 0 || v.state !== 'guard') continue;
+      if (v.side !== foe || v.hp <= 0 || (v.state !== 'guard' && v.state !== 'hunt')) continue;
       const d = Math.hypot(v.x - u.x, v.y - u.y);
-      if (d < gd) { gd = d; g = v; }
+      const reach = v.state === 'guard' ? cfg.GUARD.engage : u.r + v.r + 4;
+      if (d < reach && d < gd) { gd = d; g = v; }
     }
     if (g) {
       if (gd < u.r + g.r + 4) g.hp -= u.dps * factor * dt;
@@ -523,6 +590,30 @@ function step(S) {
         slot.cd = spec.cooldown;
         S.shots.push({ x1: slot.x, y1: slot.y - 14, x2: best.x, y2: best.y, ttl: 0.09, splash: spec.splash || 0 });
       }
+    }
+  }
+
+  // mortars lob at the nearest enemy defence building; they never touch
+  // units or the hill (the reverse-sapper: siege from your own side)
+  for (const side of ['p', 'e']) {
+    const foe = other(side);
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'mortar') continue;
+      const spec = cfg.TOWERS.mortar;
+      slot.cd -= dt;
+      if (slot.cd > 0) continue;
+      let best = null, bestD = spec.range;
+      for (const ts of S.slots[foe]) {
+        if (!ts.type || !FAMILIES.def.includes(ts.type)) continue;
+        const d = Math.hypot(ts.x - slot.x, ts.y - slot.y);
+        if (d < bestD) { bestD = d; best = ts; }
+      }
+      if (!best) continue;       // nothing to bombard: hold fire
+      best.hp -= spec.bomb * lvlPower(S, slot);
+      slot.cd = spec.cooldown;
+      S.shots.push({ x1: slot.x, y1: slot.y - 10, x2: best.x, y2: best.y, ttl: 0.5, mortar: true });
+      S.events.push({ type: 'mortar', x: best.x, y: best.y, side: foe });
+      if (best.hp <= 0) destroySlot(S, foe, best);
     }
   }
 
