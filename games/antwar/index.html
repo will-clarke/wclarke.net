@@ -24,11 +24,13 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Ant War renderer (v0.6). All rules live in sim.js (shared with the Node
+// Ant War renderer (v0.8). All rules live in sim.js (shared with the Node
 // tuning harness); strategies, personas and campaign levels live in
 // policy.js. This file only draws, reads taps, and steps the sim at a fixed
-// tick. There are no manual sends: every tap is a build or an upgrade.
-// Campaign progress (stars) is the only persistent state (localStorage).
+// tick. There are no manual sends: every tap is a build, an upgrade or a
+// sell. Persistent state (localStorage): campaign stars, plus a replay log
+// of every finished match - the sim is deterministic, so (seed, setup,
+// player actions) reconstructs a whole game. Export button on the menu.
 // ---------------------------------------------------------------------------
 
 const sim = AntWarSim;
@@ -58,15 +60,72 @@ const LEVEL_NODES = pol.LEVELS.map((L, i) => ({
 }));
 const SKIRMISH_BTN = { x: 110, y: 706, w: 200, h: 42 };
 const BRIEF_START = { x: 90, y: 470, w: 240, h: 52 };
+const EXPORT_BTN = { x: 110, y: 752, w: 200, h: 24 };
 
-// KR-style stars, saved locally: 1 win, 2 hill >= 100hp, 3 hill >= 200hp
+// KR-style stars, saved locally: 1 win, 2 hill >= 100hp, 3 hill >= 200hp.
+// Tech unlocks derive from stars (policy.unlocksFrom) - beating a level
+// loots its reward, in campaign AND skirmish alike.
 let stars = {};
 try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } catch (e) {}
+let unlocks = pol.unlocksFrom(stars);
 function saveStars() {
   try { localStorage.setItem('antwar-stars', JSON.stringify(stars)); } catch (e) {}
+  unlocks = pol.unlocksFrom(stars);
 }
 function levelUnlocked(i) {
   return i === 0 || (stars[pol.LEVELS[i - 1].key] || 0) >= 1;
+}
+// the player's tappable build options for a slot, locked tech hidden
+function allowedOptions(slotIdx) {
+  const slot = S.slots.p[slotIdx];
+  return sim.buildOptions(S, 'p', slotIdx).filter(t =>
+    t === 'lvl' ? slot.lvl + 1 <= unlocks.maxLvl : unlocks.types.includes(t));
+}
+
+// ----------------------------------------------------------------- replays --
+// every finished match is logged: the sim is deterministic, so seed + setup
+// + opponent + timestamped player actions reconstruct the whole game later
+// (replay viewer / ghost PvP / ML corpus - see README).
+let replay = null;
+function startReplay(opponent) {
+  replay = {
+    v: 'v0.8', mode, opponent, seed: S.seed,
+    setup: S.cfg.SETUP || null,
+    startedAt: new Date().toISOString(),
+    actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
+  };
+}
+function logAction(slot, type) {
+  if (replay) replay.actions.push({ tk: Math.round(S.t / CFG.TICK), slot, type });
+}
+function loadReplays() {
+  try { return JSON.parse(localStorage.getItem('antwar-replays') || '[]') || []; } catch (e) { return []; }
+}
+function finishReplay() {
+  if (!replay) return;
+  replay.result = matchResult;
+  replay.endT = Math.round(S.endT * 10) / 10;
+  replay.hpP = Math.round(S.baseHP.p);
+  replay.hpE = Math.round(S.baseHP.e);
+  try {
+    const all = loadReplays();
+    all.push(replay);
+    while (all.length > 60) all.shift();   // keep the log bounded
+    localStorage.setItem('antwar-replays', JSON.stringify(all));
+  } catch (e) {}
+  replay = null;
+}
+function exportReplays() {
+  const all = loadReplays();
+  if (!all.length) return;
+  const blob = new Blob(
+    [JSON.stringify({ game: 'antwar', exported: new Date().toISOString(), replays: all })],
+    { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'antwar-replays.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
 const cv = document.getElementById('c');
@@ -91,6 +150,7 @@ let mode = 'campaign';           // campaign | skirmish (what 'play' returns to)
 let currentLevel = -1;
 let briefLevel = -1;
 let earnedStars = 0;
+let earnedUnlock = null;         // reward looted on a first win, for the end screen
 let S = null;
 let enemyCtrl = null;
 let personaKey = PERSONA_ORDER[0];
@@ -128,6 +188,7 @@ function blip(freq, dur, type, vol, slideTo) {
 const SFX = {
   drum()      { blip(85, 0.28, 'sine', 0.5, 42); blip(160, 0.1, 'triangle', 0.15, 70); },
   build()     { blip(520, 0.07, 'triangle', 0.18, 700); },
+  sell()      { blip(620, 0.12, 'triangle', 0.18, 260); },
   towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
   frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
   win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
@@ -177,15 +238,21 @@ function begin(key) {           // skirmish: pick a persona, symmetric start
   personaKey = key;
   S = sim.createState((Math.random() * 2 ** 31) | 0);
   enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  startReplay(key);
   resetMatchFx();
 }
 
-function beginLevel(i) {        // campaign: level AI + level setup
+function beginLevel(i) {        // campaign: level AI + level setup + kits
   mode = 'campaign';
   currentLevel = i;
   const L = pol.LEVELS[i];
   S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null });
-  enemyCtrl = pol.makeController(L.ai.params, { thinkEvery: L.ai.thinkEvery });
+  // the enemy escalates in step with the ladder: player-kit-so-far plus
+  // this level's own loot (and any extraKit showcase)
+  enemyCtrl = pol.makeController(L.ai.params, {
+    thinkEvery: L.ai.thinkEvery, allowed: pol.enemyKitAt(i),
+  });
+  startReplay(L.key);
   resetMatchFx();
 }
 
@@ -197,17 +264,22 @@ function banner(text) { banners.push({ text, ttl: 2.4 }); }
 
 // ------------------------------------------------------------------ input --
 function popupRects(slotIdx) {
-  const opts = sim.buildOptions(S, 'p', slotIdx);
-  if (!opts.length) return [];
   const slot = S.slots.p[slotIdx];
-  const bw = 66, gap = 4;
-  const total = opts.length * bw + (opts.length - 1) * gap;
-  const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
-  const y = slot.y - 82;
-  return opts.map((type, i) => ({
+  const entries = allowedOptions(slotIdx).map(type => ({
     type,
     label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
     cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
+  }));
+  // any occupied slot can be sold for a partial refund of its total spend
+  if (slot.type !== null) {
+    entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
+  }
+  if (!entries.length) return [];
+  const bw = 66, gap = 4;
+  const total = entries.length * bw + (entries.length - 1) * gap;
+  const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
+  const y = slot.y - 82;
+  return entries.map((en, i) => Object.assign(en, {
     x: x0 + i * (bw + gap), y, w: bw, h: 52,
   }));
 }
@@ -225,6 +297,7 @@ cv.addEventListener('pointerdown', (e) => {
 
   if (phase === 'menu') {
     if (inRect(x, y, SKIRMISH_BTN)) { phase = 'skirmish'; return; }
+    if (inRect(x, y, EXPORT_BTN)) { exportReplays(); return; }
     for (let i = 0; i < LEVEL_NODES.length; i++) {
       const n = LEVEL_NODES[i];
       if (Math.hypot(x - n.x, y - n.y) < n.r + 8 && levelUnlocked(i)) {
@@ -254,11 +327,17 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
 
-  // build/upgrade popup gets first claim on the tap
+  // build/upgrade/sell popup gets first claim on the tap
   if (openSlot !== null) {
     for (const r of popupRects(openSlot)) {
       if (inRect(x, y, r)) {
-        if (sim.applyAction(S, 'p', { kind: 'build', slot: openSlot, type: r.type })) SFX.build();
+        const action = r.type === 'sell'
+          ? { kind: 'sell', slot: openSlot }
+          : { kind: 'build', slot: openSlot, type: r.type };
+        if (sim.applyAction(S, 'p', action)) {
+          (r.type === 'sell' ? SFX.sell : SFX.build)();
+          logAction(openSlot, r.type);
+        }
         openSlot = null;
         return;
       }
@@ -269,7 +348,7 @@ cv.addEventListener('pointerdown', (e) => {
 
   for (let i = 0; i < S.slots.p.length; i++) {
     const s = S.slots.p[i];
-    if (Math.hypot(x - s.x, y - s.y) < 30 && sim.buildOptions(S, 'p', i).length) {
+    if (Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
       openSlot = i;
       return;
     }
@@ -295,6 +374,7 @@ function advance(dtReal) {
     if (ev.type === 'death') {
       poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
     }
+    if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
@@ -333,11 +413,14 @@ function advance(dtReal) {
     matchResult = S.result === 'p' ? 'VICTORY' : (S.result === 'e' ? 'DEFEAT' : 'DRAW');
     if (matchResult === 'VICTORY') SFX.win(); else SFX.lose();
     earnedStars = 0;
+    earnedUnlock = null;
     if (mode === 'campaign' && matchResult === 'VICTORY') {
       earnedStars = S.baseHP.p >= 200 ? 3 : (S.baseHP.p >= 100 ? 2 : 1);
-      const key = pol.LEVELS[currentLevel].key;
-      if (earnedStars > (stars[key] || 0)) { stars[key] = earnedStars; saveStars(); }
+      const L = pol.LEVELS[currentLevel];
+      if ((stars[L.key] || 0) === 0 && L.reward) earnedUnlock = L.reward;
+      if (earnedStars > (stars[L.key] || 0)) { stars[L.key] = earnedStars; saveStars(); }
     }
+    finishReplay();
     phase = 'end';
   }
 }
@@ -557,7 +640,7 @@ function drawSlot(slot, side, idx, time) {
 
   // upgrade affordance for the player: any legal option they can pay for
   if (side === 'p' && S) {
-    const opts = sim.buildOptions(S, 'p', idx);
+    const opts = allowedOptions(idx);
     if (opts.length) {
       const cheapest = Math.min(...opts.map(t =>
         t === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[t]));
@@ -644,7 +727,7 @@ function drawHUD(time) {
 
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '11px sans-serif';
-  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - then tap again to upgrade', LANE_CX, UI_TOP + 106);
+  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - tap again to upgrade or sell', LANE_CX, UI_TOP + 106);
 
   // banners
   let by = 200;
@@ -669,19 +752,20 @@ function drawPopup() {
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(slot.x, slot.y, 24, 0, 7); ctx.stroke();
   for (const r of popupRects(openSlot)) {
-    const afford = S.money.p >= r.cost;
+    const isSell = r.type === 'sell';
+    const afford = isSell || S.money.p >= r.cost;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
-    ctx.strokeStyle = afford ? '#c8a060' : '#5a4a38';
+    ctx.strokeStyle = isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38');
     roundRect(r.x, r.y, r.w, r.h, 7);
     ctx.fill(); ctx.stroke();
     ctx.globalAlpha = afford ? 1 : 0.45;
-    ctx.fillStyle = '#ffe9c0';
+    ctx.fillStyle = isSell ? '#f0b0a0' : '#ffe9c0';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(r.label, r.x + r.w / 2, r.y + 16);
-    ctx.fillStyle = '#ffd870';
+    ctx.fillStyle = isSell ? '#8ee06a' : '#ffd870';
     ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    ctx.fillText(isSell ? '+' + r.gain + 'g' : r.cost + 'g', r.x + r.w / 2, r.y + 36);
     ctx.globalAlpha = 1;
   }
 }
@@ -784,6 +868,13 @@ function drawMenu() {
   ctx.fillStyle = '#ffe9c0';
   ctx.font = 'bold 15px sans-serif';
   ctx.fillText('SKIRMISH', LANE_CX, SKIRMISH_BTN.y + 21);
+
+  const nReplays = loadReplays().length;
+  if (nReplays) {
+    ctx.fillStyle = 'rgba(216,192,160,0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('⬇ export ' + nReplays + ' replay' + (nReplays === 1 ? '' : 's'), LANE_CX, EXPORT_BTN.y + 13);
+  }
 }
 
 function wrapText(text, x, y, maxW, lh) {
@@ -823,7 +914,12 @@ function drawBrief() {
   ctx.font = '14px sans-serif';
   let ty = wrapText(L.blurb, LANE_CX, 370, W - 120, 20);
   ctx.fillStyle = '#ffd870';
-  wrapText(L.twist, LANE_CX, ty + 8, W - 120, 20);
+  ty = wrapText(L.twist, LANE_CX, ty + 8, W - 120, 20);
+  if (L.reward && (stars[L.key] || 0) === 0) {
+    ctx.fillStyle = '#8ee06a';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('VICTORY UNLOCKS: ' + L.reward.label, LANE_CX, ty + 12);
+  }
   ctx.fillStyle = '#3a5c34';
   ctx.strokeStyle = '#8ee06a';
   ctx.lineWidth = 2;
@@ -852,7 +948,7 @@ function drawSkirmish() {
     'Tap buildings again to specialise, then level to 3.',
     'Guard posts field lane-blocking defenders.',
     'Sapper broods breed tower-DEMOLISHING ants.',
-    '',
+    'Selling refunds 70% of everything spent.',
     'Every 18s the war drum beats and BOTH armies march.',
     'Storage is capped: idle gold stops earning.',
     'Income doubles at 3:00 left; hills crumble at 1:30.',
@@ -877,7 +973,8 @@ function drawSkirmish() {
   }
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '12px sans-serif';
-  ctx.fillText('tap anywhere else for the campaign trail', LANE_CX, 740);
+  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 724);
+  ctx.fillText('tap anywhere else for the trail', LANE_CX, 744);
 }
 
 function drawEnd() {
@@ -893,6 +990,14 @@ function drawEnd() {
   ctx.font = '16px sans-serif';
   const mm = Math.floor(S.endT / 60), ss = Math.floor(S.endT % 60);
   ctx.fillText('vs ' + opponentLabel() + '  -  ' + mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 400);
+  if (earnedUnlock) {
+    ctx.fillStyle = '#8ee06a';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.fillText('NEW TECH: ' + earnedUnlock.label, LANE_CX, 520);
+    ctx.fillStyle = '#cfe8b0';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(earnedUnlock.desc, LANE_CX, 546);
+  }
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 18px sans-serif';
   const hint = mode === 'skirmish' ? 'TAP FOR OPPONENT SELECT'

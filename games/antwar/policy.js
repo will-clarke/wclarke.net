@@ -57,13 +57,36 @@ function firstEmptyIn(S, side, order) {
   return -1;
 }
 
+// ----------------------------------------------------------------- kit -----
+// The meta-progression layer (v0.7): the campaign starts with a lean kit
+// and each level's first win unlocks the tech the NEXT level demands.
+// The sim knows nothing about locks - controllers (opts.allowed) and the
+// renderer filter build options; the rules stay identical for everyone.
+const BASE_KIT = ['farm', 'grove', 'tower', 'hatch', 'swarmb', 'soldierb'];
+
+// what a player with this stars map may build: { types, maxLvl }
+function unlocksFrom(starsMap) {
+  const types = BASE_KIT.slice();
+  let maxLvl = 1;
+  for (const L of LEVELS) {
+    if (!L.reward || (starsMap[L.key] || 0) < 1) continue;
+    if (L.reward.key === 'lvl2') maxLvl = Math.max(maxLvl, 2);
+    else if (L.reward.key === 'lvl3') maxLvl = Math.max(maxLvl, 3);
+    else types.push(L.reward.key);
+  }
+  return { types, maxLvl };
+}
+
 // ------------------------------------------------------------ controller ---
 // opts.thinkEvery: seconds between decisions (default 0.8). Slower thinking
 // is the honest campaign difficulty knob - a sluggish opponent, not a
 // stat-cheating one.
+// opts.allowed: an unlocksFrom() kit; candidates outside it are dropped
+// (used to grade the campaign with the player's actual tech of the moment).
 function makeController(rawParams, opts) {
   const P = clampParams(rawParams);
   const thinkEvery = (opts && opts.thinkEvery) || 0.8;
+  const allowed = (opts && opts.allowed) || null;
   const mem = { nextThink: 0 };
 
   // normalised hatch mix shares
@@ -161,9 +184,16 @@ function makeController(rawParams, opts) {
       }
     }
 
-    if (!cands.length) return null;
-    cands.sort((a, b) => b.score - a.score);
-    const intent = cands[0];
+    // drop locked candidates BEFORE picking an intent, or the controller
+    // would save forever for something it cannot build
+    const legal = !allowed ? cands : cands.filter(c =>
+      c.a.type === 'lvl'
+        ? S.slots[side][c.a.slot].lvl + 1 <= allowed.maxLvl
+        : allowed.types.includes(c.a.type));
+
+    if (!legal.length) return null;
+    legal.sort((a, b) => b.score - a.score);
+    const intent = legal[0];
     const cost = intent.cost !== undefined ? intent.cost : cfg.COSTS[intent.a.type];
     if (S.money[side] < cost) return null;   // save for it
     return [intent.a];
@@ -186,7 +216,9 @@ const PERSONAS = {
     label: 'WARDEN TUSSOCK (Turtle)',
     intro: 'Walls, sap, and lane guards on a slow drum. Sappers crack shells - or grind the clock.',
     params: {
-      wEco: 1.2, wDef: 2.6, wOff: 0.9,
+      // wEco 1.2 -> 1.5 in v0.8: with no free start tower the rustle matchup
+      // became a decay-phase photo-finish; a touch more economy wins the grind
+      wEco: 1.5, wDef: 2.6, wOff: 0.9,
       farmTarget: 2, hatchTarget: 2, towersBase: 3, towersPer100s: 1.2, reactDef: 1,
       farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05,
       sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, upgW: 1.4, lvlW: 1.0,
@@ -232,14 +264,16 @@ const ARCHETYPES = {
     farmLvl: 1, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1,
     sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0.8,
   },
-  // the v0.5 evolved field-best (tune.js evolve, fit 0.97): balanced macro
-  // with guards and a real sapper share. Doubles as the campaign endboss
-  // and as the "strong player" reference when grading the level ladder.
+  // the v0.8 evolved field-best (tune.js evolve, fit 1.00): balanced macro -
+  // real farm base, reactive towers, soldier+sapper comp, heavy levelling.
+  // Doubles as the campaign endboss and as the "strong player" reference
+  // when grading the level ladder. (Refreshed from the v0.5 vector after
+  // the open-opening rules change; the old one still lost to it 0.0.)
   optimum: {
-    wEco: 2.96, wDef: 0.91, wOff: 0.65,
-    farmTarget: 1, hatchTarget: 3, towersBase: 2, towersPer100s: 1.82, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.82, mixSoldier: 0.95, mixMajor: 0.57, mixSapper: 0.86,
-    sharpTrig: 6, spitTrig: 7, sapTrig: 6, guardTrig: 2, upgW: 0.77, lvlW: 1.19,
+    wEco: 2.52, wDef: 0.71, wOff: 0.55,
+    farmTarget: 3, hatchTarget: 3, towersBase: 2, towersPer100s: 1.24, reactDef: 2,
+    farmLvl: 2, mixSwarm: 0.53, mixSoldier: 0.79, mixMajor: 0.08, mixSapper: 0.8,
+    sharpTrig: 6, spitTrig: 5, sapTrig: 6, guardTrig: 9, upgW: 0.45, lvlW: 2.0,
   },
 };
 
@@ -247,6 +281,8 @@ const ARCHETYPES = {
 // The persona ladder (v0.6). Difficulty comes from honest knobs only:
 // weakened/slowed AI vectors early, head starts (money, pre-built
 // buildings) late. RULES stay symmetric; setups may not (level design).
+// NOTE: setup money values are ABSOLUTE and sized against START_MONEY
+// (220 since v0.8) - re-author them if the start gold ever moves again.
 // Stars: win = 1, win with hill >= 100hp = 2, >= 200hp = 3.
 const LEVELS = [
   // --- act 1: teach the three verbs ---
@@ -255,6 +291,7 @@ const LEVELS = [
     blurb: 'A sleepy boomer with no walls at all.',
     twist: 'He starts nearly broke. Breed ants and bury him.',
     hue: '#d88a50',
+    reward: { key: 'spit', label: 'SPITTER TOWER', desc: 'Splash shots. Swarms hate it.' },
     ai: {
       thinkEvery: 3,
       params: {
@@ -264,13 +301,14 @@ const LEVELS = [
         sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0,
       },
     },
-    setup: { moneyE: 60 },
+    setup: { moneyE: 110 },
   },
   {
     key: 'skitter', name: 'PRINCESS SKITTER', act: 1,
     blurb: 'A hatchling rusher: all swarm, no plan.',
     twist: 'Towers eat swarms. Build some, then out-grow her.',
     hue: '#b8b0a0',
+    reward: { key: 'sapperb', label: 'SAPPER BROOD', desc: 'Breeds ants that DEMOLISH towers.' },
     ai: {
       thinkEvery: 2.5,
       params: {
@@ -280,13 +318,14 @@ const LEVELS = [
         sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, upgW: 0.8, lvlW: 0,
       },
     },
-    setup: { moneyE: 90 },
+    setup: { moneyE: 165 },
   },
   {
     key: 'pebble', name: 'OLD PEBBLE', act: 1,
     blurb: 'A stubborn little turtle behind stone.',
     twist: 'Stone laughs at soldiers. Sapper broods EAT stone.',
     hue: '#9cc088',
+    reward: { key: 'guard', label: 'GUARD POST', desc: 'Fields defenders that block the lane.' },
     ai: {
       thinkEvery: 2.5,
       params: {
@@ -296,7 +335,7 @@ const LEVELS = [
         sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, upgW: 1, lvlW: 0.3,
       },
     },
-    setup: { moneyE: 90 },
+    setup: { moneyE: 165 },
   },
   // --- act 2: the real personas, telegraphed head starts ---
   {
@@ -304,49 +343,55 @@ const LEVELS = [
     blurb: 'Hatcheries everywhere, swarms on every drum.',
     twist: 'Her first brood is already laid. Hold the early beats.',
     hue: '#c84632',
+    reward: { key: 'majorb', label: 'MAJOR BROOD', desc: 'Breeds giants that soak tower fire.' },
     ai: { thinkEvery: 1.3, params: null },
     setup: { prebuildE: [{ slot: 3, type: 'hatch' }] },
   },
   {
     key: 'tussock', name: 'WARDEN TUSSOCK', act: 2, persona: 'tussock',
     blurb: 'Walls, sap and lane guards on a slow drum.',
-    twist: 'A sharpshooter already watches his lane. Crack the shell.',
+    twist: 'Sappers alone will melt to his spitters. Bring an escort.',
     hue: '#9cc088',
-    ai: { thinkEvery: 1.3, params: null },
-    setup: { prebuildE: [{ slot: 1, type: 'sharp' }] },
+    reward: { key: 'sharp', label: 'SHARPSHOOTER', desc: 'Long range. Giants fear it.' },
+    ai: { thinkEvery: 1.5, params: null },
+    setup: null,
   },
   {
     key: 'bloom', name: 'BARON BLOOM', act: 2, persona: 'bloom',
     blurb: 'Plantations first, then majors with sapper escorts.',
-    twist: 'His purse starts fat (140g). Kill him before the giants hatch.',
+    twist: 'A farm and a tower stand, 280g banked, and his tech runs a step ahead.',
     hue: '#d88a50',
-    ai: { thinkEvery: 1.5, params: null },   // params filled from PERSONAS below
-    setup: { moneyE: 140 },
+    reward: { key: 'plant', label: 'PLANTATION', desc: 'The tier-3 farm. Loot his greed.' },
+    ai: { thinkEvery: 0.9, params: null, extraKit: ['lvl2'] },   // params filled from PERSONAS below
+    setup: { moneyE: 280, prebuildE: [{ slot: 4, type: 'farm' }, { slot: 0, type: 'tower' }] },
   },
   // --- act 3: the bosses (full-speed wits, honest head starts) ---
   {
     key: 'endless', name: 'RUSTLE THE ENDLESS', act: 3, persona: 'rustle',
     blurb: 'The rusher, and the drum never helps you first.',
-    twist: 'A swarm brood is already seething. 200g head start.',
+    twist: 'A swarm brood is already seething. 300g head start.',
     hue: '#c84632',
+    reward: { key: 'lvl2', label: 'TECH LEVEL 2', desc: 'Specialised buildings can now level up.' },
     ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 200, prebuildE: [{ slot: 3, type: 'swarmb' }] },
+    setup: { moneyE: 300, prebuildE: [{ slot: 3, type: 'swarmb' }] },
   },
   {
     key: 'unbroken', name: 'TUSSOCK THE UNBROKEN', act: 3, persona: 'tussock',
     blurb: 'The turtle, walled before you draw breath.',
-    twist: 'A veteran sharpshooter already watches. 180g stocked.',
+    twist: 'A veteran sharpshooter already watches. 230g stocked.',
     hue: '#9cc088',
+    reward: { key: 'sap', label: 'SAP TOWER', desc: 'A sticky aura that slows attackers.' },
     ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 180, prebuildE: [{ slot: 1, type: 'sharp', lvl: 2 }] },
+    setup: { moneyE: 230, prebuildE: [{ slot: 1, type: 'sharp', lvl: 2 }] },
   },
   {
     key: 'magnate', name: 'BLOOM THE MAGNATE', act: 3, persona: 'bloom',
     blurb: 'The boomer, rich beyond reason and thinking at full speed.',
-    twist: 'A fat purse (160g) and no hesitation. Rush him or drown in giants.',
+    twist: 'A bulging purse (300g) behind a veteran spitter. Crack the greed or drown in giants.',
     hue: '#d88a50',
+    reward: { key: 'lvl3', label: 'TECH LEVEL 3', desc: 'The final tech tier.' },
     ai: { thinkEvery: 0.8, params: null },
-    setup: { moneyE: 160 },
+    setup: { moneyE: 300, prebuildE: [{ slot: 0, type: 'spit', lvl: 2 }] },
   },
   {
     key: 'optimum', name: 'THE OPTIMUM', act: 3,
@@ -361,5 +406,30 @@ for (const L of LEVELS) {
   if (!L.ai.params) L.ai.params = L.persona ? PERSONAS[L.persona].params : ARCHETYPES[L.key];
 }
 
-return { PARAM_SPEC, PARAM_NAMES, clampParams, makeController, PERSONAS, ARCHETYPES, LEVELS };
+// campaign kit helpers (ladder beaten in order): what the player holds
+// ENTERING level i, and what that level's enemy may use - the player's kit
+// plus the very tech this level's victory hands over. You loot it from
+// them, and enemies escalate in step with the player instead of fielding
+// tech the player has never seen.
+function kitAtLevel(i) {
+  const starsSoFar = {};
+  for (let j = 0; j < i; j++) starsSoFar[LEVELS[j].key] = 1;
+  return unlocksFrom(starsSoFar);
+}
+function enemyKitAt(i) {
+  const starsSoFar = {};
+  for (let j = 0; j <= i; j++) starsSoFar[LEVELS[j].key] = 1;
+  const kit = unlocksFrom(starsSoFar);
+  // a level may showcase tech beyond the loot rule (ai.extraKit) - e.g. the
+  // act-2 finale boss previews leveling before the player earns it
+  for (const key of (LEVELS[i].ai.extraKit || [])) {
+    if (key === 'lvl2') kit.maxLvl = Math.max(kit.maxLvl, 2);
+    else if (key === 'lvl3') kit.maxLvl = Math.max(kit.maxLvl, 3);
+    else kit.types.push(key);
+  }
+  return kit;
+}
+
+return { PARAM_SPEC, PARAM_NAMES, clampParams, makeController, PERSONAS, ARCHETYPES,
+  LEVELS, BASE_KIT, unlocksFrom, kitAtLevel, enemyKitAt };
 });

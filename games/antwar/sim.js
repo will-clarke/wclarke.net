@@ -11,6 +11,10 @@
 // v0.5 "the contact update": guard posts (tower tree) field defender ants
 // that intercept attackers on the lane, and sapper broods (hatchery tree)
 // breed ants that demolish enemy defence buildings - which now have HP.
+//
+// v0.8 "open the opening": no free starting tower (richer start gold makes
+// the first build a real choice), and any building can be sold for a 70%
+// refund of everything spent on it.
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -46,8 +50,9 @@ const CONFIG = {
 
   // balance
   BASE_HP: 300,
-  START_MONEY: 120,
-  START_TOWERS: 1,               // free guard towers per side at t=0 (slot A first)
+  START_MONEY: 220,
+  START_TOWERS: 0,               // free towers per side at t=0 (slot A first); 0 since v0.8
+  SELL_REFUND: 0.7,              // fraction of a slot's total spend returned on sell
   BASE_INCOME: 4,
   GOLD_CAP: 400,                 // income above this is wasted (anti-idle nudge)
   WAR_DRUM: 18,                  // both musters march every N seconds
@@ -123,7 +128,8 @@ function other(side) { return side === 'p' ? 'e' : 'p'; }
 
 function createState(seed, overrides) {
   const cfg = Object.assign({}, CONFIG, overrides || {});
-  const slotRow = pos => ({ x: pos.x, y: pos.y, type: null, lvl: 1, cd: 0, prodCd: 0, hp: 0 });
+  // spent tracks all gold sunk into the slot (build + upgrades) for refunds
+  const slotRow = pos => ({ x: pos.x, y: pos.y, type: null, lvl: 1, cd: 0, prodCd: 0, hp: 0, spent: 0 });
   const S = {
     cfg,
     seed: seed >>> 0,
@@ -150,10 +156,11 @@ function createState(seed, overrides) {
     endT: 0,
   };
   for (let i = 0; i < cfg.START_TOWERS; i++) {
-    S.slots.p[i].type = 'tower';
-    S.slots.p[i].hp = cfg.TOWER_HP;
-    S.slots.e[i].type = 'tower';
-    S.slots.e[i].hp = cfg.TOWER_HP;
+    for (const side of ['p', 'e']) {
+      S.slots[side][i].type = 'tower';
+      S.slots[side][i].hp = cfg.TOWER_HP;
+      S.slots[side][i].spent = cfg.COSTS.tower;
+    }
   }
   if (cfg.SETUP) {
     const su = cfg.SETUP;
@@ -171,6 +178,8 @@ function placeBuilding(S, side, slotIdx, type, lvl) {
   slot.type = type;
   slot.lvl = lvl || 1;
   slot.cd = 0;
+  slot.spent = S.cfg.COSTS[type];
+  for (let l = 2; l <= slot.lvl; l++) slot.spent += Math.round(S.cfg.COSTS[type] * S.cfg.LVL_COST_MULT[l]);
   slot.hp = FAMILIES.def.includes(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
   if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
   if (type === 'guard') {
@@ -226,16 +235,29 @@ function buildOptions(S, side, slotIdx) {
 }
 
 // ------------------------------------------------------------- actions ----
-// the only action kind left: {kind:'build', slot:i, type:<building>}
+// action kinds: {kind:'build', slot:i, type:<building>} | {kind:'sell', slot:i}
+function sellRefund(S, slot) {
+  return Math.round(slot.spent * S.cfg.SELL_REFUND);
+}
 function applyAction(S, side, action) {
-  if (S.over || !action || action.kind !== 'build') return false;
+  if (S.over || !action) return false;
   const slot = S.slots[side][action.slot];
   if (!slot) return false;
+  if (action.kind === 'sell') {
+    if (!slot.type) return false;
+    S.money[side] = Math.min(S.cfg.GOLD_CAP, S.money[side] + sellRefund(S, slot));
+    S.events.push({ type: 'sell', x: slot.x, y: slot.y, side });
+    // guards from a sold post disband via the orphan check in step()
+    slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
+    return true;
+  }
+  if (action.kind !== 'build') return false;
   if (!buildOptions(S, side, action.slot).includes(action.type)) return false;
   if (action.type === 'lvl') {
     const cost = lvlCost(S, slot);
     if (S.money[side] < cost) return false;
     S.money[side] -= cost;
+    slot.spent += cost;
     slot.lvl++;
     if (FAMILIES.def.includes(slot.type)) slot.hp = S.cfg.TOWER_HP * lvlPower(S, slot);
     return true;
@@ -243,6 +265,7 @@ function applyAction(S, side, action) {
   const cost = S.cfg.COSTS[action.type];
   if (S.money[side] < cost) return false;
   S.money[side] -= cost;
+  slot.spent += cost;
   slot.type = action.type;
   slot.lvl = 1;
   slot.cd = 0;
@@ -308,7 +331,7 @@ function spawnGuard(S, side, slotIdx) {
 
 function destroySlot(S, side, slot) {
   S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side });
-  slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0;
+  slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
 }
 
 // ---------------------------------------------------------------- step ----
@@ -550,6 +573,6 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
 return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
-  lvlCost, lvlPower, LEVELABLE, FAMILIES,
+  lvlCost, lvlPower, sellRefund, LEVELABLE, FAMILIES,
 };
 });
