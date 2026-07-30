@@ -43,7 +43,7 @@ const UI_TOP = 648;
 
 const LABELS = {
   farm: 'Farm', grove: 'Grove', plant: 'Plant.',
-  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
   hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
 };
 
@@ -90,7 +90,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'v0.9', mode, opponent, seed: S.seed,
+    v: 'v0.9.5', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -192,6 +192,7 @@ const SFX = {
   sell()      { blip(620, 0.12, 'triangle', 0.18, 260); },
   towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
   mortar()    { blip(110, 0.22, 'square', 0.16, 48); },
+  convert()   { blip(420, 0.35, 'sine', 0.2, 1260); blip(630, 0.25, 'triangle', 0.1, 1680); },
   frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
   win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
   lose()      { blip(220, 0.7, 'sawtooth', 0.22, 80); },
@@ -380,6 +381,11 @@ function advance(dtReal) {
     }
     if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
+    if (ev.type === 'convert') {
+      poof(ev.x, ev.y, '#c9a0e8', 10, 45);
+      banner(ev.side === 'p' ? 'Enemy ant CHARMED!' : 'Your ant defected!');
+      SFX.convert();
+    }
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
@@ -520,6 +526,12 @@ function drawAnt(u, time) {
     ctx.moveTo(u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
     ctx.stroke();
   }
+  if (u.conv) {
+    // violet halo: a charmed ant reads as converted at a glance
+    ctx.strokeStyle = 'rgba(201,160,232,0.85)';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.1, 0, 7); ctx.stroke();
+  }
   if (u.slowed) {
     ctx.strokeStyle = 'rgba(140,220,120,0.7)';
     ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
@@ -608,7 +620,7 @@ function drawSlot(slot, side, idx, time) {
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -653,6 +665,16 @@ function drawSlot(slot, side, idx, time) {
       ctx.stroke();
       ctx.fillStyle = '#1c1814';
       ctx.beginPath(); ctx.arc(slot.x + 5, slot.y - 2 + dir * 16, 4.2, 0, 7); ctx.fill();
+    } else if (slot.type === 'conv') {
+      // hypnotic eye + faint reach ring: the charm zone stays readable
+      ctx.strokeStyle = 'rgba(201,160,232,' + (0.14 + 0.08 * Math.sin(time * 2.2)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.conv.range, 0, 7); ctx.stroke();
+      ctx.strokeStyle = '#ecdcf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 8, 7.5, 4.5, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#7a4a9c';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 2.8, 0, 7); ctx.fill();
     }
   }
 
@@ -841,6 +863,25 @@ function drawMatch(time) {
     if (sh.splash) {
       ctx.strokeStyle = 'rgba(255,200,120,' + (sh.ttl / 0.09) * 0.6 + ')';
       ctx.beginPath(); ctx.arc(sh.x2, sh.y2, sh.splash, 0, 7); ctx.stroke();
+    }
+  }
+  // converter channel beams: dashed violet thread + a ring closing around
+  // the target as the charm completes (full information - both sides')
+  for (const side of ['p', 'e']) {
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'conv' || !slot.chTgt || !(slot.chT > 0)) continue;
+      const tgt = slot.chTgt;
+      const frac = Math.min(1, slot.chT / (CFG.TOWERS.conv.channel / sim.lvlPower(S, slot)));
+      ctx.strokeStyle = 'rgba(201,160,232,' + (0.35 + 0.45 * frac) + ')';
+      ctx.lineWidth = 1.2 + frac * 1.8;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 8); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(226,190,248,0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tgt.x, tgt.y, 11 - frac * 4, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
     }
   }
   for (const u of S.units) drawAnt(u, time);

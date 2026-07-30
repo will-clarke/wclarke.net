@@ -33,6 +33,7 @@ const PARAM_SPEC = {
   sapTrig:       [2, 9, true],     // sap once own towers >= N (9=never)
   guardTrig:     [1, 9, true],     // guard post once foe swarm/sapper broods >= N (9=never)
   mortarTrig:    [1, 9, true],     // mortar once foe defence buildings >= N (9=never)
+  convTrig:      [1, 9, true],     // converter once foe soldier/major broods >= N (9=never)
   upgW:          [0.2, 2, false],  // upgrades vs new builds
   lvlW:          [0, 2, false],    // appetite for levelling specialised buildings
 };
@@ -64,7 +65,11 @@ function firstEmptyIn(S, side, order) {
 // and each level's first win unlocks the tech the NEXT level demands.
 // The sim knows nothing about locks - controllers (opts.allowed) and the
 // renderer filter build options; the rules stay identical for everyone.
-const BASE_KIT = ['farm', 'grove', 'tower', 'hatch', 'swarmb', 'soldierb'];
+// 'conv' sits in BASE_KIT as a PROTOTYPE-ONLY placement (v0.9.5): the
+// converter is the CHORUS faction signature and will move to the faction
+// kits when v1.0 lands; until then every playtest needs access to it.
+// Campaign AI vectors all carry convTrig 9, so ladder grades are unmoved.
+const BASE_KIT = ['farm', 'grove', 'tower', 'hatch', 'swarmb', 'soldierb', 'conv'];
 
 // what a player with this stars map may build: { types, maxLvl }
 function unlocksFrom(starsMap) {
@@ -166,6 +171,13 @@ function makeController(rawParams, opts) {
       if (foeDef >= P.mortarTrig && sim.count(S, side, 'mortar') < 2 && def >= 2) {
         cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'mortar' } });
       }
+      // converters: conversion value scales with unit size, so trigger on
+      // the foe's BIG broods (soldiers/majors); a converter shoots no ants,
+      // never the last shooting tower
+      const foeBigB = sim.count(S, foe, 'soldierb') + sim.count(S, foe, 'majorb');
+      if (foeBigB >= P.convTrig && sim.count(S, side, 'conv') < 2 && def >= 2) {
+        cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'conv' } });
+      }
     }
 
     // hatchery specialisation toward the mix (largest share deficit first).
@@ -222,7 +234,7 @@ const PERSONAS = {
       wEco: 0.8, wDef: 1, wOff: 2.6,
       farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
       farmLvl: 2, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.15, mixSapper: 0.15, mixPredator: 0,
-      sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 5, mortarTrig: 9, upgW: 0.9, lvlW: 0.6,
+      sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 5, mortarTrig: 9, convTrig: 9, upgW: 0.9, lvlW: 0.6,
     },
   },
   tussock: {
@@ -234,7 +246,7 @@ const PERSONAS = {
       wEco: 1.5, wDef: 2.6, wOff: 0.9,
       farmTarget: 2, hatchTarget: 2, towersBase: 3, towersPer100s: 1.2, reactDef: 1,
       farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05, mixPredator: 0,
-      sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, mortarTrig: 9, upgW: 1.4, lvlW: 1.0,
+      sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.4, lvlW: 1.0,
     },
   },
   bloom: {
@@ -244,7 +256,7 @@ const PERSONAS = {
       wEco: 2.6, wDef: 0.9, wOff: 1.4,
       farmTarget: 5, hatchTarget: 4, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
       farmLvl: 3, mixSwarm: 0.2, mixSoldier: 0.4, mixMajor: 1, mixSapper: 0.6, mixPredator: 0,
-      sharpTrig: 3, spitTrig: 5, sapTrig: 9, guardTrig: 7, mortarTrig: 9, upgW: 1.2, lvlW: 1.6,
+      sharpTrig: 3, spitTrig: 5, sapTrig: 9, guardTrig: 7, mortarTrig: 9, convTrig: 9, upgW: 1.2, lvlW: 1.6,
     },
   },
 };
@@ -255,19 +267,19 @@ const ARCHETYPES = {
     wEco: 3, wDef: 0.3, wOff: 0.6,
     farmTarget: 6, hatchTarget: 2, towersBase: 0, towersPer100s: 0, reactDef: 0,
     farmLvl: 3, mixSwarm: 0.3, mixSoldier: 0.3, mixMajor: 1, mixSapper: 0.2, mixPredator: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 1, lvlW: 2,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 2,
   },
   wallDef: {
     wEco: 0.4, wDef: 3, wOff: 0.4,
     farmTarget: 1, hatchTarget: 1, towersBase: 4, towersPer100s: 2, reactDef: 2,
     farmLvl: 1, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0,
-    sharpTrig: 1, spitTrig: 2, sapTrig: 2, guardTrig: 1, mortarTrig: 9, upgW: 1.5, lvlW: 1.2,
+    sharpTrig: 1, spitTrig: 2, sapTrig: 2, guardTrig: 1, mortarTrig: 9, convTrig: 9, upgW: 1.5, lvlW: 1.2,
   },
   allInHatch: {
     wEco: 0.3, wDef: 0.3, wOff: 3,
     farmTarget: 0, hatchTarget: 6, towersBase: 0, towersPer100s: 0, reactDef: 0,
     farmLvl: 1, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.1, mixSapper: 0, mixPredator: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 0.6, lvlW: 0.3,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.6, lvlW: 0.3,
   },
   // v0.5 sanity probe: sappers as the whole plan. Should crack turtles but
   // lose to guards/spitters - if it dominates the field, sappers are broken.
@@ -275,7 +287,7 @@ const ARCHETYPES = {
     wEco: 0.6, wDef: 0.5, wOff: 3,
     farmTarget: 1, hatchTarget: 5, towersBase: 1, towersPer100s: 0, reactDef: 0,
     farmLvl: 1, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1, mixPredator: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 1, lvlW: 0.8,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
   },
   // v0.9 sanity probe: combined-arms siege - mortars blow holes in the
   // enemy wall, majors walk through them. Should crack fortified foes but
@@ -287,7 +299,7 @@ const ARCHETYPES = {
     wEco: 1.3, wDef: 2.2, wOff: 1.3,
     farmTarget: 2, hatchTarget: 3, towersBase: 3, towersPer100s: 1, reactDef: 1,
     farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.5, mixSapper: 0, mixPredator: 0,
-    sharpTrig: 2, spitTrig: 2, sapTrig: 6, guardTrig: 9, mortarTrig: 1, upgW: 1.3, lvlW: 1.0,
+    sharpTrig: 2, spitTrig: 2, sapTrig: 6, guardTrig: 9, mortarTrig: 1, convTrig: 9, upgW: 1.3, lvlW: 1.0,
   },
   // v0.9 sanity probe: predator screens as midfield control. Should eat
   // concentrated marcher comps but drown under swarm volume (predators
@@ -296,19 +308,34 @@ const ARCHETYPES = {
     wEco: 1.5, wDef: 1, wOff: 2.4,
     farmTarget: 2, hatchTarget: 4, towersBase: 1, towersPer100s: 0.6, reactDef: 1,
     farmLvl: 2, mixSwarm: 0.3, mixSoldier: 0.7, mixMajor: 0.2, mixSapper: 0.2, mixPredator: 1,
-    sharpTrig: 3, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 1, lvlW: 0.8,
+    sharpTrig: 3, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
   },
-  // the v0.9 evolved field-best (tune.js evolve, fit 1.00): balanced macro -
-  // deep lvl-3 farms, five hatcheries running an even five-way comp (~28%
-  // predators), reactive growing towers. Doubles as the campaign endboss and
-  // as the "strong player" reference when grading the level ladder.
-  // (Refreshed from the v0.8 vector, which predated predators and lost 0.0
-  // to predScreen - its concentrated soldier+sapper waves were hunter food.)
+  // v0.9.5 sanity probe: the monastery - eco behind walls, guards
+  // shielding converters that turn the foe's army into the offence. The
+  // guards are LOAD-BEARING: without them sapper escorts demolish the
+  // converters and buying them is a strict self-own (bloom 1.00 -> 0.27).
+  // Loses to a foe that won't send (tussock - starve the monastery) and
+  // to midfield hunters (predScreen kills marchers before conversion range).
+  convWall: {
+    wEco: 1.8, wDef: 2.2, wOff: 0.8,
+    farmTarget: 3, hatchTarget: 2, towersBase: 2, towersPer100s: 0.8, reactDef: 1,
+    farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.3, mixSapper: 0, mixPredator: 0,
+    sharpTrig: 3, spitTrig: 3, sapTrig: 4, guardTrig: 2, mortarTrig: 9, convTrig: 1, upgW: 1.3, lvlW: 1.0,
+  },
+  // the v0.9.5 evolved field-best (tune.js evolve, fit 1.00): still balanced
+  // macro - heavy eco with growing towers, five hatcheries on a broad comp,
+  // early sharps, deep upgrades. Beats the whole field ~1.0 incl convWall
+  // 0.93. Doubles as the campaign endboss and as the "strong player"
+  // reference when grading the level ladder. (Refreshed from the v0.9
+  // vector, which predated converters and dropped 0.40 to convWall.)
+  // NOTE: the raw evolved vector carried convTrig 2 but NEVER builds a
+  // converter (verified bit-identical with 9 across 165 matches - genetic
+  // drift on an inert param); recorded as 9 so the honesty is explicit.
   optimum: {
-    wEco: 1.52, wDef: 1.89, wOff: 0.79,
-    farmTarget: 4, hatchTarget: 5, towersBase: 1, towersPer100s: 1.38, reactDef: 1,
-    farmLvl: 3, mixSwarm: 0.45, mixSoldier: 0.66, mixMajor: 0.59, mixSapper: 0.64, mixPredator: 0.9,
-    sharpTrig: 5, spitTrig: 5, sapTrig: 4, guardTrig: 8, mortarTrig: 6, upgW: 1.94, lvlW: 0.38,
+    wEco: 3, wDef: 2.42, wOff: 1.16,
+    farmTarget: 4, hatchTarget: 5, towersBase: 2, towersPer100s: 1.58, reactDef: 0,
+    farmLvl: 2, mixSwarm: 0.9, mixSoldier: 0.92, mixMajor: 0.51, mixSapper: 0.18, mixPredator: 0.67,
+    sharpTrig: 1, spitTrig: 7, sapTrig: 5, guardTrig: 6, mortarTrig: 5, convTrig: 9, upgW: 1.95, lvlW: 1.2,
   },
 };
 
@@ -333,7 +360,7 @@ const LEVELS = [
         wEco: 2.6, wDef: 0.5, wOff: 1,
         farmTarget: 4, hatchTarget: 2, towersBase: 0, towersPer100s: 0.2, reactDef: 0,
         farmLvl: 2, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0, mixPredator: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 1, lvlW: 0,
+        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0,
       },
     },
     setup: { moneyE: 110 },
@@ -350,7 +377,7 @@ const LEVELS = [
         wEco: 0.8, wDef: 0.6, wOff: 2.2,
         farmTarget: 1, hatchTarget: 4, towersBase: 0, towersPer100s: 0.3, reactDef: 0,
         farmLvl: 1, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0, mixPredator: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 0.8, lvlW: 0,
+        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.8, lvlW: 0,
       },
     },
     setup: { moneyE: 165 },
@@ -367,7 +394,7 @@ const LEVELS = [
         wEco: 1, wDef: 2.2, wOff: 0.8,
         farmTarget: 2, hatchTarget: 1, towersBase: 2, towersPer100s: 0.6, reactDef: 1,
         farmLvl: 1, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0,
-        sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, upgW: 1, lvlW: 0.3,
+        sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.3,
       },
     },
     setup: { moneyE: 165 },

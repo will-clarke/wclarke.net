@@ -20,6 +20,13 @@
 // defence buildings from your own side - the reverse-sapper; predator broods
 // (hatchery tree) breed hunters that deploy mid-lane and intercept enemy
 // marchers there. Neither ever touches the hill.
+//
+// v0.9.5 "the monastery experiment": converter towers (tower tree) channel
+// on one enemy attacker at a time and FLIP it - the ant walks home and
+// marches with your next drum. The riskiest v1.0 faction mechanic (CHORUS),
+// prototyped first. Three load-bearing guards: one target at a time
+// (throughput - chaff saturates it), the channel is interruptible, and a
+// converted ant can never be converted back.
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -65,13 +72,13 @@ const CONFIG = {
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
     farm: 80, grove: 90, plant: 120,
-    tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220,
+    tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
   },
   UPGRADE_TREE: {
     farm:  ['grove'],
     grove: ['plant'],
-    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar'],
+    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
     hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
@@ -99,6 +106,9 @@ const CONFIG = {
     // anti-unit firing loop skips them); range covers the whole field -
     // placement is about protecting the mortar, not reaching the target
     mortar: { range: 900, bomb: 24, cooldown: 5 },
+    // converters channel one attacker at a time (no dmg, so the firing loop
+    // skips them) and flip it after `channel` seconds; levels channel faster
+    conv: { range: 120, channel: 3.5 },
   },
   // v0.5 contact update: every defence building has HP (sappers chew it);
   // guard posts field a squad of defender ants that intercept on the lane.
@@ -171,6 +181,7 @@ function createState(seed, overrides) {
       p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
       e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
     },
+    converted: { p: 0, e: 0 },   // lifetime conversion tally (tuner sanity)
     over: false,
     result: null,                // 'p' | 'e' | 'draw'
     endT: 0,
@@ -216,7 +227,7 @@ function count(S, side, type) {
 }
 const FAMILIES = {
   eco: ['farm', 'grove', 'plant'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar'],
+  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
   off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
 };
 function familyCount(S, side, family) {
@@ -235,7 +246,7 @@ function musterCount(S, side) {
   for (const u of S.units) if (u.side === side && u.state === 'muster') n++;
   return n;
 }
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'];
+const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'];
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
 }
@@ -269,6 +280,7 @@ function applyAction(S, side, action) {
     S.events.push({ type: 'sell', x: slot.x, y: slot.y, side });
     // guards from a sold post disband via the orphan check in step()
     slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
+    slot.chTgt = null; slot.chT = 0;
     return true;
   }
   if (action.kind !== 'build') return false;
@@ -360,6 +372,7 @@ function spawnGuard(S, side, slotIdx) {
 function destroySlot(S, side, slot) {
   S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side });
   slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
+  slot.chTgt = null; slot.chT = 0;
 }
 
 // ---------------------------------------------------------------- step ----
@@ -426,7 +439,7 @@ function step(S) {
       // higher-level saps slow harder (lower factor)
       const factor = cfg.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1);
       for (const u of S.units) {
-        if (u.side !== foe || u.state === 'muster' || u.state === 'guard') continue;
+        if (u.side !== foe || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
         if (Math.hypot(u.x - slot.x, u.y - slot.y) < cfg.TOWERS.sap.range) {
           u.slowed = Math.min(u.slowed || 1, factor);
         }
@@ -440,6 +453,20 @@ function step(S) {
   // advancing; sappers divert to enemy defence buildings and demolish them.
   for (const u of S.units) {
     if (u.state === 'muster') continue;
+
+    // freshly converted ants walk home and join the next drum; nothing
+    // engages them on the way (they read as part of the muster)
+    if (u.state === 'return') {
+      const dx = u.sx - u.x, dy = u.sy - u.y, d = Math.hypot(dx, dy);
+      if (d > 4) {
+        u.x += (dx / d) * u.spd * dt;
+        u.y += (dy / d) * u.spd * dt;
+      } else {
+        u.state = 'muster';
+      }
+      continue;
+    }
+
     const factor = u.slowed || 1;   // slowed holds the strongest sap factor
     const foe = other(u.side);
 
@@ -573,7 +600,7 @@ function step(S) {
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;
       for (const u of S.units) {
-        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
         const d = Math.hypot(u.x - slot.x, u.y - slot.y);
         if (d < bestD) { bestD = d; best = u; }
       }
@@ -581,7 +608,7 @@ function step(S) {
         const dmg = spec.dmg * lvlPower(S, slot);
         if (spec.splash) {
           for (const u of S.units) {
-            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
             if (Math.hypot(u.x - best.x, u.y - best.y) <= spec.splash) u.hp -= dmg;
           }
         } else {
@@ -614,6 +641,55 @@ function step(S) {
       S.shots.push({ x1: slot.x, y1: slot.y - 10, x2: best.x, y2: best.y, ttl: 0.5, mortar: true });
       S.events.push({ type: 'mortar', x: best.x, y: best.y, side: foe });
       if (best.hp <= 0) destroySlot(S, foe, best);
+    }
+  }
+
+  // converters channel the nearest enemy attacker in range and flip it:
+  // the ant walks home and marches with its NEW side's next drum. The three
+  // load-bearing guards (see README v1.0 design): one target at a time
+  // (throughput-limited - chaff saturates it), the channel is interruptible
+  // (death, leaving range, or losing the tower resets progress), and a
+  // converted ant can never be converted again (no ping-pong).
+  for (const side of ['p', 'e']) {
+    const foe = other(side);
+    const spec = cfg.TOWERS.conv;
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'conv') continue;
+      const convertible = v =>
+        v.side === foe && v.hp > 0 && !v.conv &&
+        (v.state === 'march' || v.state === 'siege') &&
+        Math.hypot(v.x - slot.x, v.y - slot.y) < spec.range;
+      // sticky target: re-aiming mid-channel would reset progress forever
+      if (!slot.chTgt || !convertible(slot.chTgt)) {
+        slot.chTgt = null;
+        slot.chT = 0;
+        let best = null, bestD = spec.range;
+        for (const v of S.units) {
+          if (v.side !== foe || v.hp <= 0 || v.conv) continue;
+          if (v.state !== 'march' && v.state !== 'siege') continue;
+          const d = Math.hypot(v.x - slot.x, v.y - slot.y);
+          if (d < bestD) { bestD = d; best = v; }
+        }
+        slot.chTgt = best;
+      }
+      if (!slot.chTgt) continue;
+      slot.chT += dt;
+      if (slot.chT < spec.channel / lvlPower(S, slot)) continue;
+      const u = slot.chTgt;
+      u.side = side;
+      u.conv = true;
+      u.state = 'return';
+      u.hp = cfg.UNITS[u.typeKey].hp;   // restored in full: conversion value
+                                        // scales with unit SIZE, not with
+                                        // whatever hp the wall left it
+      const sp = musterSpot(S, side);
+      u.sx = sp.x; u.sy = sp.y;
+      // predators keep a side-relative hold point: mirror it with the flip
+      if (u.typeKey === 'predator') u.hy = (cfg.ENEMY_BASE.y + cfg.PLAYER_BASE.y) - u.hy;
+      S.converted[side]++;
+      S.events.push({ type: 'convert', x: u.x, y: u.y, side });
+      slot.chTgt = null;
+      slot.chT = 0;
     }
   }
 
@@ -658,6 +734,7 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     result: S.result, t: S.endT,
     hpP: S.baseHP.p, hpE: S.baseHP.e,
     hatchedP: S.hatched.p, hatchedE: S.hatched.e,
+    convertedP: S.converted.p, convertedE: S.converted.e,
   };
 }
 
