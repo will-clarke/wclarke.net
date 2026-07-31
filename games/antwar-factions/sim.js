@@ -51,19 +51,43 @@ const CONFIG = {
   // apply from the next beat onward (no sell-rebuild beat scrubbing).
   DRUM_DELTA: { hornb: 6, fifeb: -3 },
   DRUM_MIN: 10, DRUM_MAX: 36,
+  // fx0.3: the ROT creep prototype. Creep is a full-width band per side - a
+  // single frontier line, not per-pixel - that exists once that side owns a
+  // Mat and advances while any Mat lives (speed sums Mat level power).
+  // Where the two bands would overlap they split the difference: a push-of-
+  // war between growth rates. Corpse-splats: a shambler dying within reach
+  // AHEAD of its own frontier drags it forward (deaths deeper in enemy
+  // ground land harmlessly short).
+  CREEP: {
+    growth: 1.1,        // px/s per Mat (x level power)
+    decay: 3,           // px/s recede while a side owns no Mats
+    suppress: 3.0,      // px/s pushback per SHOOTING foe tower at contact,
+                        // falling linearly to 0 at its range edge (x level
+                        // power) - "a tower can hold the frontier at range".
+                        // Depth-scaled so growth-vs-hold settles at a stall
+                        // LINE rather than a winner-takes-all px/s race;
+                        // without any suppression the frontier was
+                        // unstoppable (creep-turtle beat the field 1.00).
+    goldPer100px: 2.0,  // income per 100px of advance beyond the hill edge
+    slow: 0.65,         // speed factor for foes standing on the band
+    dot: 1.5,           // dps to foes standing on the band
+    corrode: 3,         // dps to foe DEFENCE buildings the band covers
+    hillDps: 7,         // strangle dps at a full hill lap (scales with depth)
+    splatPx: 6, splatReach: 70,
+  },
 
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
-    farm: 80, grove: 90, plant: 120,
+    farm: 80, grove: 90, plant: 120, mat: 100,
     tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
-    hornb: 100, fifeb: 80,
+    hornb: 100, fifeb: 80, oozeb: 90,
   },
   UPGRADE_TREE: {
-    farm:  ['grove'],
+    farm:  ['grove', 'mat'],
     grove: ['plant'],
     tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb'],
+    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
   // gold sink. Costs scale superlinearly with power on purpose - concentrated
@@ -71,7 +95,7 @@ const CONFIG = {
   MAX_LVL: 3,
   LVL_COST_MULT: { 2: 1.5, 3: 2.5 },   // of the building's base cost
   LVL_POWER: 1.5,                       // per level: production rate / tower dmg
-  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8 },
+  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 1.5 },
   // production: what each offence building drops into the muster, and how often
   PRODUCTION: {
     hatch:    { unit: 'worker',  interval: 6 },
@@ -84,6 +108,7 @@ const CONFIG = {
     // +/- time on the metronome") - slightly worse than the pure broods
     hornb:  { unit: 'soldier', interval: 10 },
     fifeb:  { unit: 'worker',  interval: 3.5 },
+    oozeb:  { unit: 'shambler', interval: 4 },
   },
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
@@ -123,6 +148,9 @@ const CONFIG = {
     // Beats a soldier 1v1 (barely), melts a sapper, loses to a major;
     // slower than workers so chaff it hasn't grabbed simply outruns it
     predator: { hp: 80, spd: 62, dps: 6,   r: 5.5 },
+    // shamblers trickle: they skip the muster and march the moment they
+    // hatch (ROT has no drum), and their corpses feed the creep frontier
+    shambler: { hp: 26,  spd: 44, dps: 3.5, r: 4.6, trickle: true },
   },
   FRENZY_AT: 240,
   DECAY_AT: 330,
@@ -159,6 +187,9 @@ function createState(seed, overrides) {
     frenzy: false,
     decay: false,
     nextBeat: { p: cfg.WAR_DRUM, e: cfg.WAR_DRUM },
+    // creep frontier y per side; null until that side builds its first Mat.
+    // Player creep covers y >= creep.p, enemy creep covers y <= creep.e.
+    creep: { p: null, e: null },
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -169,8 +200,8 @@ function createState(seed, overrides) {
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
     hatched: {                   // lifetime production tally (reaction reads)
-      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
-      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
+      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0 },
+      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0 },
     },
     converted: { p: 0, e: 0 },   // lifetime conversion tally (tuner sanity)
     over: false,
@@ -202,7 +233,7 @@ function placeBuilding(S, side, slotIdx, type, lvl) {
   slot.cd = 0;
   slot.spent = S.cfg.COSTS[type];
   for (let l = 2; l <= slot.lvl; l++) slot.spent += Math.round(S.cfg.COSTS[type] * S.cfg.LVL_COST_MULT[l]);
-  slot.hp = FAMILIES.def.includes(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
+  slot.hp = demolishable(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
   if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
   if (type === 'guard') {
     for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, slotIdx);
@@ -217,10 +248,15 @@ function count(S, side, type) {
   return n;
 }
 const FAMILIES = {
-  eco: ['farm', 'grove', 'plant'],
+  eco: ['farm', 'grove', 'plant', 'mat'],
   def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'oozeb'],
 };
+// buildings that can be shot down: defences, plus the Mat (the creep
+// engine needs a kill-channel - mortars bomb it, rival creep corrodes it)
+function demolishable(type) {
+  return FAMILIES.def.includes(type) || type === 'mat';
+}
 function familyCount(S, side, family) {
   const fams = FAMILIES[family];
   let n = 0;
@@ -230,14 +266,28 @@ function familyCount(S, side, family) {
 function income(S, side) {
   let inc = S.cfg.BASE_INCOME;
   for (const s of S.slots[side]) inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
+  inc += S.cfg.CREEP.goldPer100px * creepAdvance(S, side) / 100;
   return inc * (S.frenzy ? 2 : 1);
+}
+// creep home edge (the owner's hill rim) and current advance in px
+function creepHome(S, side) {
+  return side === 'p' ? S.cfg.PLAYER_BASE.y - S.cfg.PLAYER_BASE.r
+                      : S.cfg.ENEMY_BASE.y + S.cfg.ENEMY_BASE.r;
+}
+function creepAdvance(S, side) {
+  const front = S.creep[side];
+  if (front == null) return 0;
+  return Math.max(0, side === 'p' ? creepHome(S, 'p') - front : front - creepHome(S, 'e'));
 }
 function musterCount(S, side) {
   let n = 0;
   for (const u of S.units) if (u.side === side && u.state === 'muster') n++;
   return n;
 }
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb'];
+// mat is NOT levelable: creep growth stays one step per building (the
+// horn/fife precedent - read the mat's speed by counting fountains), and
+// level-multiplied growth out-raced every possible tower suppression
+const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'];
 // levels speed a drum-shifter's PRODUCTION like any brood; the beat delta
 // stays one step per building, so the metronome is read by counting them
 function drumPeriod(S, side) {
@@ -299,7 +349,7 @@ function applyAction(S, side, action) {
   slot.type = action.type;
   slot.lvl = 1;
   slot.cd = 0;
-  slot.hp = FAMILIES.def.includes(action.type) ? S.cfg.TOWER_HP : 0;
+  slot.hp = demolishable(action.type) ? S.cfg.TOWER_HP : 0;
   if (S.cfg.PRODUCTION[action.type]) {
     slot.prodCd = S.cfg.PRODUCTION[action.type].interval;
   }
@@ -333,7 +383,8 @@ function spawnUnit(S, side, unitKey) {
     x: sp.x, y: sp.y,
     hp: t.hp, spd: t.spd, dps: t.dps, r: t.r,
     seed: S.rng() * 10,
-    state: 'muster',             // muster -> march -> siege (predators: -> hunt)
+    // trickle units skip the muster: they march the moment they hatch
+    state: t.trickle ? 'march' : 'muster', // muster -> march -> siege (predators: -> hunt)
     sx: 0, sy: 0,
     slowed: false,
   };
@@ -384,6 +435,39 @@ function step(S) {
 
   for (const side of ['p', 'e']) {
     S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + income(S, side) * dt);
+  }
+
+  // creep frontiers: born at the hill rim with the first Mat, advancing
+  // while Mats live (speed sums Mat level power), receding without them.
+  // Clamped between the home rim and the FAR hill's centre; where the two
+  // bands would overlap they split the difference (push-of-war).
+  const CR = cfg.CREEP;
+  for (const side of ['p', 'e']) {
+    let mats = 0;
+    for (const s of S.slots[side]) if (s.type === 'mat') mats++;
+    if (S.creep[side] == null) {
+      if (mats > 0) S.creep[side] = creepHome(S, side);
+      continue;
+    }
+    // foe shooting towers burn the frontier back while it sits in range,
+    // harder the closer it laps (a stall line forms where burn = growth)
+    let hold = 0;
+    for (const s of S.slots[other(side)]) {
+      const spec = cfg.TOWERS[s.type];
+      if (!spec || !spec.dmg) continue;
+      const d = Math.abs(s.y - S.creep[side]);
+      if (d < spec.range) hold += CR.suppress * lvlPower(S, s) * (1 - d / spec.range);
+    }
+    const v = (mats > 0 ? CR.growth * mats : -CR.decay) * dt - hold * dt;
+    if (side === 'p') {
+      S.creep.p = Math.min(creepHome(S, 'p'), Math.max(cfg.ENEMY_BASE.y, S.creep.p - v));
+    } else {
+      S.creep.e = Math.max(creepHome(S, 'e'), Math.min(cfg.PLAYER_BASE.y, S.creep.e + v));
+    }
+  }
+  if (S.creep.p != null && S.creep.e != null && S.creep.p < S.creep.e) {
+    const m = (S.creep.p + S.creep.e) / 2;
+    S.creep.p = m; S.creep.e = m;
   }
 
   // hatcheries produce into the muster; guard posts keep their squad manned
@@ -445,6 +529,22 @@ function step(S) {
         if (Math.hypot(u.x - slot.x, u.y - slot.y) < cfg.TOWERS.sap.range) {
           u.slowed = Math.min(u.slowed || 1, factor);
         }
+      }
+    }
+  }
+
+  // creep underfoot: foes standing on a band wade (slow) and blister (DoT).
+  // Guards are included - creep lapping the nest is defence-in-depth turned
+  // inside out; only musters and homebound converts are exempt.
+  for (const side of ['p', 'e']) {
+    const front = S.creep[side];
+    if (front == null) continue;
+    const foe = other(side);
+    for (const u of S.units) {
+      if (u.side !== foe || u.state === 'muster' || u.state === 'return') continue;
+      if (side === 'p' ? u.y >= front : u.y <= front) {
+        u.slowed = Math.min(u.slowed || 1, CR.slow);
+        u.hp -= CR.dot * dt;
       }
     }
   }
@@ -633,7 +733,7 @@ function step(S) {
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;
       for (const ts of S.slots[foe]) {
-        if (!ts.type || !FAMILIES.def.includes(ts.type)) continue;
+        if (!ts.type || !demolishable(ts.type)) continue;
         const d = Math.hypot(ts.x - slot.x, ts.y - slot.y);
         if (d < bestD) { bestD = d; best = ts; }
       }
@@ -643,6 +743,27 @@ function step(S) {
       S.shots.push({ x1: slot.x, y1: slot.y - 10, x2: best.x, y2: best.y, ttl: 0.5, mortar: true });
       S.events.push({ type: 'mortar', x: best.x, y: best.y, side: foe });
       if (best.hp <= 0) destroySlot(S, foe, best);
+    }
+  }
+
+  // the mat eats walls: foe DEFENCE buildings under a creep band corrode
+  // (farms/hatcheries have no hp - the trickle has to chew those). Creep
+  // lapping the foe HILL strangles it, scaling with how deep the lap is.
+  for (const side of ['p', 'e']) {
+    const front = S.creep[side];
+    if (front == null) continue;
+    const foe = other(side);
+    for (const slot of S.slots[foe]) {
+      if (!slot.type || !demolishable(slot.type)) continue;
+      if (side === 'p' ? slot.y >= front : slot.y <= front) {
+        slot.hp -= CR.corrode * dt;
+        if (slot.hp <= 0) destroySlot(S, foe, slot);
+      }
+    }
+    const foeBase = side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
+    const depth = side === 'p' ? (foeBase.y + foeBase.r) - front : front - (foeBase.y - foeBase.r);
+    if (depth > 0) {
+      S.baseHP[foe] -= CR.hillDps * (Math.min(depth, foeBase.r) / foeBase.r) * dt;
     }
   }
 
@@ -718,6 +839,23 @@ function step(S) {
   for (const u of S.units) {
     if (u.hp <= 0) S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
   }
+  // corpse-splats: a dead shambler within reach AHEAD of its side's frontier
+  // drags it forward (never past the corpse); deeper deaths land short
+  for (const u of S.units) {
+    if (u.hp > 0 || u.typeKey !== 'shambler') continue;
+    S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
+    const front = S.creep[u.side];
+    if (front == null) continue;
+    if (u.side === 'p') {
+      if (u.y < front && front - u.y <= CR.splatReach) {
+        S.creep.p = Math.max(cfg.ENEMY_BASE.y, Math.max(u.y, front - CR.splatPx));
+      }
+    } else {
+      if (u.y > front && u.y - front <= CR.splatReach) {
+        S.creep.e = Math.min(cfg.PLAYER_BASE.y, Math.min(u.y, front + CR.splatPx));
+      }
+    }
+  }
   S.units = S.units.filter(u => u.hp > 0);
   for (const sh of S.shots) sh.ttl -= dt;
   S.shots = S.shots.filter(sh => sh.ttl > 0);
@@ -757,12 +895,14 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     hpP: S.baseHP.p, hpE: S.baseHP.e,
     hatchedP: S.hatched.p, hatchedE: S.hatched.e,
     convertedP: S.converted.p, convertedE: S.converted.e,
+    creepAdvP: creepAdvance(S, 'p'), creepAdvE: creepAdvance(S, 'e'),
   };
 }
 
 return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
-  lvlCost, lvlPower, sellRefund, drumPeriod, LEVELABLE, FAMILIES,
+  lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
+  demolishable, LEVELABLE, FAMILIES,
 };
 });

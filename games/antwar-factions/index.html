@@ -42,15 +42,24 @@ const LANE_CX = CFG.LANE_CX, LANE_HALF = CFG.LANE_HALF;
 const UI_TOP = 648;
 
 const LABELS = {
-  farm: 'Farm', grove: 'Grove', plant: 'Plant.',
+  farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Mat',
   tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
   hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
-  hornb: 'Horn', fifeb: 'Fife',
+  hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze',
 };
 
-const PERSONA_ORDER = ['bloom', 'tussock', 'rustle'];
-const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
-  key, x: 24, y: 430 + i * 92, w: W - 48, h: 78,
+// skirmish opponents: the three personas plus the fx0.3 creep probe (an
+// ARCHETYPE, not a persona - it lives outside the counter-triangle)
+const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
+  key, label: pol.PERSONAS[key].label, intro: pol.PERSONAS[key].intro,
+  params: pol.PERSONAS[key].params,
+})).concat([{
+  key: 'creeper', label: 'THE MAT (Creeper)',
+  intro: 'Its dead advance the stain. Rush it before the ground turns.',
+  params: pol.ARCHETYPES.creeper,
+}]);
+const PERSONA_BTNS = SKIRMISH_FOES.map((f, i) => ({
+  key: f.key, x: 24, y: 428 + i * 78, w: W - 48, h: 68,
 }));
 
 // campaign trail: a winding path up the screen, boss node centred on top
@@ -95,7 +104,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'fx0.2', mode, opponent, seed: S.seed,
+    v: 'fx0.3', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -159,7 +168,7 @@ let earnedStars = 0;
 let earnedUnlock = null;         // reward looted on a first win, for the end screen
 let S = null;
 let enemyCtrl = null;
-let personaKey = PERSONA_ORDER[0];
+let personaKey = SKIRMISH_FOES[0].key;
 let matchResult = '';
 let banners = [];
 let openSlot = null;
@@ -168,6 +177,7 @@ let fullFlash = 0;
 let drumFlash = 0;
 let pebbles = [];
 let parts = [];                  // cosmetic particles (poofs, crumbles)
+let stains = [];                 // cosmetic corpse-splat blotches on the mat
 let hillFlash = { p: 0, e: 0 };  // hill-crack feedback while besieged
 let prevHP = { p: 0, e: 0 };
 
@@ -236,16 +246,17 @@ function resetMatchFx() {
   fullFlash = 0;
   drumFlash = 0;
   parts = [];
+  stains = [];
   hillFlash = { p: 0, e: 0 };
   prevHP = { p: S.baseHP.p, e: S.baseHP.e };
   phase = 'play';
 }
 
-function begin(key) {           // skirmish: pick a persona, symmetric start
+function begin(key) {           // skirmish: pick a foe, symmetric start
   mode = 'skirmish';
   personaKey = key;
   S = sim.createState((Math.random() * 2 ** 31) | 0);
-  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  enemyCtrl = pol.makeController(SKIRMISH_FOES.find(f => f.key === key).params);
   startReplay(key);
   resetMatchFx();
 }
@@ -265,7 +276,8 @@ function beginLevel(i) {        // campaign: level AI + level setup + kits
 }
 
 function opponentLabel() {
-  return mode === 'campaign' ? pol.LEVELS[currentLevel].name : pol.PERSONAS[personaKey].label;
+  return mode === 'campaign' ? pol.LEVELS[currentLevel].name
+    : SKIRMISH_FOES.find(f => f.key === personaKey).label;
 }
 
 function banner(text) { banners.push({ text, ttl: 2.4 }); }
@@ -303,6 +315,13 @@ function statsLines(slot) {
   const t = slot.type;
   if (!t) return [];
   const k = sim.lvlPower(S, slot);
+  if (t === 'mat') {
+    const CR = CFG.CREEP;
+    return ['creep fountain: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, +' + CR.goldPer100px + ' per 100px of mat',
+            'mat grows ' + CR.growth + 'px/s per Mat; slows foes to ' + Math.round(CR.slow * 100) + '%, '
+              + CR.dot + ' dps, eats their towers',
+            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and rival creep can kill it'];
+  }
   if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s'];
   const tw = CFG.TOWERS[t];
   const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
@@ -321,7 +340,7 @@ function statsLines(slot) {
   if (tw && tw.dmg) {
     const dmg = Math.round(tw.dmg * k * 10) / 10;
     return [dmg + ' dmg every ' + tw.cooldown + 's (' + (dmg / tw.cooldown).toFixed(1) + ' dps)' + (tw.splash ? ' - splash ' + tw.splash : ''),
-            'range ' + tw.range + ' - ' + hpLine];
+            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
   }
   if (t === 'guard') {
     const g = CFG.UNITS.guard;
@@ -336,6 +355,9 @@ function statsLines(slot) {
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
       out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
+    }
+    if (CFG.UNITS[prod.unit].trickle) {
+      out.push('no muster: marches at hatch; corpses near the frontier push it ' + CFG.CREEP.splatPx + 'px');
     }
     return out;
   }
@@ -429,6 +451,11 @@ function advance(dtReal) {
       poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
     }
     if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
+    if (ev.type === 'splat') {
+      poof(ev.x, ev.y, ev.side === 'p' ? '#7a9458' : '#9a5878', 6, 28);
+      stains.push({ x: ev.x, y: ev.y, r: 5 + Math.random() * 4, side: ev.side, a: 0.5 });
+      if (stains.length > 90) stains.shift();
+    }
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'convert') {
       poof(ev.x, ev.y, '#c9a0e8', 10, 45);
@@ -508,6 +535,39 @@ function drawGround() {
   ctx.globalAlpha = 1;
 }
 
+// the creep mat: a full-width band per side with a wobbling, glowing
+// frontier line - one polygon, cheap and legible (never per-pixel)
+function drawCreep(time) {
+  for (const side of ['p', 'e']) {
+    const front = S.creep[side];
+    if (front == null) continue;
+    const col = side === 'p' ? '110,140,80' : '150,70,110';
+    const homeY = side === 'p' ? UI_TOP : 0;
+    const wob = x => front
+      + Math.sin(x * 0.045 + time * 0.8 + (side === 'p' ? 0 : 3)) * 5
+      + Math.sin(x * 0.013 - time * 0.3) * 3;
+    ctx.beginPath();
+    ctx.moveTo(0, homeY);
+    for (let x = 0; x <= W; x += 14) ctx.lineTo(x, wob(x));
+    ctx.lineTo(W, homeY);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(' + col + ',0.18)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(' + col + ',0.22)';
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    for (let x = 0; x <= W; x += 14) x === 0 ? ctx.moveTo(x, wob(x)) : ctx.lineTo(x, wob(x));
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(' + col + ',0.7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  for (const st of stains) {
+    ctx.fillStyle = (st.side === 'p' ? 'rgba(110,140,80,' : 'rgba(150,70,110,') + st.a + ')';
+    ctx.beginPath(); ctx.ellipse(st.x, st.y, st.r, st.r * 0.7, 0, 0, 7); ctx.fill();
+  }
+}
+
 function drawMound(b, color, hole, flash) {
   const g = ctx.createRadialGradient(b.x, b.y - 8, 4, b.x, b.y, b.r);
   g.addColorStop(0, color);
@@ -569,6 +629,11 @@ function drawAnt(u, time) {
     ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
     ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
     ctx.stroke();
+  } else if (u.typeKey === 'shambler') {
+    // mossy back-spots: the creep's shambling drip
+    ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
+    ctx.beginPath(); ctx.arc(0, dir * u.r * 1.2, u.r * 0.5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(0, -dir * u.r * 0.2, u.r * 0.4, 0, 7); ctx.fill();
   } else if (u.typeKey === 'predator') {
     // rust pincers: the hunter
     ctx.strokeStyle = '#ff9068';
@@ -646,6 +711,18 @@ function drawSlot(slot, side, idx, time) {
     ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
     ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
     ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+  } else if (slot.type === 'mat') {
+    // creep fountain: a mossy blob that visibly breathes as the mat grows
+    const col = side === 'p' ? '110,140,80' : '150,70,110';
+    const pulse = 1 + 0.08 * Math.sin(time * 2.4 + slot.x);
+    ctx.fillStyle = 'rgba(' + col + ',0.35)';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 22 * pulse, 16 * pulse, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(' + col + ',0.85)';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 13, 10, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,240,200,0.75)';
+    for (const [dx, dy] of [[-5, -2], [4, 3], [1, -5], [-2, 4], [7, -3]]) {
+      ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.6, 0, 7); ctx.fill();
+    }
   } else if (slot.type === 'hatch') {
     drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
   } else if (slot.type === 'swarmb') {
@@ -684,6 +761,17 @@ function drawSlot(slot, side, idx, time) {
     ctx.lineWidth = 2;
     ctx.beginPath();
     for (const dx of [-6, 0, 6]) { ctx.moveTo(slot.x + dx, slot.y - 18); ctx.lineTo(slot.x + dx + 3, slot.y - 10); }
+    ctx.stroke();
+  } else if (slot.type === 'oozeb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#b8c8a0');
+    // hanging drips: the den oozes shamblers with no drum
+    ctx.strokeStyle = '#6a8a48';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const dx of [-5, 1, 6]) {
+      ctx.moveTo(slot.x + dx, slot.y - 16);
+      ctx.lineTo(slot.x + dx, slot.y - 10 + ((dx + 7) % 3));
+    }
     ctx.stroke();
   } else {
     // tower family: stone mound base
@@ -746,8 +834,8 @@ function drawSlot(slot, side, idx, time) {
     }
   }
 
-  // defence buildings show damage once sappers have chewed them
-  if (sim.FAMILIES.def.includes(slot.type)) {
+  // demolishable buildings (defences + mats) show damage once chewed
+  if (sim.demolishable(slot.type)) {
     const maxHp = CFG.TOWER_HP * Math.pow(CFG.LVL_POWER, slot.lvl - 1);
     if (slot.hp < maxHp - 0.5) {
       hpBar(slot.x - 14, slot.y + 12, 28, 4, Math.max(0, slot.hp) / maxHp, '#e0a040');
@@ -938,6 +1026,7 @@ function roundRect(x, y, w, h, r) {
 
 function drawMatch(time) {
   drawGround();
+  drawCreep(time);
   drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
   drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
@@ -1142,12 +1231,12 @@ function drawSkirmish() {
     'Every 18s the war drum beats and BOTH armies march.',
     'Income doubles at 3:00 left; hills crumble at 1:30.',
   ];
-  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 180 + i * 22));
+  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 176 + i * 20));
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 412);
-  for (const b of PERSONA_BTNS) {
-    const persona = pol.PERSONAS[b.key];
+  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 408);
+  for (let i = 0; i < PERSONA_BTNS.length; i++) {
+    const b = PERSONA_BTNS[i], foe = SKIRMISH_FOES[i];
     ctx.fillStyle = '#3a2a1c';
     ctx.strokeStyle = '#c8a060';
     ctx.lineWidth = 2;
@@ -1155,15 +1244,14 @@ function drawSkirmish() {
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffd870';
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(persona.label, LANE_CX, b.y + 24);
+    ctx.fillText(foe.label, LANE_CX, b.y + 21);
     ctx.fillStyle = '#d8c0a0';
     ctx.font = '11px sans-serif';
-    ctx.fillText(persona.intro, LANE_CX, b.y + 50);
+    ctx.fillText(foe.intro, LANE_CX, b.y + 45);
   }
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '12px sans-serif';
-  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 724);
-  ctx.fillText('tap anywhere else for the trail', LANE_CX, 744);
+  ctx.fillText('tap anywhere else for the trail', LANE_CX, 754);
 }
 
 function drawEnd() {

@@ -23,6 +23,7 @@ const PARAM_SPEC = {
   towersPer100s: [0, 2, false],    // ...growing over time
   reactDef:      [0, 2, true],     // extra towers while foe hatcheries > own towers
   farmLvl:       [1, 3, true],     // upgrade farms to this level
+  matTarget:     [0, 4, true],     // farms converted to creep Mats (fx0.3 ROT probe)
   mixSwarm:      [0, 1, false],    // hatchery specialisation mix
   mixSoldier:    [0, 1, false],
   mixMajor:      [0, 1, false],
@@ -30,6 +31,7 @@ const PARAM_SPEC = {
   mixPredator:   [0, 1, false],    // ...predators hunt enemy marchers mid-lane
   mixHorn:       [0, 1, false],    // ...horn broods: +6s on OWN drum each (bigger waves)
   mixFife:       [0, 1, false],    // ...fife broods: -3s on OWN drum each (faster waves)
+  mixOoze:       [0, 1, false],    // ...ooze dens: shamblers trickle drumless, corpses splat
   sharpTrig:     [1, 9, true],     // sharp once foe major-broods >= N (9=never)
   spitTrig:      [1, 9, true],     // spitter once foe worker-broods >= N (9=never)
   sapTrig:       [2, 9, true],     // sap once own towers >= N (9=never)
@@ -99,7 +101,7 @@ function makeController(rawParams, opts) {
   const mem = { nextThink: 0 };
 
   // normalised hatch mix shares
-  const mixTotal = P.mixSwarm + P.mixSoldier + P.mixMajor + P.mixSapper + P.mixPredator + P.mixHorn + P.mixFife + 0.001;
+  const mixTotal = P.mixSwarm + P.mixSoldier + P.mixMajor + P.mixSapper + P.mixPredator + P.mixHorn + P.mixFife + P.mixOoze + 0.001;
   const mix = {
     swarmb: P.mixSwarm / mixTotal,
     soldierb: P.mixSoldier / mixTotal,
@@ -108,6 +110,7 @@ function makeController(rawParams, opts) {
     predatorb: P.mixPredator / mixTotal,
     hornb: P.mixHorn / mixTotal,
     fifeb: P.mixFife / mixTotal,
+    oozeb: P.mixOoze / mixTotal,
   };
 
   return function control(S, side) {
@@ -137,6 +140,12 @@ function makeController(rawParams, opts) {
     if (off < P.hatchTarget) {
       const slot = firstEmptyIn(S, side, REAR_SLOT_ORDER);
       if (slot !== -1) cands.push({ score: P.wOff * (P.hatchTarget - off), a: { kind: 'build', slot, type: 'hatch' } });
+    }
+
+    // creep Mats grow from farms (fx0.3): the ROT eco conversion
+    if (P.matTarget > 0 && sim.count(S, side, 'mat') < P.matTarget) {
+      const i = S.slots[side].findIndex(s => s.type === 'farm');
+      if (i !== -1) cands.push({ score: P.wEco * P.upgW * 0.95, a: { kind: 'build', slot: i, type: 'mat' } });
     }
 
     // farm level upgrades
@@ -170,8 +179,10 @@ function makeController(rawParams, opts) {
         cands.push({ score: P.wDef * P.upgW * 0.9, a: { kind: 'build', slot: baseTower, type: 'guard' } });
       }
       // mortars: siege artillery against a fortifying foe (worthless vs a
-      // foe with nothing to bombard); never the last shooting tower
-      const foeDef = sim.familyCount(S, foe, 'def');
+      // foe with nothing to bombard); never the last shooting tower.
+      // Mats count as bombardable value - artillery is the mat's
+      // kill-channel, and a trigger that can't see mats never fires it
+      const foeDef = sim.familyCount(S, foe, 'def') + sim.count(S, foe, 'mat');
       if (foeDef >= P.mortarTrig && sim.count(S, side, 'mortar') < 2 && def >= 2) {
         cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'mortar' } });
       }
@@ -191,7 +202,7 @@ function makeController(rawParams, opts) {
     const baseHatch = S.slots[side].findIndex(s => s.type === 'hatch');
     if (baseHatch !== -1 && off > 0) {
       let bestType = null, bestDeficit = 0.05;
-      for (const type of ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb']) {
+      for (const type of ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb']) {
         if (allowed && !allowed.types.includes(type)) continue;
         const share = sim.count(S, side, type) / off;
         const deficit = mix[type] - share;
@@ -237,7 +248,7 @@ const PERSONAS = {
     params: {
       wEco: 0.8, wDef: 1, wOff: 2.6,
       farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-      farmLvl: 2, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.15, mixSapper: 0.15, mixPredator: 0, mixHorn: 0, mixFife: 0,
+      farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.15, mixSapper: 0.15, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
       sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 5, mortarTrig: 9, convTrig: 9, upgW: 0.9, lvlW: 0.6,
     },
   },
@@ -249,7 +260,7 @@ const PERSONAS = {
       // became a decay-phase photo-finish; a touch more economy wins the grind
       wEco: 1.5, wDef: 2.6, wOff: 0.9,
       farmTarget: 2, hatchTarget: 2, towersBase: 3, towersPer100s: 1.2, reactDef: 1,
-      farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05, mixPredator: 0, mixHorn: 0, mixFife: 0,
+      farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
       sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.4, lvlW: 1.0,
     },
   },
@@ -259,7 +270,7 @@ const PERSONAS = {
     params: {
       wEco: 2.6, wDef: 0.9, wOff: 1.4,
       farmTarget: 5, hatchTarget: 4, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-      farmLvl: 3, mixSwarm: 0.2, mixSoldier: 0.4, mixMajor: 1, mixSapper: 0.6, mixPredator: 0, mixHorn: 0, mixFife: 0,
+      farmLvl: 3, matTarget: 0, mixSwarm: 0.2, mixSoldier: 0.4, mixMajor: 1, mixSapper: 0.6, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
       sharpTrig: 3, spitTrig: 5, sapTrig: 9, guardTrig: 7, mortarTrig: 9, convTrig: 9, upgW: 1.2, lvlW: 1.6,
     },
   },
@@ -270,19 +281,19 @@ const ARCHETYPES = {
   boomEco: {
     wEco: 3, wDef: 0.3, wOff: 0.6,
     farmTarget: 6, hatchTarget: 2, towersBase: 0, towersPer100s: 0, reactDef: 0,
-    farmLvl: 3, mixSwarm: 0.3, mixSoldier: 0.3, mixMajor: 1, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 3, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.3, mixMajor: 1, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 2,
   },
   wallDef: {
     wEco: 0.4, wDef: 3, wOff: 0.4,
     farmTarget: 1, hatchTarget: 1, towersBase: 4, towersPer100s: 2, reactDef: 2,
-    farmLvl: 1, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 1, spitTrig: 2, sapTrig: 2, guardTrig: 1, mortarTrig: 9, convTrig: 9, upgW: 1.5, lvlW: 1.2,
   },
   allInHatch: {
     wEco: 0.3, wDef: 0.3, wOff: 3,
     farmTarget: 0, hatchTarget: 6, towersBase: 0, towersPer100s: 0, reactDef: 0,
-    farmLvl: 1, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.1, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.1, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.6, lvlW: 0.3,
   },
   // v0.5 sanity probe: sappers as the whole plan. Should crack turtles but
@@ -290,7 +301,7 @@ const ARCHETYPES = {
   sapperAllIn: {
     wEco: 0.6, wDef: 0.5, wOff: 3,
     farmTarget: 1, hatchTarget: 5, towersBase: 1, towersPer100s: 0, reactDef: 0,
-    farmLvl: 1, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 1, matTarget: 0, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
   },
   // v0.9 sanity probe: combined-arms siege - mortars blow holes in the
@@ -302,7 +313,7 @@ const ARCHETYPES = {
   mortarWall: {
     wEco: 1.3, wDef: 2.2, wOff: 1.3,
     farmTarget: 2, hatchTarget: 3, towersBase: 3, towersPer100s: 1, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 2, spitTrig: 2, sapTrig: 6, guardTrig: 9, mortarTrig: 1, convTrig: 9, upgW: 1.3, lvlW: 1.0,
   },
   // v0.9 sanity probe: predator screens as midfield control. Should eat
@@ -311,7 +322,7 @@ const ARCHETYPES = {
   predScreen: {
     wEco: 1.5, wDef: 1, wOff: 2.4,
     farmTarget: 2, hatchTarget: 4, towersBase: 1, towersPer100s: 0.6, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.3, mixSoldier: 0.7, mixMajor: 0.2, mixSapper: 0.2, mixPredator: 1, mixHorn: 0, mixFife: 0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.7, mixMajor: 0.2, mixSapper: 0.2, mixPredator: 1, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 3, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
   },
   // v0.9.5 sanity probe: the monastery - eco behind walls, guards
@@ -323,7 +334,7 @@ const ARCHETYPES = {
   convWall: {
     wEco: 1.8, wDef: 2.2, wOff: 0.8,
     farmTarget: 3, hatchTarget: 2, towersBase: 2, towersPer100s: 0.8, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.3, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.3, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 3, spitTrig: 3, sapTrig: 4, guardTrig: 2, mortarTrig: 9, convTrig: 1, upgW: 1.3, lvlW: 1.0,
   },
   // fx0.2 sanity probe: the long beat. Horn broods slow the drum toward the
@@ -334,7 +345,7 @@ const ARCHETYPES = {
   bigBeat: {
     wEco: 1.5, wDef: 1.5, wOff: 2.2,
     farmTarget: 3, hatchTarget: 5, towersBase: 2, towersPer100s: 0.8, reactDef: 1,
-    farmLvl: 2, mixSwarm: 0.15, mixSoldier: 1, mixMajor: 0.6, mixSapper: 0.25, mixPredator: 0, mixHorn: 0.9, mixFife: 0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.15, mixSoldier: 1, mixMajor: 0.6, mixSapper: 0.25, mixPredator: 0, mixHorn: 0.9, mixFife: 0, mixOoze: 0,
     sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.2, lvlW: 1.0,
   },
   // fx0.2 sanity probe: the quickstep - fifes race the drum to the floor
@@ -343,8 +354,20 @@ const ARCHETYPES = {
   quickstep: {
     wEco: 1.2, wDef: 0.8, wOff: 2.6,
     farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-    farmLvl: 2, mixSwarm: 1, mixSoldier: 0.5, mixMajor: 0, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0.9,
+    farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.5, mixMajor: 0, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0.9, mixOoze: 0,
     sharpTrig: 9, spitTrig: 4, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.6,
+  },
+  // fx0.3 sanity probe: the mat - farms become creep fountains, ooze dens
+  // trickle shamblers whose corpses drag the frontier forward. Should
+  // strangle turtles slowly (corrode + area income) but fold to a rush
+  // before the mat matures - ROT's authored weakness. If it dominates,
+  // creep growth or splat reach is too hot; if it never wins, the mat is
+  // dead weight and the numbers are cold.
+  creeper: {
+    wEco: 2.2, wDef: 1.0, wOff: 2.0,
+    farmTarget: 4, hatchTarget: 4, towersBase: 1, towersPer100s: 0.4, reactDef: 1,
+    farmLvl: 1, matTarget: 3, mixSwarm: 0.15, mixSoldier: 0.3, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 1,
+    sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.1, lvlW: 0.8,
   },
   // the v0.9.5 evolved field-best (tune.js evolve, fit 1.00): still balanced
   // macro - heavy eco with growing towers, five hatcheries on a broad comp,
@@ -358,7 +381,7 @@ const ARCHETYPES = {
   optimum: {
     wEco: 3, wDef: 2.42, wOff: 1.16,
     farmTarget: 4, hatchTarget: 5, towersBase: 2, towersPer100s: 1.58, reactDef: 0,
-    farmLvl: 2, mixSwarm: 0.9, mixSoldier: 0.92, mixMajor: 0.51, mixSapper: 0.18, mixPredator: 0.67, mixHorn: 0, mixFife: 0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.9, mixSoldier: 0.92, mixMajor: 0.51, mixSapper: 0.18, mixPredator: 0.67, mixHorn: 0, mixFife: 0, mixOoze: 0,
     sharpTrig: 1, spitTrig: 7, sapTrig: 5, guardTrig: 6, mortarTrig: 5, convTrig: 9, upgW: 1.95, lvlW: 1.2,
   },
 };
@@ -383,7 +406,7 @@ const LEVELS = [
       params: {
         wEco: 2.6, wDef: 0.5, wOff: 1,
         farmTarget: 4, hatchTarget: 2, towersBase: 0, towersPer100s: 0.2, reactDef: 0,
-        farmLvl: 2, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+        farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
         sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0,
       },
     },
@@ -400,7 +423,7 @@ const LEVELS = [
       params: {
         wEco: 0.8, wDef: 0.6, wOff: 2.2,
         farmTarget: 1, hatchTarget: 4, towersBase: 0, towersPer100s: 0.3, reactDef: 0,
-        farmLvl: 1, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+        farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
         sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.8, lvlW: 0,
       },
     },
@@ -417,7 +440,7 @@ const LEVELS = [
       params: {
         wEco: 1, wDef: 2.2, wOff: 0.8,
         farmTarget: 2, hatchTarget: 1, towersBase: 2, towersPer100s: 0.6, reactDef: 1,
-        farmLvl: 1, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0,
+        farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
         sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.3,
       },
     },
