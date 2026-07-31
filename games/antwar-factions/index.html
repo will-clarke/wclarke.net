@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Ant War</title>
+<style>
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #241a12;
+    overflow: hidden;
+    touch-action: none;
+    -webkit-user-select: none; user-select: none;
+  }
+  #wrap { display: flex; justify-content: center; align-items: center; height: 100%; }
+  canvas { display: block; touch-action: none; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+<script src="sim.js"></script>
+<script src="policy.js"></script>
+<script>
+'use strict';
+
+// ---------------------------------------------------------------------------
+// Ant War renderer (v0.9). All rules live in sim.js (shared with the Node
+// tuning harness); strategies, personas and campaign levels live in
+// policy.js. This file only draws, reads taps, and steps the sim at a fixed
+// tick. There are no manual sends: every tap is a build, an upgrade or a
+// sell. Persistent state (localStorage): campaign stars, plus a replay log
+// of every finished match - the sim is deterministic, so (seed, setup,
+// player actions) reconstructs a whole game. Export button on the menu.
+// ---------------------------------------------------------------------------
+
+const sim = AntWarSim;
+const pol = AntWarPolicy;
+const CFG = sim.CONFIG;
+
+const W = CFG.W, H = CFG.H;
+const LANE_CX = CFG.LANE_CX, LANE_HALF = CFG.LANE_HALF;
+const UI_TOP = 648;
+
+const LABELS = {
+  farm: 'Farm', grove: 'Grove', plant: 'Plant.',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
+  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
+  hornb: 'Horn', fifeb: 'Fife',
+};
+
+const PERSONA_ORDER = ['bloom', 'tussock', 'rustle'];
+const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
+  key, x: 24, y: 430 + i * 92, w: W - 48, h: 78,
+}));
+
+// campaign trail: a winding path up the screen, boss node centred on top
+// (spacing scales off the level count - v0.9 grew the ladder to 12)
+const LEVEL_NODES = pol.LEVELS.map((L, i) => ({
+  x: i === pol.LEVELS.length - 1 ? 210 : (i % 2 === 0 ? 135 : 285),
+  y: 645 - i * Math.floor(495 / (pol.LEVELS.length - 1)),
+  r: i === pol.LEVELS.length - 1 ? 27 : 22,
+}));
+const SKIRMISH_BTN = { x: 110, y: 706, w: 200, h: 42 };
+const BRIEF_START = { x: 90, y: 470, w: 240, h: 52 };
+const EXPORT_BTN = { x: 110, y: 752, w: 200, h: 24 };
+
+// KR-style stars, saved locally: 1 win, 2 hill >= 100hp, 3 hill >= 200hp.
+// Tech unlocks derive from stars (policy.unlocksFrom) - beating a level
+// loots its reward, in campaign AND skirmish alike.
+let stars = {};
+try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } catch (e) {}
+// SANDBOX RULE (antwar-factions fork): the whole kit is always open. This
+// line playtests mechanics, not the loot curve; campaign enemies keep their
+// authored kits, so early levels play easier here than in the main line.
+const ALL_UNLOCKED = { types: Object.keys(CFG.COSTS), maxLvl: CFG.MAX_LVL };
+let unlocks = ALL_UNLOCKED;
+function saveStars() {
+  try { localStorage.setItem('antwar-stars', JSON.stringify(stars)); } catch (e) {}
+  unlocks = ALL_UNLOCKED;
+}
+function levelUnlocked(i) {
+  return i === 0 || (stars[pol.LEVELS[i - 1].key] || 0) >= 1;
+}
+// the player's tappable build options for a slot, locked tech hidden
+function allowedOptions(slotIdx) {
+  const slot = S.slots.p[slotIdx];
+  return sim.buildOptions(S, 'p', slotIdx).filter(t =>
+    t === 'lvl' ? slot.lvl + 1 <= unlocks.maxLvl : unlocks.types.includes(t));
+}
+
+// ----------------------------------------------------------------- replays --
+// every finished match is logged: the sim is deterministic, so seed + setup
+// + opponent + timestamped player actions reconstruct the whole game later
+// (replay viewer / ghost PvP / ML corpus - see README).
+let replay = null;
+function startReplay(opponent) {
+  replay = {
+    v: 'fx0.2', mode, opponent, seed: S.seed,
+    setup: S.cfg.SETUP || null,
+    startedAt: new Date().toISOString(),
+    actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
+  };
+}
+function logAction(slot, type) {
+  if (replay) replay.actions.push({ tk: Math.round(S.t / CFG.TICK), slot, type });
+}
+function loadReplays() {
+  try { return JSON.parse(localStorage.getItem('antwar-replays') || '[]') || []; } catch (e) { return []; }
+}
+function finishReplay() {
+  if (!replay) return;
+  replay.result = matchResult;
+  replay.endT = Math.round(S.endT * 10) / 10;
+  replay.hpP = Math.round(S.baseHP.p);
+  replay.hpE = Math.round(S.baseHP.e);
+  try {
+    const all = loadReplays();
+    all.push(replay);
+    while (all.length > 60) all.shift();   // keep the log bounded
+    localStorage.setItem('antwar-replays', JSON.stringify(all));
+  } catch (e) {}
+  replay = null;
+}
+function exportReplays() {
+  const all = loadReplays();
+  if (!all.length) return;
+  const blob = new Blob(
+    [JSON.stringify({ game: 'antwar', exported: new Date().toISOString(), replays: all })],
+    { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'antwar-replays.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+const cv = document.getElementById('c');
+const ctx = cv.getContext('2d');
+let viewScale = 1;
+
+function resize() {
+  const dpr = window.devicePixelRatio || 1;
+  viewScale = Math.min(window.innerWidth / W, window.innerHeight / H);
+  cv.width = Math.round(W * viewScale * dpr);
+  cv.height = Math.round(H * viewScale * dpr);
+  cv.style.width = (W * viewScale) + 'px';
+  cv.style.height = (H * viewScale) + 'px';
+  ctx.setTransform(viewScale * dpr, 0, 0, viewScale * dpr, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ----------------------------------------------------------------- state ---
+let phase = 'menu';              // menu | brief | skirmish | play | end
+let mode = 'campaign';           // campaign | skirmish (what 'play' returns to)
+let currentLevel = -1;
+let briefLevel = -1;
+let earnedStars = 0;
+let earnedUnlock = null;         // reward looted on a first win, for the end screen
+let S = null;
+let enemyCtrl = null;
+let personaKey = PERSONA_ORDER[0];
+let matchResult = '';
+let banners = [];
+let openSlot = null;
+let acc = 0;
+let fullFlash = 0;
+let drumFlash = 0;
+let pebbles = [];
+let parts = [];                  // cosmetic particles (poofs, crumbles)
+let hillFlash = { p: 0, e: 0 };  // hill-crack feedback while besieged
+let prevHP = { p: 0, e: 0 };
+
+// ------------------------------------------------------------- feel layer --
+// tiny WebAudio blips; the context can only start on a user gesture
+let AC = null;
+function ensureAudio() {
+  if (!AC) {
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {}
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function blip(freq, dur, type, vol, slideTo) {
+  if (!AC || AC.state !== 'running') return;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(freq, AC.currentTime);
+  if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, AC.currentTime + dur);
+  g.gain.setValueAtTime(vol, AC.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(); o.stop(AC.currentTime + dur);
+}
+const SFX = {
+  drum()      { blip(85, 0.28, 'sine', 0.5, 42); blip(160, 0.1, 'triangle', 0.15, 70); },
+  build()     { blip(520, 0.07, 'triangle', 0.18, 700); },
+  sell()      { blip(620, 0.12, 'triangle', 0.18, 260); },
+  towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
+  mortar()    { blip(110, 0.22, 'square', 0.16, 48); },
+  convert()   { blip(420, 0.35, 'sine', 0.2, 1260); blip(630, 0.25, 'triangle', 0.1, 1680); },
+  frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
+  win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
+  lose()      { blip(220, 0.7, 'sawtooth', 0.22, 80); },
+};
+function buzz(ms) {
+  if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} }
+}
+
+function poof(x, y, color, n, spread) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const v = (0.3 + Math.random() * 0.7) * (spread || 40);
+    parts.push({
+      x, y,
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 15,
+      ttl: 0.35 + Math.random() * 0.35,
+      r: 1.5 + Math.random() * 2.5,
+      color,
+    });
+  }
+}
+
+for (let i = 0; i < 70; i++) {
+  pebbles.push({
+    x: Math.random() * W,
+    y: 40 + Math.random() * (UI_TOP - 60),
+    r: 1 + Math.random() * 2.5,
+    a: 0.05 + Math.random() * 0.1,
+  });
+}
+
+function resetMatchFx() {
+  banners = [];
+  openSlot = null;
+  acc = 0;
+  fullFlash = 0;
+  drumFlash = 0;
+  parts = [];
+  hillFlash = { p: 0, e: 0 };
+  prevHP = { p: S.baseHP.p, e: S.baseHP.e };
+  phase = 'play';
+}
+
+function begin(key) {           // skirmish: pick a persona, symmetric start
+  mode = 'skirmish';
+  personaKey = key;
+  S = sim.createState((Math.random() * 2 ** 31) | 0);
+  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  startReplay(key);
+  resetMatchFx();
+}
+
+function beginLevel(i) {        // campaign: level AI + level setup + kits
+  mode = 'campaign';
+  currentLevel = i;
+  const L = pol.LEVELS[i];
+  S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null });
+  // the enemy escalates in step with the ladder: player-kit-so-far plus
+  // this level's own loot (and any extraKit showcase)
+  enemyCtrl = pol.makeController(L.ai.params, {
+    thinkEvery: L.ai.thinkEvery, allowed: pol.enemyKitAt(i),
+  });
+  startReplay(L.key);
+  resetMatchFx();
+}
+
+function opponentLabel() {
+  return mode === 'campaign' ? pol.LEVELS[currentLevel].name : pol.PERSONAS[personaKey].label;
+}
+
+function banner(text) { banners.push({ text, ttl: 2.4 }); }
+
+// ------------------------------------------------------------------ input --
+function popupRects(slotIdx) {
+  const slot = S.slots.p[slotIdx];
+  const entries = allowedOptions(slotIdx).map(type => ({
+    type,
+    label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
+    cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
+  }));
+  // any occupied slot can be sold for a partial refund of its total spend
+  if (slot.type !== null) {
+    entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
+  }
+  if (!entries.length) return [];
+  // shrink buttons when the tower tree offers all 5 specs + sell
+  const gap = 4;
+  const bw = Math.min(66, Math.floor((W - 12 - (entries.length - 1) * gap) / entries.length));
+  const total = entries.length * bw + (entries.length - 1) * gap;
+  const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
+  const y = slot.y - 82;
+  return entries.map((en, i) => Object.assign(en, {
+    x: x0 + i * (bw + gap), y, w: bw, h: 52,
+  }));
+}
+
+function inRect(px, py, r) {
+  return px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h;
+}
+
+// tap-a-building stats: the numbers behind the piece, level power applied
+function statsLines(slot) {
+  const t = slot.type;
+  if (!t) return [];
+  const k = sim.lvlPower(S, slot);
+  if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s'];
+  const tw = CFG.TOWERS[t];
+  const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
+  if (t === 'sap') {
+    const slowPct = Math.round(CFG.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1) * 100);
+    return ['slows attackers to ' + slowPct + '% speed', 'range ' + tw.range + ' - ' + hpLine];
+  }
+  if (t === 'mortar') {
+    return [Math.round(tw.bomb * k) + ' dmg vs enemy defences, every ' + tw.cooldown + 's', 'unlimited range - ' + hpLine];
+  }
+  if (t === 'conv') {
+    const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k);
+    return ['charms in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
+            'charm holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+  }
+  if (tw && tw.dmg) {
+    const dmg = Math.round(tw.dmg * k * 10) / 10;
+    return [dmg + ' dmg every ' + tw.cooldown + 's (' + (dmg / tw.cooldown).toFixed(1) + ' dps)' + (tw.splash ? ' - splash ' + tw.splash : ''),
+            'range ' + tw.range + ' - ' + hpLine];
+  }
+  if (t === 'guard') {
+    const g = CFG.UNITS.guard;
+    return [CFG.GUARD.count + ' guards: ' + Math.round(g.hp * k) + 'hp, ' + (Math.round(g.dps * k * 10) / 10) + ' dps each',
+            'respawn ' + CFG.GUARD.respawn + 's - ' + hpLine];
+  }
+  const prod = CFG.PRODUCTION[t];
+  if (prod) {
+    const out = ['1 ' + prod.unit + ' every ' + (prod.interval / k).toFixed(1) + 's'];
+    const u = CFG.UNITS[prod.unit];
+    out.push(u.hp + 'hp - ' + u.dps + ' dps - speed ' + u.spd + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : ''));
+    if (CFG.DRUM_DELTA[t]) {
+      const d = CFG.DRUM_DELTA[t];
+      out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
+    }
+    return out;
+  }
+  return [];
+}
+
+cv.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  ensureAudio();
+  const rect = cv.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / viewScale;
+  const y = (e.clientY - rect.top) / viewScale;
+
+  if (phase === 'menu') {
+    if (inRect(x, y, SKIRMISH_BTN)) { phase = 'skirmish'; return; }
+    if (inRect(x, y, EXPORT_BTN)) { exportReplays(); return; }
+    for (let i = 0; i < LEVEL_NODES.length; i++) {
+      const n = LEVEL_NODES[i];
+      if (Math.hypot(x - n.x, y - n.y) < n.r + 8 && levelUnlocked(i)) {
+        briefLevel = i;
+        phase = 'brief';
+        return;
+      }
+    }
+    return;
+  }
+  if (phase === 'brief') {
+    if (inRect(x, y, BRIEF_START)) { beginLevel(briefLevel); return; }
+    phase = 'menu';
+    return;
+  }
+  if (phase === 'skirmish') {
+    for (const b of PERSONA_BTNS) {
+      if (inRect(x, y, b)) { begin(b.key); return; }
+    }
+    phase = 'menu';              // tap anywhere else: back to the trail
+    return;
+  }
+  if (phase === 'end') {
+    if (mode === 'skirmish') { phase = 'skirmish'; return; }
+    if (matchResult === 'VICTORY') { phase = 'menu'; }
+    else { briefLevel = currentLevel; phase = 'brief'; }   // straight to retry
+    return;
+  }
+
+  // build/upgrade/sell popup gets first claim on the tap
+  if (openSlot !== null) {
+    for (const r of popupRects(openSlot)) {
+      if (inRect(x, y, r)) {
+        const action = r.type === 'sell'
+          ? { kind: 'sell', slot: openSlot }
+          : { kind: 'build', slot: openSlot, type: r.type };
+        if (sim.applyAction(S, 'p', action)) {
+          (r.type === 'sell' ? SFX.sell : SFX.build)();
+          logAction(openSlot, r.type);
+        }
+        openSlot = null;
+        return;
+      }
+    }
+    openSlot = null;             // tap anywhere else just closes it
+    return;
+  }
+
+  for (let i = 0; i < S.slots.p.length; i++) {
+    const s = S.slots.p[i];
+    if (Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
+      openSlot = i;
+      return;
+    }
+  }
+});
+
+// ------------------------------------------------------------- sim driver --
+function advance(dtReal) {
+  acc += dtReal;
+  let guard = 8;                 // don't spiral after a background tab
+  while (acc >= CFG.TICK && guard-- > 0 && !S.over) {
+    const acts = enemyCtrl(S, 'e');
+    if (acts) for (const a of acts) sim.applyAction(S, 'e', a);
+    sim.step(S);
+    acc -= CFG.TICK;
+  }
+  if (guard <= 0) acc = 0;
+
+  for (const ev of S.events) {
+    if (ev.type === 'frenzy') { banner('FRENZY! Income doubled'); SFX.frenzy(); }
+    if (ev.type === 'decay') banner('SUDDEN DEATH! Hills are crumbling');
+    if (ev.type === 'march' && ev.side === 'p') { drumFlash = 1; SFX.drum(); buzz(30); }
+    if (ev.type === 'death') {
+      poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
+    }
+    if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
+    if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
+    if (ev.type === 'convert') {
+      poof(ev.x, ev.y, '#c9a0e8', 10, 45);
+      banner(ev.side === 'p' ? 'Enemy ant CHARMED!' : 'Your ant defected!');
+      SFX.convert();
+    }
+    if (ev.type === 'revert') {
+      poof(ev.x, ev.y, '#8a7a9a', 6, 30);
+      banner(ev.side === 'p' ? 'Your ant shook off the charm!' : 'Enemy ant broke free!');
+    }
+    if (ev.type === 'towerfall') {
+      poof(ev.x, ev.y, '#8a8274', 18, 70);
+      poof(ev.x, ev.y, '#5d4630', 10, 45);
+      banner(ev.side === 'p' ? 'Your tower is down!' : 'Enemy tower DEMOLISHED!');
+      SFX.towerfall();
+      buzz(ev.side === 'p' ? [40, 40, 40] : 60);
+    }
+  }
+  S.events.length = 0;
+
+  // hill-crack feedback: flash when a hill is being chewed (beyond decay)
+  const decayLoss = S.decay ? CFG.DECAY_RATE * dtReal : 0;
+  for (const side of ['p', 'e']) {
+    const chew = prevHP[side] - S.baseHP[side] - decayLoss;
+    if (chew > 0.005) hillFlash[side] = Math.min(1, hillFlash[side] + chew * 0.25 + 0.15);
+    hillFlash[side] = Math.max(0, hillFlash[side] - dtReal * 1.6);
+    prevHP[side] = S.baseHP[side];
+  }
+
+  for (const p of parts) {
+    p.x += p.vx * dtReal;
+    p.y += p.vy * dtReal;
+    p.vy += 60 * dtReal;
+    p.ttl -= dtReal;
+  }
+  parts = parts.filter(p => p.ttl > 0);
+
+  for (const b of banners) b.ttl -= dtReal;
+  banners = banners.filter(b => b.ttl > 0);
+  drumFlash = Math.max(0, drumFlash - dtReal * 1.5);
+
+  const atCap = S.money.p >= CFG.GOLD_CAP - 0.5;
+  fullFlash = Math.max(0, Math.min(2, fullFlash + (atCap ? 2 : -2) * dtReal));
+
+  if (S.over) {
+    matchResult = S.result === 'p' ? 'VICTORY' : (S.result === 'e' ? 'DEFEAT' : 'DRAW');
+    if (matchResult === 'VICTORY') SFX.win(); else SFX.lose();
+    earnedStars = 0;
+    earnedUnlock = null;
+    if (mode === 'campaign' && matchResult === 'VICTORY') {
+      earnedStars = S.baseHP.p >= 200 ? 3 : (S.baseHP.p >= 100 ? 2 : 1);
+      const L = pol.LEVELS[currentLevel];
+      if ((stars[L.key] || 0) === 0 && L.reward) earnedUnlock = L.reward;
+      if (earnedStars > (stars[L.key] || 0)) { stars[L.key] = earnedStars; saveStars(); }
+    }
+    finishReplay();
+    phase = 'end';
+  }
+}
+
+// ------------------------------------------------------------------ draw ---
+function drawGround() {
+  ctx.fillStyle = '#7a5c3e';
+  ctx.fillRect(0, 0, W, H);
+  const g = ctx.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
+  g.addColorStop(0, '#7a5c3e');
+  g.addColorStop(0.2, '#96754f');
+  g.addColorStop(0.8, '#96754f');
+  g.addColorStop(1, '#7a5c3e');
+  ctx.fillStyle = g;
+  ctx.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
+  ctx.fillStyle = 'rgba(0,0,0,1)';
+  for (const p of pebbles) {
+    ctx.globalAlpha = p.a;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawMound(b, color, hole, flash) {
+  const g = ctx.createRadialGradient(b.x, b.y - 8, 4, b.x, b.y, b.r);
+  g.addColorStop(0, color);
+  g.addColorStop(1, '#5d4630');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
+  if (flash > 0.02) {
+    // cracks spider out while the hill is being chewed
+    ctx.strokeStyle = 'rgba(255,90,50,' + (0.35 + 0.5 * flash) + ')';
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.26 + 0.4;
+      ctx.beginPath();
+      ctx.moveTo(b.x + Math.cos(a) * b.r * 0.25, b.y + Math.sin(a) * b.r * 0.18);
+      ctx.lineTo(b.x + Math.cos(a + 0.3) * b.r * 0.6, b.y + Math.sin(a + 0.3) * b.r * 0.45);
+      ctx.lineTo(b.x + Math.cos(a + 0.1) * b.r * 0.95, b.y + Math.sin(a + 0.1) * b.r * 0.68);
+      ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(255,120,70,' + 0.16 * flash + ')';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = hole;
+  ctx.beginPath(); ctx.ellipse(b.x, b.y - 6, b.r * 0.3, b.r * 0.2, 0, 0, 7); ctx.fill();
+}
+
+function drawAnt(u, time) {
+  const body = u.side === 'p' ? '#1d150c' : '#a8321e';
+  const dir = u.side === 'p' ? -1 : 1;
+  const mustering = u.state === 'muster';
+  ctx.save();
+  // musters mill about a little so the gathering army looks alive
+  const mx = mustering ? Math.sin(time * 1.7 + u.seed * 3) * 3 : 0;
+  const my = mustering ? Math.cos(time * 1.3 + u.seed * 2) * 2 : 0;
+  ctx.translate(u.x + mx, u.y + my);
+  ctx.strokeStyle = body;
+  ctx.lineWidth = 1;
+  const biting = u.state === 'siege' || u.state === 'hunt';
+  const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
+  for (let i = -1; i <= 1; i++) {
+    ctx.beginPath();
+    ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
+    ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
+    ctx.stroke();
+  }
+  ctx.fillStyle = body;
+  ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
+  if (u.typeKey === 'guard') {
+    // gold thorax band: defenders read differently from attackers
+    ctx.fillStyle = '#ffd870';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.45, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'sapper') {
+    // pale mandibles: the demolition crew
+    ctx.strokeStyle = '#ffe9b0';
+    ctx.lineWidth = 1.5;
+    const hy = -dir * u.r * 2.3;
+    ctx.beginPath();
+    ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
+    ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
+    ctx.stroke();
+  } else if (u.typeKey === 'predator') {
+    // rust pincers: the hunter
+    ctx.strokeStyle = '#ff9068';
+    ctx.lineWidth = 1.5;
+    const hy = -dir * u.r * 2.5;
+    ctx.beginPath();
+    ctx.moveTo(-u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(-u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
+    ctx.moveTo(u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
+    ctx.stroke();
+  }
+  if (u.charmT > 0) {
+    // violet halo: a charmed ant reads as converted at a glance; the halo
+    // thins as the charm wears off, so a fading grip is visible too
+    ctx.strokeStyle = 'rgba(201,160,232,' + (0.35 + 0.5 * Math.min(1, u.charmT / 6)) + ')';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.1, 0, 7); ctx.stroke();
+  }
+  if (u.slowed) {
+    ctx.strokeStyle = 'rgba(140,220,120,0.7)';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
+  }
+  const t = CFG.UNITS[u.typeKey];
+  const maxHp = u.maxHp || t.hp;
+  if (maxHp > 20 && u.hp < maxHp) {
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(-9, -u.r * 3 - 4, 18, 3);
+    ctx.fillStyle = '#7ec850';
+    ctx.fillRect(-9, -u.r * 3 - 4, 18 * (u.hp / maxHp), 3);
+  }
+  ctx.restore();
+}
+
+function drawMushrooms(slot, side, spots) {
+  for (const [dx, dy, r] of spots) {
+    ctx.fillStyle = '#d8c9a3';
+    ctx.fillRect(slot.x + dx - 2, slot.y + dy - 2, 4, 8);
+    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy - 4, r, r * 0.65, 0, 0, 7); ctx.fill();
+  }
+}
+
+function drawEggs(slot, spots, eggColor) {
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  for (const [dx, dy, r] of spots) {
+    ctx.fillStyle = eggColor;
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, r * 0.8, r, 0, 0, 7); ctx.fill();
+    ctx.stroke();
+  }
+}
+
+function drawSlot(slot, side, idx, time) {
+  if (slot.type === null) {
+    if (side === 'p') {
+      ctx.strokeStyle = 'rgba(255,255,220,0.45)';
+      ctx.setLineDash([5, 5]);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, 20, 0, 7); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(255,255,220,0.55)';
+      ctx.font = '20px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('+', slot.x, slot.y + 1);
+    }
+    return;
+  }
+
+  if (slot.type === 'farm') {
+    drawMushrooms(slot, side, [[-8, 4, 7], [7, 6, 6], [0, -6, 8]]);
+  } else if (slot.type === 'grove') {
+    drawMushrooms(slot, side, [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]]);
+  } else if (slot.type === 'plant') {
+    drawMushrooms(slot, side, [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]]);
+    ctx.fillStyle = '#d8c9a3';
+    ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
+    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+  } else if (slot.type === 'hatch') {
+    drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
+  } else if (slot.type === 'swarmb') {
+    drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8');
+  } else if (slot.type === 'soldierb') {
+    drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090');
+  } else if (slot.type === 'majorb') {
+    drawEggs(slot, [[0, 0, 13]], '#c8a878');
+  } else if (slot.type === 'sapperb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0');
+    // pick-axe mandible mark on the brood
+    ctx.strokeStyle = '#6a4a20';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(slot.x - 5, slot.y - 12); ctx.lineTo(slot.x, slot.y - 17); ctx.lineTo(slot.x + 5, slot.y - 12);
+    ctx.stroke();
+  } else if (slot.type === 'predatorb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0b8a8');
+    // paired fang mark: the hunter brood
+    ctx.strokeStyle = '#a03828';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(slot.x - 6, slot.y - 17); ctx.lineTo(slot.x - 3, slot.y - 11);
+    ctx.moveTo(slot.x + 6, slot.y - 17); ctx.lineTo(slot.x + 3, slot.y - 11);
+    ctx.stroke();
+  } else if (slot.type === 'hornb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#d8c090');
+    // curled war horn: this brood slows YOUR drum for heavier waves
+    ctx.strokeStyle = '#8a6a30';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 14, 6, Math.PI * 0.2, Math.PI * 1.4); ctx.stroke();
+  } else if (slot.type === 'fifeb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#c8d8c0');
+    // triple quick-strokes: this brood quickens YOUR drum
+    ctx.strokeStyle = '#5a7a50';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const dx of [-6, 0, 6]) { ctx.moveTo(slot.x + dx, slot.y - 18); ctx.lineTo(slot.x + dx + 3, slot.y - 10); }
+    ctx.stroke();
+  } else {
+    // tower family: stone mound base
+    const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8' }[slot.type];
+    g.addColorStop(0, top);
+    g.addColorStop(1, '#6e685c');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19, 15, 0, 0, 7); ctx.fill();
+    if (slot.type === 'tower') {
+      ctx.fillStyle = '#2c2820';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'sharp') {
+      ctx.strokeStyle = '#3a342a';
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 4); ctx.lineTo(slot.x, slot.y - 26); ctx.stroke();
+      ctx.fillStyle = '#2c2820';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 26, 3.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'spit') {
+      ctx.fillStyle = '#2c2820';
+      for (const dx of [-8, 0, 8]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx, slot.y - 6, 3.2, 0, 7); ctx.fill();
+      }
+    } else if (slot.type === 'sap') {
+      ctx.strokeStyle = 'rgba(140,220,120,' + (0.25 + 0.15 * Math.sin(time * 3)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.sap.range * (0.9 + 0.06 * Math.sin(time * 3)), 0, 7); ctx.stroke();
+      ctx.fillStyle = '#3a5c34';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'guard') {
+      // banner pole marks the mustering point of the lane guards
+      ctx.strokeStyle = '#6a5030';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 2); ctx.lineTo(slot.x, slot.y - 24); ctx.stroke();
+      ctx.fillStyle = '#ffd870';
+      ctx.beginPath();
+      ctx.moveTo(slot.x, slot.y - 24); ctx.lineTo(slot.x + 12, slot.y - 20); ctx.lineTo(slot.x, slot.y - 16);
+      ctx.closePath(); ctx.fill();
+    } else if (slot.type === 'mortar') {
+      // fat barrel tilted toward the enemy
+      const dir = side === 'p' ? -1 : 1;
+      ctx.strokeStyle = '#2c2820';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(slot.x - 4, slot.y - 2);
+      ctx.lineTo(slot.x + 5, slot.y - 2 + dir * 16);
+      ctx.stroke();
+      ctx.fillStyle = '#1c1814';
+      ctx.beginPath(); ctx.arc(slot.x + 5, slot.y - 2 + dir * 16, 4.2, 0, 7); ctx.fill();
+    } else if (slot.type === 'conv') {
+      // hypnotic eye + faint reach ring: the charm zone stays readable
+      ctx.strokeStyle = 'rgba(201,160,232,' + (0.14 + 0.08 * Math.sin(time * 2.2)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.conv.range, 0, 7); ctx.stroke();
+      ctx.strokeStyle = '#ecdcf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 8, 7.5, 4.5, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#7a4a9c';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 2.8, 0, 7); ctx.fill();
+    }
+  }
+
+  // defence buildings show damage once sappers have chewed them
+  if (sim.FAMILIES.def.includes(slot.type)) {
+    const maxHp = CFG.TOWER_HP * Math.pow(CFG.LVL_POWER, slot.lvl - 1);
+    if (slot.hp < maxHp - 0.5) {
+      hpBar(slot.x - 14, slot.y + 12, 28, 4, Math.max(0, slot.hp) / maxHp, '#e0a040');
+    }
+  }
+
+  // level pips
+  if (slot.lvl > 1) {
+    ctx.fillStyle = '#ffd870';
+    for (let i = 0; i < slot.lvl; i++) {
+      ctx.beginPath(); ctx.arc(slot.x - 8 + i * 8, slot.y + 20, 2.5, 0, 7); ctx.fill();
+    }
+  }
+
+  // upgrade affordance for the player: any legal option they can pay for
+  if (side === 'p' && S) {
+    const opts = allowedOptions(idx);
+    if (opts.length) {
+      const cheapest = Math.min(...opts.map(t =>
+        t === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[t]));
+      if (S.money.p >= cheapest) {
+        ctx.fillStyle = 'rgba(255,220,120,' + (0.5 + 0.3 * Math.sin(time * 4)) + ')';
+        ctx.font = 'bold 12px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('▲', slot.x, slot.y - 26);
+      }
+    }
+  }
+}
+
+function hpBar(x, y, w, h, frac, fg) {
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = fg;
+  ctx.fillRect(x + 1, y + 1, Math.max(0, (w - 2) * frac), h - 2);
+}
+
+function goldLabel(side) {
+  return Math.floor(S.money[side]) + '/' + CFG.GOLD_CAP;
+}
+
+function drawHUD(time) {
+  ctx.textBaseline = 'middle';
+
+  // enemy panel (full information)
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.fillRect(0, 0, W, 34);
+  ctx.fillStyle = '#f0b0a0';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(opponentLabel(), 10, 11);
+  hpBar(10, 20, 180, 9, Math.max(0, S.baseHP.e) / CFG.BASE_HP, '#c84632');
+  ctx.fillStyle = '#ffe9b0';
+  ctx.textAlign = 'right';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)', W - 10, 11);
+  ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   muster ' + sim.musterCount(S, 'e')
+    + '   drum ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's', W - 10, 24);
+
+  // match clock
+  const remain = Math.max(0, CFG.HARD_END - S.t);
+  const mm = Math.floor(remain / 60), ss = Math.floor(remain % 60);
+  ctx.fillStyle = S.decay ? '#ff6a4a' : 'rgba(255,255,240,0.85)';
+  ctx.font = 'bold 14px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 46);
+
+  // bottom control panel
+  ctx.fillStyle = '#33261a';
+  ctx.fillRect(0, UI_TOP, W, H - UI_TOP);
+  ctx.fillStyle = 'rgba(255,255,255,0.06)';
+  ctx.fillRect(0, UI_TOP, W, 2);
+
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#cfe8b0';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('YOUR COLONY', 12, UI_TOP + 16);
+  hpBar(12, UI_TOP + 26, 200, 11, Math.max(0, S.baseHP.p) / CFG.BASE_HP, '#6aa84f');
+  const full = fullFlash > 0.5;
+  ctx.fillStyle = full && Math.sin(time * 6) > 0 ? '#ff9c50' : '#ffe9b0';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText(goldLabel('p') + ' gold', W - 12, UI_TOP + 18);
+  ctx.font = '12px sans-serif';
+  ctx.fillText(
+    full ? 'STORAGE FULL - income wasted!' : '+' + sim.income(S, 'p').toFixed(1) + '/s' + (S.frenzy ? '  FRENZY x2' : ''),
+    W - 12, UI_TOP + 36);
+
+  // war drum countdown (fx0.2: each side beats alone - this bar is YOURS)
+  const periodP = sim.drumPeriod(S, 'p');
+  const toBeat = Math.max(0, S.nextBeat.p - S.t);
+  const frac = Math.max(0, 1 - toBeat / periodP);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(12, UI_TOP + 62, W - 24, 30);
+  ctx.fillStyle = drumFlash > 0 ? 'rgba(255,216,112,' + (0.35 + drumFlash * 0.5) + ')' : 'rgba(200,160,96,0.35)';
+  ctx.fillRect(13, UI_TOP + 63, (W - 26) * frac, 28);
+  ctx.fillStyle = '#ffe9c0';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(
+    drumFlash > 0.3 ? 'THE MARCH IS ON!'
+      : 'war drum in ' + toBeat.toFixed(0) + 's'
+        + (periodP !== CFG.WAR_DRUM ? ' (beat ' + periodP + 's)' : '')
+        + '   -   your muster: ' + sim.musterCount(S, 'p'),
+    LANE_CX, UI_TOP + 77);
+
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - tap again to upgrade or sell', LANE_CX, UI_TOP + 106);
+
+  // banners
+  let by = 200;
+  for (const b of banners) {
+    ctx.globalAlpha = Math.min(1, b.ttl);
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.font = 'bold 17px sans-serif';
+    const tw = ctx.measureText(b.text).width;
+    ctx.fillRect(LANE_CX - tw / 2 - 12, by - 14, tw + 24, 28);
+    ctx.fillStyle = '#ffd870';
+    ctx.textAlign = 'center';
+    ctx.fillText(b.text, LANE_CX, by);
+    ctx.globalAlpha = 1;
+    by += 34;
+  }
+}
+
+function drawPopup() {
+  if (openSlot === null) return;
+  const slot = S.slots.p[openSlot];
+  ctx.strokeStyle = '#ffe9b0';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(slot.x, slot.y, 24, 0, 7); ctx.stroke();
+  // range ring + stats readout for the tapped building
+  const spec = CFG.TOWERS[slot.type];
+  if (spec && spec.range && spec.range < 500) {
+    ctx.strokeStyle = 'rgba(255,233,176,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, spec.range, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const lines = statsLines(slot);
+  if (lines.length) {
+    ctx.font = '10px sans-serif';
+    const wMax = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const bw = wMax + 16, bh = lines.length * 13 + 9;
+    const bx = Math.max(4, Math.min(W - bw - 4, slot.x - bw / 2));
+    const by = slot.y - 82 - bh - 5;
+    ctx.fillStyle = 'rgba(20,14,8,0.92)';
+    ctx.strokeStyle = '#7a6448';
+    ctx.lineWidth = 1;
+    roundRect(bx, by, bw, bh, 5);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8d8b8';
+    ctx.textAlign = 'center';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], bx + bw / 2, by + 11 + i * 13);
+    }
+  }
+  for (const r of popupRects(openSlot)) {
+    const isSell = r.type === 'sell';
+    const afford = isSell || S.money.p >= r.cost;
+    ctx.fillStyle = 'rgba(20,14,8,0.92)';
+    ctx.strokeStyle = isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38');
+    roundRect(r.x, r.y, r.w, r.h, 7);
+    ctx.fill(); ctx.stroke();
+    ctx.globalAlpha = afford ? 1 : 0.45;
+    ctx.fillStyle = isSell ? '#f0b0a0' : '#ffe9c0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(r.label, r.x + r.w / 2, r.y + 16);
+    ctx.fillStyle = isSell ? '#8ee06a' : '#ffd870';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(isSell ? '+' + r.gain + 'g' : r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    ctx.globalAlpha = 1;
+  }
+}
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawMatch(time) {
+  drawGround();
+  drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
+  drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
+  for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
+  for (let i = 0; i < S.slots.p.length; i++) drawSlot(S.slots.p[i], 'p', i, time);
+  for (const sh of S.shots) {
+    if (sh.mortar) {
+      // lobbed arc + impact ring, fading over the longer ttl
+      const a = Math.max(0, sh.ttl / 0.5);
+      ctx.strokeStyle = 'rgba(70,56,40,' + 0.6 * a + ')';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(sh.x1, sh.y1);
+      ctx.quadraticCurveTo((sh.x1 + sh.x2) / 2, Math.min(sh.y1, sh.y2) - 90, sh.x2, sh.y2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,150,70,' + a + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(sh.x2, sh.y2, 5 + 16 * (1 - a), 0, 7); ctx.stroke();
+      continue;
+    }
+    ctx.strokeStyle = 'rgba(255,240,180,' + (sh.ttl / 0.09) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(sh.x1, sh.y1); ctx.lineTo(sh.x2, sh.y2); ctx.stroke();
+    if (sh.splash) {
+      ctx.strokeStyle = 'rgba(255,200,120,' + (sh.ttl / 0.09) * 0.6 + ')';
+      ctx.beginPath(); ctx.arc(sh.x2, sh.y2, sh.splash, 0, 7); ctx.stroke();
+    }
+  }
+  // converter channel beams: dashed violet thread + a ring closing around
+  // the target as the charm completes (full information - both sides')
+  for (const side of ['p', 'e']) {
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'conv' || !slot.chTgt || !(slot.chT > 0)) continue;
+      const tgt = slot.chTgt;
+      const frac = Math.min(1, slot.chT / (CFG.TOWERS.conv.channel / sim.lvlPower(S, slot)));
+      ctx.strokeStyle = 'rgba(201,160,232,' + (0.35 + 0.45 * frac) + ')';
+      ctx.lineWidth = 1.2 + frac * 1.8;
+      ctx.setLineDash([3, 5]);
+      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 8); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.strokeStyle = 'rgba(226,190,248,0.95)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(tgt.x, tgt.y, 11 - frac * 4, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+  for (const u of S.units) drawAnt(u, time);
+  for (const p of parts) {
+    ctx.globalAlpha = Math.min(1, p.ttl * 2.5);
+    ctx.fillStyle = p.color;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  drawHUD(time);
+  drawPopup();
+}
+
+function drawStars(cx, cy, got, size) {
+  ctx.font = 'bold ' + size + 'px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (let i = 0; i < 3; i++) {
+    ctx.fillStyle = i < got ? '#ffd870' : 'rgba(0,0,0,0.35)';
+    ctx.fillText('★', cx + (i - 1) * (size + 2), cy);
+  }
+}
+
+function drawMenu() {
+  drawGround();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffd870';
+  ctx.font = 'bold 40px sans-serif';
+  ctx.fillText('ANT WAR', LANE_CX, 62);
+  const total = pol.LEVELS.reduce((a, L) => a + (stars[L.key] || 0), 0);
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '13px sans-serif';
+  ctx.fillText('the campaign trail  -  ' + total + ' / ' + pol.LEVELS.length * 3 + ' ★', LANE_CX, 96);
+
+  // the winding trail
+  ctx.strokeStyle = 'rgba(255,233,176,0.35)';
+  ctx.lineWidth = 3;
+  ctx.setLineDash([2, 7]);
+  ctx.beginPath();
+  ctx.moveTo(LEVEL_NODES[0].x, LEVEL_NODES[0].y);
+  for (let i = 1; i < LEVEL_NODES.length; i++) ctx.lineTo(LEVEL_NODES[i].x, LEVEL_NODES[i].y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  for (let i = 0; i < LEVEL_NODES.length; i++) {
+    const n = LEVEL_NODES[i], L = pol.LEVELS[i];
+    const open = levelUnlocked(i);
+    const got = stars[L.key] || 0;
+    ctx.fillStyle = open ? '#3a2a1c' : 'rgba(30,22,14,0.9)';
+    ctx.strokeStyle = open ? L.hue : '#55483a';
+    ctx.lineWidth = got ? 4 : 2.5;
+    ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = open ? '#ffe9c0' : '#6a5c4a';
+    ctx.font = 'bold ' + (i === LEVEL_NODES.length - 1 ? 15 : 16) + 'px sans-serif';
+    ctx.fillText(i === LEVEL_NODES.length - 1 ? '☠' : String(i + 1), n.x, n.y + 1);
+    if (open) {
+      ctx.fillStyle = '#d8c0a0';
+      ctx.font = 'bold 10px sans-serif';
+      const side = n.x < LANE_CX ? 1 : -1;
+      ctx.textAlign = side === 1 ? 'left' : 'right';
+      ctx.fillText(L.name, n.x + side * (n.r + 10), n.y - 5);
+      ctx.textAlign = 'center';
+      if (got) drawStars(n.x + side * (n.r + 32), n.y + 9, got, 11);
+    }
+  }
+
+  ctx.fillStyle = '#3a2a1c';
+  ctx.strokeStyle = '#c8a060';
+  ctx.lineWidth = 2;
+  roundRect(SKIRMISH_BTN.x, SKIRMISH_BTN.y, SKIRMISH_BTN.w, SKIRMISH_BTN.h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ffe9c0';
+  ctx.font = 'bold 15px sans-serif';
+  ctx.fillText('SKIRMISH', LANE_CX, SKIRMISH_BTN.y + 21);
+
+  const nReplays = loadReplays().length;
+  if (nReplays) {
+    ctx.fillStyle = 'rgba(216,192,160,0.7)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText('⬇ export ' + nReplays + ' replay' + (nReplays === 1 ? '' : 's'), LANE_CX, EXPORT_BTN.y + 13);
+  }
+}
+
+function wrapText(text, x, y, maxW, lh) {
+  const words = text.split(' ');
+  let line = '';
+  for (const w of words) {
+    const probe = line ? line + ' ' + w : w;
+    if (ctx.measureText(probe).width > maxW && line) {
+      ctx.fillText(line, x, y);
+      y += lh;
+      line = w;
+    } else line = probe;
+  }
+  if (line) ctx.fillText(line, x, y);
+  return y + lh;
+}
+
+function drawBrief() {
+  drawMenu();
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(0, 0, W, H);
+  const L = pol.LEVELS[briefLevel];
+  ctx.fillStyle = '#2a1e12';
+  ctx.strokeStyle = L.hue;
+  ctx.lineWidth = 3;
+  roundRect(36, 240, W - 72, 310, 14);
+  ctx.fill(); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('LEVEL ' + (briefLevel + 1), LANE_CX, 272);
+  ctx.fillStyle = L.hue;
+  ctx.font = 'bold 22px sans-serif';
+  ctx.fillText(L.name, LANE_CX, 300);
+  drawStars(LANE_CX, 330, stars[L.key] || 0, 16);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '14px sans-serif';
+  let ty = wrapText(L.blurb, LANE_CX, 370, W - 120, 20);
+  ctx.fillStyle = '#ffd870';
+  ty = wrapText(L.twist, LANE_CX, ty + 8, W - 120, 20);
+  if (L.reward && (stars[L.key] || 0) === 0) {
+    ctx.fillStyle = '#8ee06a';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText('VICTORY UNLOCKS: ' + L.reward.label, LANE_CX, ty + 12);
+  }
+  ctx.fillStyle = '#3a5c34';
+  ctx.strokeStyle = '#8ee06a';
+  ctx.lineWidth = 2;
+  roundRect(BRIEF_START.x, BRIEF_START.y, BRIEF_START.w, BRIEF_START.h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e8ffdc';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.fillText('DIG IN', LANE_CX, BRIEF_START.y + 27);
+}
+
+function drawSkirmish() {
+  drawGround();
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#ffd870';
+  ctx.font = 'bold 44px sans-serif';
+  ctx.fillText('SKIRMISH', LANE_CX, 130);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '14px sans-serif';
+  const lines = [
+    'Build your nest. Your ants fight for themselves.',
+    '',
+    'Tap a + slot: Farm (income), Tower (defence),',
+    'or Hatchery (breeds attackers automatically).',
+    'Tap buildings again to specialise, then level to 3.',
+    'Guards block the lane; sappers DEMOLISH towers.',
+    'Mortars bombard enemy defences from your side.',
+    'Predator broods hunt enemy marchers mid-lane.',
+    'Selling refunds 70%. Idle gold above the cap is lost.',
+    'Every 18s the war drum beats and BOTH armies march.',
+    'Income doubles at 3:00 left; hills crumble at 1:30.',
+  ];
+  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 180 + i * 22));
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 412);
+  for (const b of PERSONA_BTNS) {
+    const persona = pol.PERSONAS[b.key];
+    ctx.fillStyle = '#3a2a1c';
+    ctx.strokeStyle = '#c8a060';
+    ctx.lineWidth = 2;
+    roundRect(b.x, b.y, b.w, b.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ffd870';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.fillText(persona.label, LANE_CX, b.y + 24);
+    ctx.fillStyle = '#d8c0a0';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(persona.intro, LANE_CX, b.y + 50);
+  }
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 724);
+  ctx.fillText('tap anywhere else for the trail', LANE_CX, 744);
+}
+
+function drawEnd() {
+  drawMatch(0);
+  ctx.fillStyle = 'rgba(0,0,0,0.65)';
+  ctx.fillRect(0, 0, W, H);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = matchResult === 'VICTORY' ? '#8ee06a' : (matchResult === 'DEFEAT' ? '#ff6a4a' : '#ffd870');
+  ctx.font = 'bold 46px sans-serif';
+  ctx.fillText(matchResult, LANE_CX, 300);
+  if (mode === 'campaign' && matchResult === 'VICTORY') drawStars(LANE_CX, 352, earnedStars, 34);
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = '16px sans-serif';
+  const mm = Math.floor(S.endT / 60), ss = Math.floor(S.endT % 60);
+  ctx.fillText('vs ' + opponentLabel() + '  -  ' + mm + ':' + String(ss).padStart(2, '0'), LANE_CX, 400);
+  if (earnedUnlock) {
+    ctx.fillStyle = '#8ee06a';
+    ctx.font = 'bold 17px sans-serif';
+    ctx.fillText('NEW TECH: ' + earnedUnlock.label, LANE_CX, 520);
+    ctx.fillStyle = '#cfe8b0';
+    ctx.font = '13px sans-serif';
+    ctx.fillText(earnedUnlock.desc, LANE_CX, 546);
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 18px sans-serif';
+  const hint = mode === 'skirmish' ? 'TAP FOR OPPONENT SELECT'
+    : (matchResult === 'VICTORY' ? 'TAP FOR THE TRAIL' : 'TAP TO TRY AGAIN');
+  ctx.fillText(hint, LANE_CX, 452);
+}
+
+// ------------------------------------------------------------------ loop ---
+let last = performance.now();
+function frame(now) {
+  const dtReal = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  if (phase === 'play') {
+    advance(dtReal);
+    drawMatch(now / 1000);
+  } else if (phase === 'menu') {
+    drawMenu();
+  } else if (phase === 'brief') {
+    drawBrief();
+  } else if (phase === 'skirmish') {
+    drawSkirmish();
+  } else {
+    drawEnd();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
