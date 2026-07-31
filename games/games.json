@@ -127,6 +127,12 @@
       "tagline": "Two ant colonies, one screen, and only one verb: build. Farms for income, hatcheries that breed attackers on their own, guard posts whose defenders intercept on the lane, sapper broods that chew through towers - then every eighteen seconds the war drum beats and both armies march whether you are ready or not. No unit micro, no manual sending: just the shape of your nest against the shape of theirs."
     },
     {
+      "slug": "antwar-factions",
+      "name": "Ant War: Factions",
+      "accent": "#c9a0e8",
+      "tagline": "The wild fork of Ant War, where the war drum itself is something you build. Horns make your beat slower and heavier, fifes make it faster and thinner, so each side marches to a tempo read off its own nest - and the enemy's countdown is on screen for you to play against. Mortars soften towers, charmers turn their ants into yours, predators hunt mid-lane. Still no powers, still no micro, just build."
+    },
+    {
       "slug": "ants",
       "name": "Colony Clash",
       "accent": "#f0b429",
