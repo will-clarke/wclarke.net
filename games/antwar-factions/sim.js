@@ -79,14 +79,23 @@ const CONFIG = {
                         // suppression: without it creep-turtle beat the
                         // field 1.00.
     splat: 0.5,         // intensity a shambler corpse dumps where it falls
-    goldPerCell: 0.15,  // income per unit of total intensity (income = area).
-                        // A Mat's paint pays ~2.4 g/s on top of its 1.5 flat -
-                        // between a farm and a grove, so the slot is worth
-                        // taking but never out-earns a plant. Flat in Mat
-                        // count (4.5 g/s each at 3 Mats or at 8: the cap
-                        // discard again). 0.25 pushed a creep-turtle to 0.86
-                        // of the field and 0.4 to a clean 1.00 - the fx0.3
-                        // failure mode, one knob away.
+    trail: 0.8,         // /s a MARCHING shambler smears into the cell it
+                        // stands in - the only source that reaches the lane
+                        // (Mats sit in rear slots, so their paint never does).
+                        // A pass through a cell takes 20/44 s, so this is
+                        // 0.36 laid per shambler per cell: below ~0.3/s the
+                        // trail is thinner than decay eats and never forms.
+    rub: 0.15,          // /s each foe body scrubs off the cell it stands in.
+                        // Per unit, so eight parked bodies clean a cell in
+                        // under a second and one passer-by takes 0.07 off it.
+    goldPerCell: 0.09,  // income per unit of total intensity (income = area).
+                        // Cut from T6a's 0.15 when trails doubled the paint
+                        // on the board: held ROT's total paint income where
+                        // T6a tuned it, which measured strictly better than
+                        // banking the windfall (creeper 0.341 vs 0.307, and
+                        // a creep-turtle 0.81 vs 0.96). 0.25 pushed that
+                        // turtle to 0.86 of the field and 0.4 to a clean
+                        // 1.00 - the fx0.3 failure mode, still one knob away.
     slow: 0.65,         // speed factor for foes standing in FULL paint
     dot: 1.5,           // dps to foes standing in full paint
     corrode: 3,         // dps to foe buildings standing in full paint
@@ -368,12 +377,24 @@ function stepField(S, dt) {
   const cfg = S.cfg, F = cfg.FIELD, CR = cfg.CREEP, N = F.cols * F.rows;
   for (const side of ['p', 'e']) {
     const g = S.field[side];
-    let mats = 0;
-    for (const s of S.slots[side]) if (s.type === 'mat') mats++;
-    if (!mats && S.fieldSum[side] <= 0) continue;   // nothing to simulate
+    let src = 0;
+    for (const s of S.slots[side]) if (s.type === 'mat') src++;
+    if (!src) {
+      for (const u of S.units) {
+        if (u.side === side && u.typeKey === 'shambler' && u.state !== 'muster') { src++; break; }
+      }
+    }
+    if (!src && S.fieldSum[side] <= 0) continue;   // nothing to simulate
 
     for (const s of S.slots[side]) {
       if (s.type === 'mat') paintAt(S, g, s.x, s.y, CR.emit * dt);
+    }
+    // slime trails: a marching shambler smears its own cell only - a line,
+    // not a blot, and it is laid exactly where the fight happens
+    for (const u of S.units) {
+      if (u.side !== side || u.typeKey !== 'shambler' || u.state === 'muster') continue;
+      const i = fieldRow(S, u.y) * F.cols + fieldCol(S, u.x);
+      g[i] = Math.min(1, g[i] + CR.trail * dt);
     }
     // flow crosses each adjacent PAIR once, antisymmetrically, so no cell's
     // result depends on visit order; seep drags a slice of every cell one
@@ -410,6 +431,16 @@ function stepField(S, dt) {
           g[i] = v <= 0 ? 0 : v;
         }
       }
+    }
+    // rub-off: foe bodies scrub the cell they stand in. Marching through
+    // paint now cleans a path, so a swarm has an answer that costs it time
+    // in the paint rather than gold.
+    for (const u of S.units) {
+      if (u.side === side || u.state === 'muster') continue;
+      const i = fieldRow(S, u.y) * F.cols + fieldCol(S, u.x);
+      if (g[i] <= 0) continue;
+      const v = g[i] - CR.rub * dt;
+      g[i] = v <= 0 ? 0 : v;
     }
   }
   // rival paint corrodes on contact: the thinner side is wiped out and takes
