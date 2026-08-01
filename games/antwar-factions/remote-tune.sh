@@ -7,7 +7,13 @@ HOST="${TUNE_HOST:-nixos}"
 DIR="antwar-factions-tune"
 # nixos logs in with fish, so resolve JOBS here and hand it over via env
 JOBS="${JOBS:-20}"
+# SPICE=spawnRate:0.01 ./remote-tune.sh evolve 15 24 grades a T6c paint flag;
+# FACTION=rot:sandbox grades a cross-faction panel (T7a)
+SPICE_ENV=""
+[ -n "${SPICE:-}" ] && SPICE_ENV="SPICE=$SPICE"
+FACTION_ENV=""
+[ -n "${FACTION:-}" ] && FACTION_ENV="FACTION=$FACTION"
 cd "$(dirname "$0")"
 rsync -a sim.js policy.js tune.js tuner-results.json "$HOST:$DIR/"
-ssh "$HOST" "cd $DIR && env JOBS=$JOBS node tune.js $*"
+ssh "$HOST" "cd $DIR && env JOBS=$JOBS $SPICE_ENV $FACTION_ENV node tune.js $*"
 rsync -a "$HOST:$DIR/tuner-results.json" .

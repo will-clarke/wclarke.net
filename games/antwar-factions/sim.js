@@ -101,6 +101,16 @@ const CONFIG = {
     corrode: 3,         // dps to foe buildings standing in full paint
     hillDps: 7,         // strangle dps at a fully painted hill rim
   },
+  // T6c paint SPICE: three independent experiments in what paint is FOR,
+  // each a rate that is 0 by default, so the shipped rules are untouched
+  // until Will picks one (FACTIONS open question 9). Grade one at a time:
+  // SPICE=heal:4 node tune.js matrix 15
+  SPICE: {
+    heal: 0,            // hp/s an OWN unit regains standing in FULL own paint
+    corpseGold: 0,      // gold to the paint owner per unit dying in FULL paint
+    spawnAt: 0.5,       // intensity a cell must hold to count as a womb
+    spawnRate: 0,       // free shamblers/s per qualifying cell, born on the spot
+  },
 
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
@@ -183,6 +193,33 @@ const CONFIG = {
   HARD_END: 420,
   DECAY_RATE: 4,
 
+  // which faction each side plays (see FACTIONS). 'sandbox' is the tuning
+  // line's everything-kit, so the default leaves every old matchup untouched.
+  FACTION: { p: 'sandbox', e: 'sandbox' },
+  // T7b: PISTON's flywheel. A per-side income MULTIPLIER that charges while
+  // the machine runs and is knocked back every time a building is destroyed.
+  // The state is kept for both sides (like the paint field); only a faction
+  // whose registry entry has an `income` hook actually reads it.
+  FLYWHEEL: {
+    cold: 0.8,    // multiplier at t=0 - and the floor: a stalled machine is
+                  // poor, but never worth less than nothing. THE dial: it
+                  // sets PISTON's whole field score (0.7 reads 0.38 vs the
+                  // sandbox, 0.8 reads 0.52, 1.0 reads 0.71) because the
+                  // opening is the only window where gold decides matches.
+    rate: 0.005,  // /s of multiplier while at least one building stands:
+                  // 1.0x at 40s, the cap at 220s
+    max: 1.9,     // outcome-neutral at 1.6/1.9/2.4 - a turtle is already
+                  // parked at GOLD_CAP for 223 of its 375 seconds, so the
+                  // top of the curve buys nothing. The sink, not the ceiling,
+                  // is what the flywheel is missing (T7b findings).
+    loss: 0.3,    // knocked off per building DESTROYED (60s of spin-up).
+                  // Washes out of a field average but decides the matchup
+                  // that exercises it: vs mortarWall, 0.89 at loss 0 and
+                  // 0.44 at 0.3. Selling is free - spin is per-side, so
+                  // there is nothing to scrub by rebuilding, and dodging a
+                  // mortar by selling at 70% is counterplay, not an exploit.
+  },
+
   // campaign level setups: per-side start money and pre-built buildings.
   // The RULES stay symmetric (that keeps self-play tuning and future PvP
   // honest) - only the STARTING POSITION may differ, as level design.
@@ -221,6 +258,8 @@ function createState(seed, overrides) {
       e: new Array(cfg.FIELD.cols * cfg.FIELD.rows).fill(0),
     },
     fieldSum: { p: 0, e: 0 },
+    spawnAcc: { p: 0, e: 0 },    // T6c: fractional paint-births carried over
+    spin: { p: cfg.FLYWHEEL.cold, e: cfg.FLYWHEEL.cold },   // T7b flywheel
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -262,7 +301,7 @@ function placeBuilding(S, side, slotIdx, type, lvl) {
   slot.type = type;
   slot.lvl = lvl || 1;
   slot.cd = 0;
-  slot.spent = S.cfg.COSTS[type];
+  slot.spent = costOf(S, side, type);
   for (let l = 2; l <= slot.lvl; l++) slot.spent += Math.round(S.cfg.COSTS[type] * S.cfg.LVL_COST_MULT[l]);
   slot.hp = demolishable(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
   if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
@@ -289,6 +328,48 @@ const FAMILIES = {
 function demolishable(type) {
   return !!type;
 }
+// A faction is DATA, not a branch in step(): which building types it may
+// build (`kit`), what an empty slot offers (`roots`), whether it owns a war
+// drum at all, and (T7b) an optional `income(S, side, gross)` hook. The shared
+// rules read those hooks, so a new faction is a table entry rather than a
+// scatter of `if (side is ROT)`.
+const FACTIONS = {
+  // the tuning sandbox: every building, the stacked drum. The default, so
+  // every recorded matchup and evolved vector replays bit-identically.
+  sandbox: { label: 'SANDBOX', roots: null, kit: null, drum: true },
+  // ROT: everything grows straight out of bare ground - no farms, no worker
+  // hatchery, no beat - and its defence only slows and blocks. Shamblers are
+  // the whole army and the paint is the damage.
+  rot: {
+    label: 'ROT',
+    roots: ['mat', 'tower', 'oozeb'],
+    kit: ['mat', 'tower', 'sap', 'guard', 'oozeb'],
+    drum: false,
+    // a spec grown straight from bare ground still pays for the trunk it
+    // skipped (farm 80 + mat 100, hatch 90 + oozeb 90) - otherwise a faction
+    // gets the sandbox's tier-2 buildings at half price. BUILD price only:
+    // level costs stay keyed to COSTS, since a level buys tech, not ground.
+    cost: { mat: 180, oozeb: 180 },
+  },
+  // PISTON: the machine. Its trunks are the standard three, so nothing is
+  // grown from bare ground and no cost table is needed - the faction lives in
+  // its income CURVE (a cold start that compounds, and stalls when anything
+  // breaks) and in a kit with no chaff, no ant-shaped defence and no theft.
+  // Mortars are the interim answer to buildings until the juggernaut lands.
+  piston: {
+    label: 'PISTON',
+    roots: ['farm', 'tower', 'hatch'],
+    kit: ['farm', 'grove', 'plant', 'tower', 'sharp', 'spit', 'mortar',
+          'hatch', 'soldierb', 'hornb', 'fifeb'],
+    drum: true,
+    income: (S, side, gross) => gross * S.spin[side],
+  },
+};
+function faction(S, side) { return FACTIONS[S.cfg.FACTION[side]]; }
+function costOf(S, side, type) {
+  const c = faction(S, side).cost;
+  return (c && c[type]) || S.cfg.COSTS[type];
+}
 function familyCount(S, side, family) {
   const fams = FAMILIES[family];
   let n = 0;
@@ -299,6 +380,8 @@ function income(S, side) {
   let inc = S.cfg.BASE_INCOME;
   for (const s of S.slots[side]) inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
   inc += S.cfg.CREEP.goldPerCell * S.fieldSum[side];
+  const hook = faction(S, side).income;
+  if (hook) inc = hook(S, side, inc);
   return inc * (S.frenzy ? 2 : 1);
 }
 
@@ -453,6 +536,33 @@ function stepField(S, dt) {
     sp += gp[i]; se += ge[i];
   }
   S.fieldSum.p = sp; S.fieldSum.e = se;
+
+  // T6c PAINT_SPAWNS: deep paint births free shamblers. The accumulator is
+  // per SIDE, not per cell, so the cost is one scan and the two sides carry
+  // identical fractions in a mirror; the birth lands on the qualifying cell
+  // nearest the foe (ties to the lowest col, which mirrors to itself), so
+  // the slime spits at its own frontier rather than behind the nest.
+  const SP = cfg.SPICE;
+  if (SP.spawnRate > 0) {
+    for (const side of ['p', 'e']) {
+      const g = S.field[side];
+      let n = 0, br = -1, bc = -1;
+      for (let r = 0; r < F.rows; r++) {
+        for (let c = 0; c < F.cols; c++) {
+          if (g[r * F.cols + c] < SP.spawnAt) continue;
+          n++;
+          if (br < 0 || (side === 'p' ? r < br : r > br)) { br = r; bc = c; }
+        }
+      }
+      if (!n) continue;
+      S.spawnAcc[side] += SP.spawnRate * n * dt;
+      while (S.spawnAcc[side] >= 1) {
+        S.spawnAcc[side] -= 1;
+        spawnUnit(S, side, 'shambler', { x: F.cx0 + bc * F.cellW, y: F.cy0 + br * F.cellH });
+        S.events.push({ type: 'birth', x: F.cx0 + bc * F.cellW, y: F.cy0 + br * F.cellH, side });
+      }
+    }
+  }
 }
 function musterCount(S, side) {
   let n = 0;
@@ -464,8 +574,11 @@ function musterCount(S, side) {
 // level-multiplied growth out-raced every possible tower suppression
 const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'];
 // levels speed a drum-shifter's PRODUCTION like any brood; the beat delta
-// stays one step per building, so the metronome is read by counting them
+// stays one step per building, so the metronome is read by counting them.
+// null means the faction has no drum at all (ROT): nothing musters, so
+// nothing is waiting for a beat.
 function drumPeriod(S, side) {
+  if (!faction(S, side).drum) return null;
   let period = S.cfg.WAR_DRUM;
   for (const s of S.slots[side]) period += S.cfg.DRUM_DELTA[s.type] || 0;
   return Math.max(S.cfg.DRUM_MIN, Math.min(S.cfg.DRUM_MAX, period));
@@ -481,11 +594,13 @@ function lvlCost(S, slot) {
 function buildOptions(S, side, slotIdx) {
   const slot = S.slots[side][slotIdx];
   if (!slot) return [];
-  if (slot.type === null) return ['farm', 'tower', 'hatch'];
-  const tree = S.cfg.UPGRADE_TREE[slot.type];
-  if (tree) return tree;
-  if (LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) return ['lvl'];
-  return [];
+  const f = faction(S, side);
+  let opts;
+  if (slot.type === null) opts = f.roots || ['farm', 'tower', 'hatch'];
+  else if (S.cfg.UPGRADE_TREE[slot.type]) opts = S.cfg.UPGRADE_TREE[slot.type];
+  else if (LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) return ['lvl'];
+  else return [];
+  return f.kit ? opts.filter(t => f.kit.includes(t)) : opts;
 }
 
 // ------------------------------------------------------------- actions ----
@@ -517,7 +632,7 @@ function applyAction(S, side, action) {
     if (demolishable(slot.type)) slot.hp = S.cfg.TOWER_HP * lvlPower(S, slot);
     return true;
   }
-  const cost = S.cfg.COSTS[action.type];
+  const cost = costOf(S, side, action.type);
   if (S.money[side] < cost) return false;
   S.money[side] -= cost;
   slot.spent += cost;
@@ -550,16 +665,17 @@ function siegeSpot(u, nest) {
   return { x: nest.x + Math.cos(a) * rr, y: nest.y + Math.sin(a) * rr * 0.8 };
 }
 
-function spawnUnit(S, side, unitKey) {
+function spawnUnit(S, side, unitKey, at) {
   const t = S.cfg.UNITS[unitKey];
-  const sp = musterSpot(S, side);
+  const sp = at || musterSpot(S, side);
   const u = {
     side, typeKey: unitKey,
     x: sp.x, y: sp.y,
     hp: t.hp, spd: t.spd, dps: t.dps, r: t.r,
     seed: S.rng() * 10,
-    // trickle units skip the muster: they march the moment they hatch
-    state: t.trickle ? 'march' : 'muster', // muster -> march -> siege (predators: -> hunt)
+    // trickle units skip the muster: they march the moment they hatch, and a
+    // drumless faction breeds nothing else - a muster with no beat never moves
+    state: (t.trickle || !faction(S, side).drum) ? 'march' : 'muster', // muster -> march -> siege (predators: -> hunt)
     sx: 0, sy: 0,
     slowed: false,
   };
@@ -595,6 +711,8 @@ function spawnGuard(S, side, slotIdx) {
 
 function destroySlot(S, side, slot) {
   S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side, what: slot.type });
+  const FL = S.cfg.FLYWHEEL;
+  S.spin[side] = Math.max(FL.cold, S.spin[side] - FL.loss);
   slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
   slot.chTgt = null; slot.chT = 0;
 }
@@ -608,6 +726,15 @@ function step(S) {
   if (!S.frenzy && S.t >= cfg.FRENZY_AT) { S.frenzy = true; S.events.push({ type: 'frenzy' }); }
   if (!S.decay && S.t >= cfg.DECAY_AT) { S.decay = true; S.events.push({ type: 'decay' }); }
 
+  // the flywheel charges before income is taken: uptime, so a side with
+  // nothing standing spins nothing up (a wiped machine has to be rebuilt
+  // before it starts compounding again).
+  for (const side of ['p', 'e']) {
+    if (S.spin[side] >= cfg.FLYWHEEL.max) continue;
+    if (S.slots[side].some(s => s.type)) {
+      S.spin[side] = Math.min(cfg.FLYWHEEL.max, S.spin[side] + cfg.FLYWHEEL.rate * dt);
+    }
+  }
   for (const side of ['p', 'e']) {
     S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + income(S, side) * dt);
   }
@@ -654,8 +781,10 @@ function step(S) {
   // beat keeps its scheduled time; the CURRENT period applies from the
   // next scheduling on, so drum-shifters never retro-shift a beat.
   for (const side of ['p', 'e']) {
+    const period = drumPeriod(S, side);
+    if (period === null) continue;             // drumless faction: no beat
     if (S.t >= S.nextBeat[side]) {
-      S.nextBeat[side] += drumPeriod(S, side);
+      S.nextBeat[side] += period;
       for (const u of S.units) if (u.side === side && u.state === 'muster') u.state = 'march';
       S.events.push({ type: 'march', side });
     }
@@ -690,6 +819,17 @@ function step(S) {
       if (k <= 0) continue;
       u.slowed = Math.min(u.slowed || 1, 1 + (CR.slow - 1) * k);
       u.hp -= CR.dot * k * dt;
+    }
+    // T6c PAINT_HEALS: the same ground knits your own bodies back together,
+    // so ROT's paint is a field hospital as well as a minefield
+    if (cfg.SPICE.heal > 0) {
+      for (const u of S.units) {
+        if (u.side !== side || u.state === 'muster') continue;
+        const max = u.maxHp || cfg.UNITS[u.typeKey].hp;
+        if (u.hp >= max) continue;
+        const k = fieldAt(S, side, u.x, u.y);
+        if (k > 0) u.hp = Math.min(max, u.hp + cfg.SPICE.heal * k * dt);
+      }
     }
   }
 
@@ -969,6 +1109,18 @@ function step(S) {
     S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
     paintAt(S, S.field[u.side], u.x, u.y, CR.splat);
   }
+  // T6c PAINT_EATS_CORPSES: anything that dies on paint is digested by the
+  // owner of that ground - friend or foe, which is what makes the paint want
+  // a battle fought on top of it
+  if (cfg.SPICE.corpseGold > 0) {
+    for (const u of S.units) {
+      if (u.hp > 0) continue;
+      for (const side of ['p', 'e']) {
+        const k = fieldAt(S, side, u.x, u.y);
+        if (k > 0) S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + cfg.SPICE.corpseGold * k);
+      }
+    }
+  }
   S.units = S.units.filter(u => u.hp > 0);
   for (const sh of S.shots) sh.ttl -= dt;
   S.shots = S.shots.filter(sh => sh.ttl > 0);
@@ -1009,6 +1161,7 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     hatchedP: S.hatched.p, hatchedE: S.hatched.e,
     convertedP: S.converted.p, convertedE: S.converted.e,
     creepAdvP: creepAdvance(S, 'p'), creepAdvE: creepAdvance(S, 'e'),
+    spinP: S.spin.p, spinE: S.spin.e,
   };
 }
 
@@ -1016,7 +1169,7 @@ return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
-  fieldCol, fieldRow,
-  demolishable, LEVELABLE, FAMILIES,
+  fieldCol, fieldRow, faction, costOf,
+  demolishable, LEVELABLE, FAMILIES, FACTIONS,
 };
 });

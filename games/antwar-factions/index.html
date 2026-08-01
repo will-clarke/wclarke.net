@@ -101,6 +101,30 @@ try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } 
 // authored kits, so early levels play easier here than in the main line.
 const ALL_UNLOCKED = { types: Object.keys(CFG.COSTS), maxLvl: CFG.MAX_LVL };
 let unlocks = ALL_UNLOCKED;
+// ?spice=spawnRate:0.01,heal:4 - playtest a T6c paint experiment in the
+// browser, the same knobs tune.js takes as SPICE=... (all 0 by default).
+const SPICE_OVERRIDE = (() => {
+  const q = new URLSearchParams(location.search).get('spice');
+  if (!q) return null;
+  const sp = Object.assign({}, CFG.SPICE);
+  for (const kv of q.split(',')) { const [k, v] = kv.split(':'); sp[k] = parseFloat(v); }
+  return sp;
+})();
+// ?faction=rot plays ROT against the sandbox kit; ?faction=rot:rot sets both
+// sides (T7a). Unknown names are ignored rather than crashing the page.
+const FACTION_OVERRIDE = (() => {
+  const q = new URLSearchParams(location.search).get('faction');
+  if (!q) return null;
+  const [p, e] = q.split(':');
+  const pick = (f, dflt) => (f && sim.FACTIONS[f] ? f : dflt);
+  return { p: pick(p, 'sandbox'), e: pick(e, 'sandbox') };
+})();
+function newState(extra) {
+  const ov = Object.assign({}, extra);
+  if (SPICE_OVERRIDE) ov.SPICE = SPICE_OVERRIDE;
+  if (FACTION_OVERRIDE) ov.FACTION = FACTION_OVERRIDE;
+  return sim.createState((Math.random() * 2 ** 31) | 0, ov);
+}
 function saveStars() {
   try { localStorage.setItem('antwar-stars', JSON.stringify(stars)); } catch (e) {}
   unlocks = ALL_UNLOCKED;
@@ -275,7 +299,7 @@ function resetMatchFx() {
 function begin(key) {           // skirmish: pick a foe, symmetric start
   mode = 'skirmish';
   personaKey = key;
-  S = sim.createState((Math.random() * 2 ** 31) | 0);
+  S = newState();
   enemyCtrl = pol.makeController(SKIRMISH_FOES.find(f => f.key === key).params);
   startReplay(key);
   resetMatchFx();
@@ -285,7 +309,7 @@ function beginLevel(i) {        // campaign: level AI + level setup + kits
   mode = 'campaign';
   currentLevel = i;
   const L = pol.LEVELS[i];
-  S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null });
+  S = newState({ SETUP: L.setup || null });
   // the enemy escalates in step with the ladder: player-kit-so-far plus
   // this level's own loot (and any extraKit showcase)
   enemyCtrl = pol.makeController(L.ai.params, {
@@ -308,7 +332,7 @@ function popupRects(slotIdx) {
   const entries = allowedOptions(slotIdx).map(type => ({
     type,
     label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
-    cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
+    cost: type === 'lvl' ? sim.lvlCost(S, slot) : sim.costOf(S, 'p', type),
   }));
   if (!entries.length && slot.type === null) return [];
   // shrink buttons when the tower tree offers all 6 specs
@@ -565,6 +589,7 @@ function advance(dtReal) {
       stains.push({ x: ev.x, y: ev.y, r: 5 + Math.random() * 4, side: ev.side, a: 0.5 });
       if (stains.length > 90) stains.shift();
     }
+    if (ev.type === 'birth') poof(ev.x, ev.y, ev.side === 'p' ? '#9ec878' : '#c878a8', 8, 34);
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'convert') {
       poof(ev.x, ev.y, '#c9a0e8', 10, 45);
@@ -969,7 +994,7 @@ function drawSlot(slot, side, idx, time) {
     const opts = allowedOptions(idx);
     if (opts.length) {
       const cheapest = Math.min(...opts.map(t =>
-        t === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[t]));
+        t === 'lvl' ? sim.lvlCost(S, slot) : sim.costOf(S, 'p', t)));
       if (S.money.p >= cheapest) {
         ctx.fillStyle = 'rgba(255,220,120,' + (0.5 + 0.3 * Math.sin(time * 4)) + ')';
         ctx.font = 'bold 12px sans-serif';
@@ -990,6 +1015,12 @@ function hpBar(x, y, w, h, frac, fg) {
 function goldLabel(side) {
   return Math.floor(S.money[side]) + '/' + CFG.GOLD_CAP;
 }
+// T7b: a faction with an income hook (PISTON) owes the player its curve -
+// the multiplier is the whole economy, and it drops when a building falls.
+function spinLabel(side) {
+  return sim.faction(S, side).income
+    ? '  flywheel ' + S.spin[side].toFixed(2) + 'x' : '';
+}
 
 function drawHUD(time) {
   ctx.textBaseline = 'middle';
@@ -1005,9 +1036,10 @@ function drawHUD(time) {
   ctx.fillStyle = '#ffe9b0';
   ctx.textAlign = 'right';
   ctx.font = '12px sans-serif';
-  ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)', W - 10, 11);
+  ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)' + spinLabel('e'), W - 10, 11);
   ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   muster ' + sim.musterCount(S, 'e')
-    + '   drum ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's', W - 10, 24);
+    + (sim.drumPeriod(S, 'e') === null ? '   no drum'
+      : '   drum ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's'), W - 10, 24);
 
   // match clock
   const remain = Math.max(0, CFG.HARD_END - S.t);
@@ -1035,25 +1067,31 @@ function drawHUD(time) {
   ctx.fillText(goldLabel('p') + ' gold', W - 12, UI_TOP + 18);
   ctx.font = '12px sans-serif';
   ctx.fillText(
-    full ? 'STORAGE FULL - income wasted!' : '+' + sim.income(S, 'p').toFixed(1) + '/s' + (S.frenzy ? '  FRENZY x2' : ''),
+    full ? 'STORAGE FULL - income wasted!'
+      : '+' + sim.income(S, 'p').toFixed(1) + '/s' + (S.frenzy ? '  FRENZY x2' : '') + spinLabel('p'),
     W - 12, UI_TOP + 36);
 
-  // war drum countdown (fx0.2: each side beats alone - this bar is YOURS)
+  // war drum countdown (fx0.2: each side beats alone - this bar is YOURS).
+  // A drumless faction (ROT) gets the strip as a standing readout instead:
+  // there is no beat to count down to, so it shows the paint's reach.
   const periodP = sim.drumPeriod(S, 'p');
   const toBeat = Math.max(0, S.nextBeat.p - S.t);
-  const frac = Math.max(0, 1 - toBeat / periodP);
+  const frac = periodP === null ? 1 : Math.max(0, 1 - toBeat / periodP);
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.fillRect(12, UI_TOP + 62, W - 24, 30);
-  ctx.fillStyle = drumFlash > 0 ? 'rgba(255,216,112,' + (0.35 + drumFlash * 0.5) + ')' : 'rgba(200,160,96,0.35)';
+  ctx.fillStyle = periodP === null ? 'rgba(120,150,90,0.3)'
+    : drumFlash > 0 ? 'rgba(255,216,112,' + (0.35 + drumFlash * 0.5) + ')' : 'rgba(200,160,96,0.35)';
   ctx.fillRect(13, UI_TOP + 63, (W - 26) * frac, 28);
   ctx.fillStyle = '#ffe9c0';
   ctx.font = 'bold 14px sans-serif';
   ctx.textAlign = 'center';
   ctx.fillText(
-    drumFlash > 0.3 ? 'THE MARCH IS ON!'
-      : 'war drum in ' + toBeat.toFixed(0) + 's'
-        + (periodP !== CFG.WAR_DRUM ? ' (beat ' + periodP + 's)' : '')
-        + '   -   your muster: ' + sim.musterCount(S, 'p'),
+    periodP === null
+      ? 'NO DRUM - your brood marches as it hatches   -   creep ' + sim.creepAdvance(S, 'p').toFixed(0) + 'px'
+      : drumFlash > 0.3 ? 'THE MARCH IS ON!'
+        : 'war drum in ' + toBeat.toFixed(0) + 's'
+          + (periodP !== CFG.WAR_DRUM ? ' (beat ' + periodP + 's)' : '')
+          + '   -   your muster: ' + sim.musterCount(S, 'p'),
     LANE_CX, UI_TOP + 77);
 
   ctx.fillStyle = '#d8c0a0';

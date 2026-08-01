@@ -127,22 +127,28 @@ function makeController(rawParams, opts) {
     // can't afford it yet we SAVE for it rather than buying something lesser
     const cands = [];
 
-    // new buildings
-    if (eco < P.farmTarget) {
+    // new buildings, named by the FACTION's root for that family rather than
+    // hardcoded (sandbox grows farm/tower/hatch; ROT grows a Mat straight
+    // from bare ground, so farmTarget is its mat count)
+    const roots = sim.faction(S, side).roots || ['farm', 'tower', 'hatch'];
+    const rootOf = fam => roots.find(t => sim.FAMILIES[fam].includes(t));
+    const ecoRoot = rootOf('eco'), defRoot = rootOf('def'), offRoot = rootOf('off');
+    if (ecoRoot && eco < P.farmTarget) {
       const slot = firstEmptyIn(S, side, REAR_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wEco * (P.farmTarget - eco), a: { kind: 'build', slot, type: 'farm' } });
+      if (slot !== -1) cands.push({ score: P.wEco * (P.farmTarget - eco), a: { kind: 'build', slot, type: ecoRoot } });
     }
     const desiredTowers = P.towersBase + P.towersPer100s * S.t / 100 + (foeOff > def ? P.reactDef : 0);
-    if (def < desiredTowers) {
+    if (defRoot && def < desiredTowers) {
       const slot = firstEmptyIn(S, side, TOWER_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wDef * (desiredTowers - def), a: { kind: 'build', slot, type: 'tower' } });
+      if (slot !== -1) cands.push({ score: P.wDef * (desiredTowers - def), a: { kind: 'build', slot, type: defRoot } });
     }
-    if (off < P.hatchTarget) {
+    if (offRoot && off < P.hatchTarget) {
       const slot = firstEmptyIn(S, side, REAR_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wOff * (P.hatchTarget - off), a: { kind: 'build', slot, type: 'hatch' } });
+      if (slot !== -1) cands.push({ score: P.wOff * (P.hatchTarget - off), a: { kind: 'build', slot, type: offRoot } });
     }
 
-    // creep Mats grow from farms (fx0.3): the ROT eco conversion
+    // creep Mats grow from farms (fx0.3): the sandbox's ROT eco conversion.
+    // Inert for the ROT faction proper, whose eco root already IS the mat.
     if (P.matTarget > 0 && sim.count(S, side, 'mat') < P.matTarget) {
       const i = S.slots[side].findIndex(s => s.type === 'farm');
       if (i !== -1) cands.push({ score: P.wEco * P.upgW * 0.95, a: { kind: 'build', slot: i, type: 'mat' } });
@@ -202,8 +208,10 @@ function makeController(rawParams, opts) {
     // would never specialise anything and idle at the gold cap.
     const baseHatch = S.slots[side].findIndex(s => s.type === 'hatch');
     if (baseHatch !== -1 && off > 0) {
+      const specs = sim.buildOptions(S, side, baseHatch);   // faction-filtered
       let bestType = null, bestDeficit = 0.05;
       for (const type of ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb']) {
+        if (!specs.includes(type)) continue;
         if (allowed && !allowed.types.includes(type)) continue;
         const share = sim.count(S, side, type) / off;
         const deficit = mix[type] - share;
@@ -225,17 +233,19 @@ function makeController(rawParams, opts) {
       }
     }
 
-    // drop locked candidates BEFORE picking an intent, or the controller
-    // would save forever for something it cannot build
-    const legal = !allowed ? cands : cands.filter(c =>
-      c.a.type === 'lvl'
+    // drop candidates the faction kit or the campaign locks forbid BEFORE
+    // picking an intent, or the controller would save forever for something
+    // it cannot build
+    const legal = cands.filter(c =>
+      sim.buildOptions(S, side, c.a.slot).includes(c.a.type) &&
+      (!allowed || (c.a.type === 'lvl'
         ? S.slots[side][c.a.slot].lvl + 1 <= allowed.maxLvl
-        : allowed.types.includes(c.a.type));
+        : allowed.types.includes(c.a.type))));
 
     if (!legal.length) return null;
     legal.sort((a, b) => b.score - a.score);
     const intent = legal[0];
-    const cost = intent.cost !== undefined ? intent.cost : cfg.COSTS[intent.a.type];
+    const cost = intent.cost !== undefined ? intent.cost : sim.costOf(S, side, intent.a.type);
     if (S.money[side] < cost) return null;   // save for it
     return [intent.a];
   };
