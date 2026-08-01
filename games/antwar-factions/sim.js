@@ -51,29 +51,46 @@ const CONFIG = {
   // apply from the next beat onward (no sell-rebuild beat scrubbing).
   DRUM_DELTA: { hornb: 6, fifeb: -3 },
   DRUM_MIN: 10, DRUM_MAX: 36,
-  // fx0.3: the ROT creep prototype. Creep is a full-width band per side - a
-  // single frontier line, not per-pixel - that exists once that side owns a
-  // Mat and advances while any Mat lives (speed sums Mat level power).
-  // Where the two bands would overlap they split the difference: a push-of-
-  // war between growth rates. Corpse-splats: a shambler dying within reach
-  // AHEAD of its own frontier drags it forward (deaths deeper in enemy
-  // ground land harmlessly short).
+  // fx0.4: the ROT paint FIELD - a per-side intensity grid (0..1 per cell)
+  // over the lane, replacing fx0.3's single frontier line. Cell (col,row)
+  // centre is (cx0 + col*cellW, cy0 + row*cellH).
+  // INVARIANT: 2*cy0 + (rows-1)*cellH === 640 and rows is ODD, so the mirror
+  // y' = 640-y maps row -> rows-1-row exactly (fieldRow's tie rule needs the
+  // odd count). Any other geometry quietly biases mirror matches.
+  FIELD: { cellW: 20, cellH: 20, cx0: 10, cy0: 40, cols: 21, rows: 29 },
+  // Paint pours out of Mats, spreads to thinner neighbours, seeps toward the
+  // enemy, dissolves everywhere and burns back under foe towers. Every effect
+  // scales with LOCAL intensity, so the map is a gradient, not a border.
   CREEP: {
-    growth: 1.1,        // px/s per Mat (x level power)
-    decay: 3,           // px/s recede while a side owns no Mats
-    suppress: 3.0,      // px/s pushback per SHOOTING foe tower at contact,
+    emit: 0.8,          // intensity/s under each Mat (half to the 4 neighbours).
+                        // Self-throttling: a cell caps at 1 and the excess is
+                        // DISCARDED, so a Mat can only push out what its
+                        // neighbourhood drains - measured identical at 0.8,
+                        // 1.6 and 3.0. That cap, not this number, is what
+                        // stops a Mat stack from tiling the map.
+    flow: 0.6,          // /s spread toward lower-intensity neighbours
+    seep: 0.15,         // /s of a cell's paint advected one row toward the foe
+    decay: 0.02,        // /s dissolve everywhere - paint is a flow you
+                        // maintain, not a bank (the anti-ratchet guard that
+                        // replaces fx0.3's recede-without-mats rule)
+    burn: 0.25,         // /s scrubbed per SHOOTING foe tower at contact,
                         // falling linearly to 0 at its range edge (x level
-                        // power) - "a tower can hold the frontier at range".
-                        // Depth-scaled so growth-vs-hold settles at a stall
-                        // LINE rather than a winner-takes-all px/s race;
-                        // without any suppression the frontier was
-                        // unstoppable (creep-turtle beat the field 1.00).
-    goldPer100px: 2.0,  // income per 100px of advance beyond the hill edge
-    slow: 0.65,         // speed factor for foes standing on the band
-    dot: 1.5,           // dps to foes standing on the band
-    corrode: 3,         // dps to foe DEFENCE buildings the band covers
-    hillDps: 7,         // strangle dps at a full hill lap (scales with depth)
-    splatPx: 6, splatReach: 70,
+                        // power). The stall line, inherited from fx0.3
+                        // suppression: without it creep-turtle beat the
+                        // field 1.00.
+    splat: 0.5,         // intensity a shambler corpse dumps where it falls
+    goldPerCell: 0.15,  // income per unit of total intensity (income = area).
+                        // A Mat's paint pays ~2.4 g/s on top of its 1.5 flat -
+                        // between a farm and a grove, so the slot is worth
+                        // taking but never out-earns a plant. Flat in Mat
+                        // count (4.5 g/s each at 3 Mats or at 8: the cap
+                        // discard again). 0.25 pushed a creep-turtle to 0.86
+                        // of the field and 0.4 to a clean 1.00 - the fx0.3
+                        // failure mode, one knob away.
+    slow: 0.65,         // speed factor for foes standing in FULL paint
+    dot: 1.5,           // dps to foes standing in full paint
+    corrode: 3,         // dps to foe buildings standing in full paint
+    hillDps: 7,         // strangle dps at a fully painted hill rim
   },
 
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
@@ -187,9 +204,14 @@ function createState(seed, overrides) {
     frenzy: false,
     decay: false,
     nextBeat: { p: cfg.WAR_DRUM, e: cfg.WAR_DRUM },
-    // creep frontier y per side; null until that side builds its first Mat.
-    // Player creep covers y >= creep.p, enemy creep covers y <= creep.e.
-    creep: { p: null, e: null },
+    // ROT paint: one intensity grid per side, 0..1 per cell (CONFIG.FIELD).
+    // fieldSum is the running total, kept by stepField so income and the
+    // per-tick effect passes never have to walk the grid.
+    field: {
+      p: new Array(cfg.FIELD.cols * cfg.FIELD.rows).fill(0),
+      e: new Array(cfg.FIELD.cols * cfg.FIELD.rows).fill(0),
+    },
+    fieldSum: { p: 0, e: 0 },
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -250,12 +272,13 @@ function count(S, side, type) {
 const FAMILIES = {
   eco: ['farm', 'grove', 'plant', 'mat'],
   def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'oozeb'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'],
 };
-// buildings that can be shot down: defences, plus the Mat (the creep
-// engine needs a kill-channel - mortars bomb it, rival creep corrodes it)
+// every built thing can be shot down - farms and hatcheries included.
+// Nothing is safe just for being behind the line: an economy has to be
+// defended, and killing the paint producers is how you remove creep.
 function demolishable(type) {
-  return FAMILIES.def.includes(type) || type === 'mat';
+  return !!type;
 }
 function familyCount(S, side, family) {
   const fams = FAMILIES[family];
@@ -266,18 +289,139 @@ function familyCount(S, side, family) {
 function income(S, side) {
   let inc = S.cfg.BASE_INCOME;
   for (const s of S.slots[side]) inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
-  inc += S.cfg.CREEP.goldPer100px * creepAdvance(S, side) / 100;
+  inc += S.cfg.CREEP.goldPerCell * S.fieldSum[side];
   return inc * (S.frenzy ? 2 : 1);
 }
-// creep home edge (the owner's hill rim) and current advance in px
+
+// ---------------------------------------------------------- paint field ----
+// Round half to EVEN: the tie-break has to survive mirroring, and round-half-
+// up does not - slot y=500 and its mirror y=140 both land exactly on a cell
+// boundary, and rounding both "up" puts them in cells that are not mirrors.
+function rhe(q) {
+  const f = Math.floor(q), d = q - f;
+  if (d > 0.5) return f + 1;
+  if (d < 0.5) return f;
+  return f % 2 === 0 ? f : f + 1;
+}
+function fieldCol(S, x) {
+  const F = S.cfg.FIELD;
+  return Math.max(0, Math.min(F.cols - 1, rhe((x - F.cx0) / F.cellW)));
+}
+function fieldRow(S, y) {
+  const F = S.cfg.FIELD;
+  return Math.max(0, Math.min(F.rows - 1, rhe((y - F.cy0) / F.cellH)));
+}
+// intensity of `side`'s paint under a world point
+function fieldAt(S, side, x, y) {
+  return S.field[side][fieldRow(S, y) * S.cfg.FIELD.cols + fieldCol(S, x)];
+}
+// dump paint at a point: full dose in the cell, half in the 4 neighbours
+function paintAt(S, g, x, y, amt) {
+  const F = S.cfg.FIELD, c = fieldCol(S, x), r = fieldRow(S, y);
+  const put = (cc, rr, a) => {
+    if (cc < 0 || cc >= F.cols || rr < 0 || rr >= F.rows) return;
+    const i = rr * F.cols + cc;
+    g[i] = Math.min(1, g[i] + a);
+  };
+  put(c, r, amt);
+  put(c - 1, r, amt / 2); put(c + 1, r, amt / 2);
+  put(c, r - 1, amt / 2); put(c, r + 1, amt / 2);
+}
+// creep home edge (the owner's hill rim) and how far the paint has carried:
+// the farthest row toward the enemy whose total intensity clears ADV_ROW, in
+// px from home. Kept as the tuner readout. The threshold is 2 saturated
+// cells' worth, not 1, because a lone corpse-splat totals exactly 1.0 - one
+// shambler dying deep in enemy ground must not read as a 394px advance.
 function creepHome(S, side) {
   return side === 'p' ? S.cfg.PLAYER_BASE.y - S.cfg.PLAYER_BASE.r
                       : S.cfg.ENEMY_BASE.y + S.cfg.ENEMY_BASE.r;
 }
+const ADV_ROW = 2;
 function creepAdvance(S, side) {
-  const front = S.creep[side];
-  if (front == null) return 0;
-  return Math.max(0, side === 'p' ? creepHome(S, 'p') - front : front - creepHome(S, 'e'));
+  const F = S.cfg.FIELD, g = S.field[side], home = creepHome(S, side);
+  let best = 0;
+  for (let r = 0; r < F.rows; r++) {
+    let tot = 0;
+    for (let c = 0; c < F.cols; c++) tot += g[r * F.cols + c];
+    if (tot < ADV_ROW) continue;
+    const y = F.cy0 + r * F.cellH;
+    const adv = side === 'p' ? home - y : y - home;
+    if (adv > best) best = adv;
+  }
+  return best;
+}
+// mean paint intensity of `side` across the foe hill's rim row
+function hillLap(S, side) {
+  const cfg = S.cfg, F = cfg.FIELD, g = S.field[side];
+  const base = side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
+  const r = fieldRow(S, side === 'p' ? base.y + base.r : base.y - base.r);
+  const c0 = fieldCol(S, base.x - base.r), c1 = fieldCol(S, base.x + base.r);
+  let sum = 0;
+  for (let c = c0; c <= c1; c++) sum += g[r * F.cols + c];
+  return sum / (c1 - c0 + 1);
+}
+
+// one field tick: emit -> flow+seep -> decay -> tower burn, per side, then
+// the two grids contest. Each side reads only its OWN previous grid (double
+// buffered), so the pass is order-independent and mirrors exactly.
+function stepField(S, dt) {
+  const cfg = S.cfg, F = cfg.FIELD, CR = cfg.CREEP, N = F.cols * F.rows;
+  for (const side of ['p', 'e']) {
+    const g = S.field[side];
+    let mats = 0;
+    for (const s of S.slots[side]) if (s.type === 'mat') mats++;
+    if (!mats && S.fieldSum[side] <= 0) continue;   // nothing to simulate
+
+    for (const s of S.slots[side]) {
+      if (s.type === 'mat') paintAt(S, g, s.x, s.y, CR.emit * dt);
+    }
+    // flow crosses each adjacent PAIR once, antisymmetrically, so no cell's
+    // result depends on visit order; seep drags a slice of every cell one
+    // row toward the enemy (paint at the far edge just piles up there).
+    const next = g.slice();
+    const k = CR.flow * dt / 4, bias = CR.seep * dt;
+    const dir = side === 'p' ? -F.cols : F.cols;
+    for (let i = 0; i < N; i++) {
+      const v = g[i];
+      if ((i + 1) % F.cols !== 0) { const t = k * (v - g[i + 1]); next[i] -= t; next[i + 1] += t; }
+      if (i + F.cols < N) { const t = k * (v - g[i + F.cols]); next[i] -= t; next[i + F.cols] += t; }
+      const j = i + dir;
+      if (j >= 0 && j < N) { const m = bias * v; next[i] -= m; next[j] += m; }
+    }
+    for (let i = 0; i < N; i++) {
+      const v = next[i] - CR.decay * dt;
+      g[i] = v <= 0 ? 0 : (v > 1 ? 1 : v);
+    }
+    // foe shooting towers burn the paint back, hardest at the muzzle: the
+    // stall line forms where burn balances what flows in behind it
+    for (const ts of S.slots[other(side)]) {
+      const spec = cfg.TOWERS[ts.type];
+      if (!spec || !spec.dmg) continue;
+      const rate = CR.burn * lvlPower(S, ts) * dt;
+      const c0 = fieldCol(S, ts.x - spec.range), c1 = fieldCol(S, ts.x + spec.range);
+      const r0 = fieldRow(S, ts.y - spec.range), r1 = fieldRow(S, ts.y + spec.range);
+      for (let r = r0; r <= r1; r++) {
+        for (let c = c0; c <= c1; c++) {
+          const i = r * F.cols + c;
+          if (g[i] <= 0) continue;
+          const d = Math.hypot(F.cx0 + c * F.cellW - ts.x, F.cy0 + r * F.cellH - ts.y);
+          if (d >= spec.range) continue;
+          const v = g[i] - rate * (1 - d / spec.range);
+          g[i] = v <= 0 ? 0 : v;
+        }
+      }
+    }
+  }
+  // rival paint corrodes on contact: the thinner side is wiped out and takes
+  // that much off the thicker one (a push-of-war, cell by cell)
+  const gp = S.field.p, ge = S.field.e;
+  let sp = 0, se = 0;
+  for (let i = 0; i < N; i++) {
+    const m = gp[i] < ge[i] ? gp[i] : ge[i];
+    if (m > 0) { gp[i] -= m; ge[i] -= m; }
+    sp += gp[i]; se += ge[i];
+  }
+  S.fieldSum.p = sp; S.fieldSum.e = se;
 }
 function musterCount(S, side) {
   let n = 0;
@@ -339,7 +483,7 @@ function applyAction(S, side, action) {
     S.money[side] -= cost;
     slot.spent += cost;
     slot.lvl++;
-    if (FAMILIES.def.includes(slot.type)) slot.hp = S.cfg.TOWER_HP * lvlPower(S, slot);
+    if (demolishable(slot.type)) slot.hp = S.cfg.TOWER_HP * lvlPower(S, slot);
     return true;
   }
   const cost = S.cfg.COSTS[action.type];
@@ -419,7 +563,7 @@ function spawnGuard(S, side, slotIdx) {
 }
 
 function destroySlot(S, side, slot) {
-  S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side });
+  S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side, what: slot.type });
   slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
   slot.chTgt = null; slot.chT = 0;
 }
@@ -437,38 +581,8 @@ function step(S) {
     S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + income(S, side) * dt);
   }
 
-  // creep frontiers: born at the hill rim with the first Mat, advancing
-  // while Mats live (speed sums Mat level power), receding without them.
-  // Clamped between the home rim and the FAR hill's centre; where the two
-  // bands would overlap they split the difference (push-of-war).
   const CR = cfg.CREEP;
-  for (const side of ['p', 'e']) {
-    let mats = 0;
-    for (const s of S.slots[side]) if (s.type === 'mat') mats++;
-    if (S.creep[side] == null) {
-      if (mats > 0) S.creep[side] = creepHome(S, side);
-      continue;
-    }
-    // foe shooting towers burn the frontier back while it sits in range,
-    // harder the closer it laps (a stall line forms where burn = growth)
-    let hold = 0;
-    for (const s of S.slots[other(side)]) {
-      const spec = cfg.TOWERS[s.type];
-      if (!spec || !spec.dmg) continue;
-      const d = Math.abs(s.y - S.creep[side]);
-      if (d < spec.range) hold += CR.suppress * lvlPower(S, s) * (1 - d / spec.range);
-    }
-    const v = (mats > 0 ? CR.growth * mats : -CR.decay) * dt - hold * dt;
-    if (side === 'p') {
-      S.creep.p = Math.min(creepHome(S, 'p'), Math.max(cfg.ENEMY_BASE.y, S.creep.p - v));
-    } else {
-      S.creep.e = Math.max(creepHome(S, 'e'), Math.min(cfg.PLAYER_BASE.y, S.creep.e + v));
-    }
-  }
-  if (S.creep.p != null && S.creep.e != null && S.creep.p < S.creep.e) {
-    const m = (S.creep.p + S.creep.e) / 2;
-    S.creep.p = m; S.creep.e = m;
-  }
+  stepField(S, dt);
 
   // hatcheries produce into the muster; guard posts keep their squad manned
   for (const side of ['p', 'e']) {
@@ -525,7 +639,7 @@ function step(S) {
       // higher-level saps slow harder (lower factor)
       const factor = cfg.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1);
       for (const u of S.units) {
-        if (u.side !== foe || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
+        if (u.side !== foe || u.state === 'muster' || u.state === 'guard') continue;
         if (Math.hypot(u.x - slot.x, u.y - slot.y) < cfg.TOWERS.sap.range) {
           u.slowed = Math.min(u.slowed || 1, factor);
         }
@@ -533,19 +647,18 @@ function step(S) {
     }
   }
 
-  // creep underfoot: foes standing on a band wade (slow) and blister (DoT).
-  // Guards are included - creep lapping the nest is defence-in-depth turned
-  // inside out; only musters and homebound converts are exempt.
+  // paint underfoot: foes wade (slow) and blister (DoT) in proportion to the
+  // intensity where they stand. Guards are included - paint lapping the nest
+  // is defence-in-depth turned inside out; only the muster is exempt.
   for (const side of ['p', 'e']) {
-    const front = S.creep[side];
-    if (front == null) continue;
+    if (S.fieldSum[side] <= 0) continue;
     const foe = other(side);
     for (const u of S.units) {
-      if (u.side !== foe || u.state === 'muster' || u.state === 'return') continue;
-      if (side === 'p' ? u.y >= front : u.y <= front) {
-        u.slowed = Math.min(u.slowed || 1, CR.slow);
-        u.hp -= CR.dot * dt;
-      }
+      if (u.side !== foe || u.state === 'muster') continue;
+      const k = fieldAt(S, side, u.x, u.y);
+      if (k <= 0) continue;
+      u.slowed = Math.min(u.slowed || 1, 1 + (CR.slow - 1) * k);
+      u.hp -= CR.dot * k * dt;
     }
   }
 
@@ -555,19 +668,6 @@ function step(S) {
   // advancing; sappers divert to enemy defence buildings and demolish them.
   for (const u of S.units) {
     if (u.state === 'muster') continue;
-
-    // freshly converted ants walk home and join the next drum; nothing
-    // engages them on the way (they read as part of the muster)
-    if (u.state === 'return') {
-      const dx = u.sx - u.x, dy = u.sy - u.y, d = Math.hypot(dx, dy);
-      if (d > 4) {
-        u.x += (dx / d) * u.spd * dt;
-        u.y += (dy / d) * u.spd * dt;
-      } else {
-        u.state = 'muster';
-      }
-      continue;
-    }
 
     const factor = u.slowed || 1;   // slowed holds the strongest sap factor
     const foe = other(u.side);
@@ -651,12 +751,12 @@ function step(S) {
       continue;
     }
 
-    // sappers divert to the nearest enemy defence building in sight
+    // sappers divert to the nearest enemy building in sight - any of them
     if (u.typeKey === 'sapper' && u.state === 'march') {
       const spec = cfg.UNITS.sapper;
       let ts = null, td = spec.sight;
       for (const slot of S.slots[foe]) {
-        if (!slot.type || !FAMILIES.def.includes(slot.type)) continue;
+        if (!slot.type) continue;
         const d = Math.hypot(slot.x - u.x, slot.y - u.y);
         if (d < td) { td = d; ts = slot; }
       }
@@ -702,7 +802,7 @@ function step(S) {
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;
       for (const u of S.units) {
-        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
+        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
         const d = Math.hypot(u.x - slot.x, u.y - slot.y);
         if (d < bestD) { bestD = d; best = u; }
       }
@@ -710,7 +810,7 @@ function step(S) {
         const dmg = spec.dmg * lvlPower(S, slot);
         if (spec.splash) {
           for (const u of S.units) {
-            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
+            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
             if (Math.hypot(u.x - best.x, u.y - best.y) <= spec.splash) u.hp -= dmg;
           }
         } else {
@@ -746,25 +846,19 @@ function step(S) {
     }
   }
 
-  // the mat eats walls: foe DEFENCE buildings under a creep band corrode
-  // (farms/hatcheries have no hp - the trickle has to chew those). Creep
-  // lapping the foe HILL strangles it, scaling with how deep the lap is.
+  // the mat eats walls: a foe building corrodes at the intensity it stands
+  // in, and paint lapping the foe HILL's rim strangles it.
   for (const side of ['p', 'e']) {
-    const front = S.creep[side];
-    if (front == null) continue;
+    if (S.fieldSum[side] <= 0) continue;
     const foe = other(side);
     for (const slot of S.slots[foe]) {
       if (!slot.type || !demolishable(slot.type)) continue;
-      if (side === 'p' ? slot.y >= front : slot.y <= front) {
-        slot.hp -= CR.corrode * dt;
-        if (slot.hp <= 0) destroySlot(S, foe, slot);
-      }
+      const k = fieldAt(S, side, slot.x, slot.y);
+      if (k <= 0) continue;
+      slot.hp -= CR.corrode * k * dt;
+      if (slot.hp <= 0) destroySlot(S, foe, slot);
     }
-    const foeBase = side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
-    const depth = side === 'p' ? (foeBase.y + foeBase.r) - front : front - (foeBase.y - foeBase.r);
-    if (depth > 0) {
-      S.baseHP[foe] -= CR.hillDps * (Math.min(depth, foeBase.r) / foeBase.r) * dt;
-    }
+    S.baseHP[foe] -= CR.hillDps * hillLap(S, side) * dt;
   }
 
   // converters channel the nearest enemy attacker in range and flip it:
@@ -804,12 +898,12 @@ function step(S) {
       // the charm wears off: big hosts resist it (v-fork gripe fix). Higher
       // charmer levels hold the charm longer as well as channelling faster.
       u.charmT = Math.max(spec.charmMin, spec.charmHpSec / cfg.UNITS[u.typeKey].hp) * lvlPower(S, slot);
-      u.state = 'return';
+      // it about-faces on the spot and fights at once: no walk home to the
+      // muster, and no protection on the way - a convert is shootable now
+      u.state = 'march';
       u.hp = cfg.UNITS[u.typeKey].hp;   // restored in full: conversion value
                                         // scales with unit SIZE, not with
                                         // whatever hp the wall left it
-      const sp = musterSpot(S, side);
-      u.sx = sp.x; u.sy = sp.y;
       // predators keep a side-relative hold point: mirror it with the flip
       if (u.typeKey === 'predator') u.hy = (cfg.ENEMY_BASE.y + cfg.PLAYER_BASE.y) - u.hy;
       S.converted[side]++;
@@ -819,9 +913,9 @@ function step(S) {
     }
   }
 
-  // charms wear off: the ant comes to its senses wherever it stands, walks
-  // home unengaged and rejoins its ORIGINAL army's next drum. It keeps its
-  // current hp and its convert-once immunity - no heal, no ping-pong.
+  // charms wear off: the ant comes to its senses wherever it stands and
+  // marches on for its ORIGINAL army from there - the same U-turn as the
+  // flip. It keeps its current hp and its convert-once immunity.
   for (const u of S.units) {
     if (!(u.charmT > 0)) continue;
     u.charmT -= dt;
@@ -829,9 +923,7 @@ function step(S) {
     u.charmT = 0;
     const home = other(u.side);
     u.side = home;
-    u.state = 'return';
-    const sp = musterSpot(S, home);
-    u.sx = sp.x; u.sy = sp.y;
+    u.state = 'march';
     if (u.typeKey === 'predator') u.hy = (cfg.ENEMY_BASE.y + cfg.PLAYER_BASE.y) - u.hy;
     S.events.push({ type: 'revert', x: u.x, y: u.y, side: home });
   }
@@ -839,22 +931,12 @@ function step(S) {
   for (const u of S.units) {
     if (u.hp <= 0) S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
   }
-  // corpse-splats: a dead shambler within reach AHEAD of its side's frontier
-  // drags it forward (never past the corpse); deeper deaths land short
+  // corpse-splats: a dead shambler bursts paint where it falls, wherever that
+  // is - deep splats simply fade if nothing keeps feeding them
   for (const u of S.units) {
     if (u.hp > 0 || u.typeKey !== 'shambler') continue;
     S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
-    const front = S.creep[u.side];
-    if (front == null) continue;
-    if (u.side === 'p') {
-      if (u.y < front && front - u.y <= CR.splatReach) {
-        S.creep.p = Math.max(cfg.ENEMY_BASE.y, Math.max(u.y, front - CR.splatPx));
-      }
-    } else {
-      if (u.y > front && u.y - front <= CR.splatReach) {
-        S.creep.e = Math.min(cfg.PLAYER_BASE.y, Math.min(u.y, front + CR.splatPx));
-      }
-    }
+    paintAt(S, S.field[u.side], u.x, u.y, CR.splat);
   }
   S.units = S.units.filter(u => u.hp > 0);
   for (const sh of S.shots) sh.ttl -= dt;
@@ -903,6 +985,7 @@ return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
+  fieldCol, fieldRow,
   demolishable, LEVELABLE, FAMILIES,
 };
 });

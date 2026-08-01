@@ -180,10 +180,11 @@ function makeController(rawParams, opts) {
       }
       // mortars: siege artillery against a fortifying foe (worthless vs a
       // foe with nothing to bombard); never the last shooting tower.
-      // Mats count as bombardable value - artillery is the mat's
-      // kill-channel, and a trigger that can't see mats never fires it
-      const foeDef = sim.familyCount(S, foe, 'def') + sim.count(S, foe, 'mat');
-      if (foeDef >= P.mortarTrig && sim.count(S, side, 'mortar') < 2 && def >= 2) {
+      // Every building is bombardable now, so count them all - a trigger
+      // that can't see a target never fires at it
+      let foeBuildings = 0;
+      for (const s of S.slots[foe]) if (s.type) foeBuildings++;
+      if (foeBuildings >= P.mortarTrig && sim.count(S, side, 'mortar') < 2 && def >= 2) {
         cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'mortar' } });
       }
       // converters: conversion value scales with unit size, so trigger on

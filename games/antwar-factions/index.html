@@ -48,6 +48,24 @@ const LABELS = {
   hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze',
 };
 
+// one-line "what is this" blurb, shown while previewing an option
+const DESC = {
+  farm: 'steady gold', grove: 'better farm', plant: 'best farm',
+  mat: 'creep fountain: paints ground, income by area',
+  tower: 'all-rounder shooter', sharp: 'sniper: slow, huge hits',
+  spit: 'splash: shreds swarms', sap: 'slows attackers, no damage',
+  guard: 'spawns defenders that block the lane',
+  mortar: 'bombs enemy defences anywhere, never units',
+  conv: 'charms enemy ants to your side (timed)',
+  hatch: 'breeds workers', swarmb: 'cheap worker flood',
+  soldierb: 'breeds soldiers', majorb: 'breeds slow tanks',
+  sapperb: 'breeds building-killers', predatorb: 'breeds midfield hunters',
+  hornb: 'breeds soldiers, +6s on YOUR drum (bigger waves)',
+  fifeb: 'breeds workers, -3s on YOUR drum (faster waves)',
+  oozeb: 'breeds shamblers: no drum, corpses feed the creep',
+  lvl: 'level up: more power, superlinear cost',
+};
+
 // skirmish opponents: the three personas plus the fx0.3 creep probe (an
 // ARCHETYPE, not a persona - it lives outside the counter-triangle)
 const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
@@ -104,7 +122,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'fx0.3', mode, opponent, seed: S.seed,
+    v: 'fx0.4', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -172,6 +190,7 @@ let personaKey = SKIRMISH_FOES[0].key;
 let matchResult = '';
 let banners = [];
 let openSlot = null;
+let pendingType = null;          // first tap previews, second tap on the same button buys
 let acc = 0;
 let fullFlash = 0;
 let drumFlash = 0;
@@ -242,6 +261,7 @@ for (let i = 0; i < 70; i++) {
 function resetMatchFx() {
   banners = [];
   openSlot = null;
+  pendingType = null;
   acc = 0;
   fullFlash = 0;
   drumFlash = 0;
@@ -290,20 +310,26 @@ function popupRects(slotIdx) {
     label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
     cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
   }));
-  // any occupied slot can be sold for a partial refund of its total spend
-  if (slot.type !== null) {
-    entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
-  }
-  if (!entries.length) return [];
-  // shrink buttons when the tower tree offers all 5 specs + sell
+  if (!entries.length && slot.type === null) return [];
+  // shrink buttons when the tower tree offers all 6 specs
   const gap = 4;
-  const bw = Math.min(66, Math.floor((W - 12 - (entries.length - 1) * gap) / entries.length));
-  const total = entries.length * bw + (entries.length - 1) * gap;
+  const n = Math.max(1, entries.length);
+  const bw = Math.min(66, Math.floor((W - 12 - (n - 1) * gap) / n));
+  const total = n * bw + (n - 1) * gap;
   const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
   const y = slot.y - 82;
-  return entries.map((en, i) => Object.assign(en, {
+  const out = entries.map((en, i) => Object.assign(en, {
     x: x0 + i * (bw + gap), y, w: bw, h: 52,
   }));
+  // any occupied slot can be sold for a partial refund of its total spend;
+  // sell sits on its own slim row so a stray tap can't hit it
+  if (slot.type !== null) {
+    out.push({
+      type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot),
+      x: x0 + total / 2 - 37, y: slot.y - 26, w: 74, h: 24,
+    });
+  }
+  return out;
 }
 
 function inRect(px, py, r) {
@@ -317,14 +343,15 @@ function statsLines(slot) {
   const k = sim.lvlPower(S, slot);
   if (t === 'mat') {
     const CR = CFG.CREEP;
-    return ['creep fountain: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, +' + CR.goldPer100px + ' per 100px of mat',
-            'mat grows ' + CR.growth + 'px/s per Mat; slows foes to ' + Math.round(CR.slow * 100) + '%, '
-              + CR.dot + ' dps, eats their towers',
-            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and rival creep can kill it'];
+    return ['paint fountain: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, and the paint itself pays by area',
+            'paint spreads and seeps at the foe; in FULL paint they slow to '
+              + Math.round(CR.slow * 100) + '% and take ' + CR.dot + ' dps, buildings ' + CR.corrode + ' dps',
+            'it dissolves untended and foe towers burn it back',
+            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and rival paint can kill it'];
   }
-  if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s'];
-  const tw = CFG.TOWERS[t];
   const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
+  if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s', hpLine];
+  const tw = CFG.TOWERS[t];
   if (t === 'sap') {
     const slowPct = Math.round(CFG.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1) * 100);
     return ['slows attackers to ' + slowPct + '% speed', 'range ' + tw.range + ' - ' + hpLine];
@@ -357,11 +384,76 @@ function statsLines(slot) {
       out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
     }
     if (CFG.UNITS[prod.unit].trickle) {
-      out.push('no muster: marches at hatch; corpses near the frontier push it ' + CFG.CREEP.splatPx + 'px');
+      out.push('no muster: marches at hatch; each corpse bursts into paint where it falls');
     }
+    out.push(hpLine);
     return out;
   }
   return [];
+}
+
+// --- preview (two-tap confirm): what a tap WOULD build, and how it compares
+const STAT_LABELS = {
+  income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
+  range: ['range', ''], bomb: ['bomb', ''], charm: ['charms in', 's'],
+  every: ['breeds every', 's'], unitHp: ['unit hp', ''], unitDps: ['unit dps', ''],
+  guardHp: ['guard hp', ''], guardDps: ['guard dps', ''], hp: ['hp', ''],
+};
+const LOWER_BETTER = ['charm', 'every'];
+const r1 = n => Math.round(n * 10) / 10;
+
+// the comparable numbers for a (type, level); a key is absent when the type
+// has no such stat, and absent on either side means no delta line
+function keyStats(type, lvl) {
+  const k = Math.pow(CFG.LVL_POWER, lvl - 1);
+  const o = {};
+  const tw = CFG.TOWERS[type], prod = CFG.PRODUCTION[type];
+  if (CFG.INCOME_BY_TYPE[type]) o.income = CFG.INCOME_BY_TYPE[type];
+  if (tw) {
+    if (tw.dmg) { o.dmg = r1(tw.dmg * k); o.dps = r1(tw.dmg * k / tw.cooldown); }
+    if (tw.bomb) o.bomb = Math.round(tw.bomb * k);
+    if (tw.channel) o.charm = r1(tw.channel / k);
+    if (tw.range < 500) o.range = tw.range;
+  }
+  if (prod) {
+    o.every = r1(prod.interval / k);
+    o.unitHp = CFG.UNITS[prod.unit].hp;
+    o.unitDps = CFG.UNITS[prod.unit].dps;
+  }
+  if (type === 'guard') {
+    o.guardHp = Math.round(CFG.UNITS.guard.hp * k);
+    o.guardDps = r1(CFG.UNITS.guard.dps * k);
+  }
+  if (sim.demolishable(type)) o.hp = Math.round(CFG.TOWER_HP * k);
+  return o;
+}
+
+function previewLines(slotIdx, type) {
+  const slot = S.slots.p[slotIdx];
+  if (type === 'sell') {
+    return [{ text: 'sell for +' + sim.sellRefund(S, slot) + ' gold', color: '#f0b0a0' }]
+      .concat(statsLines(slot).map(t => ({ text: t })));
+  }
+  const cand = {
+    type: type === 'lvl' ? slot.type : type,
+    lvl: type === 'lvl' ? slot.lvl + 1 : 1,
+    hp: 0, x: slot.x, y: slot.y,
+  };
+  cand.hp = CFG.TOWER_HP * sim.lvlPower(S, cand);
+  const out = [{ text: DESC[type] }].concat(statsLines(cand).map(t => ({ text: t })));
+  if (slot.type) {
+    const now = keyStats(slot.type, slot.lvl), next = keyStats(cand.type, cand.lvl);
+    for (const key of Object.keys(STAT_LABELS)) {
+      if (now[key] === undefined || next[key] === undefined || now[key] === next[key]) continue;
+      const better = LOWER_BETTER.includes(key) ? next[key] < now[key] : next[key] > now[key];
+      const [name, unit] = STAT_LABELS[key];
+      out.push({
+        text: name + ' ' + now[key] + unit + ' -> ' + next[key] + unit,
+        color: better ? '#8ee06a' : '#e0a05a',
+      });
+    }
+  }
+  return out;
 }
 
 cv.addEventListener('pointerdown', (e) => {
@@ -403,22 +495,38 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
 
-  // build/upgrade/sell popup gets first claim on the tap
+  // build/upgrade/sell popup gets first claim on the tap. Nothing is ever
+  // bought on a first tap: tap once to preview, tap the same button to commit.
   if (openSlot !== null) {
     for (const r of popupRects(openSlot)) {
       if (inRect(x, y, r)) {
+        if (r.type !== pendingType) {
+          pendingType = r.type;   // preview only
+          blip(340, 0.04, 'triangle', 0.1);
+          return;
+        }
         const action = r.type === 'sell'
           ? { kind: 'sell', slot: openSlot }
           : { kind: 'build', slot: openSlot, type: r.type };
-        if (sim.applyAction(S, 'p', action)) {
-          (r.type === 'sell' ? SFX.sell : SFX.build)();
-          logAction(openSlot, r.type);
-        }
+        if (!sim.applyAction(S, 'p', action)) return;   // can't afford: stay open
+        (r.type === 'sell' ? SFX.sell : SFX.build)();
+        logAction(openSlot, r.type);
         openSlot = null;
+        pendingType = null;
         return;
       }
     }
-    openSlot = null;             // tap anywhere else just closes it
+    // tapping another of your slots browses on; anything else closes
+    for (let i = 0; i < S.slots.p.length; i++) {
+      const s = S.slots.p[i];
+      if (i !== openSlot && Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
+        openSlot = i;
+        pendingType = null;
+        return;
+      }
+    }
+    openSlot = null;
+    pendingType = null;
     return;
   }
 
@@ -426,6 +534,7 @@ cv.addEventListener('pointerdown', (e) => {
     const s = S.slots.p[i];
     if (Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
       openSlot = i;
+      pendingType = null;
       return;
     }
   }
@@ -469,7 +578,8 @@ function advance(dtReal) {
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
-      banner(ev.side === 'p' ? 'Your tower is down!' : 'Enemy tower DEMOLISHED!');
+      const what = (LABELS[ev.what] || 'building').toLowerCase();
+      banner(ev.side === 'p' ? 'Your ' + what + ' is down!' : 'Enemy ' + what + ' DEMOLISHED!');
       SFX.towerfall();
       buzz(ev.side === 'p' ? [40, 40, 40] : 60);
     }
@@ -535,32 +645,36 @@ function drawGround() {
   ctx.globalAlpha = 1;
 }
 
-// the creep mat: a full-width band per side with a wobbling, glowing
-// frontier line - one polygon, cheap and legible (never per-pixel)
+// the paint field: each side's intensity grid painted one canvas PIXEL per
+// cell, then blown up with smoothing on - the browser's bilinear filter is a
+// free metaball, so a 21x29 grid reads as spreading slime, not tiles.
+const FLD = CFG.FIELD;
+const fieldCv = document.createElement('canvas');
+fieldCv.width = FLD.cols; fieldCv.height = FLD.rows;
+const fieldCtx = fieldCv.getContext('2d');
+const fieldImg = fieldCtx.createImageData(FLD.cols, FLD.rows);
+const PAINT_RGB = { p: [104, 138, 72], e: [138, 62, 104] };
+
 function drawCreep(time) {
+  const x0 = FLD.cx0 - FLD.cellW / 2, y0 = FLD.cy0 - FLD.cellH / 2;
+  const w = FLD.cols * FLD.cellW, h = FLD.rows * FLD.cellH;
+  // one breathing pulse for both grids: the field should look alive without
+  // costing a redraw of anything underneath it
+  const pulse = 0.86 + Math.sin(time * 1.4) * 0.06;
+  ctx.imageSmoothingEnabled = true;
   for (const side of ['p', 'e']) {
-    const front = S.creep[side];
-    if (front == null) continue;
-    const col = side === 'p' ? '110,140,80' : '150,70,110';
-    const homeY = side === 'p' ? UI_TOP : 0;
-    const wob = x => front
-      + Math.sin(x * 0.045 + time * 0.8 + (side === 'p' ? 0 : 3)) * 5
-      + Math.sin(x * 0.013 - time * 0.3) * 3;
-    ctx.beginPath();
-    ctx.moveTo(0, homeY);
-    for (let x = 0; x <= W; x += 14) ctx.lineTo(x, wob(x));
-    ctx.lineTo(W, homeY);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(' + col + ',0.18)';
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(' + col + ',0.22)';
-    ctx.lineWidth = 9;
-    ctx.beginPath();
-    for (let x = 0; x <= W; x += 14) x === 0 ? ctx.moveTo(x, wob(x)) : ctx.lineTo(x, wob(x));
-    ctx.stroke();
-    ctx.strokeStyle = 'rgba(' + col + ',0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+    if (S.fieldSum[side] <= 0) continue;
+    const g = S.field[side], rgb = PAINT_RGB[side], d = fieldImg.data;
+    for (let i = 0; i < g.length; i++) {
+      const k = g[i];
+      d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2];
+      // gamma < 1 keeps a wispy edge without a floor: a trace cell is a
+      // faint stain, deep paint is a solid murky core you can read at a
+      // glance (a linear ramp made the whole field one flat haze)
+      d[i * 4 + 3] = k <= 0 ? 0 : 225 * Math.pow(k, 0.7) * pulse;
+    }
+    fieldCtx.putImageData(fieldImg, 0, 0);
+    ctx.drawImage(fieldCv, x0, y0, w, h);
   }
   for (const st of stains) {
     ctx.fillStyle = (st.side === 'p' ? 'rgba(110,140,80,' : 'rgba(150,70,110,') + st.a + ')';
@@ -834,7 +948,7 @@ function drawSlot(slot, side, idx, time) {
     }
   }
 
-  // demolishable buildings (defences + mats) show damage once chewed
+  // every building shows damage once chewed
   if (sim.demolishable(slot.type)) {
     const maxHp = CFG.TOWER_HP * Math.pow(CFG.LVL_POWER, slot.lvl - 1);
     if (slot.hp < maxHp - 0.5) {
@@ -944,7 +1058,7 @@ function drawHUD(time) {
 
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '11px sans-serif';
-  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - tap again to upgrade or sell', LANE_CX, UI_TOP + 106);
+  ctx.fillText('tap a slot to build - tap an option to preview - tap again to confirm', LANE_CX, UI_TOP + 106);
 
   // banners
   let by = 200;
@@ -968,48 +1082,61 @@ function drawPopup() {
   ctx.strokeStyle = '#ffe9b0';
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(slot.x, slot.y, 24, 0, 7); ctx.stroke();
-  // range ring + stats readout for the tapped building
-  const spec = CFG.TOWERS[slot.type];
+  // range ring + readout: the CANDIDATE's while previewing, else what's here
+  const previewing = pendingType !== null;
+  const ringType = previewing && pendingType !== 'lvl' && pendingType !== 'sell'
+    ? pendingType : slot.type;
+  const spec = CFG.TOWERS[ringType];
   if (spec && spec.range && spec.range < 500) {
-    ctx.strokeStyle = 'rgba(255,233,176,0.35)';
+    ctx.strokeStyle = previewing && pendingType !== 'sell'
+      ? 'rgba(140,224,106,0.5)' : 'rgba(255,233,176,0.35)';
     ctx.lineWidth = 1;
     ctx.setLineDash([5, 5]);
     ctx.beginPath(); ctx.arc(slot.x, slot.y, spec.range, 0, 7); ctx.stroke();
     ctx.setLineDash([]);
   }
-  const lines = statsLines(slot);
+  const lines = previewing ? previewLines(openSlot, pendingType)
+    : statsLines(slot).map(t => ({ text: t }));
   if (lines.length) {
     ctx.font = '10px sans-serif';
-    const wMax = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const wMax = Math.max(...lines.map(l => ctx.measureText(l.text).width));
     const bw = wMax + 16, bh = lines.length * 13 + 9;
     const bx = Math.max(4, Math.min(W - bw - 4, slot.x - bw / 2));
     const by = slot.y - 82 - bh - 5;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
-    ctx.strokeStyle = '#7a6448';
+    ctx.strokeStyle = previewing ? '#8ee06a' : '#7a6448';
     ctx.lineWidth = 1;
     roundRect(bx, by, bw, bh, 5);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#e8d8b8';
     ctx.textAlign = 'center';
     for (let i = 0; i < lines.length; i++) {
-      ctx.fillText(lines[i], bx + bw / 2, by + 11 + i * 13);
+      ctx.fillStyle = lines[i].color || '#e8d8b8';
+      ctx.fillText(lines[i].text, bx + bw / 2, by + 11 + i * 13);
     }
   }
   for (const r of popupRects(openSlot)) {
     const isSell = r.type === 'sell';
     const afford = isSell || S.money.p >= r.cost;
+    const pend = r.type === pendingType;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
-    ctx.strokeStyle = isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38');
+    ctx.strokeStyle = pend ? '#8ee06a' : (isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38'));
+    ctx.lineWidth = pend ? 2 : 1;
     roundRect(r.x, r.y, r.w, r.h, 7);
     ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1;
     ctx.globalAlpha = afford ? 1 : 0.45;
-    ctx.fillStyle = isSell ? '#f0b0a0' : '#ffe9c0';
+    ctx.fillStyle = pend ? '#8ee06a' : (isSell ? '#f0b0a0' : '#ffe9c0');
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(r.label, r.x + r.w / 2, r.y + 16);
-    ctx.fillStyle = isSell ? '#8ee06a' : '#ffd870';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(isSell ? '+' + r.gain + 'g' : r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    const label = pend ? (isSell ? 'Sell?' : 'Confirm?') : r.label;
+    if (r.h < 40) {                // the slim sell row: one line, label + gold
+      ctx.fillText(label + '  +' + r.gain + 'g', r.x + r.w / 2, r.y + 16);
+    } else {
+      ctx.fillText(label, r.x + r.w / 2, r.y + 16);
+      ctx.fillStyle = '#ffd870';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    }
     ctx.globalAlpha = 1;
   }
 }
