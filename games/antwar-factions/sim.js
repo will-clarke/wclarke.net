@@ -187,6 +187,9 @@ const CONFIG = {
     // shamblers trickle: they skip the muster and march the moment they
     // hatch (ROT has no drum), and their corpses feed the creep frontier
     shambler: { hp: 26,  spd: 44, dps: 3.5, r: 4.6, trickle: true },
+    // PISTON's stamped product: these are the stats at weight 1 (a soldier),
+    // scaled by the weight the press shipped. Nothing breeds it.
+    product: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
   },
   FRENZY_AT: 240,
   DECAY_AT: 330,
@@ -218,6 +221,56 @@ const CONFIG = {
                   // 0.44 at 0.3. Selling is free - spin is per-side, so
                   // there is nothing to scrub by rebuilding, and dodging a
                   // mortar by selling at 70% is counterplay, not an exploit.
+  },
+  // T7b-b: PISTON stamps, it does not breed. A stamping faction's broods pour
+  // MASS into a press instead of ants into the muster; the drum stamps the
+  // press into ONE product whose weight is the mass it holds, and shipping
+  // COSTS GOLD - the sink T7b-a proved missing. A longer beat therefore ships
+  // a heavier product, not more of them, and the top of the flywheel curve
+  // finally buys something.
+  STAMP: {
+    refMass: 62,      // mass in one weight unit = a soldier, so weight 1 IS a
+                      // soldier. The press accrues at exactly the hp/s the
+                      // broods would have bred, so the carve is throughput-
+                      // neutral before gold is spent - the sink has to be a
+                      // bonus on top, not a tariff on the baseline (a tariff
+                      // measured as a double nerf: half the throughput, and
+                      // charged for it).
+    eff: 0.7,         // fraction of the broods' throughput the press captures
+                      // for free. THE price of batching: one concentrated body
+                      // survives fire that would have picked the same hp off
+                      // six ants, so a lossless press ran away with the field
+                      // (0.67 vs the sandbox at 1.0, 0.49 at 0.7). The curve
+                      // is a CLIFF between 0.7 and 0.85, not a slope - batching
+                      // pays nothing until the body outlives the defence, then
+                      // it pays everything.
+    boost: 1.5,       // gold may OVERCHARGE the press by up to this multiple
+                      // of what the assembly lines pressed. Broods stay
+                      // essential: gold with no press buys nothing.
+    gold: 0.5,        // gold per overcharged mass point - 31g of surplus buys
+                      // a soldier's worth of extra weight.
+    spend: 0.5,       // fraction of the purse the press commits per beat. The
+                      // other half is left alone so the builder can still save
+                      // for a building between beats.
+    maxWeight: 10,    // the fusion cap, in weight (620hp). Mass past it splits
+                      // into equal products rather than being discarded - a
+                      // silent discard would nerf exactly the long-beat build
+                      // the ratchets are for.
+    minWeight: 0.3,   // below this the press holds rather than ship a pebble
+    spdExp: 0.18,     // speed falls as weight^-spdExp: heavy product is slow
+                      // (weight 10 walks at 0.66x a soldier)
+    smashAt: 2,       // weight from which the product crushes buildings
+    smashR: 66,       // lateral reach of the crush - it covers the lane-side
+                      // and forward slots a marcher walks past, not the rear
+                      // flanks, so a juggernaut is a battering ram and not a
+                      // map-wide demolisher
+    crush: 3,         // x its own dps against the nearest foe building in
+                      // reach, and it never stops walking to do it. Sized so a
+                      // juggernaut fells about one building a match: past this
+                      // the knob is outcome-neutral (0.49 field at 1.5, 3, 6
+                      // and 10) because what limits the crush is the CONTACT
+                      // WINDOW, not the rate - it only ever kills what it can
+                      // kill while walking past.
   },
 
   // campaign level setups: per-side start money and pre-built buildings.
@@ -260,6 +313,12 @@ function createState(seed, overrides) {
     fieldSum: { p: 0, e: 0 },
     spawnAcc: { p: 0, e: 0 },    // T6c: fractional paint-births carried over
     spin: { p: cfg.FLYWHEEL.cold, e: cfg.FLYWHEEL.cold },   // T7b flywheel
+    // T7b-b: the press - mass (m, in hp) and damage (d, in dps) waiting for the
+    // next beat. Carrying BOTH is what makes batching lossless: mass alone
+    // silently re-shaped worker throughput into soldier throughput and threw
+    // away three quarters of its damage.
+    press: { p: { m: 0, d: 0 }, e: { m: 0, d: 0 } },
+    stamped: { p: 0, e: 0 },     // ...and the lifetime weight shipped
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -270,8 +329,8 @@ function createState(seed, overrides) {
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
     hatched: {                   // lifetime production tally (reaction reads)
-      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0 },
-      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0 },
+      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, product: 0 },
+      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, product: 0 },
     },
     converted: { p: 0, e: 0 },   // lifetime conversion tally (tuner sanity)
     over: false,
@@ -330,9 +389,10 @@ function demolishable(type) {
 }
 // A faction is DATA, not a branch in step(): which building types it may
 // build (`kit`), what an empty slot offers (`roots`), whether it owns a war
-// drum at all, and (T7b) an optional `income(S, side, gross)` hook. The shared
-// rules read those hooks, so a new faction is a table entry rather than a
-// scatter of `if (side is ROT)`.
+// drum at all, (T7b-a) an optional `income(S, side, gross)` hook and (T7b-b)
+// `stamp`, which swaps breeding for the press. The shared rules read those
+// flags, so a new faction is a table entry rather than a scatter of
+// `if (side is ROT)`.
 const FACTIONS = {
   // the tuning sandbox: every building, the stacked drum. The default, so
   // every recorded matchup and evolved vector replays bit-identically.
@@ -354,8 +414,9 @@ const FACTIONS = {
   // PISTON: the machine. Its trunks are the standard three, so nothing is
   // grown from bare ground and no cost table is needed - the faction lives in
   // its income CURVE (a cold start that compounds, and stalls when anything
-  // breaks) and in a kit with no chaff, no ant-shaped defence and no theft.
-  // Mortars are the interim answer to buildings until the juggernaut lands.
+  // breaks) and in its PRESS: broods pour mass, the drum stamps one product.
+  // The mortar stays until Will rules on it (FACTIONS open question 15) - the
+  // juggernaut is now a second, slower answer to buildings, not a replacement.
   piston: {
     label: 'PISTON',
     roots: ['farm', 'tower', 'hatch'],
@@ -363,6 +424,7 @@ const FACTIONS = {
           'hatch', 'soldierb', 'hornb', 'fifeb'],
     drum: true,
     income: (S, side, gross) => gross * S.spin[side],
+    stamp: true,
   },
 };
 function faction(S, side) { return FACTIONS[S.cfg.FACTION[side]]; }
@@ -690,6 +752,57 @@ function spawnUnit(S, side, unitKey, at) {
   S.hatched[side][unitKey]++;
 }
 
+// ------------------------------------------------------------- the press ----
+// A stamping faction's broods pour their whole throughput - hp AND dps - into
+// the press instead of dropping ants in the muster, and the drum stamps it into
+// one heavy product. Nothing is lost in the batching; what changes is that the
+// wave is ONE body, slower the heavier it gets, and gold can overcharge it.
+function pressRate(S, side) {
+  const out = { m: 0, d: 0 };
+  for (const slot of S.slots[side]) {
+    const prod = S.cfg.PRODUCTION[slot.type];
+    if (!prod) continue;
+    const u = S.cfg.UNITS[prod.unit], per = prod.interval / lvlPower(S, slot);
+    out.m += u.hp / per;
+    out.d += u.dps / per;
+  }
+  out.m *= S.cfg.STAMP.eff;
+  out.d *= S.cfg.STAMP.eff;
+  return out;
+}
+function spawnProduct(S, side, mass, dps) {
+  const cfg = S.cfg, ST = cfg.STAMP, w = mass / ST.refMass, sp = musterSpot(S, side);
+  S.units.push({
+    side, typeKey: 'product', w,
+    x: sp.x, y: sp.y,
+    hp: mass, maxHp: mass,
+    spd: cfg.UNITS.product.spd * Math.pow(w, -ST.spdExp),
+    dps,
+    r: cfg.UNITS.product.r * Math.sqrt(w),
+    seed: S.rng() * 10,
+    state: 'march',              // stamped ON the beat: it never musters
+    sx: 0, sy: 0,
+    slowed: false,
+  });
+  S.hatched[side].product++;
+  S.stamped[side] += w;
+  S.events.push({ type: 'stamp', x: sp.x, y: sp.y, side, w });
+}
+// the beat empties the press. What the broods pressed ships free; gold on top
+// overcharges it into something heavier - that is the SINK T7b-a proved
+// missing, and it is why the top of the flywheel curve now buys something.
+function stampPress(S, side) {
+  const ST = S.cfg.STAMP, pr = S.press[side];
+  if (pr.m < ST.minWeight * ST.refMass) return;    // too light: the press holds
+  const paid = Math.min(Math.max(0, S.money[side]) * ST.spend / ST.gold, pr.m * ST.boost);
+  S.money[side] -= paid * ST.gold;
+  const k = (pr.m + paid) / pr.m;                  // overcharge lifts dps too
+  const mass = pr.m * k, dmg = pr.d * k;
+  pr.m = 0; pr.d = 0;
+  const n = Math.max(1, Math.ceil(mass / (ST.maxWeight * ST.refMass)));
+  for (let i = 0; i < n; i++) spawnProduct(S, side, mass / n, dmg / n);
+}
+
 // guard-post defenders: they hold a rally point on the lane beside their
 // post and intercept attackers instead of marching (state 'guard')
 function spawnGuard(S, side, slotIdx) {
@@ -742,8 +855,16 @@ function step(S) {
   const CR = cfg.CREEP;
   stepField(S, dt);
 
-  // hatcheries produce into the muster; guard posts keep their squad manned
+  // hatcheries produce into the muster; guard posts keep their squad manned.
+  // A stamping faction (PISTON) breeds nothing: the same buildings pour mass
+  // into the press, capped, and the drum stamps it.
   for (const side of ['p', 'e']) {
+    const stamping = !!faction(S, side).stamp;
+    if (stamping) {
+      const pr = pressRate(S, side);
+      S.press[side].m += pr.m * dt;
+      S.press[side].d += pr.d * dt;
+    }
     for (let i = 0; i < S.slots[side].length; i++) {
       const slot = S.slots[side][i];
       if (slot.type === 'guard') {
@@ -763,7 +884,7 @@ function step(S) {
         continue;
       }
       const prod = cfg.PRODUCTION[slot.type];
-      if (!prod) continue;
+      if (!prod || stamping) continue;
       slot.prodCd -= dt;
       if (slot.prodCd <= 0) {
         spawnUnit(S, side, prod.unit);
@@ -785,6 +906,7 @@ function step(S) {
     if (period === null) continue;             // drumless faction: no beat
     if (S.t >= S.nextBeat[side]) {
       S.nextBeat[side] += period;
+      if (faction(S, side).stamp) stampPress(S, side);
       for (const u of S.units) if (u.side === side && u.state === 'muster') u.state = 'march';
       S.events.push({ type: 'march', side });
     }
@@ -943,6 +1065,23 @@ function step(S) {
       }
     }
 
+    // a heavy product walks THROUGH the wall: it crushes the nearest foe
+    // building beside its path without ever stopping (a sapper diverts and
+    // parks; the juggernaut just keeps coming). Its reach covers the lane-side
+    // and forward slots, so rear flanks still need artillery.
+    if (u.state === 'march' && u.w >= cfg.STAMP.smashAt) {
+      let ts = null, td = cfg.STAMP.smashR;
+      for (const slot of S.slots[foe]) {
+        if (!slot.type) continue;
+        const d = Math.hypot(slot.x - u.x, slot.y - u.y);
+        if (d < td) { td = d; ts = slot; }
+      }
+      if (ts) {
+        ts.hp -= u.dps * cfg.STAMP.crush * factor * dt;
+        if (ts.hp <= 0) destroySlot(S, foe, ts);
+      }
+    }
+
     const nest = u.side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
     if (u.state === 'march') {
       u.y += (u.side === 'p' ? -1 : 1) * u.spd * factor * dt;
@@ -1064,15 +1203,17 @@ function step(S) {
       slot.chT += dt;
       if (slot.chT < spec.channel / lvlPower(S, slot)) continue;
       const u = slot.chTgt;
+      const hostHp = u.maxHp || cfg.UNITS[u.typeKey].hp;   // a stamped giant's
+                                                           // size is its weight
       u.side = side;
       u.conv = true;
       // the charm wears off: big hosts resist it (v-fork gripe fix). Higher
       // charmer levels hold the charm longer as well as channelling faster.
-      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / cfg.UNITS[u.typeKey].hp) * lvlPower(S, slot);
+      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / hostHp) * lvlPower(S, slot);
       // it about-faces on the spot and fights at once: no walk home to the
       // muster, and no protection on the way - a convert is shootable now
       u.state = 'march';
-      u.hp = cfg.UNITS[u.typeKey].hp;   // restored in full: conversion value
+      u.hp = hostHp;                    // restored in full: conversion value
                                         // scales with unit SIZE, not with
                                         // whatever hp the wall left it
       // predators keep a side-relative hold point: mirror it with the flip
@@ -1162,6 +1303,7 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     convertedP: S.converted.p, convertedE: S.converted.e,
     creepAdvP: creepAdvance(S, 'p'), creepAdvE: creepAdvance(S, 'e'),
     spinP: S.spin.p, spinE: S.spin.e,
+    stampP: S.stamped.p, stampE: S.stamped.e,
   };
 }
 
@@ -1169,7 +1311,7 @@ return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
-  fieldCol, fieldRow, faction, costOf,
+  fieldCol, fieldRow, faction, costOf, pressRate,
   demolishable, LEVELABLE, FAMILIES, FACTIONS,
 };
 });

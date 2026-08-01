@@ -400,8 +400,19 @@ function statsLines(slot) {
   }
   const prod = CFG.PRODUCTION[t];
   if (prod) {
-    const out = ['1 ' + prod.unit + ' every ' + (prod.interval / k).toFixed(1) + 's'];
     const u = CFG.UNITS[prod.unit];
+    // a stamping faction never breeds this: the same building is an assembly
+    // line pouring into the press, so the numbers have to be press numbers
+    if (sim.faction(S, 'p').stamp) {
+      const per = prod.interval / k, e = CFG.STAMP.eff, d = CFG.DRUM_DELTA[t];
+      const out = [r1(u.hp / per * e) + ' mass/s + ' + r1(u.dps / per * e) + ' dps/s to the press',
+                   'the drum stamps the press into one product',
+                   'gold overcharges each stamp'];
+      if (d) out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
+      out.push(hpLine);
+      return out;
+    }
+    const out = ['1 ' + prod.unit + ' every ' + (prod.interval / k).toFixed(1) + 's'];
     out.push(u.hp + 'hp - ' + u.dps + ' dps - speed ' + u.spd + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : ''));
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
@@ -421,6 +432,7 @@ const STAT_LABELS = {
   income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
   range: ['range', ''], bomb: ['bomb', ''], charm: ['charms in', 's'],
   every: ['breeds every', 's'], unitHp: ['unit hp', ''], unitDps: ['unit dps', ''],
+  massRate: ['mass/s', ''], dmgRate: ['press dps/s', ''],
   guardHp: ['guard hp', ''], guardDps: ['guard dps', ''], hp: ['hp', ''],
 };
 const LOWER_BETTER = ['charm', 'every'];
@@ -440,9 +452,17 @@ function keyStats(type, lvl) {
     if (tw.range < 500) o.range = tw.range;
   }
   if (prod) {
-    o.every = r1(prod.interval / k);
-    o.unitHp = CFG.UNITS[prod.unit].hp;
-    o.unitDps = CFG.UNITS[prod.unit].dps;
+    const u = CFG.UNITS[prod.unit], per = prod.interval / k;
+    // a stamping faction has no "breeds every": the comparable numbers are
+    // what the assembly line pours into the press
+    if (sim.faction(S, 'p').stamp) {
+      o.massRate = r1(u.hp / per * CFG.STAMP.eff);
+      o.dmgRate = r1(u.dps / per * CFG.STAMP.eff);
+    } else {
+      o.every = r1(per);
+      o.unitHp = u.hp;
+      o.unitDps = u.dps;
+    }
   }
   if (type === 'guard') {
     o.guardHp = Math.round(CFG.UNITS.guard.hp * k);
@@ -464,7 +484,9 @@ function previewLines(slotIdx, type) {
     hp: 0, x: slot.x, y: slot.y,
   };
   cand.hp = CFG.TOWER_HP * sim.lvlPower(S, cand);
-  const out = [{ text: DESC[type] }].concat(statsLines(cand).map(t => ({ text: t })));
+  const blurb = sim.faction(S, 'p').stamp && CFG.PRODUCTION[type]
+    ? 'assembly line: presses mass, never breeds' : DESC[type];
+  const out = [{ text: blurb }].concat(statsLines(cand).map(t => ({ text: t })));
   if (slot.type) {
     const now = keyStats(slot.type, slot.lvl), next = keyStats(cand.type, cand.lvl);
     for (const key of Object.keys(STAT_LABELS)) {
@@ -590,6 +612,10 @@ function advance(dtReal) {
       if (stains.length > 90) stains.shift();
     }
     if (ev.type === 'birth') poof(ev.x, ev.y, ev.side === 'p' ? '#9ec878' : '#c878a8', 8, 34);
+    if (ev.type === 'stamp') {
+      poof(ev.x, ev.y, '#c8d8e0', Math.min(20, 4 + ev.w * 2), 30 + ev.w * 4);
+      if (ev.side === 'p' && ev.w >= CFG.STAMP.smashAt) banner('JUGGERNAUT stamped: ' + ev.w.toFixed(1) + 'x');
+    }
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'convert') {
       poof(ev.x, ev.y, '#c9a0e8', 10, 45);
@@ -773,6 +799,21 @@ function drawAnt(u, time) {
     ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
     ctx.beginPath(); ctx.arc(0, dir * u.r * 1.2, u.r * 0.5, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.arc(0, -dir * u.r * 0.2, u.r * 0.4, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'product') {
+    // riveted plates: PISTON's product is stamped, not born, and a heavy one
+    // reads as a juggernaut because its whole body scales with the press
+    ctx.strokeStyle = u.side === 'p' ? '#b8c8d0' : '#e0b0a0';
+    ctx.lineWidth = 1.2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-u.r * 0.7, i * u.r * 0.7); ctx.lineTo(u.r * 0.7, i * u.r * 0.7);
+      ctx.stroke();
+    }
+    if (u.w >= CFG.STAMP.smashAt) {
+      // the crush halo: this one walks through walls
+      ctx.strokeStyle = 'rgba(255,180,90,0.35)';
+      ctx.beginPath(); ctx.arc(0, 0, CFG.STAMP.smashR * 0.5, 0, 7); ctx.stroke();
+    }
   } else if (u.typeKey === 'predator') {
     // rust pincers: the hunter
     ctx.strokeStyle = '#ff9068';
@@ -1021,6 +1062,12 @@ function spinLabel(side) {
   return sim.faction(S, side).income
     ? '  flywheel ' + S.spin[side].toFixed(2) + 'x' : '';
 }
+// what is waiting to march: a muster of ants, or a press full of mass
+function armyLabel(side) {
+  return sim.faction(S, side).stamp
+    ? 'press ' + (S.press[side].m / CFG.STAMP.refMass).toFixed(1) + 'x'
+    : 'muster ' + sim.musterCount(S, side);
+}
 
 function drawHUD(time) {
   ctx.textBaseline = 'middle';
@@ -1037,7 +1084,7 @@ function drawHUD(time) {
   ctx.textAlign = 'right';
   ctx.font = '12px sans-serif';
   ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)' + spinLabel('e'), W - 10, 11);
-  ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   muster ' + sim.musterCount(S, 'e')
+  ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   ' + armyLabel('e')
     + (sim.drumPeriod(S, 'e') === null ? '   no drum'
       : '   drum ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's'), W - 10, 24);
 
@@ -1091,7 +1138,7 @@ function drawHUD(time) {
       : drumFlash > 0.3 ? 'THE MARCH IS ON!'
         : 'war drum in ' + toBeat.toFixed(0) + 's'
           + (periodP !== CFG.WAR_DRUM ? ' (beat ' + periodP + 's)' : '')
-          + '   -   your muster: ' + sim.musterCount(S, 'p'),
+          + '   -   your ' + armyLabel('p'),
     LANE_CX, UI_TOP + 77);
 
   ctx.fillStyle = '#d8c0a0';
