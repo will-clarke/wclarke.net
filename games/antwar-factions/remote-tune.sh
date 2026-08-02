@@ -8,7 +8,9 @@ DIR="antwar-factions-tune"
 # nixos logs in with fish, so resolve JOBS here and hand it over via env
 JOBS="${JOBS:-20}"
 # SPICE=spawnRate:0.01 ./remote-tune.sh evolve 15 24 grades a T6c paint flag;
-# FACTION=rot:sandbox grades a cross-faction panel (T7a)
+# FACTION=rot:sandbox grades a cross-faction same-brain panel (T7a).
+# ./remote-tune.sh panel 15 24 breeds+duels one champion per faction (T20) -
+# it evolves K times, so budget K x the time of a single evolve.
 SPICE_ENV=""
 [ -n "${SPICE:-}" ] && SPICE_ENV="SPICE=$SPICE"
 FACTION_ENV=""

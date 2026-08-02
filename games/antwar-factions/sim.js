@@ -79,6 +79,18 @@ const CONFIG = {
                         // suppression: without it creep-turtle beat the
                         // field 1.00.
     splat: 0.5,         // intensity a shambler corpse dumps where it falls
+    foeSplat: 0.5,      // intensity a FOE corpse feeds the paint it died on,
+                        // x the local intensity: deep paint digests well and
+                        // a speck digests nothing, so the effect cannot
+                        // bootstrap ground the owner was not already holding.
+                        // Outcome-flat 0 -> 2 (T12), so it is priced by the
+                        // income it adds: +3% paint here, +13% at 1.0.
+    foeSplatMin: 0.05,  // local intensity below which a corpse is not digested
+                        // at all. NOT the spec's 0.1 - foes die at the tower
+                        // line where mean intensity is 0.077, so 0.1 switched
+                        // the whole mechanic off. Also why the digest can never
+                        // leave paint on a grid stepField has early-outed
+                        // (fieldSum 0 means k is 0 everywhere, so nothing lands).
     trail: 0.8,         // /s a MARCHING shambler smears into the cell it
                         // stands in - the only source that reaches the lane
                         // (Mats sit in rear slots, so their paint never does).
@@ -96,8 +108,11 @@ const CONFIG = {
                         // a creep-turtle 0.81 vs 0.96). 0.25 pushed that
                         // turtle to 0.86 of the field and 0.4 to a clean
                         // 1.00 - the fx0.3 failure mode, still one knob away.
-    slow: 0.65,         // speed factor for foes standing in FULL paint
-    dot: 1.5,           // dps to foes standing in full paint
+    slow: 0.45,         // speed factor for foes standing in FULL paint
+    dot: 3,             // dps to foes standing in full paint. Both raised
+                        // from 0.65/1.5 once T6b's trails put paint where
+                        // foes actually walk - before that, geography made
+                        // any value outcome-neutral.
     corrode: 3,         // dps to foe buildings standing in full paint
     hillDps: 7,         // strangle dps at a fully painted hill rim
   },
@@ -131,7 +146,12 @@ const CONFIG = {
   MAX_LVL: 3,
   LVL_COST_MULT: { 2: 1.5, 3: 2.5 },   // of the building's base cost
   LVL_POWER: 1.5,                       // per level: production rate / tower dmg
-  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 1.5 },
+  // T7c: a Mat pays a FARM's flat income, and the paint is what the extra
+  // 100g buys. At 1.5 it was ROT's ONLY eco building priced as a tier-2 one,
+  // so a Mat-less ROT was not just A strategy but THE strategy - a Mat build
+  // scored 0.681 of the field where den-spam scored 0.752; at 2.5 both read
+  // 0.752.
+  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 2.5 },
   // production: what each offence building drops into the muster, and how often
   PRODUCTION: {
     hatch:    { unit: 'worker',  interval: 6 },
@@ -513,6 +533,34 @@ function hillLap(S, side) {
   let sum = 0;
   for (let c = c0; c <= c1; c++) sum += g[r * F.cols + c];
   return sum / (c1 - c0 + 1);
+}
+
+// T12: paint DIGESTS the foe bodies that fall on it - the slime is fed by the
+// fight it slows, so holding ground is worth more than laying it. Every k is
+// READ before any is deposited, so two corpses landing in one neighbourhood
+// cannot feed each other in unit order (the stepField rule).
+// DIGEST_K is a reused scratch buffer, not a nicety: collecting the corpses as
+// {x,y,k} objects instead cost the tuner 1.7x per tick (29 -> 51 us) on 0.1
+// extra iterations - a rule this rare must not allocate.
+const DIGEST_K = [];
+function digestCorpses(S, dead) {
+  const CR = S.cfg.CREEP;
+  for (const side of ['p', 'e']) {
+    let n = 0;
+    for (let i = 0; i < dead.length; i++) {
+      const u = dead[i];
+      const k = u.side === side ? 0 : fieldAt(S, side, u.x, u.y);
+      DIGEST_K[i] = k >= CR.foeSplatMin ? k : 0;
+      if (DIGEST_K[i]) n++;
+    }
+    if (!n) continue;
+    for (let i = 0; i < dead.length; i++) {
+      if (!DIGEST_K[i]) continue;
+      const u = dead[i];
+      paintAt(S, S.field[side], u.x, u.y, CR.foeSplat * DIGEST_K[i]);
+      S.events.push({ type: 'digest', x: u.x, y: u.y, side });
+    }
+  }
 }
 
 // one field tick: emit -> flow+seep -> decay -> tower burn, per side, then
@@ -1240,22 +1288,27 @@ function step(S) {
     S.events.push({ type: 'revert', x: u.x, y: u.y, side: home });
   }
 
+  // the corpse list, gathered once - three paint rules read it, and the
+  // digest must not re-walk every ant to find the handful that died
+  const dead = [];
   for (const u of S.units) {
-    if (u.hp <= 0) S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
+    if (u.hp > 0) continue;
+    dead.push(u);
+    S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
   }
   // corpse-splats: a dead shambler bursts paint where it falls, wherever that
   // is - deep splats simply fade if nothing keeps feeding them
-  for (const u of S.units) {
-    if (u.hp > 0 || u.typeKey !== 'shambler') continue;
+  for (const u of dead) {
+    if (u.typeKey !== 'shambler') continue;
     S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
     paintAt(S, S.field[u.side], u.x, u.y, CR.splat);
   }
+  if (dead.length) digestCorpses(S, dead);
   // T6c PAINT_EATS_CORPSES: anything that dies on paint is digested by the
   // owner of that ground - friend or foe, which is what makes the paint want
   // a battle fought on top of it
   if (cfg.SPICE.corpseGold > 0) {
-    for (const u of S.units) {
-      if (u.hp > 0) continue;
+    for (const u of dead) {
       for (const side of ['p', 'e']) {
         const k = fieldAt(S, side, u.x, u.y);
         if (k > 0) S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + cfg.SPICE.corpseGold * k);

@@ -221,6 +221,7 @@ let drumFlash = 0;
 let pebbles = [];
 let parts = [];                  // cosmetic particles (poofs, crumbles)
 let stains = [];                 // cosmetic corpse-splat blotches on the mat
+let wisps = [];                  // digested foe corpses drifting home to the nest
 let hillFlash = { p: 0, e: 0 };  // hill-crack feedback while besieged
 let prevHP = { p: 0, e: 0 };
 
@@ -273,6 +274,18 @@ function poof(x, y, color, n, spread) {
   }
 }
 
+// where a digested corpse gets sucked to: the paint owner's nearest standing
+// building, or its hill if the nest has been levelled
+function nearestNest(side, x, y) {
+  let best = side === 'p' ? CFG.PLAYER_BASE : CFG.ENEMY_BASE, bd = Infinity;
+  for (const s of S.slots[side]) {
+    if (!s.type) continue;
+    const d = (s.x - x) * (s.x - x) + (s.y - y) * (s.y - y);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+
 for (let i = 0; i < 70; i++) {
   pebbles.push({
     x: Math.random() * W,
@@ -291,6 +304,7 @@ function resetMatchFx() {
   drumFlash = 0;
   parts = [];
   stains = [];
+  wisps = [];
   hillFlash = { p: 0, e: 0 };
   prevHP = { p: S.baseHP.p, e: S.baseHP.e };
   phase = 'play';
@@ -611,6 +625,16 @@ function advance(dtReal) {
       stains.push({ x: ev.x, y: ev.y, r: 5 + Math.random() * 4, side: ev.side, a: 0.5 });
       if (stains.length > 90) stains.shift();
     }
+    if (ev.type === 'digest') {
+      const t = nearestNest(ev.side, ev.x, ev.y);
+      for (let i = 0; i < 3; i++) {
+        wisps.push({
+          x: ev.x + (Math.random() - 0.5) * 8, y: ev.y + (Math.random() - 0.5) * 8,
+          tx: t.x, ty: t.y, side: ev.side, t: 0, life: 1.1 + Math.random() * 0.5,
+        });
+      }
+      if (wisps.length > 120) wisps.splice(0, wisps.length - 120);
+    }
     if (ev.type === 'birth') poof(ev.x, ev.y, ev.side === 'p' ? '#9ec878' : '#c878a8', 8, 34);
     if (ev.type === 'stamp') {
       poof(ev.x, ev.y, '#c8d8e0', Math.min(20, 4 + ev.w * 2), 30 + ev.w * 4);
@@ -653,6 +677,9 @@ function advance(dtReal) {
     p.ttl -= dtReal;
   }
   parts = parts.filter(p => p.ttl > 0);
+
+  for (const w of wisps) w.t += dtReal / w.life;
+  wisps = wisps.filter(w => w.t < 1);
 
   for (const b of banners) b.ttl -= dtReal;
   banners = banners.filter(b => b.ttl > 0);
@@ -730,6 +757,26 @@ function drawCreep(time) {
   for (const st of stains) {
     ctx.fillStyle = (st.side === 'p' ? 'rgba(110,140,80,' : 'rgba(150,70,110,') + st.a + ')';
     ctx.beginPath(); ctx.ellipse(st.x, st.y, st.r, st.r * 0.7, 0, 0, 7); ctx.fill();
+  }
+  // digested corpses: a bright bead of slime is dragged home, sagging on the
+  // way. It carries a pale core because the same green on green paint was
+  // invisible - this is the only tell that the digest happened at all.
+  for (const w of wisps) {
+    const at = f => {
+      const e = f * f * (3 - 2 * f);
+      return [w.x + (w.tx - w.x) * e, w.y + (w.ty - w.y) * e + Math.sin(f * Math.PI) * 9];
+    };
+    const [x, y] = at(w.t);
+    const [px, py] = at(Math.max(0, w.t - 0.12));
+    const a = 0.9 * (1 - w.t * w.t), r = 4.2 - 1.8 * w.t;
+    ctx.strokeStyle = (w.side === 'p' ? 'rgba(120,180,70,' : 'rgba(180,70,120,') + a * 0.55 + ')';
+    ctx.lineWidth = r * 0.9;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(x, y); ctx.stroke();
+    ctx.fillStyle = (w.side === 'p' ? 'rgba(232,255,196,' : 'rgba(255,196,232,') + a + ')';
+    ctx.beginPath(); ctx.ellipse(x, y, r, r * 0.75, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(28,34,18,' + a * 0.7 + ')';    // rim: the bead has to read on its own paint too
+    ctx.lineWidth = 1;
+    ctx.stroke();
   }
 }
 
