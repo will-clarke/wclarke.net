@@ -68,8 +68,17 @@ const CONFIG = {
                         // neighbourhood drains - measured identical at 0.8,
                         // 1.6 and 3.0. That cap, not this number, is what
                         // stops a Mat stack from tiling the map.
+    laneEmit: 0.3,      // /s each Mat also pushes into the LANE column at its
+                        // own row. Mats sit in rear/flank slots, so without
+                        // this their paint only reaches the fight via shambler
+                        // trails - this is the arm that connects fountain to
+                        // lane, and what makes the field pulse toward it.
     flow: 0.6,          // /s spread toward lower-intensity neighbours
     seep: 0.15,         // /s of a cell's paint advected one row toward the foe
+    backSeep: 0.05,     // /s advected one row toward HOME. Net transport stays
+                        // foe-ward; the back-flow is what re-covers the owner's
+                        // own ground, restoring the fx0.3 band's home blanket
+                        // that the T6a field lost.
     decay: 0.02,        // /s dissolve everywhere - paint is a flow you
                         // maintain, not a bank (the anti-ratchet guard that
                         // replaces fx0.3's recede-without-mats rule)
@@ -115,6 +124,17 @@ const CONFIG = {
                         // any value outcome-neutral.
     corrode: 3,         // dps to foe buildings standing in full paint
     hillDps: 7,         // strangle dps at a fully painted hill rim
+    splatDmg: 40,       // hp a shambler CORPSE tears off the one foe building
+                        // it falls nearest, AT CONTACT - ROT's losses were only
+                        // ever worth territory, and territory stops at the
+                        // tower line (T7c: paint felled 0.00 buildings ever).
+    splatDmgR: 100,     // px reach, falling linearly to 0 at the edge like
+                        // `burn`. NOT the spec's 28: shamblers die a mean 70px
+                        // from the nearest foe building (the tower that shot
+                        // them), so 28 fired on 1% of corpses and the mechanic
+                        // did not exist. The falloff is what keeps "kill them
+                        // before they arrive" the counterplay - a corpse
+                        // dropped at the range edge still does nothing.
   },
   // T6c paint SPICE: three independent experiments in what paint is FOR,
   // each a rate that is 0 by default, so the shipped rules are untouched
@@ -164,7 +184,12 @@ const CONFIG = {
     // +/- time on the metronome") - slightly worse than the pure broods
     hornb:  { unit: 'soldier', interval: 10 },
     fifeb:  { unit: 'worker',  interval: 3.5 },
-    oozeb:  { unit: 'shambler', interval: 4 },
+    // T15: the den BLOOMS - it accrues its whole window and drops `bloom`
+    // shamblers in one tick. Same shamblers/second as a trickle; what changes
+    // is that a clump arrives faster than a tower line can shoot it, which is
+    // the mechanism the den-interval cliff was made of (a metered arrival dies
+    // alone, so shambler.dps never gets to exist).
+    oozeb:  { unit: 'shambler', interval: 4, bloom: 3 },
   },
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
@@ -383,7 +408,7 @@ function placeBuilding(S, side, slotIdx, type, lvl) {
   slot.spent = costOf(S, side, type);
   for (let l = 2; l <= slot.lvl; l++) slot.spent += Math.round(S.cfg.COSTS[type] * S.cfg.LVL_COST_MULT[l]);
   slot.hp = demolishable(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
-  if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
+  if (S.cfg.PRODUCTION[type]) slot.prodCd = prodPeriod(S.cfg.PRODUCTION[type]) / lvlPower(S, slot);
   if (type === 'guard') {
     for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, slotIdx);
     slot.prodCd = S.cfg.GUARD.respawn;
@@ -579,8 +604,12 @@ function stepField(S, dt) {
     }
     if (!src && S.fieldSum[side] <= 0) continue;   // nothing to simulate
 
+    const laneC = fieldCol(S, cfg.LANE_CX);
     for (const s of S.slots[side]) {
-      if (s.type === 'mat') paintAt(S, g, s.x, s.y, CR.emit * dt);
+      if (s.type !== 'mat') continue;
+      paintAt(S, g, s.x, s.y, CR.emit * dt);
+      const i = fieldRow(S, s.y) * F.cols + laneC;
+      g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
     }
     // slime trails: a marching shambler smears its own cell only - a line,
     // not a blot, and it is laid exactly where the fight happens
@@ -593,7 +622,7 @@ function stepField(S, dt) {
     // result depends on visit order; seep drags a slice of every cell one
     // row toward the enemy (paint at the far edge just piles up there).
     const next = g.slice();
-    const k = CR.flow * dt / 4, bias = CR.seep * dt;
+    const k = CR.flow * dt / 4, bias = CR.seep * dt, back = CR.backSeep * dt;
     const dir = side === 'p' ? -F.cols : F.cols;
     for (let i = 0; i < N; i++) {
       const v = g[i];
@@ -601,6 +630,8 @@ function stepField(S, dt) {
       if (i + F.cols < N) { const t = k * (v - g[i + F.cols]); next[i] -= t; next[i + F.cols] += t; }
       const j = i + dir;
       if (j >= 0 && j < N) { const m = bias * v; next[i] -= m; next[j] += m; }
+      const jb = i - dir;
+      if (jb >= 0 && jb < N) { const m = back * v; next[i] -= m; next[jb] += m; }
     }
     for (let i = 0; i < N; i++) {
       const v = next[i] - CR.decay * dt;
@@ -696,6 +727,11 @@ function drumPeriod(S, side) {
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
 }
+// how long a brood accrues between releases: a bloom holds its clump for the
+// whole window, so throughput is unchanged and only concentration moves.
+function prodPeriod(prod) {
+  return prod.interval * (prod.bloom || 1);
+}
 function lvlCost(S, slot) {
   return Math.round(S.cfg.COSTS[slot.type] * S.cfg.LVL_COST_MULT[(slot.lvl || 1) + 1]);
 }
@@ -751,7 +787,7 @@ function applyAction(S, side, action) {
   slot.cd = 0;
   slot.hp = demolishable(action.type) ? S.cfg.TOWER_HP : 0;
   if (S.cfg.PRODUCTION[action.type]) {
-    slot.prodCd = S.cfg.PRODUCTION[action.type].interval;
+    slot.prodCd = prodPeriod(S.cfg.PRODUCTION[action.type]);
   }
   if (action.type === 'guard') {
     // the squad musters immediately; the respawn timer covers replacements
@@ -935,8 +971,8 @@ function step(S) {
       if (!prod || stamping) continue;
       slot.prodCd -= dt;
       if (slot.prodCd <= 0) {
-        spawnUnit(S, side, prod.unit);
-        slot.prodCd += prod.interval / lvlPower(S, slot);
+        for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, side, prod.unit);
+        slot.prodCd += prodPeriod(prod) / lvlPower(S, slot);
       }
     }
   }
@@ -1302,6 +1338,17 @@ function step(S) {
     if (u.typeKey !== 'shambler') continue;
     S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
     paintAt(S, S.field[u.side], u.x, u.y, CR.splat);
+    const foe = other(u.side);
+    let best = null, bestD = CR.splatDmgR;
+    for (const slot of S.slots[foe]) {
+      if (!slot.type || !demolishable(slot.type)) continue;
+      const d = Math.hypot(slot.x - u.x, slot.y - u.y);
+      if (d < bestD) { bestD = d; best = slot; }
+    }
+    if (!best) continue;
+    best.hp -= CR.splatDmg * (1 - bestD / CR.splatDmgR);
+    S.events.push({ type: 'splat', x: best.x, y: best.y, side: u.side });
+    if (best.hp <= 0) destroySlot(S, foe, best);
   }
   if (dead.length) digestCorpses(S, dead);
   // T6c PAINT_EATS_CORPSES: anything that dies on paint is digested by the

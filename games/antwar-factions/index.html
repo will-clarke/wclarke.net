@@ -426,7 +426,10 @@ function statsLines(slot) {
       out.push(hpLine);
       return out;
     }
-    const out = ['1 ' + prod.unit + ' every ' + (prod.interval / k).toFixed(1) + 's'];
+    const per = prod.interval * (prod.bloom || 1) / k;
+    const out = [prod.bloom
+      ? prod.bloom + ' ' + prod.unit + 's at once every ' + per.toFixed(1) + 's (a bloom)'
+      : '1 ' + prod.unit + ' every ' + per.toFixed(1) + 's'];
     out.push(u.hp + 'hp - ' + u.dps + ' dps - speed ' + u.spd + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : ''));
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
@@ -732,24 +735,41 @@ fieldCv.width = FLD.cols; fieldCv.height = FLD.rows;
 const fieldCtx = fieldCv.getContext('2d');
 const fieldImg = fieldCtx.createImageData(FLD.cols, FLD.rows);
 const PAINT_RGB = { p: [104, 138, 72], e: [138, 62, 104] };
+const LANE_C = sim.fieldCol({ cfg: CFG }, CFG.LANE_CX);
+const rowWob = new Float64Array(FLD.rows);
+
+// T13's pulse: the wave travels OUT of the fountain rows, foe-ward in front
+// and home-ward behind, which is the transport the sim now runs. Amplitude
+// swells in the lane columns so the eye is dragged down the road rather than
+// reading the field as flat ms-paint colouring.
+function paintWobble(side, time) {
+  let mr = 0, n = 0;
+  for (const s of S.slots[side]) {
+    if (s.type === 'mat') { mr += sim.fieldRow(S, s.y); n++; }
+  }
+  const src = n ? mr / n : sim.fieldRow(S, sim.creepHome(S, side));
+  for (let r = 0; r < FLD.rows; r++) {
+    rowWob[r] = Math.sin(Math.abs(r - src) * 0.7 - time * 2.4);
+  }
+}
 
 function drawCreep(time) {
   const x0 = FLD.cx0 - FLD.cellW / 2, y0 = FLD.cy0 - FLD.cellH / 2;
   const w = FLD.cols * FLD.cellW, h = FLD.rows * FLD.cellH;
-  // one breathing pulse for both grids: the field should look alive without
-  // costing a redraw of anything underneath it
-  const pulse = 0.86 + Math.sin(time * 1.4) * 0.06;
   ctx.imageSmoothingEnabled = true;
   for (const side of ['p', 'e']) {
     if (S.fieldSum[side] <= 0) continue;
+    paintWobble(side, time);
     const g = S.field[side], rgb = PAINT_RGB[side], d = fieldImg.data;
     for (let i = 0; i < g.length; i++) {
       const k = g[i];
       d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2];
+      const amp = Math.abs((i % FLD.cols) - LANE_C) <= 1 ? 0.3 : 0.1;
       // gamma < 1 keeps a wispy edge without a floor: a trace cell is a
       // faint stain, deep paint is a solid murky core you can read at a
       // glance (a linear ramp made the whole field one flat haze)
-      d[i * 4 + 3] = k <= 0 ? 0 : 225 * Math.pow(k, 0.7) * pulse;
+      d[i * 4 + 3] = k <= 0 ? 0
+        : 225 * Math.pow(k, 0.7) * (0.86 + rowWob[(i / FLD.cols) | 0] * amp);
     }
     fieldCtx.putImageData(fieldImg, 0, 0);
     ctx.drawImage(fieldCv, x0, y0, w, h);
