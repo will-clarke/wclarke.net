@@ -1,0 +1,9 @@
+{
+  "CREEP.decay": [0.01, 0.05],
+  "CREEP.goldPerCell": [0.05, 0.15],
+  "CREEP.slow": [0.3, 0.7],
+  "CREEP.dot": [1, 5],
+  "UNITS.soldier.hp": [45, 80, "int"],
+  "TOWERS.sharp.dmg": [24, 44, "int"],
+  "probe": ["mixOoze", "mixSoldier"]
+}

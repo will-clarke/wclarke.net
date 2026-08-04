@@ -136,29 +136,72 @@ const CONFIG = {
                         // before they arrive" the counterplay - a corpse
                         // dropped at the range edge still does nothing.
   },
-  // T6c paint SPICE: three independent experiments in what paint is FOR,
-  // each a rate that is 0 by default, so the shipped rules are untouched
-  // until Will picks one (FACTIONS open question 9). Grade one at a time:
+  // paint SPICE: independent experiments in what paint is FOR, each a rate
+  // that is 0 by default, so the shipped rules are untouched until Will picks
+  // one (FACTIONS open questions 9 and 18a). Grade one at a time:
   // SPICE=heal:4 node tune.js matrix 15
   SPICE: {
-    heal: 0,            // hp/s an OWN unit regains standing in FULL own paint
+    heal: 1,            // hp/s an OWN unit regains standing in FULL own paint.
+                        // ON at 1 (T17): measurably free, and free because it
+                        // barely fires - a 26hp shambler meets a 34-damage shot,
+                        // so only 16-19% of own ticks on paint are on a wounded
+                        // body and a life earns 0.97 hp back. DO NOT nudge this
+                        // for balance: it is a switch, flat to 2 and then worth
+                        // 0.4 of ROT-vs-a-full-kit at 2.5.
     corpseGold: 0,      // gold to the paint owner per unit dying in FULL paint
     spawnAt: 0.5,       // intensity a cell must hold to count as a womb
     spawnRate: 0,       // free shamblers/s per qualifying cell, born on the spot
+    speed: 0,           // MOVEMENT factor an OWN unit gets in FULL own paint,
+                        // scaled to 1 by local intensity (so 1.5 at k=0.2 is
+                        // 1.1x). Movement only - lifting bite rate too would
+                        // make this a damage spice in disguise. Values under 1
+                        // would slow your own side; 0 is off.
+    buildGate: 0,       // T28: SECONDS a build/respec/level takes on BARE
+                        // ground. Own paint under the slot shortens it and foe
+                        // paint lengthens it, clamped to [0, 2*buildGate]; the
+                        // slot is present and killable the whole time but does
+                        // NOTHING (no income, no paint, no production, no fire,
+                        // no drum shift). 0 = builds are instant, as shipped.
+                        // Symmetric: every faction pays it, and ROT is simply
+                        // the one with paint under its own slots.
+    stifle: 0,          // extra cooldown a SHOOTING tower pays for a SLIMED
+                        // TARGET: cd *= 1 + stifle * k under the ant it just
+                        // shot. Not k under the tower - `burn` scrubs the
+                        // muzzle cell to a measured 0.000, so the obvious
+                        // geometry is a knob that can never fire. Off by
+                        // default: it is a switch, not a dial (inert to 0.12,
+                        // on target at 0.14), and suppression is VEIL's job.
   },
 
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
-    farm: 80, grove: 90, plant: 120, mat: 100,
+    farm: 80, grove: 90, plant: 120, mat: 100, governor: 110, redline: 110,
     tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
+    dynamo: 130, coil: 140, rampart: 120, bell: 120,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
-    hornb: 100, fifeb: 80, oozeb: 90,
+    hornb: 100, fifeb: 80, oozeb: 90, grubb: 50, slitherb: 80, carrierb: 80,
   },
   UPGRADE_TREE: {
-    farm:  ['grove', 'mat'],
-    grove: ['plant'],
-    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'],
+    // T26: a gear can be fitted anywhere on the farm CHAIN, not just to a
+    // plain farm. A brain that levels its farms owns no plain farm by the
+    // time a reactive gear trigger fires (measured: 0% governors built), and
+    // a human who upgraded everything would have been locked out the same
+    // way. Fitting one to a plant costs the 5.5 g/s difference - that price
+    // is the choice, and it is why the bid takes the CHEAPEST farm it has.
+    farm:  ['grove', 'mat', 'governor', 'redline'],
+    grove: ['plant', 'governor', 'redline'],
+    plant: ['governor', 'redline'],
+    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart'],
+    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'carrierb'],
+    // T27: ROT's offence root is the Ooze Den, so its ONE specialisation has
+    // to hang here - hung off `hatch` it would be born unreachable for the
+    // only faction that owns it (T21's dead-mix-key diagnosis, T42's fix).
+    // A den is now both a trunk and a leaf, which is new: see buildOptions.
+    oozeb: ['slitherb'],
+    // T32: the bell hangs off the CHARMER for the same reason - VEIL owns no
+    // plain tower, so a tower-tree bell would be born unreachable for the only
+    // faction that needs it. A charmer is now a trunk AND a leaf, like the den.
+    conv: ['bell'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
   // gold sink. Costs scale superlinearly with power on purpose - concentrated
@@ -171,7 +214,12 @@ const CONFIG = {
   // so a Mat-less ROT was not just A strategy but THE strategy - a Mat build
   // scored 0.681 of the field where den-spam scored 0.752; at 2.5 both read
   // 0.752.
-  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 2.5 },
+  // T26: a gear pays a FARM's income, deliberately. T24's rampart proved a
+  // slot that gives up its own job never repays it, so the gears buy their
+  // effect with the UPGRADE PATH (no grove, no plant off a geared farm) and
+  // with each other, not with the 2.5 - a 0-income eco building would have
+  // been the same dead-on-arrival shape in a different family.
+  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 2.5, governor: 2.5, redline: 2.5 },
   // production: what each offence building drops into the muster, and how often
   PRODUCTION: {
     hatch:    { unit: 'worker',  interval: 6 },
@@ -190,6 +238,34 @@ const CONFIG = {
     // the mechanism the den-interval cliff was made of (a metered arrival dies
     // alone, so shambler.dps never gets to exist).
     oozeb:  { unit: 'shambler', interval: 4, bloom: 3 },
+    // T18: PISTON's tier-1 rung. The press reduces a brood to (hp/s, dps/s),
+    // so a stamping faction cannot have a SIDE-grade - only a cheaper/weaker
+    // or dearer/stronger step on one ladder. This is the cheap step: +41% mass
+    // per gold on soldierb, -13% dps per gold, and less of both per SLOT, so
+    // it is a tempo buy and never a replacement. PRICE is the whole balance
+    // lever here - grubb-only vs the ROT champion reads 0.98 at 40g and 0.55 at
+    // 100g - and 50 is the point where a pure grub pour sits level with a pure
+    // soldier pour, so the mix is a choice rather than an answer.
+    grubb:  { unit: 'grub',     interval: 6 },
+    // T27: ROT's only specialisation - the den's other half. No bloom and no
+    // splat, so it buys its keep in raw throughput: 8.6 hp/s and 1.43 dps/s
+    // against the ooze den's 6.5 and 0.88. That is MORE per slot and slightly
+    // less per gold (260g all-in against 180g), which is the choice - and the
+    // interval is the whole balance lever, sized to the T18 parity criterion
+    // (at 5 a swapped den read 96 hill damage of the ooze den's 265; at 3.5 it
+    // reads 252 and the duel sits at exactly 0.500, so the mix is a choice and
+    // not an answer). A bloom is NOT the fix here: 2 read 120 and 3 read 46.
+    // NOT in piston.kit - the press sees a brood only as (hp/s, dps/s), so
+    // `paintSpeed` would be a stat it discards.
+    slitherb: { unit: 'slither', interval: 3.5 },
+    // T30: the Carrier Cyst - VEIL's offence, which is not an offence. It ships
+    // no damage at all, so its throughput is measured in PIPS: one body carries
+    // one, and interval is the only rate there is. 5s puts 3.6 pips on the drum
+    // (VEIL's plain 18s), which is roughly one saturated foe building per two
+    // beats IF every carrier lands - and none of them lands past a gun line, so
+    // that is a ceiling and not a rate. NOT in piston.kit: the press reduces a
+    // brood to (hp/s, dps/s) and a carrier's whole product is neither.
+    carrierb: { unit: 'carrier', interval: 5 },
   },
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
@@ -206,6 +282,50 @@ const CONFIG = {
     // hp (a worker serves ~forever, a major shakes it off in seconds), times
     // level power. Convert-once immunity survives the revert (no ping-pong).
     conv: { range: 120, channel: 3.5, charmHpSec: 1200, charmMin: 4 },
+    // T23: PISTON's defensive law - uptime is power. Cold it is worse than a
+    // sharp (14 dps to 22.7); every shot adds `spinStep` to the slot's `spun`
+    // multiplier up to `spinMax`, dividing the cooldown, so fully wound it out-
+    // paces one (30.8 dps) after ~60 shots. Spin is CUMULATIVE, never decaying:
+    // a slot has ANY target only 11-29% of match time (measured), so an
+    // idle-reset spin would never wind at all - and cumulative is exactly the
+    // anti-trickle rule the design wants (a constant stream never lets it
+    // cool). Reset only by destroy/sell/respec.
+    dynamo: { range: 150, dmg: 14, cooldown: 1.0, spinStep: 0.02, spinMax: 2.2 },
+    // T25: the arc jumps to the nearest un-hit body, `falloff` weaker each hop.
+    // hops/chainR are MEASURED at the instant a gun has a target (lesson 35):
+    // vs a ROT bloom, 1.19 extra bodies sit within 40px of the head and a
+    // FOURTH is never there (0% at every radius to 80) - so 3 is the bloom, not
+    // a guess. vs sandbox worker floods it is 3.2 extra, and vs a PISTON
+    // product line 0.00 at every radius, which is the niche: the coil answers
+    // arrivals-at-once and is dead against one fat body.
+    coil:  { range: 130, dmg: 16, cooldown: 1.4, hops: 3, chainR: 46, falloff: 0.65 },
+    // T24: no gun at all - the Rampart PUNCHES on its owner's beat, so its
+    // rate IS the drum and the def half of PISTON's metronome tension is a
+    // real bid (the ratchets want a long beat; the wall wants a short one).
+    // What it costs the attacker is PROGRESS: a besieger drops back to
+    // marching and has to walk the shove off at `punchSlow`. Damage stays 0 -
+    // control is the whole product, and it is why a drumless faction may
+    // never own one.
+    // range/punch are MEASURED, not picked (lesson 35): at the instant a beat
+    // fires, the fraction of beats with a foe in reach is 0.27 from a nest slot
+    // and 0.60 from a forward outpost at 150 - and at 90 SIX of the eight slots
+    // can never punch anything, ever. 40px + 0.9s of stagger is ~2s off a
+    // shambler's walk, so one shove is worth having.
+    rampart: { range: 150, punch: 40, punchStun: 0.9, punchSlow: 0.5 },
+    // T32: VEIL's only screen. No gun, no slow - it PULSES, and everything
+    // hostile in reach stops dead for `freezeDur`. Levels shorten the cooldown.
+    // `range` IS the charmer's range: what a bell sells is bodies held where a
+    // charm can reach them (measured, 93-98% of frozen bodies stand in one),
+    // and at r85 it lost to both siblings in all four graded cells.
+    // freezeDur/cooldown is the real axis - a freeze is 100% denial where a
+    // sap's slow is 50% - and 3.0/6.0 is where the swept curve meets the sap
+    // control against swarms while reading ~0 against a stamper.
+    // `immune` caps the STACK - VEIL owns no gun to punish a locked pile.
+    // Ablated, FOUR evenly phased bells hold a body 75.7% of the time; with it
+    // every count and phase measures 50.5%, the same as one bell alone. Two
+    // bells never break it either way: a ring blocked by an existing hold
+    // re-arms the whole cooldown, which desynchronises the pair on its own.
+    bell:  { range: 120, freezeDur: 3, cooldown: 6, immune: 1.5 },
   },
   // v0.5 contact update: every defence building has HP (sappers chew it);
   // guard posts field a squad of defender ants that intercept on the lane.
@@ -231,7 +351,30 @@ const CONFIG = {
     predator: { hp: 80, spd: 62, dps: 6,   r: 5.5 },
     // shamblers trickle: they skip the muster and march the moment they
     // hatch (ROT has no drum), and their corpses feed the creep frontier
-    shambler: { hp: 26,  spd: 44, dps: 3.5, r: 4.6, trickle: true },
+    shambler: { hp: 26,  spd: 44, dps: 3.5, r: 4.6, trickle: true, trail: 1 },
+    // T27: the skirmisher. `paintSpeed` is a per-unit movement multiplier at
+    // FULL own paint, scaled by the intensity underfoot - the exposure-time
+    // lever T17 proved (5% off the walk denominator beat T14/T15/T16's damage
+    // and rate put together), sold as a building instead of a free global rule.
+    // Base spd is deliberately below a shambler's: off its own slime this is
+    // the second-slowest thing on legs, and 30hp still dies to one sharp shot,
+    // so the speed is home-turf tempo and never a rush.
+    slither: { hp: 30,  spd: 42, dps: 5,   r: 4.4, paintSpeed: 1.9, trail: 1 },
+    // T18: a fat, cheap, slow sack - PISTON's tier-1 pour. hp:dps 15 is
+    // bulk-LEAN, not bulk-only: the press ships one body whose power is mass x
+    // dps, so a line far off a soldier's natural 9.5 ratio pours dead weight
+    // (measured: a 58:1 version scored 0.24 where soldierb scored 0.88).
+    // SPEED is what keeps it honest OUTSIDE the press - the slowest unit there
+    // is, so it arrives after the wave it would otherwise screen, while a
+    // stamping side never reads `spd` at all.
+    grub:    { hp: 48,  spd: 34, dps: 3.2, r: 5.2 },
+    // T30: the carrier. dps 0 is the design, not a placeholder - it exists to
+    // TOUCH things, and `implant` is the only output it has. 14hp dies to one
+    // shot from anything, and spd 40 (a major's walk) is what makes the walk
+    // the counterplay: every gun on the lane gets its chance before the pip
+    // lands. `sight` is the sapper's, and deliberately: the divert shape is
+    // proven, and what changes is what arrival MEANS.
+    carrier: { hp: 14, spd: 40, dps: 0, r: 3.6, implant: 1, sight: 90 },
     // PISTON's stamped product: these are the stats at weight 1 (a soldier),
     // scaled by the weight the press shipped. Nothing breeds it.
     product: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
@@ -261,11 +404,29 @@ const CONFIG = {
                   // top of the curve buys nothing. The sink, not the ceiling,
                   // is what the flywheel is missing (T7b findings).
     loss: 0.3,    // knocked off per building DESTROYED (60s of spin-up).
-                  // Washes out of a field average but decides the matchup
-                  // that exercises it: vs mortarWall, 0.89 at loss 0 and
-                  // 0.44 at 0.3. Selling is free - spin is per-side, so
+                  // T26 RETIRED its old justification ("vs mortarWall, 0.89
+                  // at loss 0 and 0.44 at 0.3" - that archetype now builds 0
+                  // mortars against PISTON): ablating this to 0 is worth
+                  // ZERO hill damage in four matchups, because PISTON loses
+                  // ~1 building a match. It is a near-dead knob, and open
+                  // question 22 asks whether it should vent GOLD instead.
+                  // Selling is free - spin is per-side, so
                   // there is nothing to scrub by rebuilding, and dodging a
                   // mortar by selling at 70% is counterplay, not an exploit.
+    // T26 - the GEARS. `loss` is the flywheel's whole risk and `rate` its
+    // whole tempo, so the two farm specialisations each buy one of them at
+    // the price of the other end of the curve. Same 110g on purpose: the
+    // choice has to be about the gear, not about which one is affordable.
+    govMax: 1.5,  // the governor's ceiling, replacing `max`. It is the whole
+                  // cost of immunity, and it clamps DOWNWARD on fitting -
+                  // otherwise spin to 1.9 and then buy loss-immunity for
+                  // free, which is not a gear, it is a purchase.
+    redMult: 2,   // the red-line's multiplier on `rate`: the cap at ~110s
+                  // instead of ~220s, which is most of a match earlier.
+    vent: 40,     // ...and gold LOST per building destroyed on top of the
+                  // normal knock. Half a farm, so a red-line that is holding
+                  // its line pays nothing and one that is bleeding pays
+                  // twice for every loss.
   },
   // T7b-b: PISTON stamps, it does not breed. A stamping faction's broods pour
   // MASS into a press instead of ants into the muster; the drum stamps the
@@ -305,6 +466,11 @@ const CONFIG = {
     spdExp: 0.18,     // speed falls as weight^-spdExp: heavy product is slow
                       // (weight 10 walks at 0.66x a soldier)
     smashAt: 2,       // weight from which the product crushes buildings
+    shrug: 0.5,       // fraction of a CONTROL effect a product at smashAt or
+                      // above takes (T24's rampart punch and stun; T32's
+                      // stasis reuses it). A juggernaut shrugs - the same
+                      // weight threshold that lets it crush is what makes it
+                      // hard to shove, so one number reads both ways.
     smashR: 66,       // lateral reach of the crush - it covers the lane-side
                       // and forward slots a marcher walks past, not the rear
                       // flanks, so a juggernaut is a battering ram and not a
@@ -316,6 +482,25 @@ const CONFIG = {
                       // and 10) because what limits the crush is the CONTACT
                       // WINDOW, not the rate - it only ever kills what it can
                       // kill while walking past.
+  },
+
+  // T29: VEIL's substrate - corruption PIPS. A pip is a unit of infection
+  // sitting on a foe building or hill; it pays VEIL a tithe, ticks the hill,
+  // and at saturation (T33) flips the building. Nothing WRITES a pip yet
+  // (carriers land at T30), so every number here is live but unreachable and
+  // the shipped rules are bit-identical. All placeholders - T35 sweeps them.
+  CORRUPT: {
+    max: 6,           // pips a single building holds; T30's implant clamps here
+                      // and T33 reads `>= max` as saturation
+    hillMax: 10,      // ...and the same for a hill, which never flips
+    hillDot: 1.2,     // hp/s a hill loses per pip standing on it
+    skim: 0.12,       // gold/s per pip that a corrupted foe building pays the
+                      // corruptor (T30 wires it into the income hook)
+    cleanseCost: 30,  // gold to scrub one building clean - the counterplay,
+                      // priced as a tax rather than an answer
+    decay: 0,         // pips/s that bleed off on their own. 0 = a pip is
+                      // permanent until cleansed or the building dies, which
+                      // is what makes cleanseCost the real dial.
   },
 
   // campaign level setups: per-side start money and pre-built buildings.
@@ -339,7 +524,7 @@ function other(side) { return side === 'p' ? 'e' : 'p'; }
 function createState(seed, overrides) {
   const cfg = Object.assign({}, CONFIG, overrides || {});
   // spent tracks all gold sunk into the slot (build + upgrades) for refunds
-  const slotRow = pos => ({ x: pos.x, y: pos.y, type: null, lvl: 1, cd: 0, prodCd: 0, hp: 0, spent: 0 });
+  const slotRow = pos => ({ x: pos.x, y: pos.y, type: null, lvl: 1, cd: 0, prodCd: 0, hp: 0, spent: 0, spun: 1, buildT: 0, pips: 0, flipped: false });
   const S = {
     cfg,
     seed: seed >>> 0,
@@ -364,6 +549,10 @@ function createState(seed, overrides) {
     // away three quarters of its damage.
     press: { p: { m: 0, d: 0 }, e: { m: 0, d: 0 } },
     stamped: { p: 0, e: 0 },     // ...and the lifetime weight shipped
+    // T29: pips standing on each side's OWN hill (the foe put them there).
+    // Building pips live on the slot; these have nowhere else to sit. Floats -
+    // a carrier may implant a fraction, and saturation compares `>=`.
+    hillPips: { p: 0, e: 0 },
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -374,8 +563,8 @@ function createState(seed, overrides) {
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
     hatched: {                   // lifetime production tally (reaction reads)
-      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, product: 0 },
-      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, product: 0 },
+      p: { worker: 0, grub: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, slither: 0, carrier: 0, product: 0 },
+      e: { worker: 0, grub: 0, soldier: 0, major: 0, sapper: 0, predator: 0, shambler: 0, slither: 0, carrier: 0, product: 0 },
     },
     converted: { p: 0, e: 0 },   // lifetime conversion tally (tuner sanity)
     over: false,
@@ -422,9 +611,9 @@ function count(S, side, type) {
   return n;
 }
 const FAMILIES = {
-  eco: ['farm', 'grove', 'plant', 'mat'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'],
+  eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline'],
+  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb'],
 };
 // every built thing can be shot down - farms and hatcheries included.
 // Nothing is safe just for being behind the line: an economy has to be
@@ -448,7 +637,10 @@ const FACTIONS = {
   rot: {
     label: 'ROT',
     roots: ['mat', 'tower', 'oozeb'],
-    kit: ['mat', 'tower', 'sap', 'guard', 'oozeb'],
+    // T27: 'slitherb' is a KIT entry only, never a root - it grows off the den,
+    // so it pays no trunk price and needs no `cost` line (the T7a half-price
+    // trap only bites a spec grown straight from bare ground).
+    kit: ['mat', 'tower', 'sap', 'guard', 'oozeb', 'slitherb'],
     drum: false,
     // a spec grown straight from bare ground still pays for the trunk it
     // skipped (farm 80 + mat 100, hatch 90 + oozeb 90) - otherwise a faction
@@ -465,11 +657,57 @@ const FACTIONS = {
   piston: {
     label: 'PISTON',
     roots: ['farm', 'tower', 'hatch'],
-    kit: ['farm', 'grove', 'plant', 'tower', 'sharp', 'spit', 'mortar',
-          'hatch', 'soldierb', 'hornb', 'fifeb'],
+    // T24: 'rampart' is deliberately NOT here - the wall is built and proven,
+    // but it ships DARK. Its output is 0 or the whole wave depending on a drum
+    // PHASE the player cannot see (equal periods never drift), and a gunless
+    // slot never repays a gun. Awaiting a ruling, not a number.
+    // T26: neither GEAR is here - both are built and proven to fire, and both
+    // ship DARK. The flywheel pays too slowly to buy in the only window that
+    // decides a PISTON match: ablating FLYWHEEL.loss entirely is worth 0 hill
+    // damage, peak spin ever measured is 1.27 against a 1.9 cap, and a FREE
+    // governor reads exactly 0.00. A ruling, not a number.
+    kit: ['farm', 'grove', 'plant',
+          'tower', 'sharp', 'spit', 'mortar', 'dynamo', 'coil',
+          'hatch', 'soldierb', 'hornb', 'fifeb', 'grubb'],
     drum: true,
     income: (S, side, gross) => gross * S.spin[side],
+    flywheel: true,
     stamp: true,
+  },
+  // VEIL: the still centre. It keeps the plain 18s drum - the only faction that
+  // does - and owns almost no violence: no tower, no sharp, no mortar, no
+  // sapper, because T30 measured that a corrupter which also demolishes cancels
+  // its own pips. Its army is zero-damage carriers; its defence is a charmer
+  // that steals one attacker at a time; its economy is the TITHE, a cut of
+  // whatever it has infected. Every gun VEIL ever fires is a stolen one.
+  veil: {
+    label: 'VEIL',
+    // the charmer and the cyst are ROOTS, so both pay the trunk they skip
+    // (tower 100 + conv 160, hatch 90 + carrierb 80). VEIL owning no plain
+    // tower is what deletes its whole tower-spec branch from the controller.
+    roots: ['farm', 'conv', 'carrierb'],
+    // T31 measured purity FIRST, as the spec asked, and purity WON - but not
+    // the way it was framed. The alternative carve (a 'hatch' off-root with
+    // 'swarmb' beside the cyst) does not SCREEN the carriers, it REPLACES them:
+    // the trunk itself breeds workers, the mix loop only ever specialises one
+    // of two off slots, and VEIL fielded 19-33 workers against 1.8-7.0 carriers
+    // at every mix weight tried - including mixSwarm 0. Pips billed 0.0 hill hp
+    // in all seven graded cells AND in the mirror. A generic brood is strictly
+    // better than a corrupter at the only thing a match scores, so VEIL's
+    // screen can never be an army; it has to be T32's bell and T33's flip.
+    // T32: the bell is a leaf of the charmer, so it needs no `cost` line and no
+    // root - and it is the ONLY screen VEIL may have, because T31 measured that
+    // anything competing for an offence slot replaces the carriers instead of
+    // covering them.
+    kit: ['farm', 'grove', 'plant',
+          'conv', 'bell',
+          'carrierb'],
+    drum: true,
+    cost: { conv: 260, carrierb: 170 },
+    // the tithe: every pip VEIL has planted on a standing foe building pays it
+    // CORRUPT.skim gold/s. The DEBIT is not here - it is in income() itself,
+    // because a leak belongs to the pip, not to the faction drinking it.
+    income: (S, side, gross) => gross + S.cfg.CORRUPT.skim * tithePips(S, side),
   },
 };
 function faction(S, side) { return FACTIONS[S.cfg.FACTION[side]]; }
@@ -483,12 +721,64 @@ function familyCount(S, side, family) {
   for (const s of S.slots[side]) if (s.type && fams.includes(s.type)) n++;
   return n;
 }
+// T26: the flywheel's GEARS are presence-flags, not stacks (the `stamp`
+// pattern) - a second governor buys nothing. Both standing, the governor
+// WINS: the safe gear is what a bleeding player reaches for, and a leftover
+// red-line silently cancelling it would be the worst possible surprise.
+function gearOf(S, side) {
+  let red = false;
+  for (const s of S.slots[side]) {
+    if (underway(s)) continue;
+    if (s.type === 'governor') return 'governor';
+    if (s.type === 'redline') red = true;
+  }
+  return red ? 'redline' : null;
+}
+// T28: a slot mid-build is scaffolding - it stands there, it can be killed, and
+// it contributes nothing. `buildT` is 0 whenever SPICE.buildGate is off, so
+// every gate below costs one comparison and changes nothing.
+function underway(slot) {
+  return slot.buildT > 0;
+}
+// paint read ONCE, when the order is given: own paint under the slot is
+// foundation, foe paint is contamination. The two are near-exclusive because
+// stepField contests the grids, so in practice this is one term or the other.
+function buildTime(S, side, slot) {
+  const g = S.cfg.SPICE.buildGate;
+  if (g <= 0) return 0;
+  const kOwn = fieldAt(S, side, slot.x, slot.y);
+  const kFoe = fieldAt(S, other(side), slot.x, slot.y);
+  return Math.max(0, Math.min(2 * g, g * (1 - kOwn + kFoe)));
+}
+// T33: the side a slot's EFFECTS serve. A flipped building never moves - it
+// stands in the nest that paid for it, and that owner can no longer sell,
+// respec, level or cleanse it - but its gun, its gold and its brood answer to
+// whoever saturated it. Only four sites read this seam (income, the press,
+// production, the tithe) plus tower targeting; everything else, including who
+// may shoot or demolish it, stays keyed to the ground it stands on.
+function effSide(side, slot) {
+  return slot.flipped ? other(side) : side;
+}
 function income(S, side) {
   let inc = S.cfg.BASE_INCOME;
-  for (const s of S.slots[side]) inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
+  // both nests, because a flipped farm's gold crosses the map with its loyalty.
+  // With nothing flipped the foe's slots all fail the test, so this is the same
+  // sum in the same order as before.
+  for (const sd of ['p', 'e']) {
+    for (const s of S.slots[sd]) {
+      if (underway(s) || effSide(sd, s) !== side) continue;
+      inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
+    }
+  }
   inc += S.cfg.CREEP.goldPerCell * S.fieldSum[side];
   const hook = faction(S, side).income;
   if (hook) inc = hook(S, side, inc);
+  // T31: the tithe is a TRANSFER, so the bleed lives here rather than in VEIL's
+  // hook - a corrupted nest leaks to whoever planted the pips, and VEIL is only
+  // the faction that knows how to drink what it spills. After the hook, so a
+  // host's own multiplier never scales the leak. Clamped at 0: a negative rate
+  // would eat gold already banked, which no other rule in the game can do.
+  inc = Math.max(0, inc - S.cfg.CORRUPT.skim * tithePips(S, other(side)));
   return inc * (S.frenzy ? 2 : 1);
 }
 
@@ -596,7 +886,7 @@ function stepField(S, dt) {
   for (const side of ['p', 'e']) {
     const g = S.field[side];
     let src = 0;
-    for (const s of S.slots[side]) if (s.type === 'mat') src++;
+    for (const s of S.slots[side]) if (s.type === 'mat' && !underway(s)) src++;
     if (!src) {
       for (const u of S.units) {
         if (u.side === side && u.typeKey === 'shambler' && u.state !== 'muster') { src++; break; }
@@ -606,17 +896,26 @@ function stepField(S, dt) {
 
     const laneC = fieldCol(S, cfg.LANE_CX);
     for (const s of S.slots[side]) {
-      if (s.type !== 'mat') continue;
+      if (s.type !== 'mat' || underway(s)) continue;
       paintAt(S, g, s.x, s.y, CR.emit * dt);
       const i = fieldRow(S, s.y) * F.cols + laneC;
       g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
     }
-    // slime trails: a marching shambler smears its own cell only - a line,
-    // not a blot, and it is laid exactly where the fight happens
+    // slime trails: a marching ROT body smears its own cell only - a line, not
+    // a blot, and it is laid exactly where the fight happens.
+    // T27 made the SOURCE a per-unit factor rather than "is it a shambler":
+    // measured, a den swapped for a slither den cost 215 of 262 hill damage,
+    // because what a den really sells ROT is the TRAIL (income, dot, corrode
+    // and the hill strangle all read `fieldSum`) and the unit is the smaller
+    // half of it. A skirmisher that skates on slime leaves slime. The rate is
+    // per SECOND in a cell, so a hasted body self-limits: crossing at 1.5x
+    // lays 0.67x the paint, and the faster the road the thinner it gets.
     for (const u of S.units) {
-      if (u.side !== side || u.typeKey !== 'shambler' || u.state === 'muster') continue;
+      if (u.side !== side || u.state === 'muster') continue;
+      const tr = cfg.UNITS[u.typeKey].trail;
+      if (!tr) continue;
       const i = fieldRow(S, u.y) * F.cols + fieldCol(S, u.x);
-      g[i] = Math.min(1, g[i] + CR.trail * dt);
+      g[i] = Math.min(1, g[i] + CR.trail * tr * dt);
     }
     // flow crosses each adjacent PAIR once, antisymmetrically, so no cell's
     // result depends on visit order; seep drags a slice of every cell one
@@ -641,7 +940,7 @@ function stepField(S, dt) {
     // stall line forms where burn balances what flows in behind it
     for (const ts of S.slots[other(side)]) {
       const spec = cfg.TOWERS[ts.type];
-      if (!spec || !spec.dmg) continue;
+      if (!spec || !spec.dmg || underway(ts)) continue;
       const rate = CR.burn * lvlPower(S, ts) * dt;
       const c0 = fieldCol(S, ts.x - spec.range), c1 = fieldCol(S, ts.x + spec.range);
       const r0 = fieldRow(S, ts.y - spec.range), r1 = fieldRow(S, ts.y + spec.range);
@@ -713,7 +1012,7 @@ function musterCount(S, side) {
 // mat is NOT levelable: creep growth stays one step per building (the
 // horn/fife precedent - read the mat's speed by counting fountains), and
 // level-multiplied growth out-raced every possible tower suppression
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb'];
+const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb'];
 // levels speed a drum-shifter's PRODUCTION like any brood; the beat delta
 // stays one step per building, so the metronome is read by counting them.
 // null means the faction has no drum at all (ROT): nothing musters, so
@@ -721,7 +1020,7 @@ const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 
 function drumPeriod(S, side) {
   if (!faction(S, side).drum) return null;
   let period = S.cfg.WAR_DRUM;
-  for (const s of S.slots[side]) period += S.cfg.DRUM_DELTA[s.type] || 0;
+  for (const s of S.slots[side]) if (!underway(s)) period += S.cfg.DRUM_DELTA[s.type] || 0;
   return Math.max(S.cfg.DRUM_MIN, Math.min(S.cfg.DRUM_MAX, period));
 }
 function lvlPower(S, slot) {
@@ -740,13 +1039,25 @@ function lvlCost(S, slot) {
 function buildOptions(S, side, slotIdx) {
   const slot = S.slots[side][slotIdx];
   if (!slot) return [];
+  // T33: nothing to offer on a slot that has turned. It is not theirs to spend
+  // on any more - and refusing it HERE rather than in applyAction is what stops
+  // a bot bidding on it every tick and a popup offering a level for a building
+  // that fights for the other side.
+  if (slot.flipped) return [];
   const f = faction(S, side);
   let opts;
   if (slot.type === null) opts = f.roots || ['farm', 'tower', 'hatch'];
   else if (S.cfg.UPGRADE_TREE[slot.type]) opts = S.cfg.UPGRADE_TREE[slot.type];
   else if (LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) return ['lvl'];
   else return [];
-  return f.kit ? opts.filter(t => f.kit.includes(t)) : opts;
+  const out = f.kit ? opts.filter(t => f.kit.includes(t)) : opts;
+  // T27: a type may be BOTH a trunk and a leaf. Before the Ooze Den grew a
+  // child no type was, so the tree branch could swallow 'lvl' - and a den that
+  // gained one would have silently lost ROT's main gold sink. Appended after
+  // the kit filter, so a faction that owns the den but not the child keeps its
+  // levels rather than getting a dead slot.
+  if (slot.type !== null && LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) out.push('lvl');
+  return out;
 }
 
 // ------------------------------------------------------------- actions ----
@@ -759,12 +1070,29 @@ function applyAction(S, side, action) {
   const slot = S.slots[side][action.slot];
   if (!slot) return false;
   if (action.kind === 'sell') {
-    if (!slot.type) return false;
+    // T33: a turned building cannot be sold by either side - the owner's window
+    // shut when it saturated, and the corruptor never owned the ground. It comes
+    // off the board by demolition only.
+    if (!slot.type || slot.flipped) return false;
     S.money[side] = Math.min(S.cfg.GOLD_CAP, S.money[side] + sellRefund(S, slot));
     S.events.push({ type: 'sell', x: slot.x, y: slot.y, side });
     // guards from a sold post disband via the orphan check in step()
     slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
-    slot.chTgt = null; slot.chT = 0;
+    slot.chTgt = null; slot.chT = 0; slot.spun = 1; slot.buildT = 0; slot.pips = 0; slot.flipped = false;
+    return true;
+  }
+  // T29: scrub a building clean. Selling already denies the corruptor its
+  // tithe, at the price of the building - this is the version you pay gold
+  // for instead. Refused when there is nothing to scrub, so a mis-tap is free.
+  if (action.kind === 'cleanse') {
+    // ...and a cleanse cannot buy it back either (T33): scrubbing the pips off a
+    // flipped slot would leave it flipped and clean, so refusing keeps the gold
+    // rather than selling a cure that does nothing.
+    if (!slot.type || slot.flipped || slot.pips <= 0) return false;
+    if (S.money[side] < S.cfg.CORRUPT.cleanseCost) return false;
+    S.money[side] -= S.cfg.CORRUPT.cleanseCost;
+    slot.pips = 0;
+    S.events.push({ type: 'cleanse', x: slot.x, y: slot.y, side });
     return true;
   }
   if (action.kind !== 'build') return false;
@@ -776,6 +1104,7 @@ function applyAction(S, side, action) {
     slot.spent += cost;
     slot.lvl++;
     if (demolishable(slot.type)) slot.hp = S.cfg.TOWER_HP * lvlPower(S, slot);
+    slot.buildT = buildTime(S, side, slot);
     return true;
   }
   const cost = costOf(S, side, action.type);
@@ -785,13 +1114,21 @@ function applyAction(S, side, action) {
   slot.type = action.type;
   slot.lvl = 1;
   slot.cd = 0;
+  slot.spun = 1;                 // a respec is a new mechanism: spin starts cold
+  slot.pips = 0;                 // ...and it is clean, for the same reason. A
+                                 // LEVEL is the same building, so it keeps its
+                                 // corruption; a respec always costs more than
+                                 // a cleanse, so this is no cheaper scrub.
   slot.hp = demolishable(action.type) ? S.cfg.TOWER_HP : 0;
+  slot.buildT = buildTime(S, side, slot);
   if (S.cfg.PRODUCTION[action.type]) {
     slot.prodCd = prodPeriod(S.cfg.PRODUCTION[action.type]);
   }
   if (action.type === 'guard') {
-    // the squad musters immediately; the respawn timer covers replacements
-    for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, action.slot);
+    // the squad musters immediately; the respawn timer covers replacements.
+    // Gated (T28), it musters when the post finishes instead - stepBuilds does
+    // it, so an unbuilt post is not a free squad.
+    if (!underway(slot)) for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, action.slot);
     slot.prodCd = S.cfg.GUARD.respawn;
   }
   return true;
@@ -823,7 +1160,7 @@ function spawnUnit(S, side, unitKey, at) {
     // drumless faction breeds nothing else - a muster with no beat never moves
     state: (t.trickle || !faction(S, side).drum) ? 'march' : 'muster', // muster -> march -> siege (predators: -> hunt)
     sx: 0, sy: 0,
-    slowed: false,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
   };
   if (unitKey === 'predator') {
     // hold point just past the midline on the owner's side, mirrored so
@@ -843,12 +1180,16 @@ function spawnUnit(S, side, unitKey, at) {
 // wave is ONE body, slower the heavier it gets, and gold can overcharge it.
 function pressRate(S, side) {
   const out = { m: 0, d: 0 };
-  for (const slot of S.slots[side]) {
-    const prod = S.cfg.PRODUCTION[slot.type];
-    if (!prod) continue;
-    const u = S.cfg.UNITS[prod.unit], per = prod.interval / lvlPower(S, slot);
-    out.m += u.hp / per;
-    out.d += u.dps / per;
+  // T33: both nests - a flipped brood pours into the press of whoever owns it
+  // now, and stops pouring into its builder's
+  for (const sd of ['p', 'e']) {
+    for (const slot of S.slots[sd]) {
+      const prod = S.cfg.PRODUCTION[slot.type];
+      if (!prod || underway(slot) || effSide(sd, slot) !== side) continue;
+      const u = S.cfg.UNITS[prod.unit], per = prod.interval / lvlPower(S, slot);
+      out.m += u.hp / per;
+      out.d += u.dps / per;
+    }
   }
   out.m *= S.cfg.STAMP.eff;
   out.d *= S.cfg.STAMP.eff;
@@ -866,7 +1207,7 @@ function spawnProduct(S, side, mass, dps) {
     seed: S.rng() * 10,
     state: 'march',              // stamped ON the beat: it never musters
     sx: 0, sy: 0,
-    slowed: false,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
   });
   S.hatched[side].product++;
   S.stamped[side] += w;
@@ -887,6 +1228,34 @@ function stampPress(S, side) {
   for (let i = 0; i < n; i++) spawnProduct(S, side, mass / n, dmg / n);
 }
 
+// T30: a carrier's entire output. One body, one pip, and it dies where it
+// touched - a foe building takes it on the slot (the tithe, and T33's flip), a
+// hill takes it in the mound, where a pip is the only corruption that damages
+// anything by itself. Saturation is a CAP, not a refusal: the carrier that
+// walks into a full building still dies for nothing, which is what makes
+// over-sending a real mistake rather than a rounding error.
+function implantPip(S, u, slot) {
+  const CR = S.cfg.CORRUPT, n = S.cfg.UNITS[u.typeKey].implant;
+  if (slot) slot.pips = Math.min(CR.max, slot.pips + n);
+  else S.hillPips[other(u.side)] = Math.min(CR.hillMax, S.hillPips[other(u.side)] + n);
+  S.events.push({ type: 'implant', x: u.x, y: u.y, side: u.side, hill: !slot });
+  u.hp = 0;
+  // T33: the last pip TURNS it. One-way, and the only place the flag is ever
+  // set: a cleanse below `max` is the whole window, and once it shuts the
+  // building can only leave the board by being demolished.
+  if (slot && !slot.flipped && slot.pips >= CR.max) {
+    slot.flipped = true;
+    S.events.push({ type: 'flip', x: slot.x, y: slot.y, side: other(u.side), what: slot.type });
+  }
+}
+
+function guardsAlive(S, side, slotIdx) {
+  let n = 0;
+  for (const u of S.units) {
+    if (u.side === side && u.state === 'guard' && u.srcSlot === slotIdx && u.hp > 0) n++;
+  }
+  return n;
+}
 // guard-post defenders: they hold a rally point on the lane beside their
 // post and intercept attackers instead of marching (state 'guard')
 function spawnGuard(S, side, slotIdx) {
@@ -902,16 +1271,20 @@ function spawnGuard(S, side, slotIdx) {
     state: 'guard',
     ax, ay: slot.y, srcSlot: slotIdx,
     sx: 0, sy: 0,
-    slowed: false,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
   });
 }
 
 function destroySlot(S, side, slot) {
   S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side, what: slot.type });
   const FL = S.cfg.FLYWHEEL;
-  S.spin[side] = Math.max(FL.cold, S.spin[side] - FL.loss);
+  // read the gear BEFORE the slot clears: the gear standing when the loss
+  // lands is the one that answers for it, even when the thing lost IS the gear
+  const gear = gearOf(S, side);
+  if (gear !== 'governor') S.spin[side] = Math.max(FL.cold, S.spin[side] - FL.loss);
+  if (gear === 'redline') S.money[side] = Math.max(0, S.money[side] - FL.vent);
   slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
-  slot.chTgt = null; slot.chT = 0;
+  slot.chTgt = null; slot.chT = 0; slot.spun = 1; slot.buildT = 0; slot.pips = 0; slot.flipped = false;
 }
 
 // ---------------------------------------------------------------- step ----
@@ -923,39 +1296,97 @@ function step(S) {
   if (!S.frenzy && S.t >= cfg.FRENZY_AT) { S.frenzy = true; S.events.push({ type: 'frenzy' }); }
   if (!S.decay && S.t >= cfg.DECAY_AT) { S.decay = true; S.events.push({ type: 'decay' }); }
 
-  // the flywheel charges before income is taken: uptime, so a side with
-  // nothing standing spins nothing up (a wiped machine has to be rebuilt
-  // before it starts compounding again).
+  // an ordered pipeline - the order is load-bearing (flywheel charges before
+  // income is taken, corrode runs after mortars, the death pass reads
+  // everything above it). Never reorder without a byte-identical check.
+  stepBuilds(S, dt);
+  stepEconomy(S, dt);
+  stepField(S, dt);
+  stepProduction(S, dt);
+  stepDrums(S);
+  stepAuras(S, dt);
+  stepUnits(S, dt);
+  stepTowers(S, dt);
+  stepBells(S, dt);
+  stepMortars(S, dt);
+  stepCorrode(S, dt);
+  stepPips(S, dt);
+  stepConverters(S, dt);
+  deathPass(S, dt);
+
+  if (S.decay) {
+    S.baseHP.p -= cfg.DECAY_RATE * dt;
+    S.baseHP.e -= cfg.DECAY_RATE * dt;
+  }
+
+  const pDead = S.baseHP.p <= 0, eDead = S.baseHP.e <= 0;
+  if (pDead || eDead || S.t >= cfg.HARD_END) {
+    if (pDead && eDead) S.result = 'draw';
+    else if (eDead) S.result = 'p';
+    else if (pDead) S.result = 'e';
+    else S.result = S.baseHP.p > S.baseHP.e ? 'p' : (S.baseHP.p < S.baseHP.e ? 'e' : 'draw');
+    S.endT = S.t;
+    S.over = true;
+  }
+}
+
+// T28: scaffolding comes down. Runs FIRST, so a slot that finishes this tick
+// works this tick. Off (SPICE.buildGate 0) nothing here ever runs, so the whole
+// experiment is bit-identical to the shipped rules.
+function stepBuilds(S, dt) {
+  if (S.cfg.SPICE.buildGate <= 0) return;
   for (const side of ['p', 'e']) {
-    if (S.spin[side] >= cfg.FLYWHEEL.max) continue;
-    if (S.slots[side].some(s => s.type)) {
-      S.spin[side] = Math.min(cfg.FLYWHEEL.max, S.spin[side] + cfg.FLYWHEEL.rate * dt);
+    for (let i = 0; i < S.slots[side].length; i++) {
+      const slot = S.slots[side][i];
+      if (slot.buildT <= 0) continue;
+      slot.buildT -= dt;
+      if (slot.buildT > 0) continue;
+      slot.buildT = 0;
+      // the deferred muster - up to the SHORTFALL, so levelling a manned post
+      // does not quietly double its squad
+      if (slot.type === 'guard') {
+        for (let n = guardsAlive(S, side, i); n < S.cfg.GUARD.count; n++) spawnGuard(S, side, i);
+        slot.prodCd = S.cfg.GUARD.respawn;
+      }
+    }
+  }
+}
+
+// the flywheel charges before income is taken: uptime, so a side with
+// nothing standing spins nothing up (a wiped machine has to be rebuilt
+// before it starts compounding again).
+function stepEconomy(S, dt) {
+  const cfg = S.cfg, FL = cfg.FLYWHEEL;
+  for (const side of ['p', 'e']) {
+    const gear = gearOf(S, side);
+    const max = gear === 'governor' ? FL.govMax : FL.max;
+    if (S.spin[side] >= max) { S.spin[side] = max; continue; }
+    if (S.slots[side].some(s => s.type && !underway(s))) {
+      const rate = FL.rate * (gear === 'redline' ? FL.redMult : 1);
+      S.spin[side] = Math.min(max, S.spin[side] + rate * dt);
     }
   }
   for (const side of ['p', 'e']) {
     S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + income(S, side) * dt);
   }
+}
 
-  const CR = cfg.CREEP;
-  stepField(S, dt);
-
-  // hatcheries produce into the muster; guard posts keep their squad manned.
-  // A stamping faction (PISTON) breeds nothing: the same buildings pour mass
-  // into the press, capped, and the drum stamps it.
+// hatcheries produce into the muster; guard posts keep their squad manned.
+// A stamping faction (PISTON) breeds nothing: the same buildings pour mass
+// into the press, capped, and the drum stamps it.
+function stepProduction(S, dt) {
+  const cfg = S.cfg;
   for (const side of ['p', 'e']) {
-    const stamping = !!faction(S, side).stamp;
-    if (stamping) {
+    if (faction(S, side).stamp) {
       const pr = pressRate(S, side);
       S.press[side].m += pr.m * dt;
       S.press[side].d += pr.d * dt;
     }
     for (let i = 0; i < S.slots[side].length; i++) {
       const slot = S.slots[side][i];
+      if (underway(slot)) continue;
       if (slot.type === 'guard') {
-        let living = 0;
-        for (const u of S.units) {
-          if (u.side === side && u.state === 'guard' && u.srcSlot === i && u.hp > 0) living++;
-        }
+        const living = guardsAlive(S, side, i);
         if (living >= cfg.GUARD.count) {
           slot.prodCd = cfg.GUARD.respawn;   // timer starts at the first death
         } else {
@@ -968,10 +1399,15 @@ function step(S) {
         continue;
       }
       const prod = cfg.PRODUCTION[slot.type];
-      if (!prod || stamping) continue;
+      // T33: a flipped brood breeds for the corruptor, into the CORRUPTOR's
+      // muster - the ants phase across rather than hatching inside the nest they
+      // are about to attack, which would put them in siege range at birth. The
+      // timer stays on the slot, so its rate is still the building's.
+      const es = effSide(side, slot);
+      if (!prod || faction(S, es).stamp) continue;
       slot.prodCd -= dt;
       if (slot.prodCd <= 0) {
-        for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, side, prod.unit);
+        for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, es, prod.unit);
         slot.prodCd += prodPeriod(prod) / lvlPower(S, slot);
       }
     }
@@ -981,27 +1417,75 @@ function step(S) {
   for (const u of S.units) {
     if (u.state === 'guard' && S.slots[u.side][u.srcSlot].type !== 'guard') u.hp = 0;
   }
+}
 
-  // the war drums: each side beats on its own period (fx0.2). A pending
-  // beat keeps its scheduled time; the CURRENT period applies from the
-  // next scheduling on, so drum-shifters never retro-shift a beat.
+// the war drums: each side beats on its own period (fx0.2). A pending
+// beat keeps its scheduled time; the CURRENT period applies from the
+// next scheduling on, so drum-shifters never retro-shift a beat.
+function stepDrums(S) {
   for (const side of ['p', 'e']) {
     const period = drumPeriod(S, side);
     if (period === null) continue;             // drumless faction: no beat
     if (S.t >= S.nextBeat[side]) {
       S.nextBeat[side] += period;
       if (faction(S, side).stamp) stampPress(S, side);
+      punchRamparts(S, side);
       for (const u of S.units) if (u.side === side && u.state === 'muster') u.state = 'march';
       S.events.push({ type: 'march', side });
     }
   }
+}
 
-  // sap auras: defender's sap towers slow attackers (speed and bite rate)
-  for (const u of S.units) u.slowed = false;
+// T24: the beat's DEFENSIVE half. Knockback is toward the victim's own hill,
+// which mirrors by construction (y' = 640-y flips the sign with it), and a
+// besieger is dropped back to 'march' so it must re-close and re-pick a siege
+// spot: the reset is the damage. Levels buy shove DISTANCE, not stun - the
+// readable effect, and stacking both would compound a control tower.
+function punchRamparts(S, side) {
+  const cfg = S.cfg, spec = cfg.TOWERS.rampart, foe = other(side);
+  const homeY = (foe === 'p' ? cfg.PLAYER_BASE : cfg.ENEMY_BASE).y;
+  for (const slot of S.slots[side]) {
+    if (slot.type !== 'rampart' || underway(slot)) continue;
+    const reach = spec.punch * lvlPower(S, slot);
+    for (const u of S.units) {
+      if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+      if (Math.hypot(u.x - slot.x, u.y - slot.y) >= spec.range) continue;
+      const shrug = u.w >= cfg.STAMP.smashAt ? cfg.STAMP.shrug : 1;
+      u.y += Math.sign(homeY - u.y) * reach * shrug;
+      u.punchT = Math.max(u.punchT, spec.punchStun * shrug);
+      if (u.state === 'siege') u.state = 'march';
+      S.events.push({ type: 'punch', x: u.x, y: u.y, side });
+    }
+  }
+}
+
+// speed and bite-rate modifiers, reset and reapplied each tick before
+// anything moves: sap auras, then paint underfoot (slow/DoT/heal/haste).
+function stepAuras(S, dt) {
+  const cfg = S.cfg, CR = cfg.CREEP;
+  // sap auras: defender's sap towers slow attackers (speed and bite rate).
+  // A punched attacker (T24) staggers off the same `slowed` channel, so a sap
+  // and a rampart take the stronger of the two rather than multiplying.
+  for (const u of S.units) {
+    u.slowed = false; u.hasted = false;
+    if (u.punchT > 0) {
+      u.punchT = Math.max(0, u.punchT - dt);
+      u.slowed = cfg.TOWERS.rampart.punchSlow;
+    }
+    // T32: stasis is a TIMER, not a per-tick aura - it survives leaving the
+    // bell's range, so it burns down here beside the stagger rather than being
+    // recomputed. Thawing arms the immunity that caps a stack of bells.
+    if (u.frozen > 0) {
+      u.frozen = Math.max(0, u.frozen - dt);
+      if (u.frozen <= 0) u.thawT = cfg.TOWERS.bell.immune;
+    } else if (u.thawT > 0) {
+      u.thawT = Math.max(0, u.thawT - dt);
+    }
+  }
   for (const side of ['p', 'e']) {
     const foe = other(side);
     for (const slot of S.slots[side]) {
-      if (slot.type !== 'sap') continue;
+      if (slot.type !== 'sap' || underway(slot)) continue;
       // higher-level saps slow harder (lower factor)
       const factor = cfg.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1);
       for (const u of S.units) {
@@ -1037,16 +1521,37 @@ function step(S) {
         if (k > 0) u.hp = Math.min(max, u.hp + cfg.SPICE.heal * k * dt);
       }
     }
+    // T17 PAINT_HASTES: own bodies skate on their own slime. Stacks with a sap
+    // slow rather than cancelling it.
+    // T27 generalised the GATE from the global flag to a per-unit factor, so a
+    // slither carries its own haste while `SPICE.speed` stays 0: a unit's
+    // `paintSpeed` wins, everything else falls back to the flag.
+    for (const u of S.units) {
+      if (u.side !== side || u.state === 'muster') continue;
+      const ps = cfg.UNITS[u.typeKey].paintSpeed || cfg.SPICE.speed;
+      if (ps <= 0) continue;      // 0 is off; under 1 still SLOWS, as before
+      const k = fieldAt(S, side, u.x, u.y);
+      if (k > 0) u.hasted = 1 + (ps - 1) * k;
+    }
   }
+}
 
-  // march down the lane, then dig in and chew the enemy nest until killed.
-  // v0.5 contact rules first: guards hunt attackers near their rally point;
-  // an attacker with a guard in engage range halts and fights it instead of
-  // advancing; sappers divert to enemy defence buildings and demolish them.
+// march down the lane, then dig in and chew the enemy nest until killed.
+// v0.5 contact rules first: guards hunt attackers near their rally point;
+// an attacker with a guard in engage range halts and fights it instead of
+// advancing; sappers divert to enemy defence buildings and demolish them.
+function stepUnits(S, dt) {
+  const cfg = S.cfg;
   for (const u of S.units) {
     if (u.state === 'muster') continue;
+    // T32: frozen is TOTAL - no step, no bite, no divert, no crush. It keeps
+    // its state, so a besieger resumes chewing where it stood, and it stays a
+    // target for every gun and every charmer: the freeze buys the defender the
+    // seconds, it does not hide the body.
+    if (u.frozen > 0) continue;
 
     const factor = u.slowed || 1;   // slowed holds the strongest sap factor
+    const mv = factor * (u.hasted || 1);   // haste is movement-only
     const foe = other(u.side);
 
     if (u.state === 'guard') {
@@ -1095,16 +1600,16 @@ function step(S) {
       if (tgt) {
         const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
         if (d > u.r + tgt.r + 3) {
-          u.x += (dx / d) * u.spd * factor * dt;
-          u.y += (dy / d) * u.spd * factor * dt;
+          u.x += (dx / d) * u.spd * mv * dt;
+          u.y += (dy / d) * u.spd * mv * dt;
         } else {
           tgt.hp -= u.dps * factor * dt;
         }
       } else {
         const dx = u.ax - u.x, dy = u.ay - u.y, d = Math.hypot(dx, dy);
         if (d > 2) {
-          u.x += (dx / d) * u.spd * factor * dt;
-          u.y += (dy / d) * u.spd * factor * dt;
+          u.x += (dx / d) * u.spd * mv * dt;
+          u.y += (dy / d) * u.spd * mv * dt;
         }
       }
       continue;
@@ -1139,11 +1644,36 @@ function step(S) {
       }
       if (ts) {
         if (td > 18) {
-          u.x += ((ts.x - u.x) / td) * u.spd * factor * dt;
-          u.y += ((ts.y - u.y) / td) * u.spd * factor * dt;
+          u.x += ((ts.x - u.x) / td) * u.spd * mv * dt;
+          u.y += ((ts.y - u.y) / td) * u.spd * mv * dt;
         } else {
           ts.hp -= spec.vsTower * factor * dt;
           if (ts.hp <= 0) destroySlot(S, foe, ts);
+        }
+        continue;
+      }
+    }
+
+    // T30: a carrier walks to the nearest foe building it can still corrupt and
+    // touches it. Same divert shape as the sapper - what differs is that it
+    // SKIPS a saturated building (a full slot cannot take another pip, so
+    // parking on it is a wasted body) and that arriving kills it. A scaffold is
+    // a target like anything else: T29's contract is that corruption lands on
+    // what is THERE, and only the contributor side of a build is gated.
+    if (u.typeKey === 'carrier' && u.state === 'march') {
+      const spec = cfg.UNITS.carrier;
+      let ts = null, td = spec.sight;
+      for (const slot of S.slots[foe]) {
+        if (!slot.type || slot.pips >= cfg.CORRUPT.max) continue;
+        const d = Math.hypot(slot.x - u.x, slot.y - u.y);
+        if (d < td) { td = d; ts = slot; }
+      }
+      if (ts) {
+        if (td > 18) {
+          u.x += ((ts.x - u.x) / td) * u.spd * mv * dt;
+          u.y += ((ts.y - u.y) / td) * u.spd * mv * dt;
+        } else {
+          implantPip(S, u, ts);
         }
         continue;
       }
@@ -1168,7 +1698,7 @@ function step(S) {
 
     const nest = u.side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
     if (u.state === 'march') {
-      u.y += (u.side === 'p' ? -1 : 1) * u.spd * factor * dt;
+      u.y += (u.side === 'p' ? -1 : 1) * u.spd * mv * dt;
       if (Math.hypot(u.x - nest.x, u.y - nest.y) < cfg.SIEGE_DIST) {
         u.state = 'siege';
         const sp = siegeSpot(u, nest);
@@ -1178,20 +1708,33 @@ function step(S) {
       const dx = u.sx - u.x, dy = u.sy - u.y;
       const d = Math.hypot(dx, dy);
       if (d > 3) {
-        u.x += (dx / d) * u.spd * factor * dt;
-        u.y += (dy / d) * u.spd * factor * dt;
+        u.x += (dx / d) * u.spd * mv * dt;
+        u.y += (dy / d) * u.spd * mv * dt;
+      } else if (u.typeKey === 'carrier') {
+        // the hill is where a carrier ends up with nothing left to corrupt, and
+        // it plants in the mound itself: a nest with no buildings standing is
+        // not a safe nest. Siege position, not SIEGE_DIST, so the gun line gets
+        // the same walk to shoot at as it does against any other besieger.
+        implantPip(S, u, null);
       } else {
         S.baseHP[other(u.side)] -= u.dps * factor * dt;
       }
     }
   }
+}
 
-  // towers fire at the nearest marching/besieging foe in range
+// towers fire at the nearest marching/besieging foe in range
+function stepTowers(S, dt) {
+  const cfg = S.cfg;
   for (const side of ['p', 'e']) {
-    const foe = other(side);
     for (const slot of S.slots[side]) {
       const spec = cfg.TOWERS[slot.type];
-      if (!spec || !spec.dmg) continue;
+      if (!spec || !spec.dmg || underway(slot)) continue;
+      // T33: a flipped gun shoots the army of the nest it stands in. This is the
+      // one effect the flip steals that is visible from across the map, and the
+      // only one routed here: who may SHOOT the building, sap it, bomb it or
+      // charm past it all stay keyed to the ground, not to its loyalty.
+      const foe = other(effSide(side, slot));
       slot.cd -= dt;
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;
@@ -1202,26 +1745,89 @@ function step(S) {
       }
       if (best) {
         const dmg = spec.dmg * lvlPower(S, slot);
+        // the muzzle flash goes in FIRST so a chain's arcs trail their own head
+        S.shots.push({ x1: slot.x, y1: slot.y - 14, x2: best.x, y2: best.y, ttl: 0.09, splash: spec.splash || 0 });
         if (spec.splash) {
           for (const u of S.units) {
             if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
             if (Math.hypot(u.x - best.x, u.y - best.y) <= spec.splash) u.hp -= dmg;
           }
+        } else if (spec.hops) {
+          // the arc hops from the LAST body hit, not from the tower: a strung-
+          // out file conducts as far as a blob does. Ties go to the lower unit
+          // index, like every other scan here - array order is the replay.
+          let cur = best, arc = dmg;
+          const hit = new Set([best]);
+          best.hp -= arc;
+          while (hit.size < spec.hops) {
+            let nxt = null, nd = spec.chainR;
+            for (const u of S.units) {
+              if (u.side !== foe || u.hp <= 0 || hit.has(u)) continue;
+              if (u.state === 'muster' || u.state === 'guard') continue;
+              const d = Math.hypot(u.x - cur.x, u.y - cur.y);
+              if (d < nd) { nd = d; nxt = u; }
+            }
+            if (!nxt) break;
+            arc *= spec.falloff;
+            nxt.hp -= arc;
+            hit.add(nxt);
+            S.shots.push({ x1: cur.x, y1: cur.y, x2: nxt.x, y2: nxt.y, ttl: 0.09, arc: true });
+            cur = nxt;
+          }
         } else {
           best.hp -= dmg;
         }
-        slot.cd = spec.cooldown;
-        S.shots.push({ x1: slot.x, y1: slot.y - 14, x2: best.x, y2: best.y, ttl: 0.09, splash: spec.splash || 0 });
+        // a slimed target gums the mechanism: paint suppresses the guns that
+        // burn it back, so the stall line becomes an arms race
+        slot.cd = cfg.SPICE.stifle > 0
+          ? spec.cooldown * (1 + cfg.SPICE.stifle * fieldAt(S, foe, best.x, best.y))
+          : spec.cooldown;
+        // a dynamo winds itself: the shot it just took is already faster
+        if (spec.spinStep) {
+          slot.spun = Math.min(spec.spinMax, slot.spun + spec.spinStep);
+          slot.cd /= slot.spun;
+        }
       }
     }
   }
+}
 
-  // mortars lob at the nearest enemy defence building; they never touch
-  // units or the hill (the reverse-sapper: siege from your own side)
+// T32: the Stasis Bell rings. It is a PULSE, not a shot - no target choice, no
+// nearest-body scan: everything hostile inside the ring freezes at once, which
+// is what makes it a screen against numbers rather than a gun that happens to
+// stun. A juggernaut shrugs at STAMP.shrug, the same weight threshold that lets
+// it crush (T24's constant, shared on purpose).
+function stepBells(S, dt) {
+  const cfg = S.cfg, spec = cfg.TOWERS.bell;
   for (const side of ['p', 'e']) {
     const foe = other(side);
     for (const slot of S.slots[side]) {
-      if (slot.type !== 'mortar') continue;
+      if (slot.type !== 'bell' || underway(slot)) continue;
+      slot.cd -= dt;
+      if (slot.cd > 0) continue;
+      slot.cd = spec.cooldown / lvlPower(S, slot);   // levels ring OFTENER
+      S.events.push({ type: 'bell', x: slot.x, y: slot.y, side, r: spec.range });
+      for (const u of S.units) {
+        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+        // already held, or still thawing: a second bell buys coverage, never a
+        // longer hold. This is the whole anti-lock rule
+        if (u.frozen > 0 || u.thawT > 0) continue;
+        if (Math.hypot(u.x - slot.x, u.y - slot.y) >= spec.range) continue;
+        const shrug = u.w >= cfg.STAMP.smashAt ? cfg.STAMP.shrug : 1;
+        u.frozen = spec.freezeDur * shrug;
+      }
+    }
+  }
+}
+
+// mortars lob at the nearest enemy defence building; they never touch
+// units or the hill (the reverse-sapper: siege from your own side)
+function stepMortars(S, dt) {
+  const cfg = S.cfg;
+  for (const side of ['p', 'e']) {
+    const foe = other(side);
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'mortar' || underway(slot)) continue;
       const spec = cfg.TOWERS.mortar;
       slot.cd -= dt;
       if (slot.cd > 0) continue;
@@ -1239,9 +1845,12 @@ function step(S) {
       if (best.hp <= 0) destroySlot(S, foe, best);
     }
   }
+}
 
-  // the mat eats walls: a foe building corrodes at the intensity it stands
-  // in, and paint lapping the foe HILL's rim strangles it.
+// the mat eats walls: a foe building corrodes at the intensity it stands
+// in, and paint lapping the foe HILL's rim strangles it.
+function stepCorrode(S, dt) {
+  const CR = S.cfg.CREEP;
   for (const side of ['p', 'e']) {
     if (S.fieldSum[side] <= 0) continue;
     const foe = other(side);
@@ -1254,18 +1863,53 @@ function step(S) {
     }
     S.baseHP[foe] -= CR.hillDps * hillLap(S, side) * dt;
   }
+}
 
-  // converters channel the nearest enemy attacker in range and flip it:
-  // the ant walks home and marches with its NEW side's next drum. The three
-  // load-bearing guards (see README v1.0 design): one target at a time
-  // (throughput-limited - chaff saturates it), the channel is interruptible
-  // (death, leaving range, or losing the tower resets progress), and a
-  // converted ant can never be converted again (no ping-pong).
+// T29: corruption pips gnaw the hill they sit on. It rides beside the strangle
+// because it is the same shape - a persistent state on a target, billed per
+// second straight off baseHP, so playMatch's hill-damage readouts see it with
+// no extra bookkeeping. Building pips do not tick: they pay the tithe and, at
+// saturation, flip (T33). Inert until carriers land - nothing writes a pip.
+function stepPips(S, dt) {
+  const CR = S.cfg.CORRUPT;
+  for (const side of ['p', 'e']) {
+    if (S.hillPips[side] > 0) S.baseHP[side] -= CR.hillDot * S.hillPips[side] * dt;
+  }
+  if (CR.decay <= 0) return;
+  for (const side of ['p', 'e']) {
+    for (const slot of S.slots[side]) {
+      if (slot.pips > 0) slot.pips = Math.max(0, slot.pips - CR.decay * dt);
+    }
+    S.hillPips[side] = Math.max(0, S.hillPips[side] - CR.decay * dt);
+  }
+}
+
+// what `side` is skimming: every pip it has planted on a foe building. NOT
+// gated on `underway` - a scaffold is a TARGET of the corruption, not a
+// contributor to it, and T28's gate covers only the latter.
+// T33: a FLIPPED building pays no tithe. Nothing leaks from it any more, in
+// either direction - it is not a corrupted enemy asset, it is yours, and it
+// pays its income instead (income() counts it through effSide).
+function tithePips(S, side) {
+  let n = 0;
+  for (const slot of S.slots[other(side)]) if (slot.type && !slot.flipped) n += slot.pips;
+  return n;
+}
+
+// converters channel the nearest enemy attacker in range and flip it:
+// the ant walks home and marches with its NEW side's next drum. The three
+// load-bearing guards (see README v1.0 design): one target at a time
+// (throughput-limited - chaff saturates it), the channel is interruptible
+// (death, leaving range, or losing the tower resets progress), and a
+// converted ant can never be converted again (no ping-pong). The charm
+// revert pass rides at the tail so a flip and its wear-off share a tick order.
+function stepConverters(S, dt) {
+  const cfg = S.cfg;
   for (const side of ['p', 'e']) {
     const foe = other(side);
     const spec = cfg.TOWERS.conv;
     for (const slot of S.slots[side]) {
-      if (slot.type !== 'conv') continue;
+      if (slot.type !== 'conv' || underway(slot)) continue;
       const convertible = v =>
         v.side === foe && v.hp > 0 && !v.conv &&
         (v.state === 'march' || v.state === 'siege') &&
@@ -1323,7 +1967,12 @@ function step(S) {
     if (u.typeKey === 'predator') u.hy = (cfg.ENEMY_BASE.y + cfg.PLAYER_BASE.y) - u.hy;
     S.events.push({ type: 'revert', x: u.x, y: u.y, side: home });
   }
+}
 
+// deaths and what corpses are worth: splats, the T14 wall-bite, the digest,
+// corpse gold, then the corpse and stale-shot sweep.
+function deathPass(S, dt) {
+  const cfg = S.cfg, CR = cfg.CREEP;
   // the corpse list, gathered once - three paint rules read it, and the
   // digest must not re-walk every ant to find the handful that died
   const dead = [];
@@ -1333,7 +1982,11 @@ function step(S) {
     S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
   }
   // corpse-splats: a dead shambler bursts paint where it falls, wherever that
-  // is - deep splats simply fade if nothing keeps feeding them
+  // is - deep splats simply fade if nothing keeps feeding them.
+  // T27 deliberately leaves the SLITHER out: measured, splat is worth +12 hill
+  // damage on its own but it is the ooze den's whole identity (T14), and two
+  // dens whose corpses both bite is one den twice. The slither pays its rent in
+  // trail and buys its keep in throughput; the shambler's corpse does the work.
   for (const u of dead) {
     if (u.typeKey !== 'shambler') continue;
     S.events.push({ type: 'splat', x: u.x, y: u.y, side: u.side });
@@ -1365,21 +2018,6 @@ function step(S) {
   S.units = S.units.filter(u => u.hp > 0);
   for (const sh of S.shots) sh.ttl -= dt;
   S.shots = S.shots.filter(sh => sh.ttl > 0);
-
-  if (S.decay) {
-    S.baseHP.p -= cfg.DECAY_RATE * dt;
-    S.baseHP.e -= cfg.DECAY_RATE * dt;
-  }
-
-  const pDead = S.baseHP.p <= 0, eDead = S.baseHP.e <= 0;
-  if (pDead || eDead || S.t >= cfg.HARD_END) {
-    if (pDead && eDead) S.result = 'draw';
-    else if (eDead) S.result = 'p';
-    else if (pDead) S.result = 'e';
-    else S.result = S.baseHP.p > S.baseHP.e ? 'p' : (S.baseHP.p < S.baseHP.e ? 'e' : 'draw');
-    S.endT = S.t;
-    S.over = true;
-  }
 }
 
 // --------------------------------------------------------- headless run ----
@@ -1404,6 +2042,15 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     creepAdvP: creepAdvance(S, 'p'), creepAdvE: creepAdvance(S, 'e'),
     spinP: S.spin.p, spinE: S.spin.e,
     stampP: S.stamped.p, stampE: S.stamped.e,
+    // corruption standing on each side's own board at the end - the readout
+    // that pairs with hpP/hpE. Zero until carriers can write a pip (T30).
+    pipsP: S.hillPips.p + S.slots.p.reduce((n, s) => n + s.pips, 0),
+    pipsE: S.hillPips.e + S.slots.e.reduce((n, s) => n + s.pips, 0),
+    // T33: buildings each side has LOST to the flip and still standing. Paired
+    // with pipsP/E: those are the corruption on your board, these are the part
+    // of it that has stopped being yours.
+    flipP: S.slots.p.reduce((n, s) => n + (s.flipped ? 1 : 0), 0),
+    flipE: S.slots.e.reduce((n, s) => n + (s.flipped ? 1 : 0), 0),
   };
 }
 
@@ -1411,7 +2058,12 @@ return {
   CONFIG, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
-  fieldCol, fieldRow, faction, costOf, pressRate,
+  fieldCol, fieldRow, faction, costOf, pressRate, gearOf, tithePips,
+  // exported for the selftest only: a building dies where damage lands, and
+  // there is no hp<=0 sweep, so a guard for the flywheel knock has to call it -
+  // and implantPip is the flip's only writer, so a guard for the last pip has to
+  // call that
+  destroySlot, implantPip,
   demolishable, LEVELABLE, FAMILIES, FACTIONS,
 };
 });

@@ -43,26 +43,38 @@ const UI_TOP = 648;
 
 const LABELS = {
   farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Mat',
+  governor: 'Govern', redline: 'Redline',
   tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
+  dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell',
   hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
-  hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze',
+  hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze', grubb: 'Grub', slitherb: 'Slither',
+  carrierb: 'Cyst',
 };
 
 // one-line "what is this" blurb, shown while previewing an option
 const DESC = {
   farm: 'steady gold', grove: 'better farm', plant: 'best farm',
   mat: 'creep fountain: paints ground, income by area',
+  governor: 'farm + safe gear: losses never knock your flywheel, lower ceiling',
+  redline: 'farm + greed gear: double spin-up, but every loss vents gold',
   tower: 'all-rounder shooter', sharp: 'sniper: slow, huge hits',
   spit: 'splash: shreds swarms', sap: 'slows attackers, no damage',
   guard: 'spawns defenders that block the lane',
   mortar: 'bombs enemy defences anywhere, never units',
   conv: 'charms enemy ants to your side (timed)',
+  dynamo: 'spins up as it fires: slow cold, brutal once wound',
+  coil: 'arc chains between clustered enemies, weaker each hop',
+  rampart: 'no gun: shoves attackers back on every beat of YOUR drum',
+  bell: 'no gun: freezes every attacker in range solid, in pulses',
   hatch: 'breeds workers', swarmb: 'cheap worker flood',
   soldierb: 'breeds soldiers', majorb: 'breeds slow tanks',
   sapperb: 'breeds building-killers', predatorb: 'breeds midfield hunters',
   hornb: 'breeds soldiers, +6s on YOUR drum (bigger waves)',
   fifeb: 'breeds workers, -3s on YOUR drum (faster waves)',
   oozeb: 'breeds shamblers: no drum, corpses feed the creep',
+  grubb: 'cheap fat grubs: lots of hp, almost no bite',
+  slitherb: 'frail skirmishers: race across YOUR creep, crawl off it',
+  carrierb: 'carriers: no damage at all - they touch a foe building and corrupt it',
   lvl: 'level up: more power, superlinear cost',
 };
 
@@ -79,6 +91,12 @@ const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
 const PERSONA_BTNS = SKIRMISH_FOES.map((f, i) => ({
   key: f.key, x: 24, y: 428 + i * 78, w: W - 48, h: 68,
 }));
+// playtest faction picker (temporary until T39): one chip row per side on the
+// skirmish screen. Skirmish-only - campaign levels are authored vs the sandbox.
+const FACTION_KEYS = ['sandbox', 'rot', 'piston', 'veil'];
+const FACTION_ROWS = ['p', 'e'].map((side, r) => FACTION_KEYS.map((key, i) => ({
+  side, key, x: 56 + i * 90, y: 306 + r * 34, w: 84, h: 28,
+})));
 
 // campaign trail: a winding path up the screen, boss node centred on top
 // (spacing scales off the level count - v0.9 grew the ladder to 12)
@@ -101,8 +119,8 @@ try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } 
 // authored kits, so early levels play easier here than in the main line.
 const ALL_UNLOCKED = { types: Object.keys(CFG.COSTS), maxLvl: CFG.MAX_LVL };
 let unlocks = ALL_UNLOCKED;
-// ?spice=spawnRate:0.01,heal:4 - playtest a T6c paint experiment in the
-// browser, the same knobs tune.js takes as SPICE=... (all 0 by default).
+// ?spice=spawnRate:0.01,speed:1.5 - playtest a CONFIG.SPICE paint experiment
+// in the browser, the same knobs tune.js takes as SPICE=... (all 0 by default).
 const SPICE_OVERRIDE = (() => {
   const q = new URLSearchParams(location.search).get('spice');
   if (!q) return null;
@@ -119,10 +137,19 @@ const FACTION_OVERRIDE = (() => {
   const pick = (f, dflt) => (f && sim.FACTIONS[f] ? f : dflt);
   return { p: pick(p, 'sandbox'), e: pick(e, 'sandbox') };
 })();
+// the picker's live selection: the URL wins at load, else the remembered pick
+let factionSel = Object.assign(
+  { p: 'sandbox', e: 'sandbox' },
+  (() => { try { return JSON.parse(localStorage.getItem('antwar-faction-pick') || 'null'); } catch (e) { return null; } })(),
+  FACTION_OVERRIDE || {});
+for (const s of ['p', 'e']) if (!sim.FACTIONS[factionSel[s]]) factionSel[s] = 'sandbox';
+function saveFactionSel() {
+  try { localStorage.setItem('antwar-faction-pick', JSON.stringify(factionSel)); } catch (e) {}
+}
 function newState(extra) {
   const ov = Object.assign({}, extra);
   if (SPICE_OVERRIDE) ov.SPICE = SPICE_OVERRIDE;
-  if (FACTION_OVERRIDE) ov.FACTION = FACTION_OVERRIDE;
+  if (FACTION_OVERRIDE && !ov.FACTION) ov.FACTION = FACTION_OVERRIDE;
   return sim.createState((Math.random() * 2 ** 31) | 0, ov);
 }
 function saveStars() {
@@ -147,6 +174,7 @@ let replay = null;
 function startReplay(opponent) {
   replay = {
     v: 'fx0.4', mode, opponent, seed: S.seed,
+    faction: S.cfg.FACTION,      // both kits; without it a faction replay is unreconstructable
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -313,7 +341,7 @@ function resetMatchFx() {
 function begin(key) {           // skirmish: pick a foe, symmetric start
   mode = 'skirmish';
   personaKey = key;
-  S = newState();
+  S = newState({ FACTION: { p: factionSel.p, e: factionSel.e } });
   enemyCtrl = pol.makeController(SKIRMISH_FOES.find(f => f.key === key).params);
   startReplay(key);
   resetMatchFx();
@@ -334,11 +362,20 @@ function beginLevel(i) {        // campaign: level AI + level setup + kits
 }
 
 function opponentLabel() {
-  return mode === 'campaign' ? pol.LEVELS[currentLevel].name
-    : SKIRMISH_FOES.find(f => f.key === personaKey).label;
+  if (mode === 'campaign') return pol.LEVELS[currentLevel].name;
+  const base = SKIRMISH_FOES.find(f => f.key === personaKey).label;
+  const f = sim.faction(S, 'e');
+  return f.label === 'SANDBOX' ? base : base + ' - ' + f.label;
 }
 
-function banner(text) { banners.push({ text, ttl: 2.4 }); }
+// T31: a repeat REFRESHES rather than stacks. VEIL plants pips in a stream, so
+// with it as an opponent two copies of 'Your HILL is corrupted!' sat on top of
+// each other at different offsets - unreadable, and the same for any burst.
+function banner(text) {
+  const showing = banners.find(b => b.text === text);
+  if (showing) showing.ttl = 2.4;
+  else banners.push({ text, ttl: 2.4 });
+}
 
 // ------------------------------------------------------------------ input --
 function popupRects(slotIdx) {
@@ -349,25 +386,49 @@ function popupRects(slotIdx) {
     cost: type === 'lvl' ? sim.lvlCost(S, slot) : sim.costOf(S, 'p', type),
   }));
   if (!entries.length && slot.type === null) return [];
-  // shrink buttons when the tower tree offers all 6 specs
+  // shrink buttons when a tree offers all its specs, and WRAP once shrinking
+  // would stop being tappable: the tower tree reached ten options at T25, which
+  // is 37px stubs across 420px - narrower than the word 'Spitter'
   const gap = 4;
   const n = Math.max(1, entries.length);
-  const bw = Math.min(66, Math.floor((W - 12 - (n - 1) * gap) / n));
-  const total = n * bw + (n - 1) * gap;
-  const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
-  const y = slot.y - 82;
-  const out = entries.map((en, i) => Object.assign(en, {
-    x: x0 + i * (bw + gap), y, w: bw, h: 52,
-  }));
+  const per = n > 6 ? Math.ceil(n / 2) : n;
+  const rows = Math.ceil(n / per);
+  const bw = Math.min(66, Math.floor((W - 12 - (per - 1) * gap) / per));
+  const rowAt = r => {
+    const cnt = Math.min(per, n - r * per);
+    const total = cnt * bw + (cnt - 1) * gap;
+    return { total, x0: Math.max(6, Math.min(W - total - 6, slot.x - total / 2)) };
+  };
+  const out = entries.map((en, i) => {
+    const r = Math.floor(i / per), { x0 } = rowAt(r);
+    return Object.assign(en, {
+      x: x0 + (i % per) * (bw + gap), y: slot.y - 82 - (rows - 1 - r) * 58, w: bw, h: 52,
+    });
+  });
   // any occupied slot can be sold for a partial refund of its total spend;
-  // sell sits on its own slim row so a stray tap can't hit it
-  if (slot.type !== null) {
+  // sell sits on its own slim row so a stray tap can't hit it - and shares that
+  // row with the cleanse (T33), the two ways to answer corruption: pay 30 to
+  // scrub it, or take the refund and deny the corruptor the building entirely.
+  // A slot that has TURNED offers neither: it is not yours to spend on any more.
+  if (slot.type !== null && !slot.flipped) {
+    const last = rowAt(rows - 1), cx = last.x0 + last.total / 2;
+    const pair = slot.pips > 0;
     out.push({
       type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot),
-      x: x0 + total / 2 - 37, y: slot.y - 26, w: 74, h: 24,
+      x: (pair ? cx - 78 : cx - 37), y: slot.y - 26, w: 74, h: 24,
+    });
+    if (pair) out.push({
+      type: 'cleanse', label: 'Cleanse', cost: CFG.CORRUPT.cleanseCost,
+      x: cx + 4, y: slot.y - 26, w: 74, h: 24,
     });
   }
   return out;
+}
+
+// a slot is worth opening if it offers anything - or if it has TURNED (T33),
+// where the popup carries no buttons at all and exists to say why
+function tappable(i) {
+  return !!popupRects(i).length || S.slots.p[i].flipped;
 }
 
 function inRect(px, py, r) {
@@ -375,10 +436,32 @@ function inRect(px, py, r) {
 }
 
 // tap-a-building stats: the numbers behind the piece, level power applied
+// T30: corruption is state on the slot rather than on its type, so it rides
+// ABOVE whatever the building itself has to say - and it is the same line
+// whether the thing is a farm or a mortar.
 function statsLines(slot) {
+  if (!(slot.pips > 0)) return typeStats(slot);
+  // T33: once it has turned there is nothing left to decide, so the line stops
+  // offering the counterplay and says what happened instead
+  if (slot.flipped) {
+    return ['TURNED - this building fights for ' + sim.faction(S, 'e').label + ' now',
+            'it cannot be sold, cleansed or rebuilt; only demolished'].concat(typeStats(slot));
+  }
+  return ['CORRUPTED: ' + (Math.round(slot.pips * 10) / 10) + ' of ' + CFG.CORRUPT.max
+    + ' pips - at ' + CFG.CORRUPT.max + ' it TURNS and fights for them',
+          'cleanse it for ' + CFG.CORRUPT.cleanseCost + 'g, or sell the building to deny them'].concat(typeStats(slot));
+}
+
+function typeStats(slot) {
   const t = slot.type;
   if (!t) return [];
   const k = sim.lvlPower(S, slot);
+  if (slot.buildT > 0) {
+    return ['UNDER CONSTRUCTION - ' + slot.buildT.toFixed(1) + 's left',
+            'it earns nothing and does nothing until it is finished',
+            'but it can already be killed - hp ' + Math.ceil(slot.hp),
+            'your own paint under a slot builds faster, foe paint slower'];
+  }
   if (t === 'mat') {
     const CR = CFG.CREEP;
     return ['paint fountain: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, and the paint itself pays by area',
@@ -388,6 +471,26 @@ function statsLines(slot) {
             'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and rival paint can kill it'];
   }
   const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
+  if (t === 'governor' || t === 'redline') {
+    const FL = CFG.FLYWHEEL, gov = t === 'governor';
+    const out = ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s, and one gear on YOUR flywheel'];
+    out.push(gov
+      ? 'losing a building no longer knocks the flywheel (normally -' + FL.loss + 'x)'
+      : 'winds up twice as fast: the ' + FL.max + 'x cap in ~'
+        + Math.round((FL.max - FL.cold) / (FL.rate * FL.redMult)) + 's, not ~'
+        + Math.round((FL.max - FL.cold) / FL.rate) + 's');
+    out.push(gov
+      ? 'the price is the ceiling: ' + FL.govMax + 'x instead of ' + FL.max + 'x, clamped the moment you fit it'
+      : 'the price is the risk: -' + FL.vent + ' gold on TOP of the knock, every building you lose');
+    if (!sim.faction(S, 'p').income) {
+      out.push('YOUR faction has no flywheel, so this gear does nothing');
+    } else if (!gov && sim.count(S, 'p', 'governor') > 0) {
+      out.push('a Governor is standing, and it OVERRIDES this - sell one of them');
+    }
+    out.push('one gear per nest: a second buys nothing, and Governor beats Redline');
+    out.push(hpLine);
+    return out;
+  }
   if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s', hpLine];
   const tw = CFG.TOWERS[t];
   if (t === 'sap') {
@@ -401,6 +504,41 @@ function statsLines(slot) {
     const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k);
     return ['charms in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
             'charm holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+  }
+  if (t === 'bell') {
+    return ['freezes EVERY attacker in range solid for ' + tw.freezeDur + 's, no damage',
+            'rings every ' + (tw.cooldown / k).toFixed(1) + 's - levels ring oftener, never longer',
+            'a frozen ant cannot move or bite, but it can still be shot and CHARMED',
+            'heavy stamped bodies shrug off half of it, and a thawed ant resists for '
+              + tw.immune + 's - so more bells is more GROUND, never a longer hold',
+            'range ' + tw.range + ' - the same reach as a Charmer - ' + hpLine];
+  }
+  if (t === 'rampart') {
+    const per = sim.drumPeriod(S, 'p');
+    return ['shoves every attacker in range back ' + Math.round(tw.punch * k) + 'px, no damage',
+            'staggered to ' + Math.round(tw.punchSlow * 100) + '% speed for ' + tw.punchStun + 's, and a siege has to re-form',
+            per === null ? 'YOUR side has no drum, so it never punches'
+              : 'once per beat of YOUR drum - every ' + per + 's, so a faster drum punches more',
+            'range ' + tw.range + ' - ' + hpLine];
+  }
+  if (t === 'dynamo') {
+    const dmg = Math.round(tw.dmg * k * 10) / 10, spun = slot.spun || 1;
+    return [dmg + ' dmg every ' + (tw.cooldown / spun).toFixed(2) + 's - spun x' + spun.toFixed(2)
+              + ' of ' + tw.spinMax.toFixed(1),
+            'every shot winds it: ' + r1(dmg * spun / tw.cooldown) + ' dps now, '
+              + r1(dmg * tw.spinMax / tw.cooldown) + ' dps fully wound',
+            'the spin never cools - only losing the slot resets it',
+            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
+  }
+  if (t === 'coil') {
+    const dmg = Math.round(tw.dmg * k * 10) / 10;
+    const chain = [];
+    for (let h = 0, d = dmg; h < tw.hops; h++, d *= tw.falloff) chain.push(r1(d));
+    const full = chain.reduce((a, b) => a + b, 0);
+    return ['arcs to ' + tw.hops + ' enemies, ' + chain.join(' then ') + ' dmg, every ' + tw.cooldown + 's',
+            r1(dmg / tw.cooldown) + ' dps on a lone target, ' + r1(full / tw.cooldown) + ' dps on a full chain',
+            'each hop jumps up to ' + tw.chainR + 'px from the LAST body hit',
+            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
   }
   if (tw && tw.dmg) {
     const dmg = Math.round(tw.dmg * k * 10) / 10;
@@ -431,6 +569,17 @@ function statsLines(slot) {
       ? prod.bloom + ' ' + prod.unit + 's at once every ' + per.toFixed(1) + 's (a bloom)'
       : '1 ' + prod.unit + ' every ' + per.toFixed(1) + 's'];
     out.push(u.hp + 'hp - ' + u.dps + ' dps - speed ' + u.spd + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : ''));
+    // the delta lines can't carry this - a stat absent on the other side of the
+    // compare prints nothing, and no other brood has it
+    if (u.paintSpeed) out.push('up to x' + u.paintSpeed + ' speed on YOUR creep, sluggish off it');
+    // dps 0 prints as a stat and reads like a typo, so the trade has to be
+    // spelled out: what it delivers is the pip, and it dies delivering it
+    if (u.implant) {
+      out.push('NO damage: it walks to a foe building, plants ' + u.implant
+        + ' corruption pip and dies');
+      out.push(CFG.CORRUPT.max + ' pips saturate a building; with none left to corrupt it plants in the HILL,'
+        + ' where each pip gnaws ' + CFG.CORRUPT.hillDot + ' hp/s (max ' + CFG.CORRUPT.hillMax + ')');
+    }
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
       out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
@@ -448,6 +597,7 @@ function statsLines(slot) {
 const STAT_LABELS = {
   income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
   range: ['range', ''], bomb: ['bomb', ''], charm: ['charms in', 's'],
+  punch: ['shove', 'px'],
   every: ['breeds every', 's'], unitHp: ['unit hp', ''], unitDps: ['unit dps', ''],
   massRate: ['mass/s', ''], dmgRate: ['press dps/s', ''],
   guardHp: ['guard hp', ''], guardDps: ['guard dps', ''], hp: ['hp', ''],
@@ -466,6 +616,9 @@ function keyStats(type, lvl) {
     if (tw.dmg) { o.dmg = r1(tw.dmg * k); o.dps = r1(tw.dmg * k / tw.cooldown); }
     if (tw.bomb) o.bomb = Math.round(tw.bomb * k);
     if (tw.channel) o.charm = r1(tw.channel / k);
+    if (tw.punch) o.punch = Math.round(tw.punch * k);
+    // the bell's headline pair: a level moves `rings`, never `freeze`
+    if (tw.freezeDur) { o.freeze = tw.freezeDur; o.rings = r1(tw.cooldown / k); }
     if (tw.range < 500) o.range = tw.range;
   }
   if (prod) {
@@ -491,6 +644,11 @@ function keyStats(type, lvl) {
 
 function previewLines(slotIdx, type) {
   const slot = S.slots.p[slotIdx];
+  if (type === 'cleanse') {
+    return [{ text: 'scrub all ' + (Math.round(slot.pips * 10) / 10) + ' pips off it for '
+      + CFG.CORRUPT.cleanseCost + ' gold', color: '#c9a0e8' }]
+      .concat(statsLines(slot).map(t => ({ text: t })));
+  }
   if (type === 'sell') {
     return [{ text: 'sell for +' + sim.sellRefund(S, slot) + ' gold', color: '#f0b0a0' }]
       .concat(statsLines(slot).map(t => ({ text: t })));
@@ -545,6 +703,9 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
   if (phase === 'skirmish') {
+    for (const row of FACTION_ROWS) for (const c of row) {
+      if (inRect(x, y, c)) { factionSel[c.side] = c.key; saveFactionSel(); return; }
+    }
     for (const b of PERSONA_BTNS) {
       if (inRect(x, y, b)) { begin(b.key); return; }
     }
@@ -568,11 +729,11 @@ cv.addEventListener('pointerdown', (e) => {
           blip(340, 0.04, 'triangle', 0.1);
           return;
         }
-        const action = r.type === 'sell'
-          ? { kind: 'sell', slot: openSlot }
+        const action = r.type === 'sell' || r.type === 'cleanse'
+          ? { kind: r.type, slot: openSlot }
           : { kind: 'build', slot: openSlot, type: r.type };
         if (!sim.applyAction(S, 'p', action)) return;   // can't afford: stay open
-        (r.type === 'sell' ? SFX.sell : SFX.build)();
+        (r.type === 'sell' ? SFX.sell : r.type === 'cleanse' ? SFX.convert : SFX.build)();
         logAction(openSlot, r.type);
         openSlot = null;
         pendingType = null;
@@ -582,7 +743,7 @@ cv.addEventListener('pointerdown', (e) => {
     // tapping another of your slots browses on; anything else closes
     for (let i = 0; i < S.slots.p.length; i++) {
       const s = S.slots.p[i];
-      if (i !== openSlot && Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
+      if (i !== openSlot && Math.hypot(x - s.x, y - s.y) < 30 && tappable(i)) {
         openSlot = i;
         pendingType = null;
         return;
@@ -595,7 +756,7 @@ cv.addEventListener('pointerdown', (e) => {
 
   for (let i = 0; i < S.slots.p.length; i++) {
     const s = S.slots.p[i];
-    if (Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
+    if (Math.hypot(x - s.x, y - s.y) < 30 && tappable(i)) {
       openSlot = i;
       pendingType = null;
       return;
@@ -643,11 +804,30 @@ function advance(dtReal) {
       poof(ev.x, ev.y, '#c8d8e0', Math.min(20, 4 + ev.w * 2), 30 + ev.w * 4);
       if (ev.side === 'p' && ev.w >= CFG.STAMP.smashAt) banner('JUGGERNAUT stamped: ' + ev.w.toFixed(1) + 'x');
     }
+    if (ev.type === 'punch') poof(ev.x, ev.y, '#d8dce8', 5, 26);
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'convert') {
       poof(ev.x, ev.y, '#c9a0e8', 10, 45);
       banner(ev.side === 'p' ? 'Enemy ant CHARMED!' : 'Your ant defected!');
       SFX.convert();
+    }
+    if (ev.type === 'implant') {
+      poof(ev.x, ev.y, '#c9a0e8', 7, 26);
+      // only the player's OWN nest gets a banner: their corruption is legible
+      // from the violet crowns on the enemy slots, but a pip landing on their
+      // side is the thing they can still act on
+      if (ev.side === 'e') banner(ev.hill ? 'Your HILL is corrupted!' : 'A building of yours is CORRUPTED');
+    }
+    // T33: the flip's own moment. `side` is the nest that LOST the building, the
+    // towerfall convention - a takeover reads as a loss from one side and a gift
+    // from the other, and both are worth saying out loud.
+    if (ev.type === 'flip') {
+      poof(ev.x, ev.y, '#c9a0e8', 16, 55);
+      poof(ev.x, ev.y, '#7a50a0', 9, 30);
+      const what = (LABELS[ev.what] || 'building').toLowerCase();
+      banner(ev.side === 'p' ? 'Your ' + what + ' has TURNED!' : 'Enemy ' + what + ' is YOURS!');
+      SFX.convert();
+      if (ev.side === 'p') buzz([50, 40, 50]);
     }
     if (ev.type === 'revert') {
       poof(ev.x, ev.y, '#8a7a9a', 6, 30);
@@ -866,6 +1046,43 @@ function drawAnt(u, time) {
     ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
     ctx.beginPath(); ctx.arc(0, dir * u.r * 1.2, u.r * 0.5, 0, 7); ctx.fill();
     ctx.beginPath(); ctx.arc(0, -dir * u.r * 0.2, u.r * 0.4, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'slither') {
+    // a long tapered body, and a WAKE behind it whose length is the haste it
+    // is actually getting - the speed has to be visible or the building's
+    // whole product is invisible
+    ctx.fillStyle = u.side === 'p' ? '#a8c860' : '#e090b8';
+    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 0.6, u.r * 0.35, u.r * 1.9, 0, 0, 7); ctx.fill();
+    const wake = (u.hasted || 1) - 1;
+    if (wake > 0.02) {
+      ctx.strokeStyle = u.side === 'p' ? 'rgba(168,200,96,0.5)' : 'rgba(224,144,184,0.5)';
+      ctx.lineWidth = 1.4;
+      for (const s of [-1, 1]) {
+        ctx.beginPath();
+        ctx.moveTo(s * u.r * 0.5, dir * u.r * 2);
+        ctx.lineTo(s * u.r * 1.3, dir * u.r * (2 + 9 * wake));
+        ctx.stroke();
+      }
+    }
+  } else if (u.typeKey === 'carrier') {
+    // half-there: a violet cargo bead riding the thorax and a faint aura, and
+    // NO mandible mark of any kind - the tell has to be "this one is not here
+    // to fight", because a player who screens it like an attacker has wasted
+    // the shots that were the actual counterplay
+    const glow = 0.3 + 0.2 * Math.sin(time * 3 + u.seed);
+    ctx.strokeStyle = 'rgba(186,140,232,' + glow + ')';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.4, 0, 7); ctx.stroke();
+    ctx.fillStyle = u.side === 'p' ? '#c9a0e8' : '#e8a0d0';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.6, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'grub') {
+    // pale segment bands and no mandible mark: a sack that trundles
+    ctx.strokeStyle = u.side === 'p' ? 'rgba(240,232,208,0.7)' : 'rgba(248,216,208,0.7)';
+    ctx.lineWidth = 1.2;
+    for (const i of [-0.6, 0.4, 1.4]) {
+      ctx.beginPath();
+      ctx.ellipse(0, dir * u.r * i, u.r * 0.7, u.r * 0.35, 0, 0, 7);
+      ctx.stroke();
+    }
   } else if (u.typeKey === 'product') {
     // riveted plates: PISTON's product is stamped, not born, and a heavy one
     // reads as a juggernaut because its whole body scales with the press
@@ -901,6 +1118,21 @@ function drawAnt(u, time) {
   if (u.slowed) {
     ctx.strokeStyle = 'rgba(140,220,120,0.7)';
     ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
+  }
+  if (u.frozen > 0) {
+    // a frost shell, not a halo: a held ant must read as STOPPED rather than
+    // as debuffed, since it looks identical to a live one otherwise
+    ctx.fillStyle = 'rgba(200,225,255,0.32)';
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 1.9, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(226,240,255,0.85)';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    for (let s = 0; s < 3; s++) {
+      const a = (s / 3) * Math.PI + 0.4;
+      ctx.moveTo(-Math.cos(a) * u.r * 2, -Math.sin(a) * u.r * 2);
+      ctx.lineTo(Math.cos(a) * u.r * 2, Math.sin(a) * u.r * 2);
+    }
+    ctx.stroke();
   }
   const t = CFG.UNITS[u.typeKey];
   const maxHp = u.maxHp || t.hp;
@@ -958,6 +1190,27 @@ function drawSlot(slot, side, idx, time) {
     ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
     ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
     ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+  } else if (slot.type === 'governor' || slot.type === 'redline') {
+    // a farm with a brass gear bolted to it - the safe gear turns slowly and
+    // steadily, the greedy one races and glows hot
+    const red = slot.type === 'redline';
+    drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
+    const spin = time * (red ? 2.6 : 0.8) * (side === 'p' ? 1 : -1);
+    ctx.strokeStyle = red ? '#e08850' : '#c8b070';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 9, 7, 0, 7); ctx.stroke();
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const a = spin + i * Math.PI / 3;
+      ctx.moveTo(slot.x + Math.cos(a) * 6, slot.y - 9 + Math.sin(a) * 6);
+      ctx.lineTo(slot.x + Math.cos(a) * 11, slot.y - 9 + Math.sin(a) * 11);
+    }
+    ctx.stroke();
+    if (red) {
+      ctx.fillStyle = 'rgba(240,140,80,' + (0.25 + 0.2 * Math.sin(time * 5)) + ')';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 9, 5, 0, 7); ctx.fill();
+    }
   } else if (slot.type === 'mat') {
     // creep fountain: a mossy blob that visibly breathes as the mat grows
     const col = side === 'p' ? '110,140,80' : '150,70,110';
@@ -978,6 +1231,9 @@ function drawSlot(slot, side, idx, time) {
     drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090');
   } else if (slot.type === 'majorb') {
     drawEggs(slot, [[0, 0, 13]], '#c8a878');
+  } else if (slot.type === 'grubb') {
+    // bloated pale eggs, packed in: this pit ships weight and nothing else
+    drawEggs(slot, [[-9, 3, 8], [9, 3, 8], [0, -6, 8]], '#f0e8d0');
   } else if (slot.type === 'sapperb') {
     drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0');
     // pick-axe mandible mark on the brood
@@ -1020,10 +1276,24 @@ function drawSlot(slot, side, idx, time) {
       ctx.lineTo(slot.x + dx, slot.y - 10 + ((dx + 7) % 3));
     }
     ctx.stroke();
+  } else if (slot.type === 'carrierb') {
+    // one swollen violet sac: a cyst grows cargo, not soldiers
+    drawEggs(slot, [[0, 2, 11]], '#c9a0e8');
+    ctx.strokeStyle = 'rgba(201,160,232,' + (0.3 + 0.2 * Math.sin(time * 2)) + ')';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 2, 15 + Math.sin(time * 2) * 2, 0, 7); ctx.stroke();
+  } else if (slot.type === 'slitherb') {
+    drawEggs(slot, [[-9, 4, 5], [0, 4, 5], [9, 4, 5]], '#a8c860');
+    // three speed-streaks: this den ships tempo, not mass
+    ctx.strokeStyle = '#7aa838';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const dy of [-18, -13, -8]) { ctx.moveTo(slot.x - 8, slot.y + dy); ctx.lineTo(slot.x + 8, slot.y + dy - 2); }
+    ctx.stroke();
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -1078,7 +1348,97 @@ function drawSlot(slot, side, idx, time) {
       ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 8, 7.5, 4.5, 0, 0, 7); ctx.stroke();
       ctx.fillStyle = '#7a4a9c';
       ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 2.8, 0, 7); ctx.fill();
+    } else if (slot.type === 'dynamo') {
+      // brass rotor: it literally spins faster the more it has wound up, so
+      // the tell is the mechanism rather than a number floating over it
+      const D = CFG.TOWERS.dynamo, spun = slot.spun || 1;
+      const wound = (spun - 1) / (D.spinMax - 1), a = time * 2.4 * spun;
+      ctx.strokeStyle = 'rgba(255,206,120,' + (0.3 + 0.55 * wound) + ')';
+      ctx.lineWidth = 2.5;
+      for (const off of [0, Math.PI]) {
+        ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 7.5, a + off, a + off + 2.2); ctx.stroke();
+      }
+      ctx.fillStyle = '#2c2820';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 3, 0, 7); ctx.fill();
+    } else if (slot.type === 'coil') {
+      // two electrode horns with a spark crawling between them: idle, it reads
+      // as the thing that will jump - which is the whole shape of the mechanic
+      ctx.strokeStyle = '#8ad4e8';
+      ctx.lineWidth = 2;
+      for (const dx of [-5, 5]) {
+        ctx.beginPath();
+        ctx.moveTo(slot.x + dx, slot.y - 2);
+        ctx.lineTo(slot.x + dx * 1.3, slot.y - 12);
+        ctx.stroke();
+      }
+      const j = Math.sin(time * 9) * 3;
+      ctx.strokeStyle = 'rgba(190,240,255,' + (0.35 + 0.4 * Math.abs(Math.sin(time * 4.5))) + ')';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(slot.x - 6.5, slot.y - 12);
+      ctx.lineTo(slot.x + j * 0.5, slot.y - 9 + j * 0.4);
+      ctx.lineTo(slot.x + 6.5, slot.y - 12);
+      ctx.stroke();
+    } else if (slot.type === 'rampart') {
+      // a ram head on a piston shaft, extended toward the foe on the beat: the
+      // punch is invisible otherwise, and its reach ring says who is in trouble
+      // the stroke is read straight off the drum phase, so it needs no state
+      // and the player watches the ram wind back as the next beat approaches
+      const rPer = sim.drumPeriod(S, side);
+      const since = rPer === null ? 9 : rPer - (S.nextBeat[side] - S.t);
+      const fx = Math.max(0, 1 - since / 0.45);
+      const dir = side === 'p' ? -1 : 1, out = 6 + 8 * fx;
+      ctx.strokeStyle = 'rgba(200,204,220,' + (0.1 + 0.3 * fx) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.rampart.range, 0, 7); ctx.stroke();
+      ctx.strokeStyle = '#6a6a78';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(slot.x, slot.y - 4);
+      ctx.lineTo(slot.x, slot.y - 4 + dir * out);
+      ctx.stroke();
+      ctx.fillStyle = '#d8dce8';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 4 + dir * out, 6, 3.5, 0, 0, 7); ctx.fill();
+    } else if (slot.type === 'bell') {
+      // a hanging bell whose ring expands outward on the pulse. `cd` counts
+      // DOWN from the cooldown, so the phase is readable with no extra state -
+      // and the expanding circle is the only cue that a freeze just landed
+      const bSpec = CFG.TOWERS.bell;
+      const since = bSpec.cooldown / sim.lvlPower(S, slot) - slot.cd;
+      const fx = Math.max(0, 1 - since / 0.7);
+      if (fx > 0) {
+        ctx.strokeStyle = 'rgba(206,168,255,' + (0.55 * fx) + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(slot.x, slot.y, bSpec.range * (1 - fx), 0, 7); ctx.stroke();
+      }
+      ctx.strokeStyle = 'rgba(176,140,200,0.16)';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, bSpec.range, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#c8a8e0';
+      ctx.beginPath();
+      ctx.moveTo(slot.x - 6, slot.y - 3);
+      ctx.quadraticCurveTo(slot.x, slot.y - 17, slot.x + 6, slot.y - 3);
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#6a4c86';
+      ctx.beginPath(); ctx.arc(slot.x + Math.sin(time * 3) * 3, slot.y - 1.5, 1.8, 0, 7); ctx.fill();
     }
+  }
+
+  // T28 (SPICE.buildGate only): scaffolding. The building is drawn already, so
+  // a scrim over it plus the countdown says "there but not working yet" without
+  // a second art pass - and it stays visibly killable underneath.
+  if (slot.buildT > 0) {
+    ctx.fillStyle = 'rgba(10,12,16,0.55)';
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, 21, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,220,120,0.7)';
+    ctx.setLineDash([4, 4]);
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, 21, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ffdc78';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(slot.buildT.toFixed(1) + 's', slot.x, slot.y + 1);
   }
 
   // every building shows damage once chewed
@@ -1087,6 +1447,43 @@ function drawSlot(slot, side, idx, time) {
     if (slot.hp < maxHp - 0.5) {
       hpBar(slot.x - 14, slot.y + 12, 28, 4, Math.max(0, slot.hp) / maxHp, '#e0a040');
     }
+  }
+
+  // T30: corruption. Pips are the only state on a building that nothing on the
+  // building itself shows, so they get their own violet crown above it - a
+  // filled bead per pip against CORRUPT.max, because saturation is the number
+  // that matters (T33 flips the slot at it).
+  if (slot.pips > 0) {
+    const max = CFG.CORRUPT.max, full = slot.pips >= max;
+    ctx.strokeStyle = 'rgba(186,140,232,' + (full ? 0.85 : 0.45) + ')';
+    ctx.lineWidth = full ? 2 : 1.2;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, 23, 0, 7); ctx.stroke();
+    for (let i = 0; i < max; i++) {
+      const a = -Math.PI / 2 + (i - (max - 1) / 2) * 0.34;
+      const px = slot.x + Math.cos(a) * 23, py = slot.y + Math.sin(a) * 23;
+      ctx.fillStyle = i < slot.pips ? '#c9a0e8' : 'rgba(120,90,150,0.4)';
+      ctx.beginPath(); ctx.arc(px, py, 2.4, 0, 7); ctx.fill();
+    }
+  }
+
+  // T33: a building that has TURNED. The whole design is "the enemy nest goes
+  // violet one building at a time", so this is a wash over the piece itself plus
+  // a slow orbit - it has to read as ownership from across the board, not as one
+  // more status pip on the crown.
+  if (slot.flipped) {
+    ctx.fillStyle = 'rgba(150,100,210,' + (0.24 + 0.08 * Math.sin(time * 2.2)) + ')';
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, 21, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(201,160,232,0.9)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.lineDashOffset = -time * 12;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, 26, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.lineDashOffset = 0;
+    ctx.fillStyle = '#e0c8f8';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('TURNED', slot.x, slot.y - 33);
   }
 
   // level pips
@@ -1113,6 +1510,25 @@ function drawSlot(slot, side, idx, time) {
   }
 }
 
+// T30: corruption in the mound. This is the one pip that eats hp on its own, so
+// it gets a ring that tightens as the hill fills up - a hill losing 1.2 hp/s per
+// pip with nothing visibly attacking it would otherwise be a mystery.
+function drawHillPips(nest, pips, time) {
+  if (!(pips > 0)) return;
+  const k = Math.min(1, pips / CFG.CORRUPT.hillMax);
+  ctx.strokeStyle = 'rgba(186,140,232,' + (0.3 + 0.45 * k) + ')';
+  ctx.lineWidth = 1 + 2 * k;
+  ctx.beginPath(); ctx.arc(nest.x, nest.y, nest.r + 6 - 4 * k + Math.sin(time * 2.5) * 1.5, 0, 7); ctx.stroke();
+  const n = Math.ceil(pips);
+  ctx.fillStyle = '#c9a0e8';
+  for (let i = 0; i < n; i++) {
+    const a = time * 0.4 + i * (Math.PI * 2 / n);
+    ctx.beginPath();
+    ctx.arc(nest.x + Math.cos(a) * (nest.r - 10), nest.y + Math.sin(a) * (nest.r - 10) * 0.8, 2.2, 0, 7);
+    ctx.fill();
+  }
+}
+
 function hpBar(x, y, w, h, frac, fg) {
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.fillRect(x, y, w, h);
@@ -1123,11 +1539,20 @@ function hpBar(x, y, w, h, frac, fg) {
 function goldLabel(side) {
   return Math.floor(S.money[side]) + '/' + CFG.GOLD_CAP;
 }
-// T7b: a faction with an income hook (PISTON) owes the player its curve -
-// the multiplier is the whole economy, and it drops when a building falls.
+// T7b: a faction with an income hook owes the player its curve - the hook IS
+// the economy. T31: there are two hooks now, so the readout follows the
+// mechanism (PISTON's multiplier, VEIL's pip count), never the mere presence
+// of a hook.
 function spinLabel(side) {
-  return sim.faction(S, side).income
-    ? '  flywheel ' + S.spin[side].toFixed(2) + 'x' : '';
+  const f = sim.faction(S, side);
+  if (f.flywheel) {
+    const gear = sim.gearOf(S, side);
+    return '  flywheel ' + S.spin[side].toFixed(2) + 'x'
+      + (gear ? ' ' + (gear === 'governor' ? 'GOV' : 'RED') : '');
+  }
+  if (!f.income) return '';
+  const pips = sim.tithePips(S, side);
+  return '  tithe ' + pips.toFixed(pips % 1 ? 1 : 0) + 'p';
 }
 // what is waiting to march: a muster of ants, or a press full of mass
 function armyLabel(side) {
@@ -1247,6 +1672,7 @@ function drawPopup() {
     ctx.beginPath(); ctx.arc(slot.x, slot.y, spec.range, 0, 7); ctx.stroke();
     ctx.setLineDash([]);
   }
+  const rects = popupRects(openSlot);
   const lines = previewing ? previewLines(openSlot, pendingType)
     : statsLines(slot).map(t => ({ text: t }));
   if (lines.length) {
@@ -1254,7 +1680,9 @@ function drawPopup() {
     const wMax = Math.max(...lines.map(l => ctx.measureText(l.text).width));
     const bw = wMax + 16, bh = lines.length * 13 + 9;
     const bx = Math.max(4, Math.min(W - bw - 4, slot.x - bw / 2));
-    const by = slot.y - 82 - bh - 5;
+    // above the TOP button row, which is two rows up on the wide trees
+    const topY = Math.min(slot.y - 82, ...rects.filter(r => r.h >= 40).map(r => r.y));
+    const by = topY - bh - 5;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
     ctx.strokeStyle = previewing ? '#8ee06a' : '#7a6448';
     ctx.lineWidth = 1;
@@ -1266,23 +1694,26 @@ function drawPopup() {
       ctx.fillText(lines[i].text, bx + bw / 2, by + 11 + i * 13);
     }
   }
-  for (const r of popupRects(openSlot)) {
-    const isSell = r.type === 'sell';
+  for (const r of rects) {
+    const isSell = r.type === 'sell', isClean = r.type === 'cleanse';
     const afford = isSell || S.money.p >= r.cost;
     const pend = r.type === pendingType;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
-    ctx.strokeStyle = pend ? '#8ee06a' : (isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38'));
+    ctx.strokeStyle = pend ? '#8ee06a'
+      : (isSell ? '#a05840' : isClean ? '#9a70c0' : (afford ? '#c8a060' : '#5a4a38'));
     ctx.lineWidth = pend ? 2 : 1;
     roundRect(r.x, r.y, r.w, r.h, 7);
     ctx.fill(); ctx.stroke();
     ctx.lineWidth = 1;
     ctx.globalAlpha = afford ? 1 : 0.45;
-    ctx.fillStyle = pend ? '#8ee06a' : (isSell ? '#f0b0a0' : '#ffe9c0');
-    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = pend ? '#8ee06a' : (isSell ? '#f0b0a0' : isClean ? '#c9a0e8' : '#ffe9c0');
+    // wide trees wrap to two rows now, so a button is 66px wide again - the
+    // small-label branch stays for the narrow mid-width rows (5 or 6 options)
+    ctx.font = 'bold ' + (r.w < 52 ? 10 : 12) + 'px sans-serif';
     ctx.textAlign = 'center';
     const label = pend ? (isSell ? 'Sell?' : 'Confirm?') : r.label;
-    if (r.h < 40) {                // the slim sell row: one line, label + gold
-      ctx.fillText(label + '  +' + r.gain + 'g', r.x + r.w / 2, r.y + 16);
+    if (r.h < 40) {                // the slim row: one line, label + gold
+      ctx.fillText(label + (isSell ? '  +' + r.gain : '  -' + r.cost) + 'g', r.x + r.w / 2, r.y + 16);
     } else {
       ctx.fillText(label, r.x + r.w / 2, r.y + 16);
       ctx.fillStyle = '#ffd870';
@@ -1308,6 +1739,8 @@ function drawMatch(time) {
   drawCreep(time);
   drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
   drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
+  drawHillPips(CFG.ENEMY_BASE, S.hillPips.e, time);
+  drawHillPips(CFG.PLAYER_BASE, S.hillPips.p, time);
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
   for (let i = 0; i < S.slots.p.length; i++) drawSlot(S.slots.p[i], 'p', i, time);
   for (const sh of S.shots) {
@@ -1323,6 +1756,20 @@ function drawMatch(time) {
       ctx.strokeStyle = 'rgba(255,150,70,' + a + ')';
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sh.x2, sh.y2, 5 + 16 * (1 - a), 0, 7); ctx.stroke();
+      continue;
+    }
+    if (sh.arc) {
+      // a coil hop: kinked bolt between two bodies, so a chain reads as a chain
+      const mx = (sh.x1 + sh.x2) / 2, my = (sh.y1 + sh.y2) / 2;
+      const nx = -(sh.y2 - sh.y1), ny = sh.x2 - sh.x1;
+      const nl = Math.hypot(nx, ny) || 1, k = (Math.random() - 0.5) * 14;
+      ctx.strokeStyle = 'rgba(190,240,255,' + (sh.ttl / 0.09) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(sh.x1, sh.y1);
+      ctx.lineTo(mx + nx / nl * k, my + ny / nl * k);
+      ctx.lineTo(sh.x2, sh.y2);
+      ctx.stroke();
       continue;
     }
     ctx.strokeStyle = 'rgba(255,240,180,' + (sh.ttl / 0.09) + ')';
@@ -1499,21 +1946,36 @@ function drawSkirmish() {
   ctx.font = '14px sans-serif';
   const lines = [
     'Build your nest. Your ants fight for themselves.',
-    '',
-    'Tap a + slot: Farm (income), Tower (defence),',
-    'or Hatchery (breeds attackers automatically).',
-    'Tap buildings again to specialise, then level to 3.',
-    'Guards block the lane; sappers DEMOLISH towers.',
-    'Mortars bombard enemy defences from your side.',
-    'Predator broods hunt enemy marchers mid-lane.',
-    'Selling refunds 70%. Idle gold above the cap is lost.',
-    'Every 18s the war drum beats and BOTH armies march.',
+    'Tap a + slot to build; tap a building to specialise,',
+    'then level to 3. Selling refunds 70%.',
     'Income doubles at 3:00 left; hills crumble at 1:30.',
   ];
   lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 176 + i * 20));
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 408);
+  ctx.fillText('CHOOSE FACTIONS', LANE_CX, 280);
+  for (let r = 0; r < FACTION_ROWS.length; r++) {
+    const row = FACTION_ROWS[r];
+    ctx.fillStyle = '#d8c0a0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(r === 0 ? 'YOU' : 'FOE', 48, row[0].y + row[0].h / 2);
+    ctx.textAlign = 'center';
+    for (const c of row) {
+      const on = factionSel[c.side] === c.key;
+      ctx.fillStyle = on ? '#5a4020' : '#2a1f14';
+      ctx.strokeStyle = on ? '#ffd870' : '#806040';
+      ctx.lineWidth = on ? 2.5 : 1.5;
+      roundRect(c.x, c.y, c.w, c.h, 8);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = on ? '#ffd870' : '#c0a880';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(sim.FACTIONS[c.key].label, c.x + c.w / 2, c.y + c.h / 2);
+    }
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('CHOOSE THE ENEMY BRAIN', LANE_CX, 408);
   for (let i = 0; i < PERSONA_BTNS.length; i++) {
     const b = PERSONA_BTNS[i], foe = SKIRMISH_FOES[i];
     ctx.fillStyle = '#3a2a1c';

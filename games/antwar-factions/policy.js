@@ -32,14 +32,31 @@ const PARAM_SPEC = {
   mixHorn:       [0, 1, false],    // ...horn broods: +6s on OWN drum each (bigger waves)
   mixFife:       [0, 1, false],    // ...fife broods: -3s on OWN drum each (faster waves)
   mixOoze:       [0, 1, false],    // ...ooze dens: shamblers trickle drumless, corpses splat
+  mixGrub:       [0, 1, false],    // ...grub pits: cheap mass, almost no dps (PISTON press feed)
+  mixSlither:    [0, 1, false],    // ...slither dens: fast on OWN paint, feeble off it (ROT)
+  mixCarrier:    [0, 1, false],    // ...carrier cysts: zero-damage bodies that plant pips (VEIL)
   sharpTrig:     [1, 9, true],     // sharp once foe major-broods >= N (9=never)
   spitTrig:      [1, 9, true],     // spitter once foe worker-broods >= N (9=never)
   sapTrig:       [2, 9, true],     // sap once own towers >= N (9=never)
   guardTrig:     [1, 9, true],     // guard post once foe swarm/sapper broods >= N (9=never)
   mortarTrig:    [1, 9, true],     // mortar once foe defence buildings >= N (9=never)
   convTrig:      [1, 9, true],     // converter once foe soldier/major broods >= N (9=never)
+  dynamoTrig:    [1, 9, true],     // dynamo once foe TRICKLE broods >= N (9=never)
+  rampartTrig:   [1, 9, true],     // rampart once foe ON-FOOT broods >= N (9=never)
+  coilTrig:      [1, 9, true],     // arc coil once foe CLUMP broods >= N (9=never)
+  bellTrig:      [1, 9, true],     // stasis bell once foe OFFENCE buildings >= N (9=never)
+  govTrig:       [1, 9, true],     // governor once foe BUILDING-KILLERS >= N (9=never)
+  redTrig:       [1, 9, true],     // red-line once OWN eco buildings >= N (9=never)
   upgW:          [0.2, 2, false],  // upgrades vs new builds
   lvlW:          [0, 2, false],    // appetite for levelling specialised buildings
+  // a new build scores its family's whole SHORTFALL, and the tower one grows
+  // with match time without bound, while a specialisation caps near
+  // w*upgW*1.5 - so ROT rebuilt a plain tower ~30x a match and never once
+  // specialised into the sap its kit owns (T42). This damps the shortfall
+  // toward a flat 1. Both ends are degenerate, so it is the tuner's dial:
+  // 0 is the pre-T42 scoring exactly (and the clamp default, so a partial
+  // vector still replays); 1 ties every new build and spams the top family.
+  flatBuild:     [0, 1, false],
 };
 const PARAM_NAMES = Object.keys(PARAM_SPEC);
 
@@ -101,7 +118,7 @@ function makeController(rawParams, opts) {
   const mem = { nextThink: 0 };
 
   // normalised hatch mix shares
-  const mixTotal = P.mixSwarm + P.mixSoldier + P.mixMajor + P.mixSapper + P.mixPredator + P.mixHorn + P.mixFife + P.mixOoze + 0.001;
+  const mixTotal = P.mixSwarm + P.mixSoldier + P.mixMajor + P.mixSapper + P.mixPredator + P.mixHorn + P.mixFife + P.mixOoze + P.mixGrub + P.mixSlither + P.mixCarrier + 0.001;
   const mix = {
     swarmb: P.mixSwarm / mixTotal,
     soldierb: P.mixSoldier / mixTotal,
@@ -111,6 +128,9 @@ function makeController(rawParams, opts) {
     hornb: P.mixHorn / mixTotal,
     fifeb: P.mixFife / mixTotal,
     oozeb: P.mixOoze / mixTotal,
+    grubb: P.mixGrub / mixTotal,
+    slitherb: P.mixSlither / mixTotal,
+    carrierb: P.mixCarrier / mixTotal,
   };
 
   return function control(S, side) {
@@ -133,18 +153,21 @@ function makeController(rawParams, opts) {
     const roots = sim.faction(S, side).roots || ['farm', 'tower', 'hatch'];
     const rootOf = fam => roots.find(t => sim.FAMILIES[fam].includes(t));
     const ecoRoot = rootOf('eco'), defRoot = rootOf('def'), offRoot = rootOf('off');
+    // wanting five more of something does not make the NEXT one five times as
+    // valuable - flatBuild lerps the shortfall toward 1 (0 = the raw shortfall)
+    const urge = short => short + P.flatBuild * (1 - short);
     if (ecoRoot && eco < P.farmTarget) {
       const slot = firstEmptyIn(S, side, REAR_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wEco * (P.farmTarget - eco), a: { kind: 'build', slot, type: ecoRoot } });
+      if (slot !== -1) cands.push({ score: P.wEco * urge(P.farmTarget - eco), a: { kind: 'build', slot, type: ecoRoot } });
     }
     const desiredTowers = P.towersBase + P.towersPer100s * S.t / 100 + (foeOff > def ? P.reactDef : 0);
     if (defRoot && def < desiredTowers) {
       const slot = firstEmptyIn(S, side, TOWER_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wDef * (desiredTowers - def), a: { kind: 'build', slot, type: defRoot } });
+      if (slot !== -1) cands.push({ score: P.wDef * urge(desiredTowers - def), a: { kind: 'build', slot, type: defRoot } });
     }
     if (offRoot && off < P.hatchTarget) {
       const slot = firstEmptyIn(S, side, REAR_SLOT_ORDER);
-      if (slot !== -1) cands.push({ score: P.wOff * (P.hatchTarget - off), a: { kind: 'build', slot, type: offRoot } });
+      if (slot !== -1) cands.push({ score: P.wOff * urge(P.hatchTarget - off), a: { kind: 'build', slot, type: offRoot } });
     }
 
     // creep Mats grow from farms (fx0.3): the sandbox's ROT eco conversion.
@@ -152,6 +175,37 @@ function makeController(rawParams, opts) {
     if (P.matTarget > 0 && sim.count(S, side, 'mat') < P.matTarget) {
       const i = S.slots[side].findIndex(s => s.type === 'farm');
       if (i !== -1) cands.push({ score: P.wEco * P.upgW * 0.95, a: { kind: 'build', slot: i, type: 'mat' } });
+    }
+
+    // T26: the flywheel's gears. Gate on the MECHANISM, not on a count (T25):
+    // a side whose income does not RIDE the flywheel is buying a farm that
+    // cannot be upgraded, and in the red-line's case a pure penalty.
+    // T31: `flywheel`, not `income` - VEIL owns an income hook (the tithe) and
+    // no flywheel at all, so the old read would have had it bidding for gears.
+    if (sim.faction(S, side).flywheel) {
+      // sacrifice the CHEAPEST farm on the chain - a levelled brain owns no
+      // plain farm by the time a reactive gear trigger fires
+      let gearFarm = -1;
+      for (const t of ['farm', 'grove', 'plant']) {
+        if (gearFarm === -1) gearFarm = S.slots[side].findIndex(s => s.type === t);
+      }
+      if (gearFarm !== -1) {
+        // the governor answers a foe that KILLS BUILDINGS - mortars and
+        // sappers are the only things that do, so nothing else predicts a
+        // knock. (Both gears are dark: T26 found the knock itself is worth
+        // 0 hill damage, so these bids are unreachable until question 22.)
+        const foeBreakers = sim.count(S, foe, 'mortar') + sim.count(S, foe, 'sapperb');
+        if (foeBreakers >= P.govTrig && sim.count(S, side, 'governor') < 1) {
+          cands.push({ score: P.wEco * P.upgW * 1.3, a: { kind: 'build', slot: gearFarm, type: 'governor' } });
+        }
+        // the red-line pays in proportion to the gross it multiplies, so it
+        // bids off OWN eco (the sapTrig precedent) - and never over a
+        // governor, which would switch the acceleration straight back off
+        if (eco >= P.redTrig && sim.count(S, side, 'redline') < 1
+            && sim.count(S, side, 'governor') === 0) {
+          cands.push({ score: P.wEco * P.upgW * 1.15, a: { kind: 'build', slot: gearFarm, type: 'redline' } });
+        }
+      }
     }
 
     // farm level upgrades
@@ -200,17 +254,75 @@ function makeController(rawParams, opts) {
       if (foeBigB >= P.convTrig && sim.count(S, side, 'conv') < 2 && def >= 2) {
         cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'conv' } });
       }
+      // dynamos: cumulative spin pays off against a foe that never stops
+      // feeding it targets, so the trigger reads the foe's TRICKLE lines
+      // (worker floods and ooze dens) - the design's anti-trickle answer
+      const foeTrickleB = foeWorkerB + sim.count(S, foe, 'oozeb');
+      if (foeTrickleB >= P.dynamoTrig && sim.count(S, side, 'dynamo') < 2) {
+        cands.push({ score: P.wDef * P.upgW * 1.25, a: { kind: 'build', slot: baseTower, type: 'dynamo' } });
+      }
+      // arc coils want SIMULTANEOUS arrivals, which is a different foe from the
+      // dynamo's endless stream: blooms and worker floods clump, and a LONG foe
+      // beat drops its whole muster at once, so the foe's own drum period is
+      // the bid (a drumless trickle foe reads 1 - its clumps come from bloom).
+      // ...and a STAMPING foe is not a clump foe however many broods it owns:
+      // it pours them all into one fat body per beat, whose neighbourhood
+      // measures 0.00 bodies at every radius. Counting its hatcheries is the
+      // false positive that made a coil read like a downgraded plain tower.
+      const foeClumpB = sim.faction(S, foe).stamp ? 0
+        : foeWorkerB + sim.count(S, foe, 'oozeb');
+      const foePeriod = sim.drumPeriod(S, foe);
+      if (foeClumpB >= P.coilTrig && sim.count(S, side, 'coil') < 2) {
+        const beatW = foePeriod === null ? 1 : foePeriod / cfg.WAR_DRUM;
+        cands.push({ score: P.wDef * P.upgW * 1.15 * beatW, a: { kind: 'build', slot: baseTower, type: 'coil' } });
+      }
+      // ramparts shove whatever arrives ON FOOT in numbers (worker floods,
+      // sappers, shambler trickles), and they shove it once per OWN beat - so
+      // the same wall is worth 1.8x as much to a fife-stacked drum as to the
+      // plain 18s one. That factor is the metronome bid the design wants the
+      // brain to feel, and it is why a drumless side never bids: no beat, no
+      // punch. Never the last shooting tower - a rampart fires nothing.
+      // ...and it wants the most FORWARD plain tower, not the first one: a
+      // punch only lands on a body already in reach, and at the beat that is
+      // 0.60 of the time from an outpost against 0.27 from a nest slot
+      // (measured). Taking the LAST plain tower also stops the wall
+      // cannibalising the nest gun line, which is what made the first A/B
+      // collapse (1.00 -> 0.40 vs ROT for two swapped towers).
+      const ownPeriod = sim.drumPeriod(S, side);
+      const foeFootB = foeMeleeB + sim.count(S, foe, 'oozeb');
+      let fwdTower = -1;
+      for (let i = 0; i < S.slots[side].length; i++) if (S.slots[side][i].type === 'tower') fwdTower = i;
+      if (ownPeriod !== null && foeFootB >= P.rampartTrig
+          && sim.count(S, side, 'rampart') < 2 && def >= 2) {
+        cands.push({ score: P.wDef * P.upgW * (cfg.WAR_DRUM / ownPeriod), a: { kind: 'build', slot: fwdTower, type: 'rampart' } });
+      }
     }
 
-    // hatchery specialisation toward the mix (largest share deficit first).
-    // Skip kit-locked types HERE, not just in the legal filter below: this
-    // loop picks a single winner, and if that winner were locked the bot
+    // T32: the Stasis Bell grows off a CHARMER, not a plain tower - VEIL owns
+    // no tower, so the block above can never bid for the faction that needs it.
+    // It never takes the LAST charmer: a bell deals nothing, and what it buys
+    // is time for the charm standing beside it. The trigger reads the foe's
+    // offence buildings rather than a brood TYPE, because a bell answers
+    // arrivals of any shape - the one foe it reads badly is a stamper, whose
+    // single fat body shrugs half of it off.
+    const baseConv = S.slots[side].findIndex(s => s.type === 'conv');
+    if (baseConv !== -1 && sim.count(S, side, 'conv') >= 2
+        && foeOff >= P.bellTrig && sim.count(S, side, 'bell') < 2) {
+      cands.push({ score: P.wDef * P.upgW * 1.2, a: { kind: 'build', slot: baseConv, type: 'bell' } });
+    }
+
+    // offence-trunk specialisation toward the mix (largest share deficit
+    // first). Skip kit-locked types HERE, not just in the legal filter below:
+    // this loop picks a single winner, and if that winner were locked the bot
     // would never specialise anything and idle at the gold cap.
-    const baseHatch = S.slots[side].findIndex(s => s.type === 'hatch');
+    // The trunk is the FACTION's offence root, not the literal 'hatch' (T21:
+    // ROT grows an Ooze Den from bare ground, so a hardcoded lookup left its
+    // whole nine-key mix vector unreachable).
+    const baseHatch = offRoot ? S.slots[side].findIndex(s => s.type === offRoot) : -1;
     if (baseHatch !== -1 && off > 0) {
       const specs = sim.buildOptions(S, side, baseHatch);   // faction-filtered
       let bestType = null, bestDeficit = 0.05;
-      for (const type of ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb']) {
+      for (const type of ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb']) {
         if (!specs.includes(type)) continue;
         if (allowed && !allowed.types.includes(type)) continue;
         const share = sim.count(S, side, type) / off;
@@ -259,8 +371,8 @@ const PERSONAS = {
     params: {
       wEco: 0.8, wDef: 1, wOff: 2.6,
       farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-      farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.15, mixSapper: 0.15, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-      sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 5, mortarTrig: 9, convTrig: 9, upgW: 0.9, lvlW: 0.6,
+      farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.15, mixSapper: 0.15, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+      sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 5, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 0.9, lvlW: 0.6, flatBuild: 0,
     },
   },
   tussock: {
@@ -271,8 +383,8 @@ const PERSONAS = {
       // became a decay-phase photo-finish; a touch more economy wins the grind
       wEco: 1.5, wDef: 2.6, wOff: 0.9,
       farmTarget: 2, hatchTarget: 2, towersBase: 3, towersPer100s: 1.2, reactDef: 1,
-      farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-      sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.4, lvlW: 1.0,
+      farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.4, mixSapper: 0.05, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+      sharpTrig: 1, spitTrig: 2, sapTrig: 3, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.4, lvlW: 1.0, flatBuild: 0,
     },
   },
   bloom: {
@@ -281,8 +393,8 @@ const PERSONAS = {
     params: {
       wEco: 2.6, wDef: 0.9, wOff: 1.4,
       farmTarget: 5, hatchTarget: 4, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-      farmLvl: 3, matTarget: 0, mixSwarm: 0.2, mixSoldier: 0.4, mixMajor: 1, mixSapper: 0.6, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-      sharpTrig: 3, spitTrig: 5, sapTrig: 9, guardTrig: 7, mortarTrig: 9, convTrig: 9, upgW: 1.2, lvlW: 1.6,
+      farmLvl: 3, matTarget: 0, mixSwarm: 0.2, mixSoldier: 0.4, mixMajor: 1, mixSapper: 0.6, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+      sharpTrig: 3, spitTrig: 5, sapTrig: 9, guardTrig: 7, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.2, lvlW: 1.6, flatBuild: 0,
     },
   },
 };
@@ -292,28 +404,28 @@ const ARCHETYPES = {
   boomEco: {
     wEco: 3, wDef: 0.3, wOff: 0.6,
     farmTarget: 6, hatchTarget: 2, towersBase: 0, towersPer100s: 0, reactDef: 0,
-    farmLvl: 3, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.3, mixMajor: 1, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 2,
+    farmLvl: 3, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.3, mixMajor: 1, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 2, flatBuild: 0,
   },
   wallDef: {
     wEco: 0.4, wDef: 3, wOff: 0.4,
     farmTarget: 1, hatchTarget: 1, towersBase: 4, towersPer100s: 2, reactDef: 2,
-    farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 1, spitTrig: 2, sapTrig: 2, guardTrig: 1, mortarTrig: 9, convTrig: 9, upgW: 1.5, lvlW: 1.2,
+    farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 1, spitTrig: 2, sapTrig: 2, guardTrig: 1, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.5, lvlW: 1.2, flatBuild: 0,
   },
   allInHatch: {
     wEco: 0.3, wDef: 0.3, wOff: 3,
     farmTarget: 0, hatchTarget: 6, towersBase: 0, towersPer100s: 0, reactDef: 0,
-    farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.1, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.6, lvlW: 0.3,
+    farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.3, mixMajor: 0.1, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 0.6, lvlW: 0.3, flatBuild: 0,
   },
   // v0.5 sanity probe: sappers as the whole plan. Should crack turtles but
   // lose to guards/spitters - if it dominates the field, sappers are broken.
   sapperAllIn: {
     wEco: 0.6, wDef: 0.5, wOff: 3,
     farmTarget: 1, hatchTarget: 5, towersBase: 1, towersPer100s: 0, reactDef: 0,
-    farmLvl: 1, matTarget: 0, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
+    farmLvl: 1, matTarget: 0, mixSwarm: 0.15, mixSoldier: 0.15, mixMajor: 0.2, mixSapper: 1, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 0.8, flatBuild: 0,
   },
   // v0.9 sanity probe: combined-arms siege - mortars blow holes in the
   // enemy wall, majors walk through them. Should crack fortified foes but
@@ -324,8 +436,8 @@ const ARCHETYPES = {
   mortarWall: {
     wEco: 1.3, wDef: 2.2, wOff: 1.3,
     farmTarget: 2, hatchTarget: 3, towersBase: 3, towersPer100s: 1, reactDef: 1,
-    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 2, spitTrig: 2, sapTrig: 6, guardTrig: 9, mortarTrig: 1, convTrig: 9, upgW: 1.3, lvlW: 1.0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 2, spitTrig: 2, sapTrig: 6, guardTrig: 9, mortarTrig: 1, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.3, lvlW: 1.0, flatBuild: 0,
   },
   // v0.9 sanity probe: predator screens as midfield control. Should eat
   // concentrated marcher comps but drown under swarm volume (predators
@@ -333,8 +445,8 @@ const ARCHETYPES = {
   predScreen: {
     wEco: 1.5, wDef: 1, wOff: 2.4,
     farmTarget: 2, hatchTarget: 4, towersBase: 1, towersPer100s: 0.6, reactDef: 1,
-    farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.7, mixMajor: 0.2, mixSapper: 0.2, mixPredator: 1, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 3, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.8,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.7, mixMajor: 0.2, mixSapper: 0.2, mixPredator: 1, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 3, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 0.8, flatBuild: 0,
   },
   // v0.9.5 sanity probe: the monastery - eco behind walls, guards
   // shielding converters that turn the foe's army into the offence. The
@@ -345,8 +457,8 @@ const ARCHETYPES = {
   convWall: {
     wEco: 1.8, wDef: 2.2, wOff: 0.8,
     farmTarget: 3, hatchTarget: 2, towersBase: 2, towersPer100s: 0.8, reactDef: 1,
-    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.3, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 3, spitTrig: 3, sapTrig: 4, guardTrig: 2, mortarTrig: 9, convTrig: 1, upgW: 1.3, lvlW: 1.0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.3, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 3, spitTrig: 3, sapTrig: 4, guardTrig: 2, mortarTrig: 9, convTrig: 1, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.3, lvlW: 1.0, flatBuild: 0,
   },
   // fx0.2 sanity probe: the long beat. Horn broods slow the drum toward the
   // clamp and ship the whole accrual as one giant wave - THE alpha-banking
@@ -356,8 +468,8 @@ const ARCHETYPES = {
   bigBeat: {
     wEco: 1.5, wDef: 1.5, wOff: 2.2,
     farmTarget: 3, hatchTarget: 5, towersBase: 2, towersPer100s: 0.8, reactDef: 1,
-    farmLvl: 2, matTarget: 0, mixSwarm: 0.15, mixSoldier: 1, mixMajor: 0.6, mixSapper: 0.25, mixPredator: 0, mixHorn: 0.9, mixFife: 0, mixOoze: 0,
-    sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.2, lvlW: 1.0,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.15, mixSoldier: 1, mixMajor: 0.6, mixSapper: 0.25, mixPredator: 0, mixHorn: 0.9, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 2, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.2, lvlW: 1.0, flatBuild: 0,
   },
   // fx0.2 sanity probe: the quickstep - fifes race the drum to the floor
   // for relentless small waves. Should shine vs slow alpha builds (hit
@@ -365,8 +477,8 @@ const ARCHETYPES = {
   quickstep: {
     wEco: 1.2, wDef: 0.8, wOff: 2.6,
     farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1,
-    farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.5, mixMajor: 0, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0.9, mixOoze: 0,
-    sharpTrig: 9, spitTrig: 4, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.6,
+    farmLvl: 2, matTarget: 0, mixSwarm: 1, mixSoldier: 0.5, mixMajor: 0, mixSapper: 0.2, mixPredator: 0, mixHorn: 0, mixFife: 0.9, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 9, spitTrig: 4, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 0.6, flatBuild: 0,
   },
   // fx0.3 sanity probe: the mat - farms become creep fountains, ooze dens
   // trickle shamblers whose corpses drag the frontier forward. Should
@@ -377,8 +489,8 @@ const ARCHETYPES = {
   creeper: {
     wEco: 2.2, wDef: 1.0, wOff: 2.0,
     farmTarget: 4, hatchTarget: 4, towersBase: 1, towersPer100s: 0.4, reactDef: 1,
-    farmLvl: 1, matTarget: 3, mixSwarm: 0.15, mixSoldier: 0.3, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 1,
-    sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1.1, lvlW: 0.8,
+    farmLvl: 1, matTarget: 3, mixSwarm: 0.15, mixSoldier: 0.3, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 1, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.1, lvlW: 0.8, flatBuild: 0,
   },
   // the v0.9.5 evolved field-best (tune.js evolve, fit 1.00): still balanced
   // macro - heavy eco with growing towers, five hatcheries on a broad comp,
@@ -392,8 +504,8 @@ const ARCHETYPES = {
   optimum: {
     wEco: 3, wDef: 2.42, wOff: 1.16,
     farmTarget: 4, hatchTarget: 5, towersBase: 2, towersPer100s: 1.58, reactDef: 0,
-    farmLvl: 2, matTarget: 0, mixSwarm: 0.9, mixSoldier: 0.92, mixMajor: 0.51, mixSapper: 0.18, mixPredator: 0.67, mixHorn: 0, mixFife: 0, mixOoze: 0,
-    sharpTrig: 1, spitTrig: 7, sapTrig: 5, guardTrig: 6, mortarTrig: 5, convTrig: 9, upgW: 1.95, lvlW: 1.2,
+    farmLvl: 2, matTarget: 0, mixSwarm: 0.9, mixSoldier: 0.92, mixMajor: 0.51, mixSapper: 0.18, mixPredator: 0.67, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+    sharpTrig: 1, spitTrig: 7, sapTrig: 5, guardTrig: 6, mortarTrig: 5, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1.95, lvlW: 1.2, flatBuild: 0,
   },
 };
 
@@ -417,8 +529,8 @@ const LEVELS = [
       params: {
         wEco: 2.6, wDef: 0.5, wOff: 1,
         farmTarget: 4, hatchTarget: 2, towersBase: 0, towersPer100s: 0.2, reactDef: 0,
-        farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0,
+        farmLvl: 2, matTarget: 0, mixSwarm: 0.3, mixSoldier: 0.5, mixMajor: 0.5, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 0, flatBuild: 0,
       },
     },
     setup: { moneyE: 110 },
@@ -434,8 +546,8 @@ const LEVELS = [
       params: {
         wEco: 0.8, wDef: 0.6, wOff: 2.2,
         farmTarget: 1, hatchTarget: 4, towersBase: 0, towersPer100s: 0.3, reactDef: 0,
-        farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 0.8, lvlW: 0,
+        farmLvl: 1, matTarget: 0, mixSwarm: 1, mixSoldier: 0.15, mixMajor: 0, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+        sharpTrig: 9, spitTrig: 9, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 0.8, lvlW: 0, flatBuild: 0,
       },
     },
     setup: { moneyE: 165 },
@@ -451,8 +563,8 @@ const LEVELS = [
       params: {
         wEco: 1, wDef: 2.2, wOff: 0.8,
         farmTarget: 2, hatchTarget: 1, towersBase: 2, towersPer100s: 0.6, reactDef: 1,
-        farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0,
-        sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, upgW: 1, lvlW: 0.3,
+        farmLvl: 1, matTarget: 0, mixSwarm: 0.2, mixSoldier: 1, mixMajor: 0.2, mixSapper: 0, mixPredator: 0, mixHorn: 0, mixFife: 0, mixOoze: 0, mixGrub: 0, mixSlither: 0, mixCarrier: 0,
+        sharpTrig: 9, spitTrig: 3, sapTrig: 9, guardTrig: 9, mortarTrig: 9, convTrig: 9, dynamoTrig: 9, rampartTrig: 9, coilTrig: 9, bellTrig: 9, govTrig: 9, redTrig: 9, upgW: 1, lvlW: 0.3, flatBuild: 0,
       },
     },
     setup: { moneyE: 165 },
