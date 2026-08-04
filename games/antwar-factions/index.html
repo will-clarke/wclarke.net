@@ -45,10 +45,10 @@ const LABELS = {
   farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Mat',
   governor: 'Govern', redline: 'Redline',
   tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
-  dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell',
+  dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell', hall: 'Chorus',
   hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
   hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze', grubb: 'Grub', slitherb: 'Slither',
-  carrierb: 'Cyst',
+  carrierb: 'Cyst', kiss: 'Kiss',
 };
 
 // one-line "what is this" blurb, shown while previewing an option
@@ -66,6 +66,7 @@ const DESC = {
   coil: 'arc chains between clustered enemies, weaker each hop',
   rampart: 'no gun: shoves attackers back on every beat of YOUR drum',
   bell: 'no gun: freezes every attacker in range solid, in pulses',
+  hall: 'a slower charmer whose choir holds EVERY convert twice as long',
   hatch: 'breeds workers', swarmb: 'cheap worker flood',
   soldierb: 'breeds soldiers', majorb: 'breeds slow tanks',
   sapperb: 'breeds building-killers', predatorb: 'breeds midfield hunters',
@@ -75,6 +76,7 @@ const DESC = {
   grubb: 'cheap fat grubs: lots of hp, almost no bite',
   slitherb: 'frail skirmishers: race across YOUR creep, crawl off it',
   carrierb: 'carriers: no damage at all - they touch a foe building and corrupt it',
+  kiss: 'breeds nothing: corruption crawls from each rotted building to its nearest neighbour',
   lvl: 'level up: more power, superlinear cost',
 };
 
@@ -491,6 +493,14 @@ function typeStats(slot) {
     out.push(hpLine);
     return out;
   }
+  if (t === 'kiss') {
+    const CR = CFG.CORRUPT;
+    return ['no unit at all: every corrupted enemy building infects its nearest CLEANER neighbour',
+            CR.spreadAmt + ' pip every ' + (CR.spreadEvery / k).toFixed(1) + 's per rotted building - levels spread oftener',
+            'only within ' + CR.spreadR + 'px, so a nest built spread OUT barely spreads at all',
+            'it never touches a hill and it cannot start on its own - a carrier has to land the first pip',
+            hpLine];
+  }
   if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s', hpLine];
   const tw = CFG.TOWERS[t];
   if (t === 'sap') {
@@ -500,10 +510,21 @@ function typeStats(slot) {
   if (t === 'mortar') {
     return [Math.round(tw.bomb * k) + ' dmg vs enemy defences, every ' + tw.cooldown + 's', 'unlimited range - ' + hpLine];
   }
-  if (t === 'conv') {
-    const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k);
-    return ['charms in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
-            'charm holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+  if (t === 'conv' || t === 'hall') {
+    // T34: a hall sings over every charm on the side, its own included, so the
+    // hold it quotes has to be the hold the player will actually see
+    const choir = sim.count(S, 'p', 'hall') > 0 ? CFG.TOWERS.hall.choirCharm : 1;
+    const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k * choir);
+    const out = ['charms in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
+                 'charm holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+    if (t === 'hall') {
+      out.splice(1, 0, 'while it stands, EVERY convert of yours holds x' + tw.choirCharm
+        + ' as long and hits x' + tw.choirDps + ' harder');
+      out.push('one choir per nest: a second hall is just another charmer');
+    } else if (choir > 1) {
+      out.splice(1, 0, 'your Chorus Hall is stretching this hold x' + CFG.TOWERS.hall.choirCharm);
+    }
+    return out;
   }
   if (t === 'bell') {
     return ['freezes EVERY attacker in range solid for ' + tw.freezeDur + 's, no damage',
@@ -597,7 +618,7 @@ function typeStats(slot) {
 const STAT_LABELS = {
   income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
   range: ['range', ''], bomb: ['bomb', ''], charm: ['charms in', 's'],
-  punch: ['shove', 'px'],
+  punch: ['shove', 'px'], hold: ['charm holds', 'x'],
   every: ['breeds every', 's'], unitHp: ['unit hp', ''], unitDps: ['unit dps', ''],
   massRate: ['mass/s', ''], dmgRate: ['press dps/s', ''],
   guardHp: ['guard hp', ''], guardDps: ['guard dps', ''], hp: ['hp', ''],
@@ -615,7 +636,9 @@ function keyStats(type, lvl) {
   if (tw) {
     if (tw.dmg) { o.dmg = r1(tw.dmg * k); o.dps = r1(tw.dmg * k / tw.cooldown); }
     if (tw.bomb) o.bomb = Math.round(tw.bomb * k);
-    if (tw.channel) o.charm = r1(tw.channel / k);
+    // T34: the hall's headline pair - it channels SLOWER and holds LONGER, and
+    // the delta line is the only place that trade is visible before you buy it
+    if (tw.channel) { o.charm = r1(tw.channel / k); o.hold = tw.choirCharm || 1; }
     if (tw.punch) o.punch = Math.round(tw.punch * k);
     // the bell's headline pair: a level moves `rings`, never `freeze`
     if (tw.freezeDur) { o.freeze = tw.freezeDur; o.rings = r1(tw.cooldown / k); }
@@ -1282,6 +1305,32 @@ function drawSlot(slot, side, idx, time) {
     ctx.strokeStyle = 'rgba(201,160,232,' + (0.3 + 0.2 * Math.sin(time * 2)) + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 2, 15 + Math.sin(time * 2) * 2, 0, 7); ctx.stroke();
+  } else if (slot.type === 'kiss') {
+    // a violet bloom that OPENS on the pulse. Deliberately no reach ring: the
+    // radius is measured between the FOE's slots, not from this building, so a
+    // circle here would be a lie about where the plague can jump
+    const per = CFG.CORRUPT.spreadEvery / sim.lvlPower(S, slot);
+    const open = Math.max(0, 1 - (per - slot.cd) / 0.8);
+    ctx.fillStyle = 'rgba(60,20,80,0.5)';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 17, 12, 0, 0, 7); ctx.fill();
+    for (let i = 0; i < 5; i++) {
+      const a = time * 0.4 + i * Math.PI * 0.4;
+      const len = 11 + 4 * open;
+      ctx.fillStyle = 'rgba(201,160,232,' + (0.5 + 0.35 * open) + ')';
+      ctx.beginPath();
+      ctx.ellipse(slot.x + Math.cos(a) * len, slot.y - 3 + Math.sin(a) * len * 0.7,
+        6.5, 3.4, a, 0, 7);
+      ctx.fill();
+    }
+    ctx.fillStyle = '#f0d8ff';
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 3, 4 + 1.5 * open, 0, 7); ctx.fill();
+    // spores drift off on the pulse - the only cue that a spread just happened
+    if (open > 0) {
+      ctx.fillStyle = 'rgba(230,200,255,' + (0.6 * open) + ')';
+      for (const [dx, dy] of [[-12, -10], [11, -12], [0, -16]]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx * (1.4 - open), slot.y + dy * (1.4 - open), 1.8, 0, 7); ctx.fill();
+      }
+    }
   } else if (slot.type === 'slitherb') {
     drawEggs(slot, [[-9, 4, 5], [0, 4, 5], [9, 4, 5]], '#a8c860');
     // three speed-streaks: this den ships tempo, not mass
@@ -1293,7 +1342,7 @@ function drawSlot(slot, side, idx, time) {
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0', hall: '#9c78c0' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -1399,6 +1448,26 @@ function drawSlot(slot, side, idx, time) {
       ctx.stroke();
       ctx.fillStyle = '#d8dce8';
       ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 4 + dir * out, 6, 3.5, 0, 0, 7); ctx.fill();
+    } else if (slot.type === 'hall') {
+      // a charmer's eye under three rising song-arcs. The arcs travel outward
+      // slowly and never stop, because the choir is a standing state and not a
+      // pulse - nothing about this building has a cooldown to read
+      ctx.strokeStyle = 'rgba(201,160,232,' + (0.14 + 0.08 * Math.sin(time * 1.6)) + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.hall.range, 0, 7); ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        const ph = (time * 0.5 + i / 3) % 1;
+        ctx.strokeStyle = 'rgba(246,232,255,' + (0.85 * (1 - ph)) + ')';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(slot.x, slot.y - 4, 9 + 13 * ph, Math.PI * 1.2, Math.PI * 1.8);
+        ctx.stroke();
+      }
+      ctx.strokeStyle = '#ecdcf8';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 6, 7.5, 4.5, 0, 0, 7); ctx.stroke();
+      ctx.fillStyle = '#5c2c7c';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 6, 3.2, 0, 7); ctx.fill();
     } else if (slot.type === 'bell') {
       // a hanging bell whose ring expands outward on the pulse. `cd` counts
       // DOWN from the cooldown, so the phase is readable with no extra state -

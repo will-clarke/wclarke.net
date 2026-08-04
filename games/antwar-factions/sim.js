@@ -177,9 +177,10 @@ const CONFIG = {
   COSTS: {
     farm: 80, grove: 90, plant: 120, mat: 100, governor: 110, redline: 110,
     tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
-    dynamo: 130, coil: 140, rampart: 120, bell: 120,
+    dynamo: 130, coil: 140, rampart: 120, bell: 120, hall: 150,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
     hornb: 100, fifeb: 80, oozeb: 90, grubb: 50, slitherb: 80, carrierb: 80,
+    kiss: 150,
   },
   UPGRADE_TREE: {
     // T26: a gear can be fitted anywhere on the farm CHAIN, not just to a
@@ -201,7 +202,11 @@ const CONFIG = {
     // T32: the bell hangs off the CHARMER for the same reason - VEIL owns no
     // plain tower, so a tower-tree bell would be born unreachable for the only
     // faction that needs it. A charmer is now a trunk AND a leaf, like the den.
-    conv: ['bell'],
+    conv: ['bell', 'hall'],
+    // T34: the Plague Kiss is the corruption branch's own tier-2, so it hangs
+    // off the Cyst - which means BUILDING it eats a pip source. That trade is
+    // the design: a Kiss on an uninfected nest does nothing at all.
+    carrierb: ['kiss'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
   // gold sink. Costs scale superlinearly with power on purpose - concentrated
@@ -326,6 +331,18 @@ const CONFIG = {
     // bells never break it either way: a ring blocked by an existing hold
     // re-arms the whole cooldown, which desynchronises the pair on its own.
     bell:  { range: 120, freezeDur: 3, cooldown: 6, immune: 1.5 },
+    // T34: the Chorus Hall - VEIL's def tier-2, and a CHARMER in its own right.
+    // A buff-only slot was the one shape T24 ruled out (a gunless tower never
+    // repays a gun), and halving a throughput-limited kit's charm rate to double
+    // its hold would have been the worst of both: so the hall keeps the job and
+    // pays for the choir with `channel`. That is the trade in one number - 29%
+    // slower to steal a body, twice as long to keep it - and it is the axis the
+    // triangle wants, because ROT beats VEIL on charm THROUGHPUT while PISTON
+    // hands it one fat host the base charm cannot hold at all (1200/2000hp
+    // bottoms out at `charmMin`). `choir*` are read at the instant an ant turns,
+    // once, from the presence of ANY standing hall (T26's flag, not a stack).
+    hall:  { range: 120, channel: 4.5, charmHpSec: 1200, charmMin: 4,
+             choirCharm: 2, choirDps: 1.25 },
   },
   // v0.5 contact update: every defence building has HP (sappers chew it);
   // guard posts field a squad of defender ants that intercept on the lane.
@@ -501,6 +518,21 @@ const CONFIG = {
     decay: 0,         // pips/s that bleed off on their own. 0 = a pip is
                       // permanent until cleansed or the building dies, which
                       // is what makes cleanseCost the real dial.
+    // T34, the Plague Kiss: an infected foe building seeds its NEAREST infected
+    // -less neighbour, every `spreadEvery` seconds per standing Kiss. The
+    // radius is measured, not picked (lesson 35): the eight slots sit 82.8px
+    // apart at the closest and 174.9 at the median, so any radius under 83 is
+    // a rule that cannot fire, and at 130 the (0,1) pair at 124 joins the nest
+    // into one component. 100 leaves every slot 2-3 neighbours with the LEFT
+    // and RIGHT halves separate, so a plague crawls up one flank and placement
+    // is the answer the design wanted it to be.
+    spreadR: 100,
+    spreadEvery: 8,   // seconds between pulses; a level pulses oftener
+    spreadAmt: 1,     // pips seeded per source per pulse. A spread ADDS - it
+                      // does not move the source's pips, because a transfer
+                      // conserves the total and de-concentrates it, and T33
+                      // measured that concentration is the only thing standing
+                      // between the pips and a flip.
   },
 
   // campaign level setups: per-side start money and pre-built buildings.
@@ -612,8 +644,8 @@ function count(S, side, type) {
 }
 const FAMILIES = {
   eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb'],
+  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss'],
 };
 // every built thing can be shot down - farms and hatcheries included.
 // Nothing is safe just for being behind the line: an economy has to be
@@ -699,9 +731,13 @@ const FACTIONS = {
     // root - and it is the ONLY screen VEIL may have, because T31 measured that
     // anything competing for an offence slot replaces the carriers instead of
     // covering them.
+    // T34: the Kiss is a leaf of the Cyst and the Hall a leaf of the Charmer,
+    // so neither needs a root or a `cost` line - and neither competes for an
+    // offence SLOT the way T31's rejected chaff line did: each one eats the
+    // building it grows out of.
     kit: ['farm', 'grove', 'plant',
-          'conv', 'bell',
-          'carrierb'],
+          'conv', 'bell', 'hall',
+          'carrierb', 'kiss'],
     drum: true,
     cost: { conv: 260, carrierb: 170 },
     // the tithe: every pip VEIL has planted on a standing foe building pays it
@@ -733,6 +769,18 @@ function gearOf(S, side) {
     if (s.type === 'redline') red = true;
   }
   return red ? 'redline' : null;
+}
+// T34: every building that channels a charm. The Chorus Hall is a charmer with a
+// slower channel, so the pass, the bell's "never the last one" guard and the
+// controller all have to count both - a faction holding one conv and one hall has
+// two charmers, not one of each.
+const CHARMERS = ['conv', 'hall'];
+// ...and the choir itself is a PRESENCE flag (T26's gearOf pattern): a second
+// hall buys a second charmer, never a longer hold. Returns the spec, so the
+// numbers stay in CONFIG.
+function choirOf(S, side) {
+  for (const s of S.slots[side]) if (s.type === 'hall' && !underway(s)) return S.cfg.TOWERS.hall;
+  return null;
 }
 // T28: a slot mid-build is scaffolding - it stands there, it can be killed, and
 // it contributes nothing. `buildT` is 0 whenever SPICE.buildGate is off, so
@@ -1012,7 +1060,7 @@ function musterCount(S, side) {
 // mat is NOT levelable: creep growth stays one step per building (the
 // horn/fife precedent - read the mat's speed by counting fountains), and
 // level-multiplied growth out-raced every possible tower suppression
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb'];
+const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss'];
 // levels speed a drum-shifter's PRODUCTION like any brood; the beat delta
 // stays one step per building, so the metronome is read by counting them.
 // null means the faction has no drum at all (ROT): nothing musters, so
@@ -1236,16 +1284,22 @@ function stampPress(S, side) {
 // over-sending a real mistake rather than a rounding error.
 function implantPip(S, u, slot) {
   const CR = S.cfg.CORRUPT, n = S.cfg.UNITS[u.typeKey].implant;
-  if (slot) slot.pips = Math.min(CR.max, slot.pips + n);
-  else S.hillPips[other(u.side)] = Math.min(CR.hillMax, S.hillPips[other(u.side)] + n);
   S.events.push({ type: 'implant', x: u.x, y: u.y, side: u.side, hill: !slot });
   u.hp = 0;
-  // T33: the last pip TURNS it. One-way, and the only place the flag is ever
-  // set: a cleanse below `max` is the whole window, and once it shuts the
-  // building can only leave the board by being demolished.
-  if (slot && !slot.flipped && slot.pips >= CR.max) {
+  if (slot) addPips(S, other(u.side), slot, n);
+  else S.hillPips[other(u.side)] = Math.min(CR.hillMax, S.hillPips[other(u.side)] + n);
+}
+
+// T33: every pip that lands on a BUILDING lands here, and the last one TURNS
+// it. One-way, and still the only place the flag is ever set - T34 gave pips a
+// second source and the flip stayed put rather than being restated beside it, so
+// `side` is whoever's ground the slot stands on, not whoever wrote the pip.
+function addPips(S, side, slot, n) {
+  const CR = S.cfg.CORRUPT;
+  slot.pips = Math.min(CR.max, slot.pips + n);
+  if (!slot.flipped && slot.pips >= CR.max) {
     slot.flipped = true;
-    S.events.push({ type: 'flip', x: slot.x, y: slot.y, side: other(u.side), what: slot.type });
+    S.events.push({ type: 'flip', x: slot.x, y: slot.y, side, what: slot.type });
   }
 }
 
@@ -1310,6 +1364,7 @@ function step(S) {
   stepBells(S, dt);
   stepMortars(S, dt);
   stepCorrode(S, dt);
+  stepKiss(S, dt);
   stepPips(S, dt);
   stepConverters(S, dt);
   deathPass(S, dt);
@@ -1870,6 +1925,44 @@ function stepCorrode(S, dt) {
 // second straight off baseHP, so playMatch's hill-damage readouts see it with
 // no extra bookkeeping. Building pips do not tick: they pay the tithe and, at
 // saturation, flip (T33). Inert until carriers land - nothing writes a pip.
+// T34, the Plague Kiss: corruption stops needing a body. Every `spreadEvery`
+// seconds each Kiss looks over the nest it has infected and lets every pipped
+// building seed its nearest CLEANER neighbour inside `spreadR` - so a clustered
+// nest rots outward from wherever the carriers first landed, and a spread-out
+// one does not. Two rules earn their lines: the seeds are collected before any
+// of them is written, so one pulse cannot cascade along a chain of slots in the
+// order the array happens to hold them; and a FLIPPED slot is out at both ends,
+// because it is the corruptor's building now - it has nothing left to catch and
+// nothing to give. Nothing else in the pool builds one, so this pass is a
+// no-op everywhere until VEIL reaches its own tier-2.
+function stepKiss(S, dt) {
+  const CR = S.cfg.CORRUPT;
+  for (const side of ['p', 'e']) {
+    const host = S.slots[other(side)];
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'kiss' || underway(slot)) continue;
+      slot.cd -= dt;
+      if (slot.cd > 0) continue;
+      slot.cd = CR.spreadEvery / lvlPower(S, slot);
+      S.events.push({ type: 'kiss', x: slot.x, y: slot.y, side });
+      const seeds = [];
+      for (let i = 0; i < host.length; i++) {
+        const src = host[i];
+        if (!src.type || src.flipped || !(src.pips >= 1)) continue;
+        let tgt = null, td = CR.spreadR;
+        for (let j = 0; j < host.length; j++) {
+          const dst = host[j];
+          if (j === i || !dst.type || dst.flipped || dst.pips >= src.pips) continue;
+          const d = Math.hypot(dst.x - src.x, dst.y - src.y);
+          if (d < td) { td = d; tgt = dst; }
+        }
+        if (tgt) seeds.push(tgt);
+      }
+      for (const tgt of seeds) addPips(S, other(side), tgt, CR.spreadAmt);
+    }
+  }
+}
+
 function stepPips(S, dt) {
   const CR = S.cfg.CORRUPT;
   for (const side of ['p', 'e']) {
@@ -1907,9 +2000,12 @@ function stepConverters(S, dt) {
   const cfg = S.cfg;
   for (const side of ['p', 'e']) {
     const foe = other(side);
-    const spec = cfg.TOWERS.conv;
+    const choir = choirOf(S, side);
     for (const slot of S.slots[side]) {
-      if (slot.type !== 'conv' || underway(slot)) continue;
+      // T34: a Chorus Hall is a charmer too - slower to channel, and every ant
+      // that turns anywhere on this side keeps the charm twice as long
+      if (!CHARMERS.includes(slot.type) || underway(slot)) continue;
+      const spec = cfg.TOWERS[slot.type];
       const convertible = v =>
         v.side === foe && v.hp > 0 && !v.conv &&
         (v.state === 'march' || v.state === 'siege') &&
@@ -1937,7 +2033,12 @@ function stepConverters(S, dt) {
       u.conv = true;
       // the charm wears off: big hosts resist it (v-fork gripe fix). Higher
       // charmer levels hold the charm longer as well as channelling faster.
-      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / hostHp) * lvlPower(S, slot);
+      // T34: a standing Chorus Hall stretches the hold and stiffens the convert.
+      // Both are read HERE, once - a hall lost mid-charm does not un-sing what
+      // it already sang, and `dps0` is what lets the revert put the ant back.
+      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / hostHp) * lvlPower(S, slot)
+        * (choir ? choir.choirCharm : 1);
+      if (choir) { u.dps0 = u.dps; u.dps *= choir.choirDps; }
       // it about-faces on the spot and fights at once: no walk home to the
       // muster, and no protection on the way - a convert is shootable now
       u.state = 'march';
@@ -1961,6 +2062,7 @@ function stepConverters(S, dt) {
     u.charmT -= dt;
     if (u.charmT > 0) continue;
     u.charmT = 0;
+    if (u.dps0 !== undefined) { u.dps = u.dps0; u.dps0 = undefined; }
     const home = other(u.side);
     u.side = home;
     u.state = 'march';
