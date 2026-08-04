@@ -192,17 +192,19 @@ const CONFIG = {
     farm:  ['grove', 'mat', 'governor', 'redline'],
     grove: ['plant', 'governor', 'redline'],
     plant: ['governor', 'redline'],
-    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart'],
+    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'bell', 'dynamo', 'coil', 'rampart'],
     hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'carrierb'],
     // T27: ROT's offence root is the Ooze Den, so its ONE specialisation has
     // to hang here - hung off `hatch` it would be born unreachable for the
     // only faction that owns it (T21's dead-mix-key diagnosis, T42's fix).
     // A den is now both a trunk and a leaf, which is new: see buildOptions.
     oozeb: ['slitherb'],
-    // T32: the bell hangs off the CHARMER for the same reason - VEIL owns no
-    // plain tower, so a tower-tree bell would be born unreachable for the only
-    // faction that needs it. A charmer is now a trunk AND a leaf, like the den.
-    conv: ['bell', 'hall'],
+    // OQ25 ruling (2026-08-04 playtest: "impossible to defend against
+    // rushing"): the def tree FLIPPED. The bell is VEIL's cheap def root now
+    // and the charmer grows off it - survive first, steal second. The bell
+    // also hangs off the tower tree so the sandbox keeps a path to it.
+    conv: ['hall'],
+    bell: ['conv'],
     // T34: the Plague Kiss is the corruption branch's own tier-2, so it hangs
     // off the Cyst - which means BUILDING it eats a pip source. That trade is
     // the design: a Kiss on an uninfected nest does nothing at all.
@@ -714,10 +716,12 @@ const FACTIONS = {
   // whatever it has infected. Every gun VEIL ever fires is a stolen one.
   veil: {
     label: 'VEIL',
-    // the charmer and the cyst are ROOTS, so both pay the trunk they skip
-    // (tower 100 + conv 160, hatch 90 + carrierb 80). VEIL owning no plain
-    // tower is what deletes its whole tower-spec branch from the controller.
-    roots: ['farm', 'conv', 'carrierb'],
+    // the bell and the cyst are ROOTS, so both pay the trunk they skip
+    // (tower 100 + bell 120 = 220 - which START_MONEY buys at t=0, the whole
+    // point of open question 25's ruling; hatch 90 + carrierb 80). The
+    // charmer is a LEAF of the bell now, at its plain 160. VEIL owning no
+    // plain tower still deletes its tower-spec branch from the controller.
+    roots: ['farm', 'bell', 'carrierb'],
     // T31 measured purity FIRST, as the spec asked, and purity WON - but not
     // the way it was framed. The alternative carve (a 'hatch' off-root with
     // 'swarmb' beside the cyst) does not SCREEN the carriers, it REPLACES them:
@@ -727,10 +731,9 @@ const FACTIONS = {
     // in all seven graded cells AND in the mirror. A generic brood is strictly
     // better than a corrupter at the only thing a match scores, so VEIL's
     // screen can never be an army; it has to be T32's bell and T33's flip.
-    // T32: the bell is a leaf of the charmer, so it needs no `cost` line and no
-    // root - and it is the ONLY screen VEIL may have, because T31 measured that
-    // anything competing for an offence slot replaces the carriers instead of
-    // covering them.
+    // T32 built the bell as the charmer's leaf; the 2026-08-04 playtest ruled
+    // that backwards (a 260g trunk in front of the ONLY screen VEIL may have
+    // meant dying at ~50s to any rush), so the pair swapped places.
     // T34: the Kiss is a leaf of the Cyst and the Hall a leaf of the Charmer,
     // so neither needs a root or a `cost` line - and neither competes for an
     // offence SLOT the way T31's rejected chaff line did: each one eats the
@@ -739,7 +742,7 @@ const FACTIONS = {
           'conv', 'bell', 'hall',
           'carrierb', 'kiss'],
     drum: true,
-    cost: { conv: 260, carrierb: 170 },
+    cost: { bell: 220, carrierb: 170 },
     // the tithe: every pip VEIL has planted on a standing foe building pays it
     // CORRUPT.skim gold/s. The DEBIT is not here - it is in income() itself,
     // because a leak belongs to the pip, not to the faction drinking it.
@@ -1454,15 +1457,19 @@ function stepProduction(S, dt) {
         continue;
       }
       const prod = cfg.PRODUCTION[slot.type];
-      // T33: a flipped brood breeds for the corruptor, into the CORRUPTOR's
-      // muster - the ants phase across rather than hatching inside the nest they
-      // are about to attack, which would put them in siege range at birth. The
-      // timer stays on the slot, so its rate is still the building's.
+      // T33: a flipped brood breeds for the corruptor; the timer stays on the
+      // slot, so its rate is still the building's.
       const es = effSide(side, slot);
       if (!prod || faction(S, es).stamp) continue;
       slot.prodCd -= dt;
       if (slot.prodCd <= 0) {
-        for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, es, prod.unit);
+        // 2026-08-04 playtest reversed T33's phase-across: the units hatch AT
+        // the stolen building now, wait there, and release on the corruptor's
+        // beat - hatching invisibly at the far nest is what made a flipped
+        // hatchery read dead on screen. Siege range at birth is the designed
+        // catastrophe (VEIL > PISTON rides on it), not an accident.
+        const at = slot.flipped ? { x: slot.x, y: slot.y } : null;
+        for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, es, prod.unit, at);
         slot.prodCd += prodPeriod(prod) / lvlPower(S, slot);
       }
     }
@@ -1792,9 +1799,15 @@ function stepTowers(S, dt) {
       const foe = other(effSide(side, slot));
       slot.cd -= dt;
       if (slot.cd > 0) continue;
+      // 2026-08-04 playtest: a turned gun stands INSIDE the garrison it was
+      // stolen from, and every body near it is mustering or guarding - the
+      // states all guns skip - so it read inert. A flipped gun may shoot them:
+      // the stolen tower shreds the nest's own defenders, which is the flip's
+      // whole fantasy made visible.
+      const still = u => (u.state === 'muster' || u.state === 'guard') && !slot.flipped;
       let best = null, bestD = spec.range;
       for (const u of S.units) {
-        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+        if (u.side !== foe || u.hp <= 0 || still(u)) continue;
         const d = Math.hypot(u.x - slot.x, u.y - slot.y);
         if (d < bestD) { bestD = d; best = u; }
       }
@@ -1804,7 +1817,7 @@ function stepTowers(S, dt) {
         S.shots.push({ x1: slot.x, y1: slot.y - 14, x2: best.x, y2: best.y, ttl: 0.09, splash: spec.splash || 0 });
         if (spec.splash) {
           for (const u of S.units) {
-            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard') continue;
+            if (u.side !== foe || u.hp <= 0 || still(u)) continue;
             if (Math.hypot(u.x - best.x, u.y - best.y) <= spec.splash) u.hp -= dmg;
           }
         } else if (spec.hops) {
@@ -1817,8 +1830,7 @@ function stepTowers(S, dt) {
           while (hit.size < spec.hops) {
             let nxt = null, nd = spec.chainR;
             for (const u of S.units) {
-              if (u.side !== foe || u.hp <= 0 || hit.has(u)) continue;
-              if (u.state === 'muster' || u.state === 'guard') continue;
+              if (u.side !== foe || u.hp <= 0 || hit.has(u) || still(u)) continue;
               const d = Math.hypot(u.x - cur.x, u.y - cur.y);
               if (d < nd) { nd = d; nxt = u; }
             }

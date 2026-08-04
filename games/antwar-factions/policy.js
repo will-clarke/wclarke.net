@@ -256,6 +256,13 @@ function makeController(rawParams, opts) {
       if (foeBigB >= P.convTrig && sim.count(S, side, 'conv') < 2 && def >= 2) {
         cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseTower, type: 'conv' } });
       }
+      // OQ25 (2026-08-04): the bell hangs off the tower tree too now, so a
+      // sandbox brain can buy the screen on the same trigger VEIL uses (the
+      // foe's offence buildings - a bell answers arrivals of any shape).
+      // Never the last shooting tower: a bell fires nothing.
+      if (foeOff >= P.bellTrig && sim.count(S, side, 'bell') < 2 && def >= 2) {
+        cands.push({ score: P.wDef * P.upgW * 1.2, a: { kind: 'build', slot: baseTower, type: 'bell' } });
+      }
       // dynamos: cumulative spin pays off against a foe that never stops
       // feeding it targets, so the trigger reads the foe's TRICKLE lines
       // (worker floods and ooze dens) - the design's anti-trickle answer
@@ -300,20 +307,19 @@ function makeController(rawParams, opts) {
       }
     }
 
-    // T32: the Stasis Bell grows off a CHARMER, not a plain tower - VEIL owns
-    // no tower, so the block above can never bid for the faction that needs it.
-    // It never takes the LAST charmer: a bell deals nothing, and what it buys
-    // is time for the charm standing beside it. The trigger reads the foe's
-    // offence buildings rather than a brood TYPE, because a bell answers
-    // arrivals of any shape - the one foe it reads badly is a stamper, whose
-    // single fat body shrugs half of it off.
+    // OQ25 ruling (2026-08-04): the def tree flipped - the bell is VEIL's def
+    // ROOT (the shortfall bid above grows it from bare ground, and 220 is
+    // buyable at t=0) and the CHARMER grows off a bell now. Never the last
+    // bell: the conv it becomes freezes nothing, so the screen must stand
+    // twice before one is spent on theft. Same trigger as the tower-tree
+    // charmer: the foe's BIG broods are what a charm is worth stealing.
     const baseConv = S.slots[side].findIndex(s => s.type === 'conv');
-    // T34: a Chorus Hall channels too, so it counts as a charmer here - the rule
-    // is "never the last thing that can charm", not "never the last `conv`".
-    const charmers = sim.count(S, side, 'conv') + sim.count(S, side, 'hall');
-    if (baseConv !== -1 && charmers >= 2
-        && foeOff >= P.bellTrig && sim.count(S, side, 'bell') < 2) {
-      cands.push({ score: P.wDef * P.upgW * 1.2, a: { kind: 'build', slot: baseConv, type: 'bell' } });
+    const baseBell = S.slots[side].findIndex(s => s.type === 'bell');
+    if (baseBell !== -1 && sim.count(S, side, 'bell') >= 2 && sim.count(S, side, 'conv') < 2) {
+      const foeBig = sim.count(S, foe, 'soldierb') + sim.count(S, foe, 'majorb');
+      if (foeBig >= P.convTrig) {
+        cands.push({ score: P.wDef * P.upgW * 1.1, a: { kind: 'build', slot: baseBell, type: 'conv' } });
+      }
     }
     // T34: the Chorus Hall may take the LAST charmer, because it still charms -
     // what it trades is channel speed for hold length. So it answers the hosts
