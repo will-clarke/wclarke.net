@@ -209,9 +209,9 @@ const CONFIG = {
     // also hangs off the tower tree so the sandbox keeps a path to it.
     conv: ['hall'],
     bell: ['conv'],
-    // T34: the Plague Kiss is the corruption branch's own tier-2, so it hangs
-    // off the Cyst - which means BUILDING it eats a pip source. That trade is
-    // the design: a Kiss on an uninfected nest does nothing at all.
+    // T34: the Echo is the corruption branch's own tier-2, so it hangs
+    // off the Loom - which means BUILDING it eats a pip source. That trade is
+    // the design: an Echo on a clean nest does nothing at all.
     carrierb: ['kiss'],
     // T44: SEEP's def trunk, and the only def root that is not a gun. The GUARD
     // hangs off it because the patch cannot put a body in the lane and nothing
@@ -279,7 +279,7 @@ const CONFIG = {
     // NOT in foundry.kit - the press sees a brood only as (hp/s, dps/s), so
     // `paintSpeed` would be a stat it discards.
     slitherb: { unit: 'slither', interval: 3.5 },
-    // T30: the Carrier Cyst - VEIL's offence, which is not an offence. It ships
+    // T30: the Carrier Loom - VEIL's offence, which is not an offence. It ships
     // no damage at all, so its throughput is measured in PIPS: one body carries
     // one, and interval is the only rate there is. 5s puts 3.6 pips on the drum
     // (VEIL's plain 18s), which is roughly one saturated foe building per two
@@ -299,7 +299,7 @@ const CONFIG = {
     mortar: { range: 900, bomb: 24, cooldown: 5 },
     // converters channel one attacker at a time (no dmg, so the firing loop
     // skips them) and flip it after `channel` seconds; levels channel faster.
-    // The charm is TIMED and scaled by the host: duration = charmHpSec / base
+    // The charm is TIMED and scaled by the body: duration = charmHpSec / base
     // hp (a worker serves ~forever, a major shakes it off in seconds), times
     // level power. Convert-once immunity survives the revert (no ping-pong).
     conv: { range: 120, channel: 3.5, charmHpSec: 1200, charmMin: 4 },
@@ -354,7 +354,7 @@ const CONFIG = {
     // pays for the choir with `channel`. That is the trade in one number - 29%
     // slower to steal a body, twice as long to keep it - and it is the axis the
     // triangle wants, because SEEP beats VEIL on charm THROUGHPUT while FOUNDRY
-    // hands it one fat host the base charm cannot hold at all (1200/2000hp
+    // hands it one fat body the base charm cannot hold at all (1200/2000hp
     // bottoms out at `charmMin`). `choir*` are read at the instant an ant turns,
     // once, from the presence of ANY standing hall (T26's flag, not a stack).
     hall:  { range: 120, channel: 4.5, charmHpSec: 1200, charmMin: 4,
@@ -418,12 +418,16 @@ const CONFIG = {
     // stamping side never reads `spd` at all.
     grub:    { hp: 48,  spd: 34, dps: 3.2, r: 5.2 },
     // T30: the carrier. dps 0 is the design, not a placeholder - it exists to
-    // TOUCH things, and `implant` is the only output it has. 14hp dies to one
+    // TOUCH things, and `stake` is the only output it has. 14hp dies to one
     // shot from anything, and spd 40 (a major's walk) is what makes the walk
     // the counterplay: every gun on the lane gets its chance before the pip
     // lands. `sight` is the sapper's, and deliberately: the divert shape is
     // proven, and what changes is what arrival MEANS.
-    carrier: { hp: 14, spd: 40, dps: 0, r: 3.6, implant: 1, sight: 90 },
+    // T38 measured the trickle OQ27 recommended and it is a LOSS: spreading the
+    // arrivals costs 30 foe hill hp and 1.6 seizures a match against FOUNDRY and
+    // buys nothing anywhere, because a 14hp body that only has to TOUCH survives
+    // by arriving in company. So the carrier still waits for the beat.
+    carrier: { hp: 14, spd: 40, dps: 0, r: 3.6, stake: 1, sight: 90 },
     // FOUNDRY's stamped product: these are the stats at weight 1 (a soldier),
     // scaled by the weight the press shipped. Nothing breeds it.
     product: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
@@ -533,13 +537,13 @@ const CONFIG = {
                       // kill while walking past.
   },
 
-  // T29: VEIL's substrate - corruption PIPS. A pip is a unit of infection
+  // T29: VEIL's substrate - corruption PIPS. A pip is a unit of claiming
   // sitting on a foe building or hill; it pays VEIL a tithe, ticks the hill,
   // and at saturation (T33) flips the building. Nothing WRITES a pip yet
   // (carriers land at T30), so every number here is live but unreachable and
   // the shipped rules are bit-identical. All placeholders - T35 sweeps them.
   CORRUPT: {
-    max: 6,           // pips a single building holds; T30's implant clamps here
+    max: 6,           // pips a single building holds; T30's stake clamps here
                       // and T33 reads `>= max` as saturation
     hillMax: 10,      // ...and the same for a hill, which never flips
     hillDot: 1.2,     // hp/s a hill loses per pip standing on it
@@ -550,18 +554,18 @@ const CONFIG = {
     decay: 0,         // pips/s that bleed off on their own. 0 = a pip is
                       // permanent until cleansed or the building dies, which
                       // is what makes cleanseCost the real dial.
-    // T34, the Plague Kiss: an infected foe building seeds its NEAREST infected
-    // -less neighbour, every `spreadEvery` seconds per standing Kiss. The
+    // T34, the Echo: a claimed foe building seeds its NEAREST CLEAN
+    // neighbour, every `spreadEvery` seconds per standing Echo. The
     // radius is measured, not picked (lesson 35): the eight slots sit 82.8px
     // apart at the closest and 174.9 at the median, so any radius under 83 is
     // a rule that cannot fire, and at 130 the (0,1) pair at 124 joins the nest
     // into one component. 100 leaves every slot 2-3 neighbours with the LEFT
-    // and RIGHT halves separate, so a plague crawls up one flank and placement
+    // and RIGHT halves separate, so an echo crawls up one flank and placement
     // is the answer the design wanted it to be.
     spreadR: 100,
     spreadEvery: 8,   // seconds between pulses; a level pulses oftener
     // T45, the eco tier-2s. Both scale on `tithePips` - the pips standing on
-    // the FOE's board right now - because that is the quantity the parasite
+    // the FOE's board right now - because that is the quantity the corruptor
     // fantasy is about, and it is measured: a VEIL match holds 1.5-7.3 of them
     // on average and peaks at 17-26. So the Deep Tithe is worth well under a
     // farm early and more than a plant at saturation, which is the curve.
@@ -577,6 +581,28 @@ const CONFIG = {
                       // conserves the total and de-concentrates it, and T33
                       // measured that concentration is the only thing standing
                       // between the pips and a flip.
+    // T38: the chain's terminal. `hillDot` above was the only rule in the game
+    // that turns corruption into damage, and until now only a carrier's own body
+    // could reach it - so a won defence and a won flip both billed 0 hp and VEIL
+    // read 0.00 in every cross-faction cell on three instruments. These two
+    // rates give the flip and the hold their own way in. Both are gated on the
+    // holder being a TITHE faction: a corruptor makes organs bleed, a sandbox
+    // that happens to own a loom does not.
+    flipDrip: 0.06,   // claims/s a seized building feeds the hill it stands on.
+                      // Compounding by construction (claims persist, the dot is
+                      // per-claim), which is the point: a seized nest becomes
+                      // the siege instead of a stall.
+    thrall: 0.05,     // claims/s per LIVING body the corruptor is riding - one
+                      // held by its bell, or one fighting under a charm. Paid
+                      // while the body lives and never once it has fallen:
+                      // the living-only rule (SEEP takes the fallen, VEIL
+                      // takes the standing), and it is what makes a screen a weapon.
+    // ...and the surge clock: VEIL BREEDS faster as its claims take, so its
+    // earned tempo arrives as bodies per wave (FOUNDRY's tempo is built, SEEP's
+    // is none). It multiplies the brood rate, never the beat - measured.
+    surgeGain: 0.06,   // x the brood rate per claim standing on the foe
+    surgeMax: 2,       // ...clamped here (reached at ~17 claims, the Reliquary's
+                      // curve - the same quantity, so the same measured range)
   },
 
   // campaign level setups: per-side start money and pre-built buildings.
@@ -627,7 +653,7 @@ function createState(seed, overrides) {
     stamped: { p: 0, e: 0 },     // ...and the lifetime weight shipped
     // T29: pips standing on each side's OWN hill (the foe put them there).
     // Building pips live on the slot; these have nowhere else to sit. Floats -
-    // a carrier may implant a fraction, and saturation compares `>=`.
+    // a carrier may stake a fraction, and saturation compares `>=`.
     hillPips: { p: 0, e: 0 },
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
@@ -706,12 +732,18 @@ function demolishable(type) {
 const FACTIONS = {
   // the tuning sandbox: every building, the stacked drum. The default, so
   // every recorded matchup and evolved vector replays bit-identically.
-  sandbox: { label: 'SANDBOX', roots: null, kit: null, drum: true },
+  // `blurb` is card text for the T39 select screen - sim-inert, renderer-read.
+  sandbox: {
+    label: 'SANDBOX',
+    blurb: 'Every tool the colony ever shipped. No story - the tuning kit.',
+    roots: null, kit: null, drum: true,
+  },
   // SEEP: everything grows straight out of bare ground - no farms, no worker
   // hatchery, no beat - and its defence only slows and blocks. Shamblers are
   // the whole army and the paint is the damage.
   seep: {
     label: 'SEEP',
+    blurb: 'The garden itself, warped hungry by the fall. It does not march - it grows.',
     // T44: the plain tower is GONE. SEEP's def root is the Thicket, and after
     // this no two factions share a defensive building. The Thicket needs no
     // `cost` line because it is not a spec grown from bare ground - it IS
@@ -737,6 +769,7 @@ const FACTIONS = {
   // juggernaut is now a second, slower answer to buildings, not a replacement.
   foundry: {
     label: 'FOUNDRY',
+    blurb: 'The colony\'s construction engine, still working a blueprint whose authors are gone.',
     roots: ['farm', 'tower', 'hatch'],
     // T24: 'rampart' is deliberately NOT here - the wall is built and proven,
     // but it ships DARK. Its output is 0 or the whole wave depending on a drum
@@ -760,10 +793,11 @@ const FACTIONS = {
   // sapper, because T30 measured that a corrupter which also demolishes cancels
   // its own pips. Its army is zero-damage carriers; its defence is a charmer
   // that steals one attacker at a time; its economy is the TITHE, a cut of
-  // whatever it has infected. Every gun VEIL ever fires is a stolen one.
+  // whatever it has claimed. Every gun VEIL ever fires is a stolen one.
   veil: {
     label: 'VEIL',
-    // the bell and the cyst are ROOTS, so both pay the trunk they skip
+    blurb: 'The thing that woke under the world. It cannot breed alone - it takes.',
+    // the bell and the loom are ROOTS, so both pay the trunk they skip
     // (tower 100 + bell 120 = 220 - which START_MONEY buys at t=0, the whole
     // point of open question 25's ruling; hatch 90 + carrierb 80). The
     // charmer is a LEAF of the bell now, at its plain 160. VEIL owning no
@@ -771,7 +805,7 @@ const FACTIONS = {
     roots: ['farm', 'bell', 'carrierb'],
     // T31 measured purity FIRST, as the spec asked, and purity WON - but not
     // the way it was framed. The alternative carve (a 'hatch' off-root with
-    // 'swarmb' beside the cyst) does not SCREEN the carriers, it REPLACES them:
+    // 'swarmb' beside the loom) does not SCREEN the carriers, it REPLACES them:
     // the trunk itself breeds workers, the mix loop only ever specialises one
     // of two off slots, and VEIL fielded 19-33 workers against 1.8-7.0 carriers
     // at every mix weight tried - including mixSwarm 0. Pips billed 0.0 hill hp
@@ -781,12 +815,12 @@ const FACTIONS = {
     // T32 built the bell as the charmer's leaf; the 2026-08-04 playtest ruled
     // that backwards (a 260g trunk in front of the ONLY screen VEIL may have
     // meant dying at ~50s to any rush), so the pair swapped places.
-    // T34: the Kiss is a leaf of the Cyst and the Hall a leaf of the Charmer,
+    // T34: the Echo is a leaf of the Loom and the Hall a leaf of the Charmer,
     // so neither needs a root or a `cost` line - and neither competes for an
     // offence SLOT the way T31's rejected chaff line did: each one eats the
     // building it grows out of.
     // T45: the two eco leaves. VEIL's opening is literally FOUNDRY's farm chain,
-    // and these are what make it BECOME parasitic - neither is worth a slot on a
+    // and these are what make it BECOME extractive - neither is worth a slot on a
     // board with no corruption on it, so buying one is a bet that the carriers
     // are landing. Neither competes for an offence slot (T31's law).
     kit: ['farm', 'grove', 'plant', 'deep', 'relic',
@@ -846,7 +880,7 @@ function standing(S, side, type) {
 }
 // T45: what a corruptor DRINKS. The DEBIT in income() stays a flat CORRUPT.skim
 // per pip (T31: the leak belongs to the pip), so both leaves change extraction
-// and never the host's bleed - the flywheel's shape, minting on what it holds.
+// and never the bled side's own income - the flywheel's shape, minting on what it holds.
 function titheOf(S, side) {
   const CR = S.cfg.CORRUPT, pips = tithePips(S, side);
   let rate = CR.skim;
@@ -916,7 +950,7 @@ function income(S, side) {
   // T31: the tithe is a TRANSFER, so the bleed lives here rather than in VEIL's
   // hook - a corrupted nest leaks to whoever planted the pips, and VEIL is only
   // the faction that knows how to drink what it spills. After the hook, so a
-  // host's own multiplier never scales the leak. Clamped at 0: a negative rate
+  // bled side's own multiplier never scales the leak. Clamped at 0: a negative rate
   // would eat gold already banked, which no other rule in the game can do.
   inc = Math.max(0, inc - S.cfg.CORRUPT.skim * tithePips(S, other(side)));
   return inc * (S.frenzy ? 2 : 1);
@@ -1163,6 +1197,18 @@ function drumPeriod(S, side) {
   for (const s of S.slots[side]) if (!underway(s)) period += S.cfg.DRUM_DELTA[s.type] || 0;
   return Math.max(S.cfg.DRUM_MIN, Math.min(S.cfg.DRUM_MAX, period));
 }
+// T38, the surge clock: a corruptor BREEDS faster as its claims take. It
+// multiplies the brood RATE and never the beat, which is the measured half of
+// OQ27's ruling - VEIL's army is 14hp bodies whose only job is to touch, so it
+// lives or dies on how many arrive TOGETHER, and every rule that re-phases the
+// same throughput (drumless, a trickling carrier, a quicker beat) sells the
+// concentration a flip needs. More per wave is tempo VEIL can use.
+function surge(S, side) {
+  const f = faction(S, side);
+  if (!f.tithe) return 1;
+  const CR = S.cfg.CORRUPT;
+  return Math.min(CR.surgeMax, 1 + CR.surgeGain * tithePips(S, side));
+}
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
 }
@@ -1374,12 +1420,18 @@ function stampPress(S, side) {
 // anything by itself. Saturation is a CAP, not a refusal: the carrier that
 // walks into a full building still dies for nothing, which is what makes
 // over-sending a real mistake rather than a rounding error.
-function implantPip(S, u, slot) {
-  const CR = S.cfg.CORRUPT, n = S.cfg.UNITS[u.typeKey].implant;
-  S.events.push({ type: 'implant', x: u.x, y: u.y, side: u.side, hill: !slot });
+function stakeClaim(S, u, slot) {
+  const n = S.cfg.UNITS[u.typeKey].stake;
+  S.events.push({ type: 'stake', x: u.x, y: u.y, side: u.side, hill: !slot });
   u.hp = 0;
   if (slot) addPips(S, other(u.side), slot, n);
-  else S.hillPips[other(u.side)] = Math.min(CR.hillMax, S.hillPips[other(u.side)] + n);
+  else addHillPips(S, other(u.side), n);
+}
+
+// T38 gave the hill three writers, so its cap lives in one place. A hill never
+// flips (that is `addPips`' job on a slot), so this is the whole rule.
+function addHillPips(S, side, n) {
+  S.hillPips[side] = Math.min(S.cfg.CORRUPT.hillMax, S.hillPips[side] + n);
 }
 
 // T33: every pip that lands on a BUILDING lands here, and the last one TURNS
@@ -1559,7 +1611,7 @@ function stepProduction(S, dt) {
         // catastrophe (VEIL > FOUNDRY rides on it), not an accident.
         const at = slot.flipped ? { x: slot.x, y: slot.y } : null;
         for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, es, prod.unit, at);
-        slot.prodCd += prodPeriod(prod) / lvlPower(S, slot);
+        slot.prodCd += prodPeriod(prod) / (lvlPower(S, slot) * surge(S, es));
       }
     }
   }
@@ -1836,7 +1888,7 @@ function stepUnits(S, dt) {
           u.x += ((ts.x - u.x) / td) * u.spd * mv * dt;
           u.y += ((ts.y - u.y) / td) * u.spd * mv * dt;
         } else {
-          implantPip(S, u, ts);
+          stakeClaim(S, u, ts);
         }
         continue;
       }
@@ -1878,7 +1930,7 @@ function stepUnits(S, dt) {
         // it plants in the mound itself: a nest with no buildings standing is
         // not a safe nest. Siege position, not SIEGE_DIST, so the gun line gets
         // the same walk to shoot at as it does against any other besieger.
-        implantPip(S, u, null);
+        stakeClaim(S, u, null);
       } else {
         S.baseHP[other(u.side)] -= u.dps * factor * dt;
       }
@@ -2038,8 +2090,8 @@ function stepCorrode(S, dt) {
 // second straight off baseHP, so playMatch's hill-damage readouts see it with
 // no extra bookkeeping. Building pips do not tick: they pay the tithe and, at
 // saturation, flip (T33). Inert until carriers land - nothing writes a pip.
-// T34, the Plague Kiss: corruption stops needing a body. Every `spreadEvery`
-// seconds each Kiss looks over the nest it has infected and lets every pipped
+// T34, the Echo: corruption stops needing a body. Every `spreadEvery`
+// seconds each Echo looks over the nest it has claimed and lets every pipped
 // building seed its nearest CLEANER neighbour inside `spreadR` - so a clustered
 // nest rots outward from wherever the carriers first landed, and a spread-out
 // one does not. Two rules earn their lines: the seeds are collected before any
@@ -2051,7 +2103,7 @@ function stepCorrode(S, dt) {
 function stepKiss(S, dt) {
   const CR = S.cfg.CORRUPT;
   for (const side of ['p', 'e']) {
-    const host = S.slots[other(side)];
+    const foes = S.slots[other(side)];
     for (const slot of S.slots[side]) {
       if (slot.type !== 'kiss' || underway(slot)) continue;
       slot.cd -= dt;
@@ -2059,12 +2111,12 @@ function stepKiss(S, dt) {
       slot.cd = CR.spreadEvery / lvlPower(S, slot);
       S.events.push({ type: 'kiss', x: slot.x, y: slot.y, side });
       const seeds = [];
-      for (let i = 0; i < host.length; i++) {
-        const src = host[i];
+      for (let i = 0; i < foes.length; i++) {
+        const src = foes[i];
         if (!src.type || src.flipped || !(src.pips >= 1)) continue;
         let tgt = null, td = CR.spreadR;
-        for (let j = 0; j < host.length; j++) {
-          const dst = host[j];
+        for (let j = 0; j < foes.length; j++) {
+          const dst = foes[j];
           if (j === i || !dst.type || dst.flipped || dst.pips >= src.pips) continue;
           const d = Math.hypot(dst.x - src.x, dst.y - src.y);
           if (d < td) { td = d; tgt = dst; }
@@ -2076,8 +2128,41 @@ function stepKiss(S, dt) {
   }
 }
 
+// T38: the two rules that let something OTHER than a carrier's body reach the
+// hill dot below. They accrue BEFORE the bill, so a claim laid this tick already
+// gnaws this tick - T30's convention. Both read the holder's faction, so
+// everything a sandbox does with a stolen loom or a charmer is unchanged.
+//
+// The FLIP drips (A): a seized building feeds the hill it stands on. `effSide`
+// is not consulted on purpose - what bleeds is the body the organ is still part
+// of, and the corruptor is whoever owns the other nest by construction.
+//
+// The HOLD claims (B): every living body the corruptor is riding pays its OWN
+// hill. A hostile frozen in a bell's ring is being ridden where it stands; a
+// charmed one is being ridden while it fights. Nothing is paid for a corpse -
+// that is SEEP's grammar (corpse gold, the wall bite), and a VEIL that eats the
+// dead is SEEP in a shroud.
+function stepThrall(S, dt) {
+  const CR = S.cfg.CORRUPT;
+  for (const side of ['p', 'e']) {
+    if (!faction(S, other(side)).tithe) continue;
+    let seized = 0;
+    for (const slot of S.slots[side]) if (slot.flipped && !underway(slot)) seized++;
+    if (seized) addHillPips(S, side, CR.flipDrip * seized * dt);
+  }
+  for (const u of S.units) {
+    if (u.hp <= 0) continue;
+    // a charm rides the body it turned (home is the army it came from); a freeze
+    // rides one that still belongs to its own side
+    const home = u.charmT > 0 ? other(u.side) : u.frozen > 0 ? u.side : null;
+    if (home === null || !faction(S, other(home)).tithe) continue;
+    addHillPips(S, home, CR.thrall * dt);
+  }
+}
+
 function stepPips(S, dt) {
   const CR = S.cfg.CORRUPT;
+  stepThrall(S, dt);
   for (const side of ['p', 'e']) {
     if (S.hillPips[side] > 0) S.baseHP[side] -= CR.hillDot * S.hillPips[side] * dt;
   }
@@ -2140,24 +2225,24 @@ function stepConverters(S, dt) {
       slot.chT += dt;
       if (slot.chT < spec.channel / lvlPower(S, slot)) continue;
       const u = slot.chTgt;
-      const hostHp = u.maxHp || cfg.UNITS[u.typeKey].hp;   // a stamped giant's
+      const bodyHp = u.maxHp || cfg.UNITS[u.typeKey].hp;   // a stamped giant's
                                                            // size is its weight
       u.side = side;
       u.conv = true;
-      // the charm wears off: big hosts resist it (v-fork gripe fix). Higher
+      // the charm wears off: big bodies resist it (v-fork gripe fix). Higher
       // charmer levels hold the charm longer as well as channelling faster.
       // T34: a standing Chorus Hall stretches the hold and stiffens the convert.
       // Both are read HERE, once - a hall lost mid-charm does not un-sing what
       // it already sang, and `dps0` is what lets the revert put the ant back.
       // T45: ...and a Reliquary stretches it again, by however much corruption
       // is standing on the foe's board at this instant.
-      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / hostHp) * lvlPower(S, slot)
+      u.charmT = Math.max(spec.charmMin, spec.charmHpSec / bodyHp) * lvlPower(S, slot)
         * (choir ? choir.choirCharm : 1) * relicHold(S, side);
       if (choir) { u.dps0 = u.dps; u.dps *= choir.choirDps; }
       // it about-faces on the spot and fights at once: no walk home to the
       // muster, and no protection on the way - a convert is shootable now
       u.state = 'march';
-      u.hp = hostHp;                    // restored in full: conversion value
+      u.hp = bodyHp;                    // restored in full: conversion value
                                         // scales with unit SIZE, not with
                                         // whatever hp the wall left it
       // predators keep a side-relative hold point: mirror it with the flip
@@ -2276,12 +2361,12 @@ return {
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
   fieldCol, fieldRow, faction, costOf, pressRate, gearOf, tithePips,
-  titheOf, relicHold,
+  titheOf, relicHold, surge,
   // exported for the selftest only: a building dies where damage lands, and
   // there is no hp<=0 sweep, so a guard for the flywheel knock has to call it -
-  // and implantPip is the flip's only writer, so a guard for the last pip has to
+  // and stakeClaim is the flip's only writer, so a guard for the last pip has to
   // call that
-  destroySlot, implantPip,
+  destroySlot, stakeClaim,
   demolishable, LEVELABLE, FAMILIES, FACTIONS,
 };
 });

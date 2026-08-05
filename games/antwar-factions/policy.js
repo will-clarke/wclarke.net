@@ -34,7 +34,7 @@ const PARAM_SPEC = {
   mixOoze:       [0, 1, false],    // ...ooze dens: shamblers trickle drumless, corpses splat
   mixGrub:       [0, 1, false],    // ...grub pits: cheap mass, almost no dps (FOUNDRY press feed)
   mixSlither:    [0, 1, false],    // ...slither dens: fast on OWN paint, feeble off it (SEEP)
-  mixCarrier:    [0, 1, false],    // ...carrier cysts: zero-damage bodies that plant pips (VEIL)
+  mixCarrier:    [0, 1, false],    // ...carrier looms: zero-damage bodies that plant pips (VEIL)
   sharpTrig:     [1, 9, true],     // sharp once foe major-broods >= N (9=never)
   spitTrig:      [1, 9, true],     // spitter once foe worker-broods >= N (9=never)
   sapTrig:       [2, 9, true],     // sap once own towers >= N (9=never)
@@ -45,8 +45,8 @@ const PARAM_SPEC = {
   rampartTrig:   [1, 9, true],     // rampart once foe ON-FOOT broods >= N (9=never)
   coilTrig:      [1, 9, true],     // arc coil once foe CLUMP broods >= N (9=never)
   bellTrig:      [1, 9, true],     // stasis bell once foe OFFENCE buildings >= N (9=never)
-  kissTrig:      [1, 9, true],     // plague kiss once foe PIPPED buildings >= N (9=never)
-  hallTrig:      [1, 9, true],     // chorus hall once foe HEAVY hosts >= N (9=never)
+  kissTrig:      [1, 9, true],     // Echo once foe PIPPED buildings >= N (9=never)
+  hallTrig:      [1, 9, true],     // chorus hall once foe HEAVY bodies >= N (9=never)
   govTrig:       [1, 9, true],     // governor once foe BUILDING-KILLERS >= N (9=never)
   redTrig:       [1, 9, true],     // red-line once OWN eco buildings >= N (9=never)
   deepTrig:      [1, 9, true],     // deep tithe once foe PIPPED buildings >= N (9=never)
@@ -109,9 +109,9 @@ function firstEmptyIn(S, side, order) {
 // seep.kit nor veil.kit contains one of those, so four def buildings were
 // unbuyable against those factions at ANY vector value - the charmer included,
 // which is the mechanism VEIL's whole design rests on. Reading the bred unit's
-// hp instead is faction-agnostic: heavy hosts are what a sharp shoots and a
+// hp instead is faction-agnostic: heavy bodies are what a sharp shoots and a
 // charm is worth stealing, light ones are what arrives in numbers. A stamping
-// foe breeds nothing at all (the press fuses its broods into one fat host per
+// foe breeds nothing at all (the press fuses its broods into one fat body per
 // beat), so every offence building it owns counts heavy - T25's architecture
 // read, which the Chorus Hall bid already used.
 function foeBodies(S, foe) {
@@ -272,7 +272,7 @@ function decide(brain, S, side, allowed) {
   // rule as the gears. They gate on `tithe` rather than on a body count for
   // T25's reason, and on CORRUPTION ALREADY STANDING rather than on the foe's
   // architecture for T34a's: what predicts the value of a skim multiplier is
-  // skim already flowing. Both read the Kiss's quantity - pipped foe BUILDINGS,
+  // skim already flowing. Both read the Echo's quantity - pipped foe BUILDINGS,
   // never the raw pip total, because a count that can pass 9 has no "never"
   // and hard rule 6's neutral value would arm every shipped vector. A
   // Reliquary also needs somewhere for the hold to land, so it waits for a
@@ -337,7 +337,7 @@ function decide(brain, S, side, allowed) {
     // converters: a charm is worth having against ANY body line - the design
     // has a SEEP trickle FEEDING a charmer, and SEEP breeds nothing heavy - so
     // this reads body sources of either mass and leaves the value scaling to
-    // the Chorus Hall, which is the arm priced for hosts a base charm cannot
+    // the Chorus Hall, which is the arm priced for bodies a base charm cannot
     // hold. A converter shoots no ants: never the last shooting tower.
     if (bodies.chaff + bodies.heavy >= P.convTrig
         && sim.count(S, side, 'conv') < 2 && def >= 2) {
@@ -421,7 +421,7 @@ function decide(brain, S, side, allowed) {
     }
   }
   // T34: the Chorus Hall may take the LAST charmer, because it still charms -
-  // what it trades is channel speed for hold length. So it answers the hosts
+  // what it trades is channel speed for hold length. So it answers the bodies
   // the base charm cannot hold: `charmHpSec / hp` bottoms out at `charmMin`,
   // and the only things heavy enough for that are majors and a stamper's fat
   // product, which is the MECHANISM read T25 demands rather than a brood count.
@@ -458,9 +458,9 @@ function decide(brain, S, side, allowed) {
     }
   }
 
-  // T34: the Plague Kiss eats a CYST, so it trades a pip source for a pip
+  // T34: the Echo eats a LOOM, so it trades a pip source for a pip
   // multiplier - worth nothing at all on a nest the carriers have not reached
-  // yet, and never worth the last cyst. The trigger reads the state the
+  // yet, and never worth the last loom. The trigger reads the state the
   // mechanic needs rather than the foe's architecture (which is the T25 rule,
   // not an exception to it): what predicts a spread is pips already standing,
   // and no brood count on either side predicts that.

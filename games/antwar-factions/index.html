@@ -44,13 +44,13 @@ const UI_TOP = 648;
 
 const LABELS = {
   farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Wellspring',
-  governor: 'Govern', redline: 'Redline', deep: 'Marrow Tap', relic: 'Clutch',
+  governor: 'Govern', redline: 'Redline', deep: 'Deep Tap', relic: 'Clutch',
   tower: 'Turret', sharp: 'Longbore', spit: 'Scattergun', sap: 'Sap', guard: 'Polyp', mortar: 'Mortar', conv: 'Puppeteer',
   dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell', hall: 'Hivemind',
   thicket: 'Mire',
   hatch: 'Smelter', swarmb: 'Swarm', soldierb: 'Steel', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
   hornb: 'Horn', fifeb: 'Whistle', oozeb: 'Ooze', grubb: 'Pig Iron', slitherb: 'Slither',
-  carrierb: 'Cyst', kiss: 'Kiss',
+  carrierb: 'Loom', kiss: 'Echo',
 };
 // T47: the farm chain is the only type two carved factions SHARE, so it is the
 // only label that needs a per-faction word - FOUNDRY mills its gold out of the
@@ -59,9 +59,11 @@ const FACTION_LABELS = {
   foundry: { farm: 'Mine', grove: 'Mill', plant: 'Refinery' },
   veil: { farm: 'Feeder', grove: 'Gorger', plant: 'Glutton' },
 };
+function cardLabel(type, f) {   // labelOf for a faction not yet in a match
+  return (FACTION_LABELS[f] && FACTION_LABELS[f][type]) || LABELS[type];
+}
 function labelOf(type, side) {
-  const over = FACTION_LABELS[S ? S.cfg.FACTION[side || 'p'] : 'sandbox'];
-  return (over && over[type]) || LABELS[type];
+  return cardLabel(type, S ? S.cfg.FACTION[side || 'p'] : 'sandbox');
 }
 
 // one-line "what is this" blurb, shown while previewing an option
@@ -70,7 +72,7 @@ const DESC = {
   mat: 'pours the stain: paints ground, income by area',
   governor: 'gold + safe gear: losses never knock your flywheel, lower ceiling',
   redline: 'gold + greed gear: double spin-up, but every loss vents gold',
-  deep: 'gold + marrow tap: the more you have infested, the harder you siphon',
+  deep: 'gold + deep tap: the more you have claimed, the harder you siphon',
   relic: 'gold + clutch: spends half the siphon to hold every seized ant longer',
   tower: 'all-rounder shooter', sharp: 'sniper: slow, huge hits',
   spit: 'splash: shreds swarms', sap: 'slows attackers, no damage',
@@ -91,8 +93,8 @@ const DESC = {
   oozeb: 'oozes shamblers in blooms of 3 - clumps, not a drum; corpses feed the stain',
   grubb: 'cheap fat mass: lots of hp, almost no bite',
   slitherb: 'frail skirmishers: race across YOUR stain, crawl off it',
-  carrierb: 'carriers: no damage at all - they touch a foe building and implant a larva',
-  kiss: 'breeds nothing: larvae crawl from each infested building to its nearest neighbour',
+  carrierb: 'carriers: no damage at all - they touch a foe building and stake a claim',
+  kiss: 'breeds nothing: claims crawl from each claimed building to its nearest neighbour',
   lvl: 'level up: more power, superlinear cost',
 };
 
@@ -106,15 +108,53 @@ const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
   intro: 'Its dead advance the stain. Rush it before the ground turns.',
   params: pol.ARCHETYPES.creeper,
 }]);
-const PERSONA_BTNS = SKIRMISH_FOES.map((f, i) => ({
-  key: f.key, x: 24, y: 428 + i * 78, w: W - 48, h: 68,
+// T39 - the match-setup screen, the cold-load landing. Three faction CARDS
+// (name, the registry blurb, root icons) pick the player's side; the foe is a
+// faction chip row plus the T36 WITS rung; START commits (T1's two-tap
+// spirit: every other tap only selects). The sandbox stays a small chip on
+// both sides - it is the tuning kit, not a fourth card. Skirmish-only:
+// campaign levels are authored vs the sandbox.
+const FACTION_HUES = { sandbox: '#c8a060', seep: '#9ad06a', foundry: '#e0b060', veil: '#c9a0e8' };
+const TEMPO_TAGS = { seep: 'no drum', foundry: 'shift drum', veil: '18s pulse' };
+
+// T40 theming v1. The split of labour: the SIDE owns the hue family (player
+// green vs enemy red, the paint field's own split, so a mirror match stays
+// readable) and the FACTION owns shape and accents. ?plain=1 is the escape
+// hatch - facOf then reports sandbox everywhere, and every themed branch falls
+// back to the debug look on its own.
+const PLAIN = new URLSearchParams(location.search).get('plain') === '1';
+function facOf(side) { return (!PLAIN && S) ? S.cfg.FACTION[side] : 'sandbox'; }
+
+// death/birth poof palettes: SEEP splashes wet, FOUNDRY sheds metal, VEIL
+// disperses as violet mist - side tint kept inside each pair
+const FX_COLORS = {
+  death: {
+    sandbox: { p: '#4a3826', e: '#b04a30' },
+    seep:    { p: '#6a8a48', e: '#a05878' },
+    foundry: { p: '#9aa2aa', e: '#c08058' },
+    veil:    { p: '#8a78c8', e: '#c880b8' },
+  },
+  birth: {
+    sandbox: { p: '#9ec878', e: '#c878a8' },
+    seep:    { p: '#a8d070', e: '#d080a8' },
+    foundry: { p: '#d8e0d8', e: '#e8d0c0' },
+    veil:    { p: '#b898e0', e: '#d898d0' },
+  },
+};
+function fxColor(kind, side) { return FX_COLORS[kind][facOf(side)][side]; }
+const FACTION_CARDS = ['seep', 'foundry', 'veil'].map((key, i) => ({
+  key, x: 20, y: 88 + i * 114, w: 380, h: 104,
 }));
-// playtest faction picker (temporary until T39): one chip row per side on the
-// skirmish screen. Skirmish-only - campaign levels are authored vs the sandbox.
-const FACTION_KEYS = ['sandbox', 'seep', 'foundry', 'veil'];
-const FACTION_ROWS = ['p', 'e'].map((side, r) => FACTION_KEYS.map((key, i) => ({
-  side, key, x: 56 + i * 90, y: 302 + r * 34, w: 84, h: 28,
-})));
+const SANDBOX_CHIP = { x: 135, y: 424, w: 150, h: 22 };
+const FOE_CHIPS = ['seep', 'foundry', 'veil', 'sandbox'].map((key, i) => ({
+  key, x: 30 + i * 92, y: 480, w: 84, h: 28,
+}));
+const PERSONA_CHIPS = SKIRMISH_FOES.map((f, i) => ({
+  key: f.key, x: 22 + i * 96, y: 566, w: 90, h: 24,
+}));
+const START_BTN = { x: 90, y: 606, w: 240, h: 52 };
+const CAMPAIGN_BTN = { x: 130, y: 674, w: 160, h: 30 };
+const REMATCH_BTN = { x: 110, y: 430, w: 200, h: 46 };
 
 // T36 - the AI ladder: three bred brains per faction, each rung one step
 // further through the coevolution arms race, thinking faster as it climbs. No
@@ -126,7 +166,7 @@ const RUNGS = [
   { key: 'soldier', label: 'SOLDIER', thinkEvery: 0.9, brain: 'soldier' },
   { key: 'queen', label: 'QUEEN', thinkEvery: 0.4, brain: 'queen' },
 ];
-const RUNG_BTNS = RUNGS.map((r, i) => ({ key: r.key, x: 56 + i * 110, y: 368, w: 104, h: 28 }));
+const RUNG_BTNS = RUNGS.map((r, i) => ({ key: r.key, x: 56 + i * 110, y: 518, w: 104, h: 28 }));
 // A champion is only playable if the bank carries one for that faction. The
 // SANDBOX at Grub is the deliberate exception: the personas below were written
 // for that kit, so there they ARE the casual brain - while against a carved kit
@@ -149,6 +189,11 @@ function rungPlayable(rungKey) {
 // the tuner graded - say so rather than quietly serving a stale champion.
 function champsStale() {
   return !!CHAMPS && CHAMPS.content !== pol.contentHash();
+}
+// the persona pick only matters where the personas ARE the brain (T36's
+// sandbox-at-Grub exception, or no champions.js at all)
+function personaChoiceOpen() {
+  return factionSel.e === 'sandbox' && !rungBrain(aiRung, 'sandbox');
 }
 
 // campaign trail: a winding path up the screen, boss node centred on top
@@ -190,9 +235,10 @@ const FACTION_OVERRIDE = (() => {
   const pick = (f, dflt) => (f && sim.FACTIONS[f] ? f : dflt);
   return { p: pick(p, 'sandbox'), e: pick(e, 'sandbox') };
 })();
-// the picker's live selection: the URL wins at load, else the remembered pick
+// the picker's live selection: the URL wins at load, else the remembered pick,
+// else a real matchup - a first load should look like the game, not the sandbox
 let factionSel = Object.assign(
-  { p: 'sandbox', e: 'sandbox' },
+  { p: 'seep', e: 'foundry' },
   (() => { try { return JSON.parse(localStorage.getItem('antwar-faction-pick') || 'null'); } catch (e) { return null; } })(),
   FACTION_OVERRIDE || {});
 for (const s of ['p', 'e']) if (!sim.FACTIONS[factionSel[s]]) factionSel[s] = 'sandbox';
@@ -299,7 +345,7 @@ window.addEventListener('resize', resize);
 resize();
 
 // ----------------------------------------------------------------- state ---
-let phase = 'menu';              // menu | brief | skirmish | play | end
+let phase = 'select';            // select | menu | brief | play | end (T39: cold load lands on match setup)
 let mode = 'campaign';           // campaign | skirmish (what 'play' returns to)
 let currentLevel = -1;
 let briefLevel = -1;
@@ -524,11 +570,14 @@ function statsLines(slot) {
   // T33: once it has turned there is nothing left to decide, so the line stops
   // offering the counterplay and says what happened instead
   if (slot.flipped) {
-    return ['TAKEN AS A BROOD-HOST - it works for ' + sim.faction(S, 'e').label + ' now',
+    return ['TAKEN AS A PUPPET - it works for ' + sim.faction(S, 'e').label + ' now',
+            // T38: a taken building is not a stall any more, it is the siege -
+            // and where the hill claims are coming from has to be readable
+            'it feeds claims into YOUR hill while it stands',
             'it cannot be sold, purged or rebuilt; only demolished'].concat(typeStats(slot));
   }
-  return ['INFESTED: ' + (Math.round(slot.pips * 10) / 10) + ' of ' + CFG.CORRUPT.max
-    + ' larvae - at ' + CFG.CORRUPT.max + ' it becomes their BROOD-HOST',
+  return ['CLAIMED: ' + (Math.round(slot.pips * 10) / 10) + ' of ' + CFG.CORRUPT.max
+    + ' claims - at ' + CFG.CORRUPT.max + ' it becomes their PUPPET',
           'purge it for ' + CFG.CORRUPT.cleanseCost + 'g, or sell the building to deny them'].concat(typeStats(slot));
 }
 
@@ -577,18 +626,18 @@ function typeStats(slot) {
     const CR = CFG.CORRUPT, pips = sim.tithePips(S, 'p'), isDeep = t === 'deep';
     const out = ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s, and one leaf on YOUR siphon'];
     out.push(isDeep
-      ? 'every larva you have planted siphons +' + Math.round(CR.deepGain * 100)
+      ? 'every claim you have planted siphons +' + Math.round(CR.deepGain * 100)
         + '% harder, up to ' + CR.deepMax + 'x'
       : 'spends ' + Math.round(CR.relicSkim * 100) + '% of the siphon to grip every seized ant +'
-        + Math.round(CR.relicGain * 100) + '% longer per larva, up to ' + CR.relicMax + 'x');
+        + Math.round(CR.relicGain * 100) + '% longer per claim, up to ' + CR.relicMax + 'x');
     if (!sim.faction(S, 'p').tithe) {
       out.push('YOUR faction siphons nothing, so this leaf does nothing');
     } else if (pips > 0) {
       out.push(isDeep
-        ? pips + ' larvae planted: ' + r1(sim.titheOf(S, 'p')) + ' gold/s siphoned right now'
-        : pips + ' larvae planted: your grip holds x' + r1(sim.relicHold(S, 'p')) + ' right now');
+        ? pips + ' claims planted: ' + r1(sim.titheOf(S, 'p')) + ' gold/s siphoned right now'
+        : pips + ' claims planted: your grip holds x' + r1(sim.relicHold(S, 'p')) + ' right now');
     } else {
-      out.push('nothing of theirs is infested yet, so it is doing nothing at all');
+      out.push('nothing of theirs is claimed yet, so it is doing nothing at all');
     }
     out.push('one per nest: a second buys nothing');
     out.push(hpLine);
@@ -596,10 +645,10 @@ function typeStats(slot) {
   }
   if (t === 'kiss') {
     const CR = CFG.CORRUPT;
-    return ['no unit at all: every infested enemy building infects its nearest CLEANER neighbour',
-            CR.spreadAmt + ' larva every ' + (CR.spreadEvery / k).toFixed(1) + 's per infested building - levels spread oftener',
+    return ['no unit at all: every claimed enemy building claims its nearest CLEANER neighbour',
+            CR.spreadAmt + ' claim every ' + (CR.spreadEvery / k).toFixed(1) + 's per claimed building - levels spread oftener',
             'only within ' + CR.spreadR + 'px, so a nest built spread OUT barely spreads at all',
-            'it never touches a hill and it cannot start on its own - a carrier has to land the first larva',
+            'it never touches a hill and it cannot start on its own - a carrier has to land the first claim',
             hpLine];
   }
   if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s', hpLine];
@@ -626,6 +675,10 @@ function typeStats(slot) {
     const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k * choir);
     const out = ['seizes an ant in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
                  'the grip holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+    // T38: the hold IS the weapon now, so the line that sells the building says so
+    if (sim.faction(S, 'p').tithe) {
+      out.splice(1, 0, 'every ant you are gripping breeds claims into ITS OWN hill');
+    }
     if (t === 'hall') {
       out.splice(1, 0, 'while it stands, EVERY seized ant of yours holds x' + tw.choirCharm
         + ' as long and hits x' + tw.choirDps + ' harder');
@@ -636,12 +689,16 @@ function typeStats(slot) {
     return out;
   }
   if (t === 'bell') {
-    return ['freezes EVERY attacker in range solid for ' + tw.freezeDur + 's, no damage',
-            'rings every ' + (tw.cooldown / k).toFixed(1) + 's - levels ring oftener, never longer',
-            'a frozen ant cannot move or bite, but it can still be shot and SEIZED',
-            'heavy stamped bodies shrug off half of it, and a thawed ant resists for '
-              + tw.immune + 's - so more bells is more GROUND, never a longer hold',
-            'range ' + tw.range + ' - the same reach as a Puppeteer - ' + hpLine];
+    const out = ['freezes EVERY attacker in range solid for ' + tw.freezeDur + 's, no damage',
+                 'rings every ' + (tw.cooldown / k).toFixed(1) + 's - levels ring oftener, never longer',
+                 'a frozen ant cannot move or bite, but it can still be shot and SEIZED',
+                 'heavy stamped bodies shrug off half of it, and a thawed ant resists for '
+                   + tw.immune + 's - so more bells is more GROUND, never a longer hold',
+                 'range ' + tw.range + ' - the same reach as a Puppeteer - ' + hpLine];
+    if (sim.faction(S, 'p').tithe) {
+      out.splice(3, 0, 'every ant it holds breeds claims into ITS OWN hill while you hold it');
+    }
+    return out;
   }
   if (t === 'rampart') {
     const per = sim.drumPeriod(S, 'p');
@@ -704,11 +761,16 @@ function typeStats(slot) {
     if (u.paintSpeed) out.push('up to x' + u.paintSpeed + ' speed on YOUR stain, sluggish off it');
     // dps 0 prints as a stat and reads like a typo, so the trade has to be
     // spelled out: what it delivers is the pip, and it dies delivering it
-    if (u.implant) {
-      out.push('NO damage: it walks to a foe building, implants ' + u.implant
-        + ' larva and dies');
-      out.push(CFG.CORRUPT.max + ' larvae saturate a building; with none left to infest it implants in the HILL,'
-        + ' where each larva gnaws ' + CFG.CORRUPT.hillDot + ' hp/s (max ' + CFG.CORRUPT.hillMax + ')');
+    if (u.stake) {
+      out.push('NO damage: it walks to a foe building, stakes ' + u.stake
+        + ' claim and dies');
+      out.push(CFG.CORRUPT.max + ' claims saturate a building; with none left to claim it stakes in the HILL,'
+        + ' where each claim gnaws ' + CFG.CORRUPT.hillDot + ' hp/s (max ' + CFG.CORRUPT.hillMax + ')');
+      // T38's surge clock, where the player can see the number move
+      if (sim.faction(S, 'p').tithe) {
+        out.push('your broods RUSH: x' + r1(sim.surge(S, 'p')) + ' right now, up to x'
+          + CFG.CORRUPT.surgeMax + ' as your claims take');
+      }
     }
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
@@ -782,7 +844,7 @@ function keyStats(type, lvl) {
 function previewLines(slotIdx, type) {
   const slot = S.slots.p[slotIdx];
   if (type === 'cleanse') {
-    return [{ text: 'purge all ' + (Math.round(slot.pips * 10) / 10) + ' larvae off it for '
+    return [{ text: 'purge all ' + (Math.round(slot.pips * 10) / 10) + ' claims off it for '
       + CFG.CORRUPT.cleanseCost + ' gold', color: '#c9a0e8' }]
       .concat(statsLines(slot).map(t => ({ text: t })));
   }
@@ -822,7 +884,7 @@ cv.addEventListener('pointerdown', (e) => {
   const y = (e.clientY - rect.top) / viewScale;
 
   if (phase === 'menu') {
-    if (inRect(x, y, SKIRMISH_BTN)) { phase = 'skirmish'; return; }
+    if (inRect(x, y, SKIRMISH_BTN)) { phase = 'select'; return; }
     if (inRect(x, y, EXPORT_BTN)) { exportReplays(); return; }
     for (let i = 0; i < LEVEL_NODES.length; i++) {
       const n = LEVEL_NODES[i];
@@ -839,21 +901,32 @@ cv.addEventListener('pointerdown', (e) => {
     phase = 'menu';
     return;
   }
-  if (phase === 'skirmish') {
-    for (const row of FACTION_ROWS) for (const c of row) {
-      if (inRect(x, y, c)) { factionSel[c.side] = c.key; saveFactionSel(); return; }
+  if (phase === 'select') {
+    for (const c of FACTION_CARDS) {
+      if (inRect(x, y, c)) { factionSel.p = c.key; saveFactionSel(); return; }
+    }
+    if (inRect(x, y, SANDBOX_CHIP)) { factionSel.p = 'sandbox'; saveFactionSel(); return; }
+    for (const b of FOE_CHIPS) {
+      if (inRect(x, y, b)) { factionSel.e = b.key; saveFactionSel(); return; }
     }
     for (const b of RUNG_BTNS) {
       if (inRect(x, y, b)) { setRung(b.key); return; }
     }
-    for (const b of PERSONA_BTNS) {
-      if (inRect(x, y, b)) { begin(b.key); return; }
+    if (personaChoiceOpen()) for (const b of PERSONA_CHIPS) {
+      if (inRect(x, y, b)) { personaKey = b.key; return; }
     }
-    phase = 'menu';              // tap anywhere else: back to the trail
+    if (inRect(x, y, START_BTN)) { begin(personaKey); return; }
+    if (inRect(x, y, CAMPAIGN_BTN)) { phase = 'menu'; return; }
     return;
   }
   if (phase === 'end') {
-    if (mode === 'skirmish') { phase = 'skirmish'; return; }
+    if (mode === 'skirmish') {
+      // the old instant-start is the rematch path now (T39): same factions,
+      // same rung, same persona, fresh seed
+      if (inRect(x, y, REMATCH_BTN)) { begin(personaKey); return; }
+      phase = 'select';
+      return;
+    }
     if (matchResult === 'VICTORY') { phase = 'menu'; }
     else { briefLevel = currentLevel; phase = 'brief'; }   // straight to retry
     return;
@@ -921,7 +994,7 @@ function advance(dtReal) {
     if (ev.type === 'decay') banner('SUDDEN DEATH! Hills are crumbling');
     if (ev.type === 'march' && ev.side === 'p') { drumFlash = 1; SFX.drum(); buzz(30); }
     if (ev.type === 'death') {
-      poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
+      poof(ev.x, ev.y, fxColor('death', ev.side), ev.big ? 14 : 5, ev.big ? 60 : 35);
     }
     if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
     if (ev.type === 'splat') {
@@ -939,7 +1012,7 @@ function advance(dtReal) {
       }
       if (wisps.length > 120) wisps.splice(0, wisps.length - 120);
     }
-    if (ev.type === 'birth') poof(ev.x, ev.y, ev.side === 'p' ? '#9ec878' : '#c878a8', 8, 34);
+    if (ev.type === 'birth') poof(ev.x, ev.y, fxColor('birth', ev.side), 8, 34);
     if (ev.type === 'stamp') {
       poof(ev.x, ev.y, '#c8d8e0', Math.min(20, 4 + ev.w * 2), 30 + ev.w * 4);
       if (ev.side === 'p' && ev.w >= CFG.STAMP.smashAt) banner('JUGGERNAUT stamped: ' + ev.w.toFixed(1) + 'x');
@@ -951,12 +1024,12 @@ function advance(dtReal) {
       banner(ev.side === 'p' ? 'Enemy ant SEIZED!' : 'Your ant defected!');
       SFX.convert();
     }
-    if (ev.type === 'implant') {
+    if (ev.type === 'stake') {
       poof(ev.x, ev.y, '#c9a0e8', 7, 26);
       // only the player's OWN nest gets a banner: their corruption is legible
       // from the violet crowns on the enemy slots, but a pip landing on their
       // side is the thing they can still act on
-      if (ev.side === 'e') banner(ev.hill ? 'Your HILL is infested!' : 'A building of yours is INFESTED');
+      if (ev.side === 'e') banner(ev.hill ? 'Your HILL is claimed!' : 'A building of yours is CLAIMED');
     }
     // T33: the flip's own moment. `side` is the nest that LOST the building, the
     // towerfall convention - a takeover reads as a loss from one side and a gift
@@ -965,7 +1038,7 @@ function advance(dtReal) {
       poof(ev.x, ev.y, '#c9a0e8', 16, 55);
       poof(ev.x, ev.y, '#7a50a0', 9, 30);
       const what = (labelOf(ev.what, ev.side) || 'building').toLowerCase();
-      banner(ev.side === 'p' ? 'Your ' + what + ' is a BROOD-HOST now!' : 'Enemy ' + what + ' is YOURS!');
+      banner(ev.side === 'p' ? 'Your ' + what + ' is a PUPPET now!' : 'Enemy ' + what + ' is YOURS!');
       SFX.convert();
       if (ev.side === 'p') buzz([50, 40, 50]);
     }
@@ -1028,7 +1101,112 @@ function advance(dtReal) {
 }
 
 // ------------------------------------------------------------------ draw ---
+// T40: the lush backdrop - the Fallow Garden's last fertile ground, drawn ONCE
+// to an offscreen canvas at 2x (the per-frame cost is one drawImage; the
+// drawCreep one-pixel-per-cell discipline is the precedent). The lane stays
+// packed dirt so the road the armies march on reads, and the flora is kept
+// low-contrast so nothing back here outshouts a unit - in canon the lushness
+// IS early Seep, so the flanks are damp greens with a few pale spore-caps.
+const groundCv = document.createElement('canvas');
+function buildGround() {
+  const GS = 2;
+  groundCv.width = W * GS; groundCv.height = H * GS;
+  const g = groundCv.getContext('2d');
+  g.scale(GS, GS);
+  g.fillStyle = '#514736';
+  g.fillRect(0, 0, W, H);
+  // soft moss blotches, four damp greens
+  for (let i = 0; i < 52; i++) {
+    const x = Math.random() * W, y = Math.random() * UI_TOP;
+    const r = 16 + Math.random() * 44;
+    const hue = ['76,86,50', '62,80,46', '86,94,54', '56,70,42'][i % 4];
+    const grad = g.createRadialGradient(x, y, 2, x, y, r);
+    grad.addColorStop(0, 'rgba(' + hue + ',' + (0.10 + Math.random() * 0.13) + ')');
+    grad.addColorStop(1, 'rgba(' + hue + ',0)');
+    g.fillStyle = grad;
+    g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+  }
+  // the dirt road down the middle
+  const road = g.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
+  road.addColorStop(0, 'rgba(130,100,68,0)');
+  road.addColorStop(0.25, 'rgba(140,110,76,0.8)');
+  road.addColorStop(0.75, 'rgba(140,110,76,0.8)');
+  road.addColorStop(1, 'rgba(130,100,68,0)');
+  g.fillStyle = road;
+  g.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
+  // a flank x: anywhere off the road (both flanks are 156px wide)
+  const flankX = () => {
+    const w = LANE_CX - LANE_HALF - 20;
+    return Math.random() < 0.5 ? Math.random() * w : W - Math.random() * w;
+  };
+  // grass tufts
+  for (let i = 0; i < 130; i++) {
+    const x = flankX(), y = 30 + Math.random() * (UI_TOP - 50);
+    g.strokeStyle = 'rgba(96,118,62,' + (0.25 + Math.random() * 0.25) + ')';
+    g.lineWidth = 1;
+    g.beginPath();
+    for (const dx of [-2, 0, 2]) {
+      const len = 3.5 + Math.random() * 3.5;
+      g.moveTo(x, y);
+      g.lineTo(x + dx + (Math.random() - 0.5), y - len);
+    }
+    g.stroke();
+  }
+  // fern fronds: a curved spine with short ribs
+  for (let i = 0; i < 16; i++) {
+    const x = flankX(), y = 50 + Math.random() * (UI_TOP - 80);
+    const a = Math.random() * Math.PI * 2, len = 10 + Math.random() * 9;
+    const tx = x + Math.cos(a) * len, ty = y + Math.sin(a) * len;
+    g.strokeStyle = 'rgba(88,116,60,0.35)';
+    g.lineWidth = 1.2;
+    g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + Math.cos(a + 0.5) * len * 0.6, y + Math.sin(a + 0.5) * len * 0.6, tx, ty); g.stroke();
+    g.lineWidth = 0.8;
+    for (let k = 1; k <= 4; k++) {
+      const px = x + (tx - x) * k / 5, py = y + (ty - y) * k / 5;
+      const rl = (5 - k) * 1.1;
+      g.beginPath();
+      g.moveTo(px - Math.sin(a) * rl, py + Math.cos(a) * rl);
+      g.lineTo(px + Math.sin(a) * rl, py - Math.cos(a) * rl);
+      g.stroke();
+    }
+  }
+  // pale spore-caps, in twos and threes
+  for (let i = 0; i < 11; i++) {
+    const x = flankX(), y = 60 + Math.random() * (UI_TOP - 100);
+    for (let k = 0, n = 1 + (Math.random() * 3 | 0); k < n; k++) {
+      const px = x + (Math.random() - 0.5) * 10, py = y + (Math.random() - 0.5) * 8;
+      const r = 1.6 + Math.random() * 1.6;
+      g.fillStyle = 'rgba(190,182,150,0.5)';
+      g.fillRect(px - 0.6, py - 1, 1.2, 3);
+      g.fillStyle = 'rgba(172,150,120,0.55)';
+      g.beginPath(); g.ellipse(px, py - 1.5, r, r * 0.6, 0, 0, 7); g.fill();
+    }
+  }
+  // faint bioluminescent lichen clusters - the one alien glow note
+  for (let i = 0; i < 9; i++) {
+    const x = flankX(), y = 40 + Math.random() * (UI_TOP - 70);
+    for (let k = 0; k < 4; k++) {
+      g.fillStyle = 'rgba(120,200,170,' + (0.08 + Math.random() * 0.09) + ')';
+      g.beginPath();
+      g.arc(x + (Math.random() - 0.5) * 14, y + (Math.random() - 0.5) * 12, 1 + Math.random() * 1.6, 0, 7);
+      g.fill();
+    }
+  }
+  for (const p of pebbles) {
+    g.fillStyle = 'rgba(0,0,0,' + p.a + ')';
+    g.beginPath(); g.arc(p.x, p.y, p.r, 0, 7); g.fill();
+  }
+  // vignette so the board's edges recede
+  const vin = g.createRadialGradient(LANE_CX, UI_TOP / 2, 120, LANE_CX, UI_TOP / 2, 460);
+  vin.addColorStop(0, 'rgba(18,14,8,0)');
+  vin.addColorStop(1, 'rgba(18,14,8,0.32)');
+  g.fillStyle = vin;
+  g.fillRect(0, 0, W, H);
+}
+if (!PLAIN) buildGround();
+
 function drawGround() {
+  if (!PLAIN) { ctx.drawImage(groundCv, 0, 0, W, H); return; }
   ctx.fillStyle = '#7a5c3e';
   ctx.fillRect(0, 0, W, H);
   const g = ctx.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
@@ -1145,8 +1323,18 @@ function drawMound(b, color, hole, flash) {
   ctx.beginPath(); ctx.ellipse(b.x, b.y - 6, b.r * 0.3, b.r * 0.2, 0, 0, 7); ctx.fill();
 }
 
+// T40: the side owns the hue family (player dark, enemy red - the paint
+// field's split), the faction owns the chassis shape drawn below
+const ANT_BODY = {
+  sandbox: { p: '#1d150c', e: '#a8321e' },
+  seep:    { p: '#20280f', e: '#8e3050' },
+  foundry: { p: '#2a2e26', e: '#96382a' },
+  veil:    { p: '#2a2138', e: '#9c3060' },
+};
+
 function drawAnt(u, time) {
-  const body = u.side === 'p' ? '#1d150c' : '#a8321e';
+  const fac = facOf(u.side);
+  const body = (ANT_BODY[fac] || ANT_BODY.sandbox)[u.side];
   const dir = u.side === 'p' ? -1 : 1;
   const mustering = u.state === 'muster';
   ctx.save();
@@ -1158,16 +1346,86 @@ function drawAnt(u, time) {
   ctx.lineWidth = 1;
   const biting = u.state === 'siege' || u.state === 'hunt';
   const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
-  for (let i = -1; i <= 1; i++) {
-    ctx.beginPath();
-    ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
-    ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
-    ctx.stroke();
+  if (fac === 'foundry') {
+    // stamped, not born: stiff straight legs, three riveted plates, and the
+    // juggernaut pumps vertically as it walks - a piston stroke, not a gait
+    const pump = u.typeKey === 'product' && !mustering && !(u.frozen > 0)
+      ? Math.sin(time * 9 + u.seed * 5) : 0;
+    ctx.translate(0, pump * 1.4);
+    ctx.lineWidth = 1.2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i * 0.4);
+      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i * 0.4);
+      ctx.stroke();
+    }
+    ctx.fillStyle = body;
+    const plate = (cy, w, h) => ctx.fillRect(-w / 2, cy - h / 2, w, h);
+    plate(dir * u.r * 1.2, u.r * 1.8, u.r * 1.7);
+    plate(0, u.r * 1.5, u.r * 1.4);
+    plate(-dir * u.r * 1.5, u.r * 2.1, u.r * 2.2);
+    ctx.fillStyle = 'rgba(215,225,232,0.5)';
+    for (const [rx, ry] of [[-0.6, -0.6], [0.6, -0.6], [0, 0.7]]) {
+      ctx.beginPath();
+      ctx.arc(rx * u.r * 0.7, -dir * u.r * 1.5 + ry * u.r * 0.7, u.r * 0.16 + 0.4, 0, 7);
+      ctx.fill();
+    }
+  } else if (fac === 'seep') {
+    // one wet mass on the move: pseudopod legs, lobes that wobble out of
+    // phase, a glisten, and a drip it leaves as it goes
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
+      ctx.quadraticCurveTo(0, i * u.r * 1.3, u.r + 2, i * u.r * 0.8 - wig * i);
+      ctx.stroke();
+    }
+    const wob = k => 1 + 0.15 * Math.sin(time * 5 + u.seed * 7 + k * 2.1);
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9 * wob(0), u.r * 1.1 * wob(1), 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.85 * wob(2), u.r * 0.95 * wob(0), 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.15 * wob(1), u.r * 1.45 * wob(2), 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(222,240,190,0.4)';
+    ctx.beginPath(); ctx.arc(u.r * 0.3, -dir * u.r * 1.8, u.r * 0.28, 0, 7); ctx.fill();
+    const dp = (time * 0.7 + u.seed) % 1;
+    if (dp < 0.5) {
+      ctx.fillStyle = 'rgba(140,168,88,' + (0.55 * (1 - dp * 2)) + ')';
+      ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.2 + dp * 9, 1.2, 1.7, 0, 0, 7); ctx.fill();
+    }
+  } else if (fac === 'veil') {
+    // half-there: the body draws translucent, then an additive shimmer
+    // breathes over it - more a presence than a physique
+    ctx.globalAlpha = 0.72;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
+      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
+      ctx.stroke();
+    }
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = 'lighter';
+    const sh = 0.10 + 0.08 * Math.sin(time * 4 + u.seed * 3);
+    const gl = ctx.createRadialGradient(0, 0, 1, 0, 0, u.r * 2.6);
+    gl.addColorStop(0, 'rgba(150,110,220,' + sh + ')');
+    gl.addColorStop(1, 'rgba(150,110,220,0)');
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  } else {
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
+      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
+      ctx.stroke();
+    }
+    ctx.fillStyle = body;
+    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
   }
-  ctx.fillStyle = body;
-  ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
   if (u.typeKey === 'guard') {
     // gold thorax band: defenders read differently from attackers
     ctx.fillStyle = '#ffd870';
@@ -1214,6 +1472,15 @@ function drawAnt(u, time) {
     ctx.beginPath(); ctx.arc(0, 0, u.r * 2.4, 0, 7); ctx.stroke();
     ctx.fillStyle = u.side === 'p' ? '#c9a0e8' : '#e8a0d0';
     ctx.beginPath(); ctx.arc(0, 0, u.r * 0.6, 0, 7); ctx.fill();
+    if (!PLAIN && !mustering) {
+      // T40: a wake of motes behind the march - the claim it carries, leaking
+      for (let k = 0; k < 3; k++) {
+        ctx.fillStyle = 'rgba(201,160,232,' + (0.4 - k * 0.11 + 0.1 * Math.sin(time * 5 + k * 2 + u.seed)) + ')';
+        ctx.beginPath();
+        ctx.arc(Math.sin(time * 2.2 + k * 2.4 + u.seed) * 2.5, -dir * u.r * (2.4 + k * 1.5), 1.5 - k * 0.3, 0, 7);
+        ctx.fill();
+      }
+    }
   } else if (u.typeKey === 'grub') {
     // pale segment bands and no mandible mark: a sack that trundles
     ctx.strokeStyle = u.side === 'p' ? 'rgba(240,232,208,0.7)' : 'rgba(248,216,208,0.7)';
@@ -1294,6 +1561,77 @@ function drawMushrooms(slot, side, spots) {
   }
 }
 
+// T40: FOUNDRY's income chain (Mine / Mill / Refinery) - a spoil heap with one
+// meshed gear per tier, and the Refinery earns a chimney. Escalation reads as
+// more machine, the way the mushroom count escalated before.
+function drawWorks(slot, side, tier, time) {
+  ctx.fillStyle = '#5d5546';
+  ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 16, 9, 0, 0, 7); ctx.fill();
+  const spin = time * 0.9 * (side === 'p' ? 1 : -1);
+  const at = [[0, -6, 6], [-10, -1, 4.5], [10, -1, 4.5]];
+  for (let t = 0; t < tier; t++) {
+    const [dx, dy, r] = at[t];
+    const a0 = spin * (t % 2 ? -1 : 1) + t * 0.7;
+    ctx.strokeStyle = '#c8b070';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, r, 0, 7); ctx.stroke();
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let i = 0; i < 5; i++) {
+      const a = a0 + i * Math.PI * 0.4;
+      ctx.moveTo(slot.x + dx + Math.cos(a) * (r - 2), slot.y + dy + Math.sin(a) * (r - 2));
+      ctx.lineTo(slot.x + dx + Math.cos(a) * (r + 2), slot.y + dy + Math.sin(a) * (r + 2));
+    }
+    ctx.stroke();
+  }
+  if (tier === 3) {
+    ctx.fillStyle = '#4a4640';
+    ctx.fillRect(slot.x + 11, slot.y - 22, 5, 13);
+    for (let k = 0; k < 2; k++) {
+      const ph = (time * 0.35 + k * 0.5) % 1;
+      ctx.fillStyle = 'rgba(200,200,195,' + (0.3 * (1 - ph)) + ')';
+      ctx.beginPath();
+      ctx.arc(slot.x + 13.5 + Math.sin(ph * 5) * 2, slot.y - 24 - ph * 12, 2 + ph * 3, 0, 7);
+      ctx.fill();
+    }
+  }
+}
+
+// T40: VEIL's income chain (Feeder / Gorger / Glutton) - a translucent fleshy
+// sac that breathes, one working mouth per tier, and the Glutton puts down
+// tendril roots. Escalating appetite reads as escalating income.
+function drawFeeder(slot, side, tier, time) {
+  const breathe = 1 + 0.06 * Math.sin(time * 1.8 + slot.x);
+  const r = (9 + tier * 3) * breathe;
+  const g = ctx.createRadialGradient(slot.x, slot.y - 2, 2, slot.x, slot.y - 2, r + 6);
+  g.addColorStop(0, 'rgba(190,140,235,0.7)');
+  g.addColorStop(0.75, 'rgba(140,90,190,0.4)');
+  g.addColorStop(1, 'rgba(120,70,170,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 2, r + 5, (r + 5) * 0.8, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = 'rgba(220,190,250,0.5)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 2, r, r * 0.78, 0, 0, 7); ctx.stroke();
+  ctx.fillStyle = 'rgba(60,25,90,0.8)';
+  const at = [[0, 2], [-6, -4], [6, -4]];
+  for (let t = 0; t < tier; t++) {
+    const [dx, dy] = at[t];
+    const o = 1 + 0.4 * Math.sin(time * 2.6 + t * 2 + slot.y);
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, 2.4 * o, 1.6 * o, 0, 0, 7); ctx.fill();
+  }
+  if (tier === 3) {
+    ctx.strokeStyle = 'rgba(150,100,200,0.5)';
+    ctx.lineWidth = 1.5;
+    for (const [dx, k] of [[-12, 0], [12, 1], [2, 2]]) {
+      ctx.beginPath();
+      ctx.moveTo(slot.x + dx * 0.5, slot.y + 6);
+      ctx.quadraticCurveTo(slot.x + dx, slot.y + 10 + Math.sin(time + k) * 1.5,
+        slot.x + dx * 1.3, slot.y + 14);
+      ctx.stroke();
+    }
+  }
+}
+
 function drawEggs(slot, spots, eggColor) {
   ctx.strokeStyle = 'rgba(0,0,0,0.25)';
   ctx.lineWidth = 1;
@@ -1305,6 +1643,7 @@ function drawEggs(slot, spots, eggColor) {
 }
 
 function drawSlot(slot, side, idx, time) {
+  const fac = facOf(side);
   if (slot.type === null) {
     if (side === 'p') {
       ctx.strokeStyle = 'rgba(255,255,220,0.45)';
@@ -1320,21 +1659,35 @@ function drawSlot(slot, side, idx, time) {
     return;
   }
 
-  if (slot.type === 'farm') {
-    drawMushrooms(slot, side, [[-8, 4, 7], [7, 6, 6], [0, -6, 8]]);
-  } else if (slot.type === 'grove') {
-    drawMushrooms(slot, side, [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]]);
-  } else if (slot.type === 'plant') {
-    drawMushrooms(slot, side, [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]]);
-    ctx.fillStyle = '#d8c9a3';
-    ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
-    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
-    ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+  if (slot.type === 'farm' || slot.type === 'grove' || slot.type === 'plant') {
+    // T40: the one type two carved factions share, so the SILHOUETTE splits
+    // per faction the way the label already does (Mine vs Feeder)
+    const tier = { farm: 1, grove: 2, plant: 3 }[slot.type];
+    if (fac === 'foundry') {
+      drawWorks(slot, side, tier, time);
+    } else if (fac === 'veil') {
+      drawFeeder(slot, side, tier, time);
+    } else if (tier === 1) {
+      drawMushrooms(slot, side, [[-8, 4, 7], [7, 6, 6], [0, -6, 8]]);
+    } else if (tier === 2) {
+      drawMushrooms(slot, side, [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]]);
+    } else {
+      drawMushrooms(slot, side, [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]]);
+      ctx.fillStyle = '#d8c9a3';
+      ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
+      ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+    }
   } else if (slot.type === 'governor' || slot.type === 'redline') {
     // a farm with a brass gear bolted to it - the safe gear turns slowly and
     // steadily, the greedy one races and glows hot
     const red = slot.type === 'redline';
-    drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
+    if (fac === 'foundry') {
+      ctx.fillStyle = '#5d5546';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 15, 8, 0, 0, 7); ctx.fill();
+    } else {
+      drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
+    }
     const spin = time * (red ? 2.6 : 0.8) * (side === 'p' ? 1 : -1);
     ctx.strokeStyle = red ? '#e08850' : '#c8b070';
     ctx.lineWidth = 2.5;
@@ -1353,9 +1706,10 @@ function drawSlot(slot, side, idx, time) {
     }
   } else if (slot.type === 'deep' || slot.type === 'relic') {
     // T45: a farm with the corruption drinking out of it. The violet fills with
-    // what the tithe is worth right now, so the parasite economy has a face -
-    // a chalice for the Deep Tithe, a reliquary crystal for the Reliquary.
-    drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
+    // what the siphon is worth right now, so the corruptor economy has a face -
+    // a chalice for the Deep Tap, a clutch crystal for the Clutch.
+    if (fac === 'veil') drawFeeder(slot, side, 1, time);
+    else drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
     const k = Math.min(1, sim.tithePips(S, side) / (CFG.CORRUPT.max * 4));
     ctx.strokeStyle = 'rgba(180,130,225,0.85)';
     ctx.lineWidth = 2.5;
@@ -1383,7 +1737,26 @@ function drawSlot(slot, side, idx, time) {
       ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.6, 0, 7); ctx.fill();
     }
   } else if (slot.type === 'hatch') {
-    drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
+    if (fac === 'foundry') {
+      // T40: the Smelter - a riveted furnace dome with a glowing mouth. It
+      // melts feedstock for the press; nothing here hatches.
+      const g = ctx.createRadialGradient(slot.x, slot.y - 10, 3, slot.x, slot.y, 18);
+      g.addColorStop(0, '#6e6a62');
+      g.addColorStop(1, '#46424a');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 2, 15, 12, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(215,225,232,0.45)';
+      for (const [dx, dy] of [[-10, -4], [10, -4], [0, -12]]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.2, 0, 7); ctx.fill();
+      }
+      const heat = 0.55 + 0.25 * Math.sin(time * 2.2 + slot.x);
+      ctx.fillStyle = 'rgba(255,140,50,' + heat + ')';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 6, 4, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,225,150,' + heat + ')';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 3.2, 2, 0, 0, 7); ctx.fill();
+    } else {
+      drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
+    }
   } else if (slot.type === 'swarmb') {
     drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8');
   } else if (slot.type === 'soldierb') {
@@ -1425,6 +1798,13 @@ function drawSlot(slot, side, idx, time) {
     for (const dx of [-6, 0, 6]) { ctx.moveTo(slot.x + dx, slot.y - 18); ctx.lineTo(slot.x + dx + 3, slot.y - 10); }
     ctx.stroke();
   } else if (slot.type === 'oozeb') {
+    if (fac === 'seep') {
+      // T40: the den sits in its own puddle - wet from the ground up
+      ctx.fillStyle = 'rgba(110,140,80,0.3)';
+      ctx.beginPath();
+      ctx.ellipse(slot.x, slot.y + 3, 20 + Math.sin(time * 1.5 + slot.x) * 1.5, 12, 0, 0, 7);
+      ctx.fill();
+    }
     drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#b8c8a0');
     // hanging drips: the den oozes shamblers with no drum
     ctx.strokeStyle = '#6a8a48';
@@ -1436,7 +1816,7 @@ function drawSlot(slot, side, idx, time) {
     }
     ctx.stroke();
   } else if (slot.type === 'carrierb') {
-    // one swollen violet sac: a cyst grows cargo, not soldiers
+    // one violet pod: a loom spins cargo, not soldiers
     drawEggs(slot, [[0, 2, 11]], '#c9a0e8');
     ctx.strokeStyle = 'rgba(201,160,232,' + (0.3 + 0.2 * Math.sin(time * 2)) + ')';
     ctx.lineWidth = 1.5;
@@ -1444,7 +1824,7 @@ function drawSlot(slot, side, idx, time) {
   } else if (slot.type === 'kiss') {
     // a violet bloom that OPENS on the pulse. Deliberately no reach ring: the
     // radius is measured between the FOE's slots, not from this building, so a
-    // circle here would be a lie about where the plague can jump
+    // circle here would be a lie about where the echo can jump
     const per = CFG.CORRUPT.spreadEvery / sim.lvlPower(S, slot);
     const open = Math.max(0, 1 - (per - slot.cd) / 0.8);
     ctx.fillStyle = 'rgba(60,20,80,0.5)';
@@ -1460,7 +1840,7 @@ function drawSlot(slot, side, idx, time) {
     }
     ctx.fillStyle = '#f0d8ff';
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 3, 4 + 1.5 * open, 0, 7); ctx.fill();
-    // spores drift off on the pulse - the only cue that a spread just happened
+    // motes drift off on the pulse - the only cue that a spread just happened
     if (open > 0) {
       ctx.fillStyle = 'rgba(230,200,255,' + (0.6 * open) + ')';
       for (const [dx, dy] of [[-12, -10], [11, -12], [0, -16]]) {
@@ -1476,13 +1856,49 @@ function drawSlot(slot, side, idx, time) {
     for (const dy of [-18, -13, -8]) { ctx.moveTo(slot.x - 8, slot.y + dy); ctx.lineTo(slot.x + 8, slot.y + dy - 2); }
     ctx.stroke();
   } else {
-    // tower family: stone mound base
-    const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
+    // tower family base. T40: stone for the sandbox, a riveted iron platform
+    // for FOUNDRY, a mossy wet pad for SEEP, a translucent membrane for VEIL -
+    // the per-type marks above it are unchanged.
     const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0', hall: '#9c78c0', thicket: '#84b258' }[slot.type];
+    const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
     g.addColorStop(0, top);
-    g.addColorStop(1, '#6e685c');
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19, 15, 0, 0, 7); ctx.fill();
+    if (fac === 'foundry') {
+      g.addColorStop(1, '#4a4e56');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + Math.PI / 8;
+        const px = slot.x + Math.cos(a) * 20, py = slot.y + Math.sin(a) * 15.5;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.fillStyle = 'rgba(215,225,232,0.4)';
+      for (const [dx, dy] of [[-13, 0], [13, 0], [0, -10], [0, 10]]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.2, 0, 7); ctx.fill();
+      }
+    } else if (fac === 'veil') {
+      g.addColorStop(1, 'rgba(90,60,130,0.25)');
+      ctx.fillStyle = g;
+      ctx.globalAlpha = 0.75;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19, 15, 0, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = 'rgba(220,190,250,' + (0.3 + 0.15 * Math.sin(time * 2.5 + slot.y)) + ')';
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 18.5, 14.5, 0, 0, 7); ctx.stroke();
+    } else if (fac === 'seep') {
+      const pw = 1 + 0.04 * Math.sin(time * 2 + slot.x);
+      g.addColorStop(1, '#3c5030');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19 * pw, 15 * pw, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(225,240,195,0.4)';
+      for (const [dx, dy] of [[-6, -4], [5, 2], [1, -8]]) {
+        ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.2, 0, 7); ctx.fill();
+      }
+    } else {
+      g.addColorStop(1, '#6e685c');
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 19, 15, 0, 0, 7); ctx.fill();
+    }
     if (slot.type === 'tower') {
       ctx.fillStyle = '#2c2820';
       ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
@@ -1646,6 +2062,20 @@ function drawSlot(slot, side, idx, time) {
       ctx.moveTo(slot.x - 6, slot.y - 3);
       ctx.quadraticCurveTo(slot.x, slot.y - 17, slot.x + 6, slot.y - 3);
       ctx.closePath(); ctx.fill();
+      if (!PLAIN) {
+        // T40: the medusa read - a drifting tentacle fringe under the dome,
+        // because the freeze is a paralytic sting, not a chime
+        ctx.strokeStyle = 'rgba(210,175,240,0.55)';
+        ctx.lineWidth = 1;
+        for (let k = 0; k < 4; k++) {
+          const dx = -4.5 + k * 3;
+          ctx.beginPath();
+          ctx.moveTo(slot.x + dx, slot.y - 3);
+          ctx.quadraticCurveTo(slot.x + dx + Math.sin(time * 2.2 + k) * 1.5, slot.y + 2,
+            slot.x + dx + Math.sin(time * 1.6 + k * 2) * 2.5, slot.y + 7);
+          ctx.stroke();
+        }
+      }
       ctx.fillStyle = '#6a4c86';
       ctx.beginPath(); ctx.arc(slot.x + Math.sin(time * 3) * 3, slot.y - 1.5, 1.8, 0, 7); ctx.fill();
     }
@@ -1779,11 +2209,11 @@ function spinLabel(side) {
   }
   if (!f.income) return '';
   const pips = sim.tithePips(S, side);
-  return '  larvae ' + pips.toFixed(pips % 1 ? 1 : 0);
+  return '  claims ' + pips.toFixed(pips % 1 ? 1 : 0);
 }
 // T47: each faction names its own metronome - FOUNDRY pours on the shift
-// whistle, VEIL's is a gestation cycle. The sandbox keeps the war drum.
-const DRUM_WORDS = { foundry: 'shift', veil: 'brood' };
+// whistle, VEIL's is its own unshiftable pulse. The sandbox keeps the war drum.
+const DRUM_WORDS = { foundry: 'shift', veil: 'pulse' };
 function drumWord(side) { return DRUM_WORDS[S.cfg.FACTION[side]] || 'war drum'; }
 
 // what is waiting to march: a muster of ants, or a press full of mass
@@ -1943,7 +2373,7 @@ function drawPopup() {
     // small-label branch stays for the narrow mid-width rows (5 or 6 options)
     ctx.textAlign = 'center';
     const label = pend ? (isSell ? 'Sell?' : 'Confirm?') : r.label;
-    // T47's names say the job out loud (Scattergun, Marrow Tap), and a name too
+    // T47's names say the job out loud (Scattergun, Deep Tap), and a name too
     // long for its button shrinks rather than spilling over the edge
     let fs = r.w < 52 ? 10 : 12;
     ctx.font = 'bold ' + fs + 'px sans-serif';
@@ -2172,46 +2602,146 @@ function drawBrief() {
   ctx.fillText('DIG IN', LANE_CX, BRIEF_START.y + 27);
 }
 
-function drawSkirmish() {
+// tiny root-building glyphs for the faction cards - echoes of the in-match
+// silhouettes (drawSlot), redrawn small because those read S and a live slot
+function drawKitIcon(type, x, y) {
+  if (type === 'farm') {
+    for (const [dx, dy, r] of [[-6, 3, 5], [5, 4, 4], [0, -3, 5]]) {
+      ctx.fillStyle = '#8a6f4a';
+      ctx.fillRect(x + dx - 1.5, y + dy, 3, 6);
+      ctx.fillStyle = '#b89868';
+      ctx.beginPath(); ctx.arc(x + dx, y + dy, r, Math.PI, 0); ctx.fill();
+    }
+  } else if (type === 'mat') {
+    ctx.fillStyle = 'rgba(110,140,80,0.45)';
+    ctx.beginPath(); ctx.ellipse(x, y, 13, 9, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(110,140,80,0.95)';
+    ctx.beginPath(); ctx.ellipse(x, y, 8, 6, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,240,200,0.8)';
+    for (const [dx, dy] of [[-3, -1], [3, 2], [1, -3]]) {
+      ctx.beginPath(); ctx.arc(x + dx, y + dy, 1.2, 0, 7); ctx.fill();
+    }
+  } else if (type === 'thicket') {
+    ctx.strokeStyle = '#6a9a48';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (const [dx, lean] of [[-7, -3], [-2, -1], [3, 1], [8, 3]]) {
+      ctx.moveTo(x + dx, y + 8);
+      ctx.quadraticCurveTo(x + dx + lean, y - 1, x + dx + lean * 2, y - 8);
+    }
+    ctx.stroke();
+  } else if (type === 'oozeb') {
+    ctx.strokeStyle = '#6a8a48';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    for (const dx of [-3, 2]) { ctx.moveTo(x + dx, y + 4); ctx.lineTo(x + dx, y + 9); }
+    ctx.stroke();
+    ctx.fillStyle = '#b8c8a0';
+    for (const [dx, dy, r] of [[-5, 2, 4], [5, 2, 4], [0, -3, 4]]) {
+      ctx.beginPath(); ctx.arc(x + dx, y + dy, r, 0, 7); ctx.fill();
+    }
+  } else if (type === 'tower') {
+    ctx.fillStyle = '#7a6848';
+    ctx.beginPath(); ctx.arc(x, y + 1, 7, 0, 7); ctx.fill();
+    ctx.strokeStyle = '#e0b060';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(x, y + 1, 7, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x + 3, y - 2); ctx.lineTo(x + 10, y - 8); ctx.stroke();
+  } else if (type === 'hatch') {
+    ctx.fillStyle = '#e8e0cc';
+    for (const [dx, dy, r] of [[-5, 2, 4], [5, 3, 4], [0, -3, 5]]) {
+      ctx.beginPath(); ctx.ellipse(x + dx, y + dy, r, r * 1.25, 0, 0, 7); ctx.fill();
+    }
+  } else if (type === 'bell') {
+    ctx.fillStyle = 'rgba(201,160,232,0.3)';
+    ctx.beginPath(); ctx.arc(x, y + 3, 9, Math.PI, 0); ctx.fill();
+    ctx.strokeStyle = '#c9a0e8';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y + 3, 9, Math.PI, 0); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x - 9, y + 3); ctx.lineTo(x + 9, y + 3); ctx.stroke();
+    ctx.fillStyle = '#c9a0e8';
+    ctx.beginPath(); ctx.arc(x, y + 6, 2, 0, 7); ctx.fill();
+  } else if (type === 'carrierb') {
+    ctx.strokeStyle = 'rgba(201,160,232,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#c9a0e8';
+    ctx.beginPath(); ctx.ellipse(x, y, 6, 7.5, 0, 0, 7); ctx.fill();
+  } else {
+    ctx.strokeStyle = '#c8a060';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.stroke();
+  }
+}
+
+function drawSelect() {
   drawGround();
-  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.fillRect(0, 0, W, H);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillStyle = '#ffd870';
-  ctx.font = 'bold 44px sans-serif';
-  ctx.fillText('SKIRMISH', LANE_CX, 130);
-  ctx.fillStyle = '#e8d8b8';
-  ctx.font = '14px sans-serif';
-  const lines = [
-    'Build your nest. Your ants fight for themselves.',
-    'Tap a + slot to build; tap a building to specialise,',
-    'then level to 3. Selling refunds 70%.',
-    'Income doubles at 3:00 left; hills crumble at 1:30.',
-  ];
-  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 176 + i * 20));
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE FACTIONS', LANE_CX, 280);
-  for (let r = 0; r < FACTION_ROWS.length; r++) {
-    const row = FACTION_ROWS[r];
-    ctx.fillStyle = '#d8c0a0';
-    ctx.font = 'bold 12px sans-serif';
+  ctx.font = 'bold 32px sans-serif';
+  ctx.fillText('ANT WAR', LANE_CX, 40);
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = '12px sans-serif';
+  ctx.fillText('the fallow garden - three colonisers, one fertile hill', LANE_CX, 68);
+
+  for (const c of FACTION_CARDS) {
+    const f = sim.FACTIONS[c.key], hue = FACTION_HUES[c.key];
+    const on = factionSel.p === c.key;
+    ctx.fillStyle = on ? 'rgba(52,40,26,0.95)' : 'rgba(26,20,13,0.9)';
+    ctx.strokeStyle = on ? hue : 'rgba(128,112,88,0.5)';
+    ctx.lineWidth = on ? 3 : 1.5;
+    roundRect(c.x, c.y, c.w, c.h, 12);
+    ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'left';
+    ctx.fillStyle = on ? hue : 'rgba(200,180,150,0.8)';
+    ctx.font = 'bold 19px sans-serif';
+    ctx.fillText(f.label, c.x + 16, c.y + 22);
     ctx.textAlign = 'right';
-    ctx.fillText(r === 0 ? 'YOU' : 'FOE', 48, row[0].y + row[0].h / 2);
+    ctx.fillStyle = on ? 'rgba(232,216,184,0.9)' : 'rgba(180,160,130,0.6)';
+    ctx.font = '11px sans-serif';
+    ctx.fillText(TEMPO_TAGS[c.key], c.x + c.w - 16, c.y + 22);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = on ? '#e8d8b8' : 'rgba(200,184,156,0.7)';
+    ctx.font = '12px sans-serif';
+    wrapText(f.blurb, c.x + 16, c.y + 44, c.w - 32, 15);
     ctx.textAlign = 'center';
-    for (const c of row) {
-      const on = factionSel[c.side] === c.key;
-      ctx.fillStyle = on ? '#5a4020' : '#2a1f14';
-      ctx.strokeStyle = on ? '#ffd870' : '#806040';
-      ctx.lineWidth = on ? 2.5 : 1.5;
-      roundRect(c.x, c.y, c.w, c.h, 8);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = on ? '#ffd870' : '#c0a880';
-      ctx.font = 'bold 12px sans-serif';
-      ctx.fillText(sim.FACTIONS[c.key].label, c.x + c.w / 2, c.y + c.h / 2);
+    ctx.globalAlpha = on ? 1 : 0.55;
+    for (let i = 0; i < f.roots.length; i++) {
+      const ix = c.x + 60 + i * 120, iy = c.y + 76;
+      drawKitIcon(f.roots[i], ix, iy);
+      ctx.fillStyle = on ? '#c8b08c' : 'rgba(170,150,120,0.8)';
+      ctx.font = '9px sans-serif';
+      ctx.fillText(cardLabel(f.roots[i], c.key).toUpperCase(), ix, c.y + 95);
     }
+    ctx.globalAlpha = 1;
   }
-  // the AI ladder row: a champion rung overrides the persona list below it
+  const sbOn = factionSel.p === 'sandbox';
+  ctx.fillStyle = sbOn ? '#5a4020' : 'rgba(30,24,16,0.85)';
+  ctx.strokeStyle = sbOn ? '#ffd870' : '#5a4c38';
+  ctx.lineWidth = sbOn ? 2.5 : 1.5;
+  roundRect(SANDBOX_CHIP.x, SANDBOX_CHIP.y, SANDBOX_CHIP.w, SANDBOX_CHIP.h, 6);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = sbOn ? '#ffd870' : '#907c60';
+  ctx.font = 'bold 10px sans-serif';
+  ctx.fillText('SANDBOX - EVERY TOOL', SANDBOX_CHIP.x + SANDBOX_CHIP.w / 2, SANDBOX_CHIP.y + SANDBOX_CHIP.h / 2);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 14px sans-serif';
+  ctx.fillText('THE FOE', LANE_CX, 466);
+  for (const b of FOE_CHIPS) {
+    const on = factionSel.e === b.key;
+    ctx.fillStyle = on ? '#5a4020' : '#2a1f14';
+    ctx.strokeStyle = on ? '#ffd870' : '#806040';
+    ctx.lineWidth = on ? 2.5 : 1.5;
+    roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = on ? '#ffd870' : '#c0a880';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(sim.FACTIONS[b.key].label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  // the AI ladder row (T36): a champion rung overrides the persona pick
   ctx.textAlign = 'right';
   ctx.fillStyle = '#d8c0a0';
   ctx.font = 'bold 12px sans-serif';
@@ -2230,41 +2760,62 @@ function drawSkirmish() {
   }
   const rung = RUNGS.find(r => r.key === aiRung);
   const champOn = !!rungBrain(aiRung, factionSel.e);
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 16px sans-serif';
+  ctx.fillStyle = '#e8d8b8';
+  ctx.font = 'bold 13px sans-serif';
   // a bank entry says so: the Queen swaps vectors on what your nest shows it
   // (T37), and that is worth knowing before the third rematch
   const banked = champOn && !!rungBrain(aiRung, factionSel.e).default;
-  ctx.fillText(champOn ? rung.label + (banked ? ' COUNTER-PICKS' : ' CHAMPION') + ' PLAYS - TAP ANY TO START'
-    : 'CHOOSE THE ENEMY BRAIN', LANE_CX, 408);
+  ctx.fillText(champOn
+    ? rung.label + (banked ? ' COUNTER-PICKS' : ' CHAMPION') + ' commands ' + sim.FACTIONS[factionSel.e].label
+    : personaChoiceOpen() ? 'choose the enemy persona:'
+    : 'the ' + rung.label + ' persona plays', LANE_CX, 556);
   if (!rungPlayable(aiRung)) {
     ctx.fillStyle = '#e88060';
     ctx.font = '10px sans-serif';
     ctx.fillText('no bred ' + rung.key + ' for ' + sim.FACTIONS[factionSel.e].label
-      + ' - the persona plays', LANE_CX, 421);
+      + ' - the persona plays', LANE_CX, 572);
   } else if (champOn && champsStale()) {
     ctx.fillStyle = '#e8c060';
     ctx.font = '10px sans-serif';
     ctx.fillText('STALE: bred on engine ' + CHAMPS.engine + ', the numbers have moved since',
-      LANE_CX, 421);
+      LANE_CX, 572);
   }
-  for (let i = 0; i < PERSONA_BTNS.length; i++) {
-    const b = PERSONA_BTNS[i], foe = SKIRMISH_FOES[i];
-    ctx.fillStyle = '#3a2a1c';
-    ctx.strokeStyle = champOn ? '#6a5030' : '#c8a060';
-    ctx.lineWidth = 2;
-    roundRect(b.x, b.y, b.w, b.h, 10);
-    ctx.fill(); ctx.stroke();
-    ctx.fillStyle = champOn ? '#8a7850' : '#ffd870';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(foe.label, LANE_CX, b.y + 21);
-    ctx.fillStyle = champOn ? '#6a5c48' : '#d8c0a0';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(foe.intro, LANE_CX, b.y + 45);
+  if (personaChoiceOpen()) {
+    for (const b of PERSONA_CHIPS) {
+      const on = personaKey === b.key;
+      ctx.fillStyle = on ? '#5a4020' : '#2a1f14';
+      ctx.strokeStyle = on ? '#ffd870' : '#806040';
+      ctx.lineWidth = on ? 2.5 : 1.5;
+      roundRect(b.x, b.y, b.w, b.h, 8);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = on ? '#ffd870' : '#c0a880';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.fillText(b.key.toUpperCase(), b.x + b.w / 2, b.y + b.h / 2);
+    }
   }
-  ctx.fillStyle = '#d8c0a0';
-  ctx.font = '12px sans-serif';
-  ctx.fillText('tap anywhere else for the trail', LANE_CX, 754);
+
+  ctx.fillStyle = '#3a5c34';
+  ctx.strokeStyle = '#8ee06a';
+  ctx.lineWidth = 2.5;
+  roundRect(START_BTN.x, START_BTN.y, START_BTN.w, START_BTN.h, 10);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#e8ffdc';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('FIGHT', LANE_CX, START_BTN.y + START_BTN.h / 2);
+
+  ctx.fillStyle = '#3a2a1c';
+  ctx.strokeStyle = '#c8a060';
+  ctx.lineWidth = 2;
+  roundRect(CAMPAIGN_BTN.x, CAMPAIGN_BTN.y, CAMPAIGN_BTN.w, CAMPAIGN_BTN.h, 8);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#ffe9c0';
+  ctx.font = 'bold 13px sans-serif';
+  ctx.fillText('CAMPAIGN', LANE_CX, CAMPAIGN_BTN.y + CAMPAIGN_BTN.h / 2);
+
+  ctx.fillStyle = 'rgba(216,192,160,0.75)';
+  ctx.font = '11px sans-serif';
+  ctx.fillText('Build your nest: tap a + slot. Your ants fight for themselves.', LANE_CX, 730);
+  ctx.fillText('Income doubles at 3:00 left; hills crumble at 1:30.', LANE_CX, 746);
 }
 
 function drawEnd() {
@@ -2288,11 +2839,23 @@ function drawEnd() {
     ctx.font = '13px sans-serif';
     ctx.fillText(earnedUnlock.desc, LANE_CX, 546);
   }
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 18px sans-serif';
-  const hint = mode === 'skirmish' ? 'TAP FOR OPPONENT SELECT'
-    : (matchResult === 'VICTORY' ? 'TAP FOR THE TRAIL' : 'TAP TO TRY AGAIN');
-  ctx.fillText(hint, LANE_CX, 452);
+  if (mode === 'skirmish') {
+    ctx.fillStyle = '#3a5c34';
+    ctx.strokeStyle = '#8ee06a';
+    ctx.lineWidth = 2.5;
+    roundRect(REMATCH_BTN.x, REMATCH_BTN.y, REMATCH_BTN.w, REMATCH_BTN.h, 10);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#e8ffdc';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText('REMATCH', LANE_CX, REMATCH_BTN.y + REMATCH_BTN.h / 2);
+    ctx.fillStyle = '#d8c0a0';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('tap anywhere else for match setup', LANE_CX, REMATCH_BTN.y + REMATCH_BTN.h + 22);
+  } else {
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.fillText(matchResult === 'VICTORY' ? 'TAP FOR THE TRAIL' : 'TAP TO TRY AGAIN', LANE_CX, 452);
+  }
 }
 
 // ------------------------------------------------------------------ loop ---
@@ -2307,8 +2870,8 @@ function frame(now) {
     drawMenu();
   } else if (phase === 'brief') {
     drawBrief();
-  } else if (phase === 'skirmish') {
-    drawSkirmish();
+  } else if (phase === 'select') {
+    drawSelect();
   } else {
     drawEnd();
   }
