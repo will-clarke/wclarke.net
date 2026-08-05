@@ -24,7 +24,7 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Ant War renderer (v0.9). All rules live in sim.js (shared with the Node
+// Ant War renderer (v1.0 "the clash"). All rules live in sim.js (shared with the Node
 // tuning harness); strategies, personas and campaign levels live in
 // policy.js. This file only draws, reads taps, and steps the sim at a fixed
 // tick. There are no manual sends: every tap is a build, an upgrade or a
@@ -42,14 +42,14 @@ const LANE_CX = CFG.LANE_CX, LANE_HALF = CFG.LANE_HALF;
 const UI_TOP = 648;
 
 const LABELS = {
-  farm: 'Farm', grove: 'Grove', plant: 'Plant.',
-  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
-  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
+  farm: 'Farm',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter',
+  hatch: 'Hatchery', soldierb: 'Soldier', assassinb: 'Assassin', sapperb: 'Sapper',
 };
 
-const PERSONA_ORDER = ['bloom', 'tussock', 'rustle'];
+const PERSONA_ORDER = ['bloom', 'tussock', 'rustle', 'optimum'];
 const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
-  key, x: 24, y: 430 + i * 92, w: W - 48, h: 78,
+  key, x: 24, y: 390 + i * 80, w: W - 48, h: 68,
 }));
 
 // campaign trail: a winding path up the screen, boss node centred on top
@@ -66,11 +66,13 @@ const EXPORT_BTN = { x: 110, y: 752, w: 200, h: 24 };
 // KR-style stars, saved locally: 1 win, 2 hill >= 100hp, 3 hill >= 200hp.
 // Tech unlocks derive from stars (policy.unlocksFrom) - beating a level
 // loots its reward, in campaign AND skirmish alike.
+// v1.0 reshaped the ladder and the tech tree, so saves live under a fresh
+// key - old antwar-stars entries reference levels that no longer exist
 let stars = {};
-try { stars = JSON.parse(localStorage.getItem('antwar-stars') || '{}') || {}; } catch (e) {}
+try { stars = JSON.parse(localStorage.getItem('antwar-v1-stars') || '{}') || {}; } catch (e) {}
 let unlocks = pol.unlocksFrom(stars);
 function saveStars() {
-  try { localStorage.setItem('antwar-stars', JSON.stringify(stars)); } catch (e) {}
+  try { localStorage.setItem('antwar-v1-stars', JSON.stringify(stars)); } catch (e) {}
   unlocks = pol.unlocksFrom(stars);
 }
 function levelUnlocked(i) {
@@ -90,7 +92,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'v0.9.5', mode, opponent, seed: S.seed,
+    v: 'v1.0', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -100,7 +102,7 @@ function logAction(slot, type) {
   if (replay) replay.actions.push({ tk: Math.round(S.t / CFG.TICK), slot, type });
 }
 function loadReplays() {
-  try { return JSON.parse(localStorage.getItem('antwar-replays') || '[]') || []; } catch (e) { return []; }
+  try { return JSON.parse(localStorage.getItem('antwar-v1-replays') || '[]') || []; } catch (e) { return []; }
 }
 function finishReplay() {
   if (!replay) return;
@@ -112,7 +114,7 @@ function finishReplay() {
     const all = loadReplays();
     all.push(replay);
     while (all.length > 60) all.shift();   // keep the log bounded
-    localStorage.setItem('antwar-replays', JSON.stringify(all));
+    localStorage.setItem('antwar-v1-replays', JSON.stringify(all));
   } catch (e) {}
   replay = null;
 }
@@ -191,8 +193,6 @@ const SFX = {
   build()     { blip(520, 0.07, 'triangle', 0.18, 700); },
   sell()      { blip(620, 0.12, 'triangle', 0.18, 260); },
   towerfall() { blip(140, 0.45, 'sawtooth', 0.3, 40); blip(70, 0.5, 'square', 0.18, 35); },
-  mortar()    { blip(110, 0.22, 'square', 0.16, 48); },
-  convert()   { blip(420, 0.35, 'sine', 0.2, 1260); blip(630, 0.25, 'triangle', 0.1, 1680); },
   frenzy()    { blip(300, 0.35, 'triangle', 0.25, 900); },
   win()       { blip(440, 0.5, 'triangle', 0.3, 880); },
   lose()      { blip(220, 0.7, 'sawtooth', 0.22, 80); },
@@ -240,7 +240,9 @@ function begin(key) {           // skirmish: pick a persona, symmetric start
   mode = 'skirmish';
   personaKey = key;
   S = sim.createState((Math.random() * 2 ** 31) | 0);
-  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
+  // the champion also gets its campaign-boss reaction speed here
+  enemyCtrl = pol.makeController(pol.PERSONAS[key].params,
+    key === 'optimum' ? { thinkEvery: 0.5 } : undefined);
   startReplay(key);
   resetMatchFx();
 }
@@ -278,7 +280,7 @@ function popupRects(slotIdx) {
     entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
   }
   if (!entries.length) return [];
-  // shrink buttons when the tower tree offers all 5 specs + sell
+  // shrink buttons when the hatch tree offers 3 specs + lvl + sell
   const gap = 4;
   const bw = Math.min(66, Math.floor((W - 12 - (entries.length - 1) * gap) / entries.length));
   const total = entries.length * bw + (entries.length - 1) * gap;
@@ -380,12 +382,6 @@ function advance(dtReal) {
       poof(ev.x, ev.y, ev.side === 'p' ? '#4a3826' : '#b04a30', ev.big ? 14 : 5, ev.big ? 60 : 35);
     }
     if (ev.type === 'sell') poof(ev.x, ev.y, '#c8a060', 8, 40);
-    if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
-    if (ev.type === 'convert') {
-      poof(ev.x, ev.y, '#c9a0e8', 10, 45);
-      banner(ev.side === 'p' ? 'Enemy ant CHARMED!' : 'Your ant defected!');
-      SFX.convert();
-    }
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
@@ -481,17 +477,20 @@ function drawMound(b, color, hole, flash) {
 }
 
 function drawAnt(u, time) {
-  const body = u.side === 'p' ? '#1d150c' : '#a8321e';
+  const ghost = u.typeKey === 'assassin';
+  const body = u.side === 'p' ? (ghost ? '#3c3450' : '#1d150c') : (ghost ? '#7a4a6a' : '#a8321e');
   const dir = u.side === 'p' ? -1 : 1;
   const mustering = u.state === 'muster';
   ctx.save();
+  // assassins read as outside the war: translucent, drifting shimmer
+  if (ghost) ctx.globalAlpha = 0.55 + 0.15 * Math.sin(time * 5 + u.seed * 4);
   // musters mill about a little so the gathering army looks alive
   const mx = mustering ? Math.sin(time * 1.7 + u.seed * 3) * 3 : 0;
   const my = mustering ? Math.cos(time * 1.3 + u.seed * 2) * 2 : 0;
   ctx.translate(u.x + mx, u.y + my);
   ctx.strokeStyle = body;
   ctx.lineWidth = 1;
-  const biting = u.state === 'siege' || u.state === 'hunt';
+  const biting = u.state === 'siege' || u.fx;
   const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
   for (let i = -1; i <= 1; i++) {
     ctx.beginPath();
@@ -503,11 +502,7 @@ function drawAnt(u, time) {
   ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
   ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
-  if (u.typeKey === 'guard') {
-    // gold thorax band: defenders read differently from attackers
-    ctx.fillStyle = '#ffd870';
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.45, 0, 7); ctx.fill();
-  } else if (u.typeKey === 'sapper') {
+  if (u.typeKey === 'sapper') {
     // pale mandibles: the demolition crew
     ctx.strokeStyle = '#ffe9b0';
     ctx.lineWidth = 1.5;
@@ -516,25 +511,20 @@ function drawAnt(u, time) {
     ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
     ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
     ctx.stroke();
-  } else if (u.typeKey === 'predator') {
-    // rust pincers: the hunter
-    ctx.strokeStyle = '#ff9068';
-    ctx.lineWidth = 1.5;
-    const hy = -dir * u.r * 2.5;
+  } else if (ghost) {
+    // pale hood mark: the killer nothing on the field can touch
+    ctx.strokeStyle = 'rgba(226,208,255,0.9)';
+    ctx.lineWidth = 1.4;
+    const hy = -dir * u.r * 1.5;
     ctx.beginPath();
-    ctx.moveTo(-u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(-u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
-    ctx.moveTo(u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
+    ctx.moveTo(-u.r * 0.8, hy + dir * u.r * 0.6);
+    ctx.quadraticCurveTo(0, hy - dir * u.r * 1.2, u.r * 0.8, hy + dir * u.r * 0.6);
     ctx.stroke();
   }
-  if (u.conv) {
-    // violet halo: a charmed ant reads as converted at a glance
-    ctx.strokeStyle = 'rgba(201,160,232,0.85)';
-    ctx.lineWidth = 1.3;
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.1, 0, 7); ctx.stroke();
-  }
-  if (u.slowed) {
-    ctx.strokeStyle = 'rgba(140,220,120,0.7)';
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
+  // melee flash: a fighting ant flares at the jaws so clashes read
+  if (u.fx && !mustering) {
+    ctx.fillStyle = 'rgba(255,230,150,' + (0.35 + 0.35 * Math.sin(time * 30 + u.seed * 5)) + ')';
+    ctx.beginPath(); ctx.arc(0, -dir * u.r * 2.2, u.r * 0.55, 0, 7); ctx.fill();
   }
   const t = CFG.UNITS[u.typeKey];
   const maxHp = u.maxHp || t.hp;
@@ -583,23 +573,44 @@ function drawSlot(slot, side, idx, time) {
   }
 
   if (slot.type === 'farm') {
-    drawMushrooms(slot, side, [[-8, 4, 7], [7, 6, 6], [0, -6, 8]]);
-  } else if (slot.type === 'grove') {
-    drawMushrooms(slot, side, [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]]);
-  } else if (slot.type === 'plant') {
-    drawMushrooms(slot, side, [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]]);
-    ctx.fillStyle = '#d8c9a3';
-    ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
-    ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
-    ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+    // farms level in place: the patch visibly grows lvl 1 -> 3
+    const patches = [
+      [[-8, 4, 7], [7, 6, 6], [0, -6, 8]],
+      [[-10, 5, 7], [9, 6, 7], [0, -7, 9], [-2, 9, 5]],
+      [[-12, 6, 7], [11, 7, 7], [-6, -8, 8], [7, -6, 8], [0, 10, 6]],
+    ];
+    drawMushrooms(slot, side, patches[slot.lvl - 1]);
+    if (slot.lvl === 3) {
+      ctx.fillStyle = '#d8c9a3';
+      ctx.fillRect(slot.x - 2, slot.y - 24, 4, 14);
+      ctx.fillStyle = side === 'p' ? '#c07840' : '#b05868';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 26, 10, 6, 0, 0, 7); ctx.fill();
+    }
   } else if (slot.type === 'hatch') {
-    drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
-  } else if (slot.type === 'swarmb') {
-    drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8');
+    // more eggs per level: hatch levels breed workers faster
+    const clutches = [
+      [[-7, 3, 6], [7, 4, 6], [0, -5, 7]],
+      [[-9, 3, 5], [9, 4, 5], [0, -5, 6], [-2, 8, 5], [6, -6, 5]],
+      [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]],
+    ];
+    drawEggs(slot, clutches[slot.lvl - 1], '#e8e0cc');
   } else if (slot.type === 'soldierb') {
-    drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090');
-  } else if (slot.type === 'majorb') {
-    drawEggs(slot, [[0, 0, 13]], '#c8a878');
+    // fewer, FATTER eggs per level: soldier levels breed bigger soldiers
+    const clutches = [
+      [[-8, 4, 7], [8, 4, 7], [0, -6, 7]],
+      [[-7, 3, 9], [8, 3, 9]],
+      [[0, 0, 13]],
+    ];
+    drawEggs(slot, clutches[slot.lvl - 1], '#d8c090');
+  } else if (slot.type === 'assassinb') {
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#b8a8c8');
+    // hood mark: the shadow brood
+    ctx.strokeStyle = '#5a3c78';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(slot.x - 6, slot.y - 11);
+    ctx.quadraticCurveTo(slot.x, slot.y - 19, slot.x + 6, slot.y - 11);
+    ctx.stroke();
   } else if (slot.type === 'sapperb') {
     drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0');
     // pick-axe mandible mark on the brood
@@ -608,19 +619,10 @@ function drawSlot(slot, side, idx, time) {
     ctx.beginPath();
     ctx.moveTo(slot.x - 5, slot.y - 12); ctx.lineTo(slot.x, slot.y - 17); ctx.lineTo(slot.x + 5, slot.y - 12);
     ctx.stroke();
-  } else if (slot.type === 'predatorb') {
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0b8a8');
-    // paired fang mark: the hunter brood
-    ctx.strokeStyle = '#a03828';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(slot.x - 6, slot.y - 17); ctx.lineTo(slot.x - 3, slot.y - 11);
-    ctx.moveTo(slot.x + 6, slot.y - 17); ctx.lineTo(slot.x + 3, slot.y - 11);
-    ctx.stroke();
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -639,42 +641,6 @@ function drawSlot(slot, side, idx, time) {
       for (const dx of [-8, 0, 8]) {
         ctx.beginPath(); ctx.arc(slot.x + dx, slot.y - 6, 3.2, 0, 7); ctx.fill();
       }
-    } else if (slot.type === 'sap') {
-      ctx.strokeStyle = 'rgba(140,220,120,' + (0.25 + 0.15 * Math.sin(time * 3)) + ')';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.sap.range * (0.9 + 0.06 * Math.sin(time * 3)), 0, 7); ctx.stroke();
-      ctx.fillStyle = '#3a5c34';
-      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
-    } else if (slot.type === 'guard') {
-      // banner pole marks the mustering point of the lane guards
-      ctx.strokeStyle = '#6a5030';
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 2); ctx.lineTo(slot.x, slot.y - 24); ctx.stroke();
-      ctx.fillStyle = '#ffd870';
-      ctx.beginPath();
-      ctx.moveTo(slot.x, slot.y - 24); ctx.lineTo(slot.x + 12, slot.y - 20); ctx.lineTo(slot.x, slot.y - 16);
-      ctx.closePath(); ctx.fill();
-    } else if (slot.type === 'mortar') {
-      // fat barrel tilted toward the enemy
-      const dir = side === 'p' ? -1 : 1;
-      ctx.strokeStyle = '#2c2820';
-      ctx.lineWidth = 6;
-      ctx.beginPath();
-      ctx.moveTo(slot.x - 4, slot.y - 2);
-      ctx.lineTo(slot.x + 5, slot.y - 2 + dir * 16);
-      ctx.stroke();
-      ctx.fillStyle = '#1c1814';
-      ctx.beginPath(); ctx.arc(slot.x + 5, slot.y - 2 + dir * 16, 4.2, 0, 7); ctx.fill();
-    } else if (slot.type === 'conv') {
-      // hypnotic eye + faint reach ring: the charm zone stays readable
-      ctx.strokeStyle = 'rgba(201,160,232,' + (0.14 + 0.08 * Math.sin(time * 2.2)) + ')';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.conv.range, 0, 7); ctx.stroke();
-      ctx.strokeStyle = '#ecdcf8';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 8, 7.5, 4.5, 0, 0, 7); ctx.stroke();
-      ctx.fillStyle = '#7a4a9c';
-      ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 2.8, 0, 7); ctx.fill();
     }
   }
 
@@ -843,45 +809,12 @@ function drawMatch(time) {
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
   for (let i = 0; i < S.slots.p.length; i++) drawSlot(S.slots.p[i], 'p', i, time);
   for (const sh of S.shots) {
-    if (sh.mortar) {
-      // lobbed arc + impact ring, fading over the longer ttl
-      const a = Math.max(0, sh.ttl / 0.5);
-      ctx.strokeStyle = 'rgba(70,56,40,' + 0.6 * a + ')';
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      ctx.moveTo(sh.x1, sh.y1);
-      ctx.quadraticCurveTo((sh.x1 + sh.x2) / 2, Math.min(sh.y1, sh.y2) - 90, sh.x2, sh.y2);
-      ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,150,70,' + a + ')';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(sh.x2, sh.y2, 5 + 16 * (1 - a), 0, 7); ctx.stroke();
-      continue;
-    }
     ctx.strokeStyle = 'rgba(255,240,180,' + (sh.ttl / 0.09) + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(sh.x1, sh.y1); ctx.lineTo(sh.x2, sh.y2); ctx.stroke();
     if (sh.splash) {
       ctx.strokeStyle = 'rgba(255,200,120,' + (sh.ttl / 0.09) * 0.6 + ')';
       ctx.beginPath(); ctx.arc(sh.x2, sh.y2, sh.splash, 0, 7); ctx.stroke();
-    }
-  }
-  // converter channel beams: dashed violet thread + a ring closing around
-  // the target as the charm completes (full information - both sides')
-  for (const side of ['p', 'e']) {
-    for (const slot of S.slots[side]) {
-      if (slot.type !== 'conv' || !slot.chTgt || !(slot.chT > 0)) continue;
-      const tgt = slot.chTgt;
-      const frac = Math.min(1, slot.chT / (CFG.TOWERS.conv.channel / sim.lvlPower(S, slot)));
-      ctx.strokeStyle = 'rgba(201,160,232,' + (0.35 + 0.45 * frac) + ')';
-      ctx.lineWidth = 1.2 + frac * 1.8;
-      ctx.setLineDash([3, 5]);
-      ctx.beginPath(); ctx.moveTo(slot.x, slot.y - 8); ctx.lineTo(tgt.x, tgt.y); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.strokeStyle = 'rgba(226,190,248,0.95)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(tgt.x, tgt.y, 11 - frac * 4, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
-      ctx.stroke();
     }
   }
   for (const u of S.units) drawAnt(u, time);
@@ -1031,34 +964,32 @@ function drawSkirmish() {
   ctx.font = '14px sans-serif';
   const lines = [
     'Build your nest. Your ants fight for themselves.',
-    '',
-    'Tap a + slot: Farm (income), Tower (defence),',
-    'or Hatchery (breeds attackers automatically).',
-    'Tap buildings again to specialise, then level to 3.',
-    'Guards block the lane; sappers DEMOLISH towers.',
-    'Mortars bombard enemy defences from your side.',
-    'Predator broods hunt enemy marchers mid-lane.',
+    'Ants FIGHT what they meet: armies clash on the lane,',
+    'ants mustering at home defend the nest.',
+    'Sappers DEMOLISH towers. Assassins walk through the',
+    'war untouched - only TOWERS can shoot them down.',
     'Selling refunds 70%. Idle gold above the cap is lost.',
     'Every 18s the war drum beats and BOTH armies march.',
-    'Income doubles at 3:00 left; hills crumble at 1:30.',
+    'Income doubles at 2:30 left; hills crumble at 1:30.',
   ];
-  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 180 + i * 22));
+  lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 176 + i * 22));
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 412);
+  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 368);
   for (const b of PERSONA_BTNS) {
     const persona = pol.PERSONAS[b.key];
-    ctx.fillStyle = '#3a2a1c';
-    ctx.strokeStyle = '#c8a060';
+    const boss = b.key === 'optimum';
+    ctx.fillStyle = boss ? '#40331c' : '#3a2a1c';
+    ctx.strokeStyle = boss ? '#ffd870' : '#c8a060';
     ctx.lineWidth = 2;
     roundRect(b.x, b.y, b.w, b.h, 10);
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffd870';
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(persona.label, LANE_CX, b.y + 24);
+    ctx.fillText(persona.label, LANE_CX, b.y + 22);
     ctx.fillStyle = '#d8c0a0';
     ctx.font = '11px sans-serif';
-    ctx.fillText(persona.intro, LANE_CX, b.y + 50);
+    ctx.fillText(persona.intro, LANE_CX, b.y + 46);
   }
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '12px sans-serif';

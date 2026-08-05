@@ -1,0 +1,23 @@
+{
+  "CORRUPT.surgeGain": [0.04, 0.14],
+  "CORRUPT.surgeMax": [1.5, 3],
+  "CORRUPT.flipDrip": [0.02, 0.18],
+  "CORRUPT.thrall": [0.02, 0.15],
+  "CORRUPT.hillDot": [0.8, 2.4],
+  "CORRUPT.skim": [0.06, 0.24],
+  "CORRUPT.spreadEvery": [5, 12],
+  "FLYWHEEL.cold": [0.7, 0.95],
+  "FLYWHEEL.rate": [0.003, 0.008],
+  "STAMP.eff": [0.55, 0.8],
+  "STAMP.boost": [1.0, 2.0],
+  "CREEP.slow": [0.3, 0.6],
+  "CREEP.dot": [1.5, 5],
+  "CREEP.corrode": [1.5, 5],
+  "CREEP.hillDps": [4, 11],
+  "CREEP.splatDmg": [20, 60, "int"],
+  "CREEP.trail": [0.5, 1.1],
+  "CREEP.goldPerCell": [0.06, 0.13],
+  "CREEP.sproutEmit": [0.15, 0.45],
+  "UNITS.carrier.hp": [10, 30, "int"],
+  "PRODUCTION.spindle.interval": [8, 22, "int"]
+}

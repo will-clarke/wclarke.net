@@ -3,30 +3,16 @@
 // deterministic and replayable. Runs in the browser as a plain script
 // (window.AntWarSim) and in Node via require() for the tuning harness.
 //
-// v0.4: the game is a pure nest-builder. There are no manual unit sends -
-// hatchery buildings produce ants into a muster behind each nest, and a
-// shared war drum releases both armies on a global beat. Every player
-// decision is a build or an upgrade.
-//
-// v0.5 "the contact update": guard posts (tower tree) field defender ants
-// that intercept attackers on the lane, and sapper broods (hatchery tree)
-// breed ants that demolish enemy defence buildings - which now have HP.
-//
-// v0.8 "open the opening": no free starting tower (richer start gold makes
-// the first build a real choice), and any building can be sold for a 70%
-// refund of everything spent on it.
-//
-// v0.9 "mortar + predator": mortar towers (tower tree) slowly bombard enemy
-// defence buildings from your own side - the reverse-sapper; predator broods
-// (hatchery tree) breed hunters that deploy mid-lane and intercept enemy
-// marchers there. Neither ever touches the hill.
-//
-// v0.9.5 "the monastery experiment": converter towers (tower tree) channel
-// on one enemy attacker at a time and FLIP it - the ant walks home and
-// marches with your next drum. The riskiest v1.0 faction mechanic (CHORUS),
-// prototyped first. Three load-bearing guards: one target at a time
-// (throughput - chaff saturates it), the channel is interruptible, and a
-// converted ant can never be converted back.
+// v1.0 "the clash": massive simplification (Will's 2026-08-05 brief).
+// One roster for everyone, 7 buildings, 4 units. Two rules replaced the
+// v0.5-v0.9.5 special-case zoo (guards, predators, mortars, converters,
+// sap auras - all cut):
+//   1. Ants FIGHT what they meet. Opposing ants in contact stop and bite;
+//      marchers seek nearby enemies; mustering ants defend their nest.
+//   2. Assassins are the exception: they ignore ants, ants ignore them,
+//      and only towers can hit them. They walk through the war and chew
+//      the hill. Sappers crack the towers open; assassins slip through.
+// Every player decision is still a build, an upgrade, or a sell.
 (function (root, factory) {
   const api = factory();
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
@@ -61,81 +47,72 @@ const CONFIG = {
   ],
 
   // balance
-  BASE_HP: 300,
+  BASE_HP: 240,
   START_MONEY: 220,
-  START_TOWERS: 0,               // free towers per side at t=0 (slot A first); 0 since v0.8
   SELL_REFUND: 0.7,              // fraction of a slot's total spend returned on sell
   BASE_INCOME: 4,
   GOLD_CAP: 400,                 // income above this is wasted (anti-idle nudge)
   WAR_DRUM: 18,                  // both musters march every N seconds
 
-  // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
+  // buildings: empty slot -> farm | tower | hatch
   COSTS: {
-    farm: 80, grove: 90, plant: 120,
-    tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
-    hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
+    farm: 80,
+    tower: 100, sharp: 120, spit: 120,
+    hatch: 90, soldierb: 80, assassinb: 120, sapperb: 100,
   },
   UPGRADE_TREE: {
-    farm:  ['grove'],
-    grove: ['plant'],
-    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
+    tower: ['sharp', 'spit'],
+    hatch: ['soldierb', 'assassinb', 'sapperb'],
   },
-  // specialised broods and towers can then level to 2 and 3: the late-game
-  // gold sink. Costs scale superlinearly with power on purpose - concentrated
-  // stats beat distributed ones against throughput-limited towers.
   MAX_LVL: 3,
   LVL_COST_MULT: { 2: 1.5, 3: 2.5 },   // of the building's base cost
-  LVL_POWER: 1.5,                       // per level: production rate / tower dmg
-  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8 },
-  // production: what each offence building drops into the muster, and how often
+  LVL_POWER: 1.5,                       // per level: tower dmg / production rate
+  // farms level in place (the old farm->grove->plantation chain, one slot)
+  FARM_INCOME: { 1: 2.5, 2: 5, 3: 8 },
+  // soldier broods level differently: same rate, BIGGER soldiers - the
+  // concentration axis (a lvl-3 soldier is the old major). Superlinear
+  // value per gold on purpose: concentrated stats beat distributed ones
+  // against throughput-limited towers.
+  SOLDIER_LVL: { hp: 1.75, dps: 1.35, spd: 0.88, r: 1.22 },
   PRODUCTION: {
-    hatch:    { unit: 'worker',  interval: 6 },
-    swarmb:   { unit: 'worker',  interval: 3 },
-    soldierb: { unit: 'soldier', interval: 9 },
-    majorb:   { unit: 'major',   interval: 18 },
-    sapperb:  { unit: 'sapper',  interval: 10 },
-    predatorb: { unit: 'predator', interval: 8 },
+    hatch:     { unit: 'worker',   interval: 6 },
+    soldierb:  { unit: 'soldier',  interval: 9 },
+    assassinb: { unit: 'assassin', interval: 9 },
+    sapperb:   { unit: 'sapper',   interval: 10 },
   },
+  // broods whose LEVELS speed production (hatch = the swarm play);
+  // soldierb instead upgrades the unit itself via SOLDIER_LVL
+  RATE_LVL: ['hatch', 'assassinb', 'sapperb'],
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
     sharp: { range: 175, dmg: 34, cooldown: 1.5 },
-    spit:  { range: 105, dmg: 3,  cooldown: 0.45, splash: 28 },
-    sap:   { range: 120, slow: 0.5 },
-    // mortars bombard enemy DEFENCE BUILDINGS only (bomb, not dmg, so the
-    // anti-unit firing loop skips them); range covers the whole field -
-    // placement is about protecting the mortar, not reaching the target
-    mortar: { range: 900, bomb: 24, cooldown: 5 },
-    // converters channel one attacker at a time (no dmg, so the firing loop
-    // skips them) and flip it after `channel` seconds; levels channel faster
-    conv: { range: 120, channel: 3.5 },
+    spit:  { range: 105, dmg: 5,  cooldown: 0.45, splash: 28 },
   },
-  // v0.5 contact update: every defence building has HP (sappers chew it);
-  // guard posts field a squad of defender ants that intercept on the lane.
   TOWER_HP: 130,
-  GUARD: { count: 2, respawn: 12, leash: 75, engage: 26 },
-  // v0.9: predators march to a hold point just past the midline on their own
-  // side, then hunt enemy marchers (and enemy predators) within the leash.
-  // The leash is deliberately small: a wave saturates the bubble and most
-  // of it streams past - hunters eat stragglers, sappers and elites, not
-  // whole armies (dps 10 / leash 110 was army denial; see README v0.9).
-  PREDATOR: { leash: 80, holdNear: 12, holdFar: 44 },
+  // the clash: fighters seek enemies within `seek` while marching/sieging;
+  // mustering ants defend against enemies within `defend` of themselves.
+  // Contact (actual biting) is r+r+4. Seek is deliberately small: armies
+  // clash where they meet, they don't magnet across the field. Defend
+  // covers the nest approach but NOT the whole tower line - a defence
+  // stacked three layers deep (clash + towers + fresh muster) made every
+  // siege stall to the decay wire.
+  MELEE: { seek: 46, defend: 110 },
   UNITS: {
     worker:  { hp: 10,  spd: 66, dps: 2.5, r: 4.2 },
     soldier: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
-    major:   { hp: 190, spd: 40, dps: 6,   r: 9.0 },
+    // assassins never fight ants and ants never fight them; only towers
+    // hit them. Pure hill pressure - the reason armies alone can't win.
+    assassin: { hp: 26, spd: 60, dps: 4.5, r: 4.4, ghost: true },
     // sappers divert to enemy defence buildings in sight and demolish them;
-    // weak vs anti-swarm and barely dents the hill itself
+    // they never seek melee but bite back on contact (soldiers eat them)
     sapper:  { hp: 62,  spd: 50, dps: 3,   r: 5.0, vsTower: 22, sight: 90 },
-    guard:   { hp: 90,  spd: 60, dps: 6,   r: 5.2 },
-    // predators never touch hill or towers: pure anti-marcher midfield.
-    // Beats a soldier 1v1 (barely), melts a sapper, loses to a major;
-    // slower than workers so chaff it hasn't grabbed simply outruns it
-    predator: { hp: 80, spd: 62, dps: 6,   r: 5.5 },
   },
-  FRENZY_AT: 240,
-  DECAY_AT: 330,
-  HARD_END: 420,
+  // the match clock, compressed for the clash world: armies annihilating
+  // mid-lane means far less incidental hill chip than pass-through had,
+  // so the walls-vs-walls grind needs the decay race to arrive sooner
+  FRENZY_AT: 180,
+  DECAY_AT: 240,
+  HARD_END: 330,
   DECAY_RATE: 4,
 
   // campaign level setups: per-side start money and pre-built buildings.
@@ -178,21 +155,13 @@ function createState(seed, overrides) {
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
     hatched: {                   // lifetime production tally (reaction reads)
-      p: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
-      e: { worker: 0, soldier: 0, major: 0, sapper: 0, predator: 0 },
+      p: { worker: 0, soldier: 0, assassin: 0, sapper: 0 },
+      e: { worker: 0, soldier: 0, assassin: 0, sapper: 0 },
     },
-    converted: { p: 0, e: 0 },   // lifetime conversion tally (tuner sanity)
     over: false,
     result: null,                // 'p' | 'e' | 'draw'
     endT: 0,
   };
-  for (let i = 0; i < cfg.START_TOWERS; i++) {
-    for (const side of ['p', 'e']) {
-      S.slots[side][i].type = 'tower';
-      S.slots[side][i].hp = cfg.TOWER_HP;
-      S.slots[side][i].spent = cfg.COSTS.tower;
-    }
-  }
   if (cfg.SETUP) {
     const su = cfg.SETUP;
     if (su.moneyP != null) S.money.p = su.moneyP;
@@ -212,11 +181,7 @@ function placeBuilding(S, side, slotIdx, type, lvl) {
   slot.spent = S.cfg.COSTS[type];
   for (let l = 2; l <= slot.lvl; l++) slot.spent += Math.round(S.cfg.COSTS[type] * S.cfg.LVL_COST_MULT[l]);
   slot.hp = FAMILIES.def.includes(type) ? S.cfg.TOWER_HP * lvlPower(S, slot) : 0;
-  if (S.cfg.PRODUCTION[type]) slot.prodCd = S.cfg.PRODUCTION[type].interval / lvlPower(S, slot);
-  if (type === 'guard') {
-    for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, slotIdx);
-    slot.prodCd = S.cfg.GUARD.respawn;
-  }
+  if (S.cfg.PRODUCTION[type]) slot.prodCd = prodInterval(S, slot);
 }
 
 // ------------------------------------------------------------- queries ----
@@ -226,9 +191,9 @@ function count(S, side, type) {
   return n;
 }
 const FAMILIES = {
-  eco: ['farm', 'grove', 'plant'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'],
+  eco: ['farm'],
+  def: ['tower', 'sharp', 'spit'],
+  off: ['hatch', 'soldierb', 'assassinb', 'sapperb'],
 };
 function familyCount(S, side, family) {
   const fams = FAMILIES[family];
@@ -238,7 +203,7 @@ function familyCount(S, side, family) {
 }
 function income(S, side) {
   let inc = S.cfg.BASE_INCOME;
-  for (const s of S.slots[side]) inc += S.cfg.INCOME_BY_TYPE[s.type] || 0;
+  for (const s of S.slots[side]) if (s.type === 'farm') inc += S.cfg.FARM_INCOME[s.lvl];
   return inc * (S.frenzy ? 2 : 1);
 }
 function musterCount(S, side) {
@@ -246,27 +211,30 @@ function musterCount(S, side) {
   for (const u of S.units) if (u.side === side && u.state === 'muster') n++;
   return n;
 }
-const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb'];
+const LEVELABLE = ['farm', 'hatch', 'sharp', 'spit', 'soldierb', 'assassinb', 'sapperb'];
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
+}
+function prodInterval(S, slot) {
+  const base = S.cfg.PRODUCTION[slot.type].interval;
+  return S.cfg.RATE_LVL.includes(slot.type) ? base / lvlPower(S, slot) : base;
 }
 function lvlCost(S, slot) {
   return Math.round(S.cfg.COSTS[slot.type] * S.cfg.LVL_COST_MULT[(slot.lvl || 1) + 1]);
 }
-// legal build/upgrade types for this slot (empty slot -> the three roots;
-// specialised buildings offer 'lvl' until MAX_LVL)
+// legal build/upgrade types for this slot: empty -> the three roots;
+// tower/hatch -> their specialisations; anything levelable also offers 'lvl'
 function buildOptions(S, side, slotIdx) {
   const slot = S.slots[side][slotIdx];
   if (!slot) return [];
   if (slot.type === null) return ['farm', 'tower', 'hatch'];
-  const tree = S.cfg.UPGRADE_TREE[slot.type];
-  if (tree) return tree;
-  if (LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) return ['lvl'];
-  return [];
+  const out = (S.cfg.UPGRADE_TREE[slot.type] || []).slice();
+  if (LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) out.push('lvl');
+  return out;
 }
 
 // ------------------------------------------------------------- actions ----
-// action kinds: {kind:'build', slot:i, type:<building>} | {kind:'sell', slot:i}
+// action kinds: {kind:'build', slot:i, type:<building>|'lvl'} | {kind:'sell', slot:i}
 function sellRefund(S, slot) {
   return Math.round(slot.spent * S.cfg.SELL_REFUND);
 }
@@ -278,9 +246,7 @@ function applyAction(S, side, action) {
     if (!slot.type) return false;
     S.money[side] = Math.min(S.cfg.GOLD_CAP, S.money[side] + sellRefund(S, slot));
     S.events.push({ type: 'sell', x: slot.x, y: slot.y, side });
-    // guards from a sold post disband via the orphan check in step()
     slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
-    slot.chTgt = null; slot.chT = 0;
     return true;
   }
   if (action.kind !== 'build') return false;
@@ -305,11 +271,6 @@ function applyAction(S, side, action) {
   if (S.cfg.PRODUCTION[action.type]) {
     slot.prodCd = S.cfg.PRODUCTION[action.type].interval;
   }
-  if (action.type === 'guard') {
-    // the squad musters immediately; the respawn timer covers replacements
-    for (let i = 0; i < S.cfg.GUARD.count; i++) spawnGuard(S, side, action.slot);
-    slot.prodCd = S.cfg.GUARD.respawn;
-  }
   return true;
 }
 
@@ -327,52 +288,79 @@ function siegeSpot(u, nest) {
   return { x: nest.x + Math.cos(a) * rr, y: nest.y + Math.sin(a) * rr * 0.8 };
 }
 
-function spawnUnit(S, side, unitKey) {
+function spawnUnit(S, side, slot) {
+  const unitKey = S.cfg.PRODUCTION[slot.type].unit;
   const t = S.cfg.UNITS[unitKey];
   const sp = musterSpot(S, side);
+  // soldier broods breed BIGGER soldiers per level (the concentration axis)
+  const k = unitKey === 'soldier' ? slot.lvl - 1 : 0;
+  const L = S.cfg.SOLDIER_LVL;
   const u = {
     side, typeKey: unitKey,
     x: sp.x, y: sp.y,
-    hp: t.hp, spd: t.spd, dps: t.dps, r: t.r,
+    hp: t.hp * Math.pow(L.hp, k),
+    spd: t.spd * Math.pow(L.spd, k),
+    dps: t.dps * Math.pow(L.dps, k),
+    r: t.r * Math.pow(L.r, k),
     seed: S.rng() * 10,
-    state: 'muster',             // muster -> march -> siege (predators: -> hunt)
+    state: 'muster',             // muster -> march -> siege
     sx: 0, sy: 0,
-    slowed: false,
+    mx: 0, my: 0, pd: 0,         // buffered move + incoming damage
+    fx: 0,                       // renderer hint: fighting this tick
   };
-  if (unitKey === 'predator') {
-    // hold point just past the midline on the owner's side, mirrored so
-    // mirror matches stay symmetric (midline maps to itself under y'=640-y)
-    const mid = (S.cfg.ENEMY_BASE.y + S.cfg.PLAYER_BASE.y) / 2;
-    const off = S.cfg.PREDATOR.holdNear + S.rng() * (S.cfg.PREDATOR.holdFar - S.cfg.PREDATOR.holdNear);
-    u.hy = side === 'p' ? mid + off : mid - off;
-  }
+  u.maxHp = u.hp;
   S.units.push(u);
   S.hatched[side][unitKey]++;
-}
-
-// guard-post defenders: they hold a rally point on the lane beside their
-// post and intercept attackers instead of marching (state 'guard')
-function spawnGuard(S, side, slotIdx) {
-  const cfg = S.cfg, slot = S.slots[side][slotIdx];
-  const t = cfg.UNITS.guard, k = lvlPower(S, slot);
-  const ax = Math.max(cfg.LANE_CX - cfg.LANE_HALF + 8,
-    Math.min(cfg.LANE_CX + cfg.LANE_HALF - 8, slot.x));
-  S.units.push({
-    side, typeKey: 'guard',
-    x: slot.x, y: slot.y,
-    hp: t.hp * k, maxHp: t.hp * k, spd: t.spd, dps: t.dps * k, r: t.r,
-    seed: S.rng() * 10,
-    state: 'guard',
-    ax, ay: slot.y, srcSlot: slotIdx,
-    sx: 0, sy: 0,
-    slowed: false,
-  });
 }
 
 function destroySlot(S, side, slot) {
   S.events.push({ type: 'towerfall', x: slot.x, y: slot.y, side });
   slot.type = null; slot.lvl = 1; slot.cd = 0; slot.prodCd = 0; slot.hp = 0; slot.spent = 0;
-  slot.chTgt = null; slot.chT = 0;
+}
+
+// ants fight ants; assassins are outside the war entirely
+function meleeable(u) { return u.hp > 0 && u.typeKey !== 'assassin'; }
+function contactR(u, v) { return u.r + v.r + 4; }
+
+// only as many attackers as fit around a target's body get to bite it -
+// without this cap the whole flood stacks on one point (no collision)
+// and volume has zero diminishing returns in melee. The excess streams
+// past toward the nest instead, so chaff still races, it just can't
+// also win every clash per-gold.
+function biteCap(tgt, attacker) {
+  return Math.max(2, Math.floor(Math.PI * (tgt.r + attacker.r) / (2 * attacker.r)));
+}
+function hasBiteRoom(tgt, attacker) { return tgt.nb < biteCap(tgt, attacker); }
+
+// nearest living enemy the unit could bite, within maxD; stateFilter
+// optionally restricts which enemy states count as seekable. Targets
+// whose bite ring is already full don't count.
+function nearestFoe(S, u, maxD, states) {
+  const foe = other(u.side);
+  let best = null, bestD = maxD;
+  for (const v of S.units) {
+    if (v.side !== foe || !meleeable(v) || !hasBiteRoom(v, u)) continue;
+    if (states && !states.includes(v.state)) continue;
+    const d = Math.hypot(v.x - u.x, v.y - u.y);
+    if (d < bestD) { bestD = d; best = v; }
+  }
+  return best && { v: best, d: bestD };
+}
+
+// chase-and-bite: queue a move toward tgt, or a bite on contact. Movement
+// (u.mx/u.my) and damage (tgt.pd) are buffered and applied only after the
+// whole unit loop - p-units iterate first, and letting them move early
+// hands e-units fresher chase positions, a real mirror bias.
+function fight(u, tgt, dt) {
+  const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
+  if (d > contactR(u, tgt)) {
+    u.mx = (dx / d) * u.spd * dt;
+    u.my = (dy / d) * u.spd * dt;
+  } else {
+    tgt.pd += u.dps * dt;
+    tgt.nb++;
+    u.fx = 1;
+  }
 }
 
 // ---------------------------------------------------------------- step ----
@@ -388,39 +376,16 @@ function step(S) {
     S.money[side] = Math.min(cfg.GOLD_CAP, S.money[side] + income(S, side) * dt);
   }
 
-  // hatcheries produce into the muster; guard posts keep their squad manned
+  // hatcheries and broods produce into the muster
   for (const side of ['p', 'e']) {
-    for (let i = 0; i < S.slots[side].length; i++) {
-      const slot = S.slots[side][i];
-      if (slot.type === 'guard') {
-        let living = 0;
-        for (const u of S.units) {
-          if (u.side === side && u.state === 'guard' && u.srcSlot === i && u.hp > 0) living++;
-        }
-        if (living >= cfg.GUARD.count) {
-          slot.prodCd = cfg.GUARD.respawn;   // timer starts at the first death
-        } else {
-          slot.prodCd -= dt;
-          if (slot.prodCd <= 0) {
-            spawnGuard(S, side, i);
-            slot.prodCd = cfg.GUARD.respawn;
-          }
-        }
-        continue;
-      }
-      const prod = cfg.PRODUCTION[slot.type];
-      if (!prod) continue;
+    for (const slot of S.slots[side]) {
+      if (!cfg.PRODUCTION[slot.type]) continue;
       slot.prodCd -= dt;
       if (slot.prodCd <= 0) {
-        spawnUnit(S, side, prod.unit);
-        slot.prodCd += prod.interval / lvlPower(S, slot);
+        spawnUnit(S, side, slot);
+        slot.prodCd += prodInterval(S, slot);
       }
     }
-  }
-
-  // guards whose post is gone (sapped or respecced) disband
-  for (const u of S.units) {
-    if (u.state === 'guard' && S.slots[u.side][u.srcSlot].type !== 'guard') u.hp = 0;
   }
 
   // the war drum: both musters march together
@@ -430,126 +395,46 @@ function step(S) {
     S.events.push({ type: 'march' });
   }
 
-  // sap auras: defender's sap towers slow attackers (speed and bite rate)
-  for (const u of S.units) u.slowed = false;
-  for (const side of ['p', 'e']) {
-    const foe = other(side);
-    for (const slot of S.slots[side]) {
-      if (slot.type !== 'sap') continue;
-      // higher-level saps slow harder (lower factor)
-      const factor = cfg.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1);
-      for (const u of S.units) {
-        if (u.side !== foe || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
-        if (Math.hypot(u.x - slot.x, u.y - slot.y) < cfg.TOWERS.sap.range) {
-          u.slowed = Math.min(u.slowed || 1, factor);
-        }
-      }
-    }
-  }
-
-  // march down the lane, then dig in and chew the enemy nest until killed.
-  // v0.5 contact rules first: guards hunt attackers near their rally point;
-  // an attacker with a guard in engage range halts and fights it instead of
-  // advancing; sappers divert to enemy defence buildings and demolish them.
+  // movement and the clash. Ants fight what they meet: anyone biting you
+  // gets bitten back; workers and soldiers also seek nearby enemies;
+  // mustering ants defend their nest; assassins walk through it all.
+  // Two phases: every unit DECIDES against the same tick-start snapshot
+  // (buffered into mx/my/pd), then everything applies at once.
+  const hillDmg = { p: 0, e: 0 };
+  for (const u of S.units) { u.fx = 0; u.mx = 0; u.my = 0; u.pd = 0; u.nb = 0; }
   for (const u of S.units) {
-    if (u.state === 'muster') continue;
-
-    // freshly converted ants walk home and join the next drum; nothing
-    // engages them on the way (they read as part of the muster)
-    if (u.state === 'return') {
-      const dx = u.sx - u.x, dy = u.sy - u.y, d = Math.hypot(dx, dy);
-      if (d > 4) {
-        u.x += (dx / d) * u.spd * dt;
-        u.y += (dy / d) * u.spd * dt;
-      } else {
-        u.state = 'muster';
-      }
-      continue;
-    }
-
-    const factor = u.slowed || 1;   // slowed holds the strongest sap factor
     const foe = other(u.side);
 
-    if (u.state === 'guard') {
-      let tgt = null, bestD = cfg.GUARD.leash;
+    if (u.state === 'muster') {
+      // nest defence: newborns waiting on the drum still have jaws
+      if (u.typeKey !== 'assassin') {
+        const hit = nearestFoe(S, u, cfg.MELEE.defend, null);
+        if (hit) fight(u, hit.v, dt);
+      }
+      continue;
+    }
+
+    if (u.typeKey !== 'assassin') {
+      // contact first: fight whoever is touching you, regardless of state
+      let tgt = null, tgtD = Infinity;
       for (const v of S.units) {
-        if (v.side !== foe || v.hp <= 0) continue;
-        if (v.state !== 'march' && v.state !== 'siege') continue;
-        const d = Math.hypot(v.x - u.ax, v.y - u.ay);
-        if (d < bestD) { bestD = d; tgt = v; }
+        if (v.side !== foe || !meleeable(v) || !hasBiteRoom(v, u)) continue;
+        const d = Math.hypot(v.x - u.x, v.y - u.y);
+        if (d <= contactR(u, v) && d < tgtD) { tgtD = d; tgt = v; }
       }
-      if (tgt) {
-        const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
-        if (d > u.r + tgt.r + 3) {
-          u.x += (dx / d) * u.spd * dt;
-          u.y += (dy / d) * u.spd * dt;
-        } else {
-          tgt.hp -= u.dps * dt;
-        }
-      } else {
-        const dx = u.ax - u.x, dy = u.ay - u.y, d = Math.hypot(dx, dy);
-        if (d > 2) {
-          u.x += (dx / d) * u.spd * dt;
-          u.y += (dy / d) * u.spd * dt;
-        }
+      if (!tgt && u.typeKey !== 'sapper') {
+        // then seek: marchers/siegers pull toward a nearby enemy ARMY -
+        // never toward the muster cloud (that would grind reinforcements
+        // forever at full hill hp; defenders must come out to be fought)
+        const hit = nearestFoe(S, u, cfg.MELEE.seek, ['march', 'siege']);
+        if (hit) tgt = hit.v;
       }
-      continue;
+      if (tgt) { fight(u, tgt, dt); continue; }
     }
 
-    // predators deploy: march to the hold point, then hunt from it
-    if (u.typeKey === 'predator' && u.state === 'march') {
-      if (u.side === 'p' ? u.y <= u.hy : u.y >= u.hy) {
-        u.state = 'hunt';
-        u.ax = u.x; u.ay = u.hy;
-      }
-    }
-    if (u.state === 'hunt') {
-      // guard logic with a midfield anchor: hunt enemy marchers (and enemy
-      // hunters) inside the leash, else drift home. Never hill, never towers.
-      let tgt = null, bestD = cfg.PREDATOR.leash;
-      for (const v of S.units) {
-        if (v.side !== foe || v.hp <= 0) continue;
-        if (v.state !== 'march' && v.state !== 'hunt') continue;
-        const d = Math.hypot(v.x - u.ax, v.y - u.ay);
-        if (d < bestD) { bestD = d; tgt = v; }
-      }
-      if (tgt) {
-        const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
-        if (d > u.r + tgt.r + 3) {
-          u.x += (dx / d) * u.spd * factor * dt;
-          u.y += (dy / d) * u.spd * factor * dt;
-        } else {
-          tgt.hp -= u.dps * factor * dt;
-        }
-      } else {
-        const dx = u.ax - u.x, dy = u.ay - u.y, d = Math.hypot(dx, dy);
-        if (d > 2) {
-          u.x += (dx / d) * u.spd * factor * dt;
-          u.y += (dy / d) * u.spd * factor * dt;
-        }
-      }
-      continue;
-    }
-
-    // a guard in engage range stops this attacker cold (towers keep firing
-    // at the held attacker - that's the guard's job); only attackers in
-    // actual contact bite back, the rest just queue at the taunt ring.
-    // Hunting predators hold ONLY the unit they are in contact with (a
-    // wolf grabs one ant; the wave streams past) - no taunt ring, or one
-    // predator would stall a whole march with nobody shooting at it.
-    let g = null, gd = cfg.GUARD.engage;
-    for (const v of S.units) {
-      if (v.side !== foe || v.hp <= 0 || (v.state !== 'guard' && v.state !== 'hunt')) continue;
-      const d = Math.hypot(v.x - u.x, v.y - u.y);
-      const reach = v.state === 'guard' ? cfg.GUARD.engage : u.r + v.r + 4;
-      if (d < reach && d < gd) { gd = d; g = v; }
-    }
-    if (g) {
-      if (gd < u.r + g.r + 4) g.hp -= u.dps * factor * dt;
-      continue;
-    }
-
-    // sappers divert to the nearest enemy defence building in sight
+    // sappers divert to the nearest enemy defence building in sight;
+    // felled towers are swept AFTER the loop so both sides' sappers see
+    // the same standing walls this tick
     if (u.typeKey === 'sapper' && u.state === 'march') {
       const spec = cfg.UNITS.sapper;
       let ts = null, td = spec.sight;
@@ -560,11 +445,11 @@ function step(S) {
       }
       if (ts) {
         if (td > 18) {
-          u.x += ((ts.x - u.x) / td) * u.spd * factor * dt;
-          u.y += ((ts.y - u.y) / td) * u.spd * factor * dt;
+          u.mx = ((ts.x - u.x) / td) * u.spd * dt;
+          u.my = ((ts.y - u.y) / td) * u.spd * dt;
         } else {
-          ts.hp -= spec.vsTower * factor * dt;
-          if (ts.hp <= 0) destroySlot(S, foe, ts);
+          ts.hp -= spec.vsTower * dt;
+          u.fx = 1;
         }
         continue;
       }
@@ -572,8 +457,8 @@ function step(S) {
 
     const nest = u.side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
     if (u.state === 'march') {
-      u.y += (u.side === 'p' ? -1 : 1) * u.spd * factor * dt;
-      if (Math.hypot(u.x - nest.x, u.y - nest.y) < cfg.SIEGE_DIST) {
+      u.my = (u.side === 'p' ? -1 : 1) * u.spd * dt;
+      if (Math.hypot(u.x - nest.x, u.y + u.my - nest.y) < cfg.SIEGE_DIST) {
         u.state = 'siege';
         const sp = siegeSpot(u, nest);
         u.sx = sp.x; u.sy = sp.y;
@@ -582,25 +467,37 @@ function step(S) {
       const dx = u.sx - u.x, dy = u.sy - u.y;
       const d = Math.hypot(dx, dy);
       if (d > 3) {
-        u.x += (dx / d) * u.spd * factor * dt;
-        u.y += (dy / d) * u.spd * factor * dt;
+        u.mx = (dx / d) * u.spd * dt;
+        u.my = (dy / d) * u.spd * dt;
       } else {
-        S.baseHP[other(u.side)] -= u.dps * factor * dt;
+        hillDmg[other(u.side)] += u.dps * dt;
       }
     }
   }
+  for (const u of S.units) {
+    u.x += u.mx; u.y += u.my;
+    u.hp -= u.pd;
+  }
+  S.baseHP.p -= hillDmg.p;
+  S.baseHP.e -= hillDmg.e;
+  for (const side of ['p', 'e']) {
+    for (const slot of S.slots[side]) {
+      if (slot.type && FAMILIES.def.includes(slot.type) && slot.hp <= 0) destroySlot(S, side, slot);
+    }
+  }
 
-  // towers fire at the nearest marching/besieging foe in range
+  // towers fire at the nearest foe in range; muster clouds are sanctuary
+  // (and out of range anyway). Towers are the ONLY thing that hits assassins.
   for (const side of ['p', 'e']) {
     const foe = other(side);
     for (const slot of S.slots[side]) {
       const spec = cfg.TOWERS[slot.type];
-      if (!spec || !spec.dmg) continue;
+      if (!spec) continue;
       slot.cd -= dt;
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;
       for (const u of S.units) {
-        if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
+        if (u.side !== foe || u.hp <= 0 || u.state === 'muster') continue;
         const d = Math.hypot(u.x - slot.x, u.y - slot.y);
         if (d < bestD) { bestD = d; best = u; }
       }
@@ -608,7 +505,7 @@ function step(S) {
         const dmg = spec.dmg * lvlPower(S, slot);
         if (spec.splash) {
           for (const u of S.units) {
-            if (u.side !== foe || u.hp <= 0 || u.state === 'muster' || u.state === 'guard' || u.state === 'return') continue;
+            if (u.side !== foe || u.hp <= 0 || u.state === 'muster') continue;
             if (Math.hypot(u.x - best.x, u.y - best.y) <= spec.splash) u.hp -= dmg;
           }
         } else {
@@ -620,81 +517,8 @@ function step(S) {
     }
   }
 
-  // mortars lob at the nearest enemy defence building; they never touch
-  // units or the hill (the reverse-sapper: siege from your own side)
-  for (const side of ['p', 'e']) {
-    const foe = other(side);
-    for (const slot of S.slots[side]) {
-      if (slot.type !== 'mortar') continue;
-      const spec = cfg.TOWERS.mortar;
-      slot.cd -= dt;
-      if (slot.cd > 0) continue;
-      let best = null, bestD = spec.range;
-      for (const ts of S.slots[foe]) {
-        if (!ts.type || !FAMILIES.def.includes(ts.type)) continue;
-        const d = Math.hypot(ts.x - slot.x, ts.y - slot.y);
-        if (d < bestD) { bestD = d; best = ts; }
-      }
-      if (!best) continue;       // nothing to bombard: hold fire
-      best.hp -= spec.bomb * lvlPower(S, slot);
-      slot.cd = spec.cooldown;
-      S.shots.push({ x1: slot.x, y1: slot.y - 10, x2: best.x, y2: best.y, ttl: 0.5, mortar: true });
-      S.events.push({ type: 'mortar', x: best.x, y: best.y, side: foe });
-      if (best.hp <= 0) destroySlot(S, foe, best);
-    }
-  }
-
-  // converters channel the nearest enemy attacker in range and flip it:
-  // the ant walks home and marches with its NEW side's next drum. The three
-  // load-bearing guards (see README v1.0 design): one target at a time
-  // (throughput-limited - chaff saturates it), the channel is interruptible
-  // (death, leaving range, or losing the tower resets progress), and a
-  // converted ant can never be converted again (no ping-pong).
-  for (const side of ['p', 'e']) {
-    const foe = other(side);
-    const spec = cfg.TOWERS.conv;
-    for (const slot of S.slots[side]) {
-      if (slot.type !== 'conv') continue;
-      const convertible = v =>
-        v.side === foe && v.hp > 0 && !v.conv &&
-        (v.state === 'march' || v.state === 'siege') &&
-        Math.hypot(v.x - slot.x, v.y - slot.y) < spec.range;
-      // sticky target: re-aiming mid-channel would reset progress forever
-      if (!slot.chTgt || !convertible(slot.chTgt)) {
-        slot.chTgt = null;
-        slot.chT = 0;
-        let best = null, bestD = spec.range;
-        for (const v of S.units) {
-          if (v.side !== foe || v.hp <= 0 || v.conv) continue;
-          if (v.state !== 'march' && v.state !== 'siege') continue;
-          const d = Math.hypot(v.x - slot.x, v.y - slot.y);
-          if (d < bestD) { bestD = d; best = v; }
-        }
-        slot.chTgt = best;
-      }
-      if (!slot.chTgt) continue;
-      slot.chT += dt;
-      if (slot.chT < spec.channel / lvlPower(S, slot)) continue;
-      const u = slot.chTgt;
-      u.side = side;
-      u.conv = true;
-      u.state = 'return';
-      u.hp = cfg.UNITS[u.typeKey].hp;   // restored in full: conversion value
-                                        // scales with unit SIZE, not with
-                                        // whatever hp the wall left it
-      const sp = musterSpot(S, side);
-      u.sx = sp.x; u.sy = sp.y;
-      // predators keep a side-relative hold point: mirror it with the flip
-      if (u.typeKey === 'predator') u.hy = (cfg.ENEMY_BASE.y + cfg.PLAYER_BASE.y) - u.hy;
-      S.converted[side]++;
-      S.events.push({ type: 'convert', x: u.x, y: u.y, side });
-      slot.chTgt = null;
-      slot.chT = 0;
-    }
-  }
-
   for (const u of S.units) {
-    if (u.hp <= 0) S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.typeKey === 'major' });
+    if (u.hp <= 0) S.events.push({ type: 'death', x: u.x, y: u.y, side: u.side, big: u.r > 7.5 });
   }
   S.units = S.units.filter(u => u.hp > 0);
   for (const sh of S.shots) sh.ttl -= dt;
@@ -734,7 +558,6 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
     result: S.result, t: S.endT,
     hpP: S.baseHP.p, hpE: S.baseHP.e,
     hatchedP: S.hatched.p, hatchedE: S.hatched.e,
-    convertedP: S.converted.p, convertedE: S.converted.e,
   };
 }
 
