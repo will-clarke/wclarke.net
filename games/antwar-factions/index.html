@@ -20,6 +20,7 @@
 <div id="wrap"><canvas id="c"></canvas></div>
 <script src="sim.js"></script>
 <script src="policy.js"></script>
+<script src="champions.js"></script>
 <script>
 'use strict';
 
@@ -42,41 +43,56 @@ const LANE_CX = CFG.LANE_CX, LANE_HALF = CFG.LANE_HALF;
 const UI_TOP = 648;
 
 const LABELS = {
-  farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Mat',
-  governor: 'Govern', redline: 'Redline',
-  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', sap: 'Sap', guard: 'Guard', mortar: 'Mortar', conv: 'Charmer',
-  dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell', hall: 'Chorus',
-  hatch: 'Hatchery', swarmb: 'Swarm', soldierb: 'Soldier', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
-  hornb: 'Horn', fifeb: 'Fife', oozeb: 'Ooze', grubb: 'Grub', slitherb: 'Slither',
+  farm: 'Farm', grove: 'Grove', plant: 'Plant.', mat: 'Wellspring',
+  governor: 'Govern', redline: 'Redline', deep: 'Marrow Tap', relic: 'Clutch',
+  tower: 'Turret', sharp: 'Longbore', spit: 'Scattergun', sap: 'Sap', guard: 'Polyp', mortar: 'Mortar', conv: 'Puppeteer',
+  dynamo: 'Dynamo', coil: 'Coil', rampart: 'Rampart', bell: 'Bell', hall: 'Hivemind',
+  thicket: 'Mire',
+  hatch: 'Smelter', swarmb: 'Swarm', soldierb: 'Steel', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
+  hornb: 'Horn', fifeb: 'Whistle', oozeb: 'Ooze', grubb: 'Pig Iron', slitherb: 'Slither',
   carrierb: 'Cyst', kiss: 'Kiss',
 };
+// T47: the farm chain is the only type two carved factions SHARE, so it is the
+// only label that needs a per-faction word - FOUNDRY mills its gold out of the
+// ground, VEIL eats. Everything else is single-owner since T44.
+const FACTION_LABELS = {
+  foundry: { farm: 'Mine', grove: 'Mill', plant: 'Refinery' },
+  veil: { farm: 'Feeder', grove: 'Gorger', plant: 'Glutton' },
+};
+function labelOf(type, side) {
+  const over = FACTION_LABELS[S ? S.cfg.FACTION[side || 'p'] : 'sandbox'];
+  return (over && over[type]) || LABELS[type];
+}
 
 // one-line "what is this" blurb, shown while previewing an option
 const DESC = {
-  farm: 'steady gold', grove: 'better farm', plant: 'best farm',
-  mat: 'creep fountain: paints ground, income by area',
-  governor: 'farm + safe gear: losses never knock your flywheel, lower ceiling',
-  redline: 'farm + greed gear: double spin-up, but every loss vents gold',
+  farm: 'steady gold', grove: 'upgraded: more gold', plant: 'top tier: most gold',
+  mat: 'pours the stain: paints ground, income by area',
+  governor: 'gold + safe gear: losses never knock your flywheel, lower ceiling',
+  redline: 'gold + greed gear: double spin-up, but every loss vents gold',
+  deep: 'gold + marrow tap: the more you have infested, the harder you siphon',
+  relic: 'gold + clutch: spends half the siphon to hold every seized ant longer',
   tower: 'all-rounder shooter', sharp: 'sniper: slow, huge hits',
   spit: 'splash: shreds swarms', sap: 'slows attackers, no damage',
-  guard: 'spawns defenders that block the lane',
+  guard: 'buds defenders that block the lane',
   mortar: 'bombs enemy defences anywhere, never units',
-  conv: 'charms enemy ants to your side (timed)',
+  conv: 'seizes enemy ants and walks them for you (timed)',
   dynamo: 'spins up as it fires: slow cold, brutal once wound',
   coil: 'arc chains between clustered enemies, weaker each hop',
   rampart: 'no gun: shoves attackers back on every beat of YOUR drum',
   bell: 'no gun: freezes every attacker in range solid, in pulses',
-  hall: 'a slower charmer whose choir holds EVERY convert twice as long',
-  hatch: 'breeds workers', swarmb: 'cheap worker flood',
-  soldierb: 'breeds soldiers', majorb: 'breeds slow tanks',
+  hall: 'a slower puppeteer whose hive mind holds EVERY seized ant twice as long',
+  thicket: 'no gun: the stain at full thickness - everything hostile in it wades and blisters',
+  hatch: 'casts workers', swarmb: 'cheap worker flood',
+  soldierb: 'casts soldiers', majorb: 'breeds slow tanks',
   sapperb: 'breeds building-killers', predatorb: 'breeds midfield hunters',
-  hornb: 'breeds soldiers, +6s on YOUR drum (bigger waves)',
-  fifeb: 'breeds workers, -3s on YOUR drum (faster waves)',
-  oozeb: 'oozes shamblers in blooms of 3 - clumps, not a drum; corpses feed the creep',
-  grubb: 'cheap fat grubs: lots of hp, almost no bite',
-  slitherb: 'frail skirmishers: race across YOUR creep, crawl off it',
-  carrierb: 'carriers: no damage at all - they touch a foe building and corrupt it',
-  kiss: 'breeds nothing: corruption crawls from each rotted building to its nearest neighbour',
+  hornb: 'casts soldiers, +6s on YOUR drum (bigger waves)',
+  fifeb: 'casts workers, -3s on YOUR drum (faster waves)',
+  oozeb: 'oozes shamblers in blooms of 3 - clumps, not a drum; corpses feed the stain',
+  grubb: 'cheap fat mass: lots of hp, almost no bite',
+  slitherb: 'frail skirmishers: race across YOUR stain, crawl off it',
+  carrierb: 'carriers: no damage at all - they touch a foe building and implant a larva',
+  kiss: 'breeds nothing: larvae crawl from each infested building to its nearest neighbour',
   lvl: 'level up: more power, superlinear cost',
 };
 
@@ -86,7 +102,7 @@ const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
   key, label: pol.PERSONAS[key].label, intro: pol.PERSONAS[key].intro,
   params: pol.PERSONAS[key].params,
 })).concat([{
-  key: 'creeper', label: 'THE MAT (Creeper)',
+  key: 'creeper', label: 'THE WELLSPRING (Creeper)',
   intro: 'Its dead advance the stain. Rush it before the ground turns.',
   params: pol.ARCHETYPES.creeper,
 }]);
@@ -95,10 +111,45 @@ const PERSONA_BTNS = SKIRMISH_FOES.map((f, i) => ({
 }));
 // playtest faction picker (temporary until T39): one chip row per side on the
 // skirmish screen. Skirmish-only - campaign levels are authored vs the sandbox.
-const FACTION_KEYS = ['sandbox', 'rot', 'piston', 'veil'];
+const FACTION_KEYS = ['sandbox', 'seep', 'foundry', 'veil'];
 const FACTION_ROWS = ['p', 'e'].map((side, r) => FACTION_KEYS.map((key, i) => ({
-  side, key, x: 56 + i * 90, y: 306 + r * 34, w: 84, h: 28,
+  side, key, x: 56 + i * 90, y: 302 + r * 34, w: 84, h: 28,
 })));
+
+// T36 - the AI ladder: three bred brains per faction, each rung one step
+// further through the coevolution arms race, thinking faster as it climbs. No
+// gold, vision or rules cheats at any rung - the sim is full-information and
+// the champion is simply better.
+const CHAMPS = (typeof AntWarChampions !== 'undefined') ? AntWarChampions : null;
+const RUNGS = [
+  { key: 'grub', label: 'GRUB', thinkEvery: 1.6, brain: 'grub' },
+  { key: 'soldier', label: 'SOLDIER', thinkEvery: 0.9, brain: 'soldier' },
+  { key: 'queen', label: 'QUEEN', thinkEvery: 0.4, brain: 'queen' },
+];
+const RUNG_BTNS = RUNGS.map((r, i) => ({ key: r.key, x: 56 + i * 110, y: 368, w: 104, h: 28 }));
+// A champion is only playable if the bank carries one for that faction. The
+// SANDBOX at Grub is the deliberate exception: the personas below were written
+// for that kit, so there they ARE the casual brain - while against a carved kit
+// a persona is not casual but inert, bidding for types the faction cannot own
+// until it has built farms and nothing else. Hence bred brains everywhere else.
+function rungBrain(rungKey, faction) {
+  const rung = RUNGS.find(r => r.key === rungKey);
+  if (!rung.brain || !CHAMPS) return null;
+  if (rung.key === 'grub' && faction === 'sandbox') return null;
+  return CHAMPS[rung.brain][faction] || null;
+}
+function rungPlayable(rungKey) {
+  const rung = RUNGS.find(r => r.key === rungKey);
+  if (!rung.brain) return true;
+  if (rung.key === 'grub' && factionSel.e === 'sandbox') return true;   // the personas play
+  return !!rungBrain(rungKey, factionSel.e);
+}
+// the bank was bred against a CONFIG, a faction table and a vector shape; if
+// any of those moved the vectors still play, they are just no longer the brains
+// the tuner graded - say so rather than quietly serving a stale champion.
+function champsStale() {
+  return !!CHAMPS && CHAMPS.content !== pol.contentHash();
+}
 
 // campaign trail: a winding path up the screen, boss node centred on top
 // (spacing scales off the level count - v0.9 grew the ladder to 12)
@@ -130,7 +181,7 @@ const SPICE_OVERRIDE = (() => {
   for (const kv of q.split(',')) { const [k, v] = kv.split(':'); sp[k] = parseFloat(v); }
   return sp;
 })();
-// ?faction=rot plays ROT against the sandbox kit; ?faction=rot:rot sets both
+// ?faction=seep plays SEEP against the sandbox kit; ?faction=seep:seep sets both
 // sides (T7a). Unknown names are ignored rather than crashing the page.
 const FACTION_OVERRIDE = (() => {
   const q = new URLSearchParams(location.search).get('faction');
@@ -147,6 +198,19 @@ let factionSel = Object.assign(
 for (const s of ['p', 'e']) if (!sim.FACTIONS[factionSel[s]]) factionSel[s] = 'sandbox';
 function saveFactionSel() {
   try { localStorage.setItem('antwar-faction-pick', JSON.stringify(factionSel)); } catch (e) {}
+}
+// ?ai=queen picks the rung for testing (with ?faction=veil:foundry, the whole
+// matchup is one URL); the remembered pick is the fallback.
+let aiRung = (() => {
+  const q = new URLSearchParams(location.search).get('ai');
+  let pick = null;
+  try { pick = localStorage.getItem('antwar-ai-rung'); } catch (e) {}
+  for (const k of [q, pick]) if (RUNGS.some(r => r.key === k)) return k;
+  return 'grub';
+})();
+function setRung(key) {
+  aiRung = key;
+  try { localStorage.setItem('antwar-ai-rung', key); } catch (e) {}
 }
 function newState(extra) {
   const ov = Object.assign({}, extra);
@@ -177,6 +241,9 @@ function startReplay(opponent) {
   replay = {
     v: 'fx0.4', mode, opponent, seed: S.seed,
     faction: S.cfg.FACTION,      // both kits; without it a faction replay is unreconstructable
+    // which brain actually played (T36): at a champion rung `opponent` is the
+    // persona the player tapped and the champion is what they fought
+    ai: mode === 'skirmish' ? { rung: aiRung, engine: CHAMPS ? CHAMPS.engine : null } : null,
     setup: S.cfg.SETUP || null,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
@@ -344,7 +411,14 @@ function begin(key) {           // skirmish: pick a foe, symmetric start
   mode = 'skirmish';
   personaKey = key;
   S = newState({ FACTION: { p: factionSel.p, e: factionSel.e } });
-  enemyCtrl = pol.makeController(SKIRMISH_FOES.find(f => f.key === key).params);
+  // the rung decides the brain: a champion for its faction if the bank has one,
+  // else the persona the player tapped (which is the Grub rung outright)
+  const rung = RUNGS.find(r => r.key === aiRung);
+  const champ = rungBrain(aiRung, factionSel.e);
+  // makeBrain: the Queen rung's entry is an adaptive BANK since T37 (it swaps
+  // vectors on what the board shows), the others are single vectors
+  enemyCtrl = pol.makeBrain(champ || SKIRMISH_FOES.find(f => f.key === key).params,
+    { thinkEvery: rung.thinkEvery });
   startReplay(key);
   resetMatchFx();
 }
@@ -365,7 +439,11 @@ function beginLevel(i) {        // campaign: level AI + level setup + kits
 
 function opponentLabel() {
   if (mode === 'campaign') return pol.LEVELS[currentLevel].name;
-  const base = SKIRMISH_FOES.find(f => f.key === personaKey).label;
+  // a champion rung has replaced the persona, so naming the persona would lie
+  const champ = rungBrain(aiRung, factionSel.e);
+  const rung = RUNGS.find(r => r.key === aiRung);
+  const base = champ ? rung.label + ' CHAMPION'
+    : SKIRMISH_FOES.find(f => f.key === personaKey).label;
   const f = sim.faction(S, 'e');
   return f.label === 'SANDBOX' ? base : base + ' - ' + f.label;
 }
@@ -384,13 +462,13 @@ function popupRects(slotIdx) {
   const slot = S.slots.p[slotIdx];
   const entries = allowedOptions(slotIdx).map(type => ({
     type,
-    label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
+    label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : labelOf(type),
     cost: type === 'lvl' ? sim.lvlCost(S, slot) : sim.costOf(S, 'p', type),
   }));
   if (!entries.length && slot.type === null) return [];
   // shrink buttons when a tree offers all its specs, and WRAP once shrinking
   // would stop being tappable: the tower tree reached ten options at T25, which
-  // is 37px stubs across 420px - narrower than the word 'Spitter'
+  // is 37px stubs across 420px - narrower than the word 'Scattergun'
   const gap = 4;
   const n = Math.max(1, entries.length);
   const per = n > 6 ? Math.ceil(n / 2) : n;
@@ -420,7 +498,7 @@ function popupRects(slotIdx) {
       x: (pair ? cx - 78 : cx - 37), y: slot.y - 26, w: 74, h: 24,
     });
     if (pair) out.push({
-      type: 'cleanse', label: 'Cleanse', cost: CFG.CORRUPT.cleanseCost,
+      type: 'cleanse', label: 'Purge', cost: CFG.CORRUPT.cleanseCost,
       x: cx + 4, y: slot.y - 26, w: 74, h: 24,
     });
   }
@@ -446,12 +524,12 @@ function statsLines(slot) {
   // T33: once it has turned there is nothing left to decide, so the line stops
   // offering the counterplay and says what happened instead
   if (slot.flipped) {
-    return ['TURNED - this building fights for ' + sim.faction(S, 'e').label + ' now',
-            'it cannot be sold, cleansed or rebuilt; only demolished'].concat(typeStats(slot));
+    return ['TAKEN AS A BROOD-HOST - it works for ' + sim.faction(S, 'e').label + ' now',
+            'it cannot be sold, purged or rebuilt; only demolished'].concat(typeStats(slot));
   }
-  return ['CORRUPTED: ' + (Math.round(slot.pips * 10) / 10) + ' of ' + CFG.CORRUPT.max
-    + ' pips - at ' + CFG.CORRUPT.max + ' it TURNS and fights for them',
-          'cleanse it for ' + CFG.CORRUPT.cleanseCost + 'g, or sell the building to deny them'].concat(typeStats(slot));
+  return ['INFESTED: ' + (Math.round(slot.pips * 10) / 10) + ' of ' + CFG.CORRUPT.max
+    + ' larvae - at ' + CFG.CORRUPT.max + ' it becomes their BROOD-HOST',
+          'purge it for ' + CFG.CORRUPT.cleanseCost + 'g, or sell the building to deny them'].concat(typeStats(slot));
 }
 
 function typeStats(slot) {
@@ -462,15 +540,15 @@ function typeStats(slot) {
     return ['UNDER CONSTRUCTION - ' + slot.buildT.toFixed(1) + 's left',
             'it earns nothing and does nothing until it is finished',
             'but it can already be killed - hp ' + Math.ceil(slot.hp),
-            'your own paint under a slot builds faster, foe paint slower'];
+            'your own ground under a slot builds faster, foe ground slower'];
   }
   if (t === 'mat') {
     const CR = CFG.CREEP;
-    return ['paint fountain: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, and the paint itself pays by area',
-            'paint spreads and seeps at the foe; in FULL paint they slow to '
+    return ['the stain pours out: +' + CFG.INCOME_BY_TYPE.mat + ' gold/s, and the ground itself pays by area',
+            'it spreads and seeps at the foe; in FULL stain they slow to '
               + Math.round(CR.slow * 100) + '% and take ' + CR.dot + ' dps, buildings ' + CR.corrode + ' dps',
-            'it dissolves untended and foe towers burn it back',
-            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and rival paint can kill it'];
+            'it dissolves untended and foe guns burn it back',
+            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and a rival stain can kill it'];
   }
   const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
   if (t === 'governor' || t === 'redline') {
@@ -493,12 +571,35 @@ function typeStats(slot) {
     out.push(hpLine);
     return out;
   }
+  // T45: the tithe has no body language of its own (the playtest's first fun
+  // risk), so both leaves print what they are worth AT THIS MOMENT
+  if (t === 'deep' || t === 'relic') {
+    const CR = CFG.CORRUPT, pips = sim.tithePips(S, 'p'), isDeep = t === 'deep';
+    const out = ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s, and one leaf on YOUR siphon'];
+    out.push(isDeep
+      ? 'every larva you have planted siphons +' + Math.round(CR.deepGain * 100)
+        + '% harder, up to ' + CR.deepMax + 'x'
+      : 'spends ' + Math.round(CR.relicSkim * 100) + '% of the siphon to grip every seized ant +'
+        + Math.round(CR.relicGain * 100) + '% longer per larva, up to ' + CR.relicMax + 'x');
+    if (!sim.faction(S, 'p').tithe) {
+      out.push('YOUR faction siphons nothing, so this leaf does nothing');
+    } else if (pips > 0) {
+      out.push(isDeep
+        ? pips + ' larvae planted: ' + r1(sim.titheOf(S, 'p')) + ' gold/s siphoned right now'
+        : pips + ' larvae planted: your grip holds x' + r1(sim.relicHold(S, 'p')) + ' right now');
+    } else {
+      out.push('nothing of theirs is infested yet, so it is doing nothing at all');
+    }
+    out.push('one per nest: a second buys nothing');
+    out.push(hpLine);
+    return out;
+  }
   if (t === 'kiss') {
     const CR = CFG.CORRUPT;
-    return ['no unit at all: every corrupted enemy building infects its nearest CLEANER neighbour',
-            CR.spreadAmt + ' pip every ' + (CR.spreadEvery / k).toFixed(1) + 's per rotted building - levels spread oftener',
+    return ['no unit at all: every infested enemy building infects its nearest CLEANER neighbour',
+            CR.spreadAmt + ' larva every ' + (CR.spreadEvery / k).toFixed(1) + 's per infested building - levels spread oftener',
             'only within ' + CR.spreadR + 'px, so a nest built spread OUT barely spreads at all',
-            'it never touches a hill and it cannot start on its own - a carrier has to land the first pip',
+            'it never touches a hill and it cannot start on its own - a carrier has to land the first larva',
             hpLine];
   }
   if (CFG.INCOME_BY_TYPE[t]) return ['+' + CFG.INCOME_BY_TYPE[t] + ' gold/s', hpLine];
@@ -506,6 +607,14 @@ function typeStats(slot) {
   if (t === 'sap') {
     const slowPct = Math.round(CFG.TOWERS.sap.slow * Math.pow(0.78, slot.lvl - 1) * 100);
     return ['slows attackers to ' + slowPct + '% speed', 'range ' + tw.range + ' - ' + hpLine];
+  }
+  if (t === 'thicket') {
+    const CR = CFG.CREEP;
+    return ['no gun: the ground itself, the stain as thick as it ever gets',
+            'attackers in it crawl at ' + Math.round((1 + (CR.slow - 1) * tw.dense) * 100)
+              + '% speed and take ' + r1(CR.dot * tw.dense) + ' dps - on bare ground too, no mat needed',
+            'it grows no stain of its own, so it pays nothing and nothing burns it back',
+            'range ' + tw.range + ' - ' + hpLine];
   }
   if (t === 'mortar') {
     return [Math.round(tw.bomb * k) + ' dmg vs enemy defences, every ' + tw.cooldown + 's', 'unlimited range - ' + hpLine];
@@ -515,24 +624,24 @@ function typeStats(slot) {
     // hold it quotes has to be the hold the player will actually see
     const choir = sim.count(S, 'p', 'hall') > 0 ? CFG.TOWERS.hall.choirCharm : 1;
     const dur = h => Math.round(Math.max(tw.charmMin, tw.charmHpSec / h) * k * choir);
-    const out = ['charms in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
-                 'charm holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
+    const out = ['seizes an ant in ' + (tw.channel / k).toFixed(1) + 's - range ' + tw.range,
+                 'the grip holds ' + dur(CFG.UNITS.worker.hp) + 's (worker) to ' + dur(CFG.UNITS.major.hp) + 's (major) - ' + hpLine];
     if (t === 'hall') {
-      out.splice(1, 0, 'while it stands, EVERY convert of yours holds x' + tw.choirCharm
+      out.splice(1, 0, 'while it stands, EVERY seized ant of yours holds x' + tw.choirCharm
         + ' as long and hits x' + tw.choirDps + ' harder');
-      out.push('one choir per nest: a second hall is just another charmer');
+      out.push('one hive mind per nest: a second is just another puppeteer');
     } else if (choir > 1) {
-      out.splice(1, 0, 'your Chorus Hall is stretching this hold x' + CFG.TOWERS.hall.choirCharm);
+      out.splice(1, 0, 'your Hivemind is stretching this grip x' + CFG.TOWERS.hall.choirCharm);
     }
     return out;
   }
   if (t === 'bell') {
     return ['freezes EVERY attacker in range solid for ' + tw.freezeDur + 's, no damage',
             'rings every ' + (tw.cooldown / k).toFixed(1) + 's - levels ring oftener, never longer',
-            'a frozen ant cannot move or bite, but it can still be shot and CHARMED',
+            'a frozen ant cannot move or bite, but it can still be shot and SEIZED',
             'heavy stamped bodies shrug off half of it, and a thawed ant resists for '
               + tw.immune + 's - so more bells is more GROUND, never a longer hold',
-            'range ' + tw.range + ' - the same reach as a Charmer - ' + hpLine];
+            'range ' + tw.range + ' - the same reach as a Puppeteer - ' + hpLine];
   }
   if (t === 'rampart') {
     const per = sim.drumPeriod(S, 'p');
@@ -549,7 +658,7 @@ function typeStats(slot) {
             'every shot winds it: ' + r1(dmg * spun / tw.cooldown) + ' dps now, '
               + r1(dmg * tw.spinMax / tw.cooldown) + ' dps fully wound',
             'the spin never cools - only losing the slot resets it',
-            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
+            'range ' + tw.range + ' - ' + hpLine + ' - burns back the stain'];
   }
   if (t === 'coil') {
     const dmg = Math.round(tw.dmg * k * 10) / 10;
@@ -559,16 +668,16 @@ function typeStats(slot) {
     return ['arcs to ' + tw.hops + ' enemies, ' + chain.join(' then ') + ' dmg, every ' + tw.cooldown + 's',
             r1(dmg / tw.cooldown) + ' dps on a lone target, ' + r1(full / tw.cooldown) + ' dps on a full chain',
             'each hop jumps up to ' + tw.chainR + 'px from the LAST body hit',
-            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
+            'range ' + tw.range + ' - ' + hpLine + ' - burns back the stain'];
   }
   if (tw && tw.dmg) {
     const dmg = Math.round(tw.dmg * k * 10) / 10;
     return [dmg + ' dmg every ' + tw.cooldown + 's (' + (dmg / tw.cooldown).toFixed(1) + ' dps)' + (tw.splash ? ' - splash ' + tw.splash : ''),
-            'range ' + tw.range + ' - ' + hpLine + ' - holds creep in range'];
+            'range ' + tw.range + ' - ' + hpLine + ' - burns back the stain'];
   }
   if (t === 'guard') {
     const g = CFG.UNITS.guard;
-    return [CFG.GUARD.count + ' guards: ' + Math.round(g.hp * k) + 'hp, ' + (Math.round(g.dps * k * 10) / 10) + ' dps each',
+    return ['buds ' + CFG.GUARD.count + ' guards: ' + Math.round(g.hp * k) + 'hp, ' + (Math.round(g.dps * k * 10) / 10) + ' dps each',
             'respawn ' + CFG.GUARD.respawn + 's - ' + hpLine];
   }
   const prod = CFG.PRODUCTION[t];
@@ -579,9 +688,9 @@ function typeStats(slot) {
     if (sim.faction(S, 'p').stamp) {
       const per = prod.interval / k, e = CFG.STAMP.eff, d = CFG.DRUM_DELTA[t];
       const out = [r1(u.hp / per * e) + ' mass/s + ' + r1(u.dps / per * e) + ' dps/s to the press',
-                   'the drum stamps the press into one product',
+                   'the shift stamps the press into one Juggernaut',
                    'gold overcharges each stamp'];
-      if (d) out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
+      if (d) out.push((d > 0 ? '+' : '') + d + 's on YOUR ' + drumWord('p') + ' (per building)');
       out.push(hpLine);
       return out;
     }
@@ -592,21 +701,21 @@ function typeStats(slot) {
     out.push(u.hp + 'hp - ' + u.dps + ' dps - speed ' + u.spd + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : ''));
     // the delta lines can't carry this - a stat absent on the other side of the
     // compare prints nothing, and no other brood has it
-    if (u.paintSpeed) out.push('up to x' + u.paintSpeed + ' speed on YOUR creep, sluggish off it');
+    if (u.paintSpeed) out.push('up to x' + u.paintSpeed + ' speed on YOUR stain, sluggish off it');
     // dps 0 prints as a stat and reads like a typo, so the trade has to be
     // spelled out: what it delivers is the pip, and it dies delivering it
     if (u.implant) {
-      out.push('NO damage: it walks to a foe building, plants ' + u.implant
-        + ' corruption pip and dies');
-      out.push(CFG.CORRUPT.max + ' pips saturate a building; with none left to corrupt it plants in the HILL,'
-        + ' where each pip gnaws ' + CFG.CORRUPT.hillDot + ' hp/s (max ' + CFG.CORRUPT.hillMax + ')');
+      out.push('NO damage: it walks to a foe building, implants ' + u.implant
+        + ' larva and dies');
+      out.push(CFG.CORRUPT.max + ' larvae saturate a building; with none left to infest it implants in the HILL,'
+        + ' where each larva gnaws ' + CFG.CORRUPT.hillDot + ' hp/s (max ' + CFG.CORRUPT.hillMax + ')');
     }
     if (CFG.DRUM_DELTA[t]) {
       const d = CFG.DRUM_DELTA[t];
-      out.push((d > 0 ? '+' : '') + d + 's on YOUR war drum (per building)');
+      out.push((d > 0 ? '+' : '') + d + 's on YOUR ' + drumWord('p') + ' (per building)');
     }
     if (CFG.UNITS[prod.unit].trickle) {
-      out.push('no muster: marches at hatch; each corpse bursts into paint where it falls');
+      out.push('no muster: marches at hatch; each corpse bursts into stain where it falls');
     }
     out.push(hpLine);
     return out;
@@ -617,8 +726,8 @@ function typeStats(slot) {
 // --- preview (two-tap confirm): what a tap WOULD build, and how it compares
 const STAT_LABELS = {
   income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
-  range: ['range', ''], bomb: ['bomb', ''], charm: ['charms in', 's'],
-  punch: ['shove', 'px'], hold: ['charm holds', 'x'],
+  range: ['range', ''], bomb: ['bomb', ''], charm: ['seizes in', 's'],
+  punch: ['shove', 'px'], hold: ['grip holds', 'x'],
   every: ['breeds every', 's'], unitHp: ['unit hp', ''], unitDps: ['unit dps', ''],
   massRate: ['mass/s', ''], dmgRate: ['press dps/s', ''],
   guardHp: ['guard hp', ''], guardDps: ['guard dps', ''], hp: ['hp', ''],
@@ -642,6 +751,11 @@ function keyStats(type, lvl) {
     if (tw.punch) o.punch = Math.round(tw.punch * k);
     // the bell's headline pair: a level moves `rings`, never `freeze`
     if (tw.freezeDur) { o.freeze = tw.freezeDur; o.rings = r1(tw.cooldown / k); }
+    // T44: a patch sells wading, so its headline is the stain curve it floors
+    if (tw.dense) {
+      o.crawl = Math.round((1 + (CFG.CREEP.slow - 1) * tw.dense) * 100);
+      o.dps = r1(CFG.CREEP.dot * tw.dense);
+    }
     if (tw.range < 500) o.range = tw.range;
   }
   if (prod) {
@@ -668,7 +782,7 @@ function keyStats(type, lvl) {
 function previewLines(slotIdx, type) {
   const slot = S.slots.p[slotIdx];
   if (type === 'cleanse') {
-    return [{ text: 'scrub all ' + (Math.round(slot.pips * 10) / 10) + ' pips off it for '
+    return [{ text: 'purge all ' + (Math.round(slot.pips * 10) / 10) + ' larvae off it for '
       + CFG.CORRUPT.cleanseCost + ' gold', color: '#c9a0e8' }]
       .concat(statsLines(slot).map(t => ({ text: t })));
   }
@@ -683,7 +797,7 @@ function previewLines(slotIdx, type) {
   };
   cand.hp = CFG.TOWER_HP * sim.lvlPower(S, cand);
   const blurb = sim.faction(S, 'p').stamp && CFG.PRODUCTION[type]
-    ? 'assembly line: presses mass, never breeds' : DESC[type];
+    ? 'assembly line: pours mass into the press, never breeds' : DESC[type];
   const out = [{ text: blurb }].concat(statsLines(cand).map(t => ({ text: t })));
   if (slot.type) {
     const now = keyStats(slot.type, slot.lvl), next = keyStats(cand.type, cand.lvl);
@@ -728,6 +842,9 @@ cv.addEventListener('pointerdown', (e) => {
   if (phase === 'skirmish') {
     for (const row of FACTION_ROWS) for (const c of row) {
       if (inRect(x, y, c)) { factionSel[c.side] = c.key; saveFactionSel(); return; }
+    }
+    for (const b of RUNG_BTNS) {
+      if (inRect(x, y, b)) { setRung(b.key); return; }
     }
     for (const b of PERSONA_BTNS) {
       if (inRect(x, y, b)) { begin(b.key); return; }
@@ -831,7 +948,7 @@ function advance(dtReal) {
     if (ev.type === 'mortar') { poof(ev.x, ev.y, '#8a8274', 6, 30); SFX.mortar(); }
     if (ev.type === 'convert') {
       poof(ev.x, ev.y, '#c9a0e8', 10, 45);
-      banner(ev.side === 'p' ? 'Enemy ant CHARMED!' : 'Your ant defected!');
+      banner(ev.side === 'p' ? 'Enemy ant SEIZED!' : 'Your ant defected!');
       SFX.convert();
     }
     if (ev.type === 'implant') {
@@ -839,7 +956,7 @@ function advance(dtReal) {
       // only the player's OWN nest gets a banner: their corruption is legible
       // from the violet crowns on the enemy slots, but a pip landing on their
       // side is the thing they can still act on
-      if (ev.side === 'e') banner(ev.hill ? 'Your HILL is corrupted!' : 'A building of yours is CORRUPTED');
+      if (ev.side === 'e') banner(ev.hill ? 'Your HILL is infested!' : 'A building of yours is INFESTED');
     }
     // T33: the flip's own moment. `side` is the nest that LOST the building, the
     // towerfall convention - a takeover reads as a loss from one side and a gift
@@ -847,19 +964,19 @@ function advance(dtReal) {
     if (ev.type === 'flip') {
       poof(ev.x, ev.y, '#c9a0e8', 16, 55);
       poof(ev.x, ev.y, '#7a50a0', 9, 30);
-      const what = (LABELS[ev.what] || 'building').toLowerCase();
-      banner(ev.side === 'p' ? 'Your ' + what + ' has TURNED!' : 'Enemy ' + what + ' is YOURS!');
+      const what = (labelOf(ev.what, ev.side) || 'building').toLowerCase();
+      banner(ev.side === 'p' ? 'Your ' + what + ' is a BROOD-HOST now!' : 'Enemy ' + what + ' is YOURS!');
       SFX.convert();
       if (ev.side === 'p') buzz([50, 40, 50]);
     }
     if (ev.type === 'revert') {
       poof(ev.x, ev.y, '#8a7a9a', 6, 30);
-      banner(ev.side === 'p' ? 'Your ant shook off the charm!' : 'Enemy ant broke free!');
+      banner(ev.side === 'p' ? 'Your ant shook off the grip!' : 'Enemy ant broke free!');
     }
     if (ev.type === 'towerfall') {
       poof(ev.x, ev.y, '#8a8274', 18, 70);
       poof(ev.x, ev.y, '#5d4630', 10, 45);
-      const what = (LABELS[ev.what] || 'building').toLowerCase();
+      const what = (labelOf(ev.what, ev.side) || 'building').toLowerCase();
       banner(ev.side === 'p' ? 'Your ' + what + ' is down!' : 'Enemy ' + what + ' DEMOLISHED!');
       SFX.towerfall();
       buzz(ev.side === 'p' ? [40, 40, 40] : 60);
@@ -1107,7 +1224,7 @@ function drawAnt(u, time) {
       ctx.stroke();
     }
   } else if (u.typeKey === 'product') {
-    // riveted plates: PISTON's product is stamped, not born, and a heavy one
+    // riveted plates: FOUNDRY's product is stamped, not born, and a heavy one
     // reads as a juggernaut because its whole body scales with the press
     ctx.strokeStyle = u.side === 'p' ? '#b8c8d0' : '#e0b0a0';
     ctx.lineWidth = 1.2;
@@ -1234,6 +1351,25 @@ function drawSlot(slot, side, idx, time) {
       ctx.fillStyle = 'rgba(240,140,80,' + (0.25 + 0.2 * Math.sin(time * 5)) + ')';
       ctx.beginPath(); ctx.arc(slot.x, slot.y - 9, 5, 0, 7); ctx.fill();
     }
+  } else if (slot.type === 'deep' || slot.type === 'relic') {
+    // T45: a farm with the corruption drinking out of it. The violet fills with
+    // what the tithe is worth right now, so the parasite economy has a face -
+    // a chalice for the Deep Tithe, a reliquary crystal for the Reliquary.
+    drawMushrooms(slot, side, [[-9, 6, 6], [8, 7, 6]]);
+    const k = Math.min(1, sim.tithePips(S, side) / (CFG.CORRUPT.max * 4));
+    ctx.strokeStyle = 'rgba(180,130,225,0.85)';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 9, 7, 0, 7); ctx.stroke();
+    if (slot.type === 'deep') {
+      ctx.fillStyle = 'rgba(160,90,210,' + (0.2 + 0.55 * k) + ')';
+      ctx.beginPath(); ctx.arc(slot.x, slot.y - 9, 5.5, 0, 7); ctx.fill();
+    } else {
+      ctx.fillStyle = 'rgba(205,165,245,' + (0.3 + 0.5 * k) + ')';
+      ctx.beginPath();
+      ctx.moveTo(slot.x, slot.y - 16); ctx.lineTo(slot.x + 5, slot.y - 9);
+      ctx.lineTo(slot.x, slot.y - 2); ctx.lineTo(slot.x - 5, slot.y - 9);
+      ctx.closePath(); ctx.fill();
+    }
   } else if (slot.type === 'mat') {
     // creep fountain: a mossy blob that visibly breathes as the mat grows
     const col = side === 'p' ? '110,140,80' : '150,70,110';
@@ -1342,7 +1478,7 @@ function drawSlot(slot, side, idx, time) {
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0', hall: '#9c78c0' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', sap: '#9cc088', guard: '#c8b478', mortar: '#a89078', conv: '#b08cc8', dynamo: '#d0b070', coil: '#7ec4dc', rampart: '#a8a8b8', bell: '#c8a8e0', hall: '#9c78c0', thicket: '#84b258' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -1367,6 +1503,28 @@ function drawSlot(slot, side, idx, time) {
       ctx.beginPath(); ctx.arc(slot.x, slot.y, CFG.TOWERS.sap.range * (0.9 + 0.06 * Math.sin(time * 3)), 0, 7); ctx.stroke();
       ctx.fillStyle = '#3a5c34';
       ctx.beginPath(); ctx.arc(slot.x, slot.y - 8, 4.5, 0, 7); ctx.fill();
+    } else if (slot.type === 'thicket') {
+      // the patch is the building: a soft disc of standing creep, then fronds.
+      // Its whole product is GROUND, so the reach has to be the loud part.
+      const R = CFG.TOWERS.thicket.range;
+      const g2 = ctx.createRadialGradient(slot.x, slot.y, 8, slot.x, slot.y, R);
+      g2.addColorStop(0, 'rgba(96,176,72,0.20)');
+      g2.addColorStop(0.7, 'rgba(72,144,56,0.10)');
+      g2.addColorStop(1, 'rgba(60,120,48,0)');
+      ctx.fillStyle = g2;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, R, 0, 7); ctx.fill();
+      ctx.strokeStyle = 'rgba(150,230,120,' + (0.22 + 0.10 * Math.sin(time * 1.6)) + ')';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(slot.x, slot.y, R * (0.97 + 0.02 * Math.sin(time * 1.6)), 0, 7); ctx.stroke();
+      ctx.strokeStyle = '#3f6b2e';
+      ctx.lineWidth = 2.5;
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i - 2) * 0.42 + 0.08 * Math.sin(time * 2 + i);
+        ctx.beginPath();
+        ctx.moveTo(slot.x, slot.y - 2);
+        ctx.lineTo(slot.x + Math.cos(a) * 16, slot.y - 2 + Math.sin(a) * 16);
+        ctx.stroke();
+      }
     } else if (slot.type === 'guard') {
       // banner pole marks the mustering point of the lane guards
       ctx.strokeStyle = '#6a5030';
@@ -1610,7 +1768,7 @@ function goldLabel(side) {
 }
 // T7b: a faction with an income hook owes the player its curve - the hook IS
 // the economy. T31: there are two hooks now, so the readout follows the
-// mechanism (PISTON's multiplier, VEIL's pip count), never the mere presence
+// mechanism (FOUNDRY's multiplier, VEIL's pip count), never the mere presence
 // of a hook.
 function spinLabel(side) {
   const f = sim.faction(S, side);
@@ -1621,8 +1779,13 @@ function spinLabel(side) {
   }
   if (!f.income) return '';
   const pips = sim.tithePips(S, side);
-  return '  tithe ' + pips.toFixed(pips % 1 ? 1 : 0) + 'p';
+  return '  larvae ' + pips.toFixed(pips % 1 ? 1 : 0);
 }
+// T47: each faction names its own metronome - FOUNDRY pours on the shift
+// whistle, VEIL's is a gestation cycle. The sandbox keeps the war drum.
+const DRUM_WORDS = { foundry: 'shift', veil: 'brood' };
+function drumWord(side) { return DRUM_WORDS[S.cfg.FACTION[side]] || 'war drum'; }
+
 // what is waiting to march: a muster of ants, or a press full of mass
 function armyLabel(side) {
   return sim.faction(S, side).stamp
@@ -1647,7 +1810,7 @@ function drawHUD(time) {
   ctx.fillText('gold ' + goldLabel('e') + '  (+' + sim.income(S, 'e').toFixed(1) + '/s)' + spinLabel('e'), W - 10, 11);
   ctx.fillText('hp ' + Math.max(0, Math.ceil(S.baseHP.e)) + '   ' + armyLabel('e')
     + (sim.drumPeriod(S, 'e') === null ? '   no drum'
-      : '   drum ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's'), W - 10, 24);
+      : '   ' + drumWord('e') + ' ' + Math.max(0, S.nextBeat.e - S.t).toFixed(0) + 's'), W - 10, 24);
 
   // match clock
   const remain = Math.max(0, CFG.HARD_END - S.t);
@@ -1680,7 +1843,7 @@ function drawHUD(time) {
     W - 12, UI_TOP + 36);
 
   // war drum countdown (fx0.2: each side beats alone - this bar is YOURS).
-  // A drumless faction (ROT) gets the strip as a standing readout instead:
+  // A drumless faction (SEEP) gets the strip as a standing readout instead:
   // there is no beat to count down to, so it shows the paint's reach.
   const periodP = sim.drumPeriod(S, 'p');
   const toBeat = Math.max(0, S.nextBeat.p - S.t);
@@ -1695,9 +1858,9 @@ function drawHUD(time) {
   ctx.textAlign = 'center';
   ctx.fillText(
     periodP === null
-      ? 'NO DRUM - your brood marches as it hatches   -   creep ' + sim.creepAdvance(S, 'p').toFixed(0) + 'px'
+      ? 'NO DRUM - it marches as it hatches   -   stain ' + sim.creepAdvance(S, 'p').toFixed(0) + 'px'
       : drumFlash > 0.3 ? 'THE MARCH IS ON!'
-        : 'war drum in ' + toBeat.toFixed(0) + 's'
+        : drumWord('p') + ' in ' + toBeat.toFixed(0) + 's'
           + (periodP !== CFG.WAR_DRUM ? ' (beat ' + periodP + 's)' : '')
           + '   -   your ' + armyLabel('p'),
     LANE_CX, UI_TOP + 77);
@@ -1778,9 +1941,15 @@ function drawPopup() {
     ctx.fillStyle = pend ? '#8ee06a' : (isSell ? '#f0b0a0' : isClean ? '#c9a0e8' : '#ffe9c0');
     // wide trees wrap to two rows now, so a button is 66px wide again - the
     // small-label branch stays for the narrow mid-width rows (5 or 6 options)
-    ctx.font = 'bold ' + (r.w < 52 ? 10 : 12) + 'px sans-serif';
     ctx.textAlign = 'center';
     const label = pend ? (isSell ? 'Sell?' : 'Confirm?') : r.label;
+    // T47's names say the job out loud (Scattergun, Marrow Tap), and a name too
+    // long for its button shrinks rather than spilling over the edge
+    let fs = r.w < 52 ? 10 : 12;
+    ctx.font = 'bold ' + fs + 'px sans-serif';
+    while (fs > 8 && ctx.measureText(label).width > r.w - 6) {
+      ctx.font = 'bold ' + (--fs) + 'px sans-serif';
+    }
     if (r.h < 40) {                // the slim row: one line, label + gold
       ctx.fillText(label + (isSell ? '  +' + r.gain : '  -' + r.cost) + 'g', r.x + r.w / 2, r.y + 16);
     } else {
@@ -2042,20 +2211,54 @@ function drawSkirmish() {
       ctx.fillText(sim.FACTIONS[c.key].label, c.x + c.w / 2, c.y + c.h / 2);
     }
   }
+  // the AI ladder row: a champion rung overrides the persona list below it
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#d8c0a0';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText('WITS', 48, RUNG_BTNS[0].y + 14);
+  ctx.textAlign = 'center';
+  for (const b of RUNG_BTNS) {
+    const on = aiRung === b.key, ok = rungPlayable(b.key);
+    ctx.fillStyle = on ? '#204a3a' : '#141f1a';
+    ctx.strokeStyle = !ok ? '#4a4a4a' : on ? '#70e8b0' : '#40806a';
+    ctx.lineWidth = on ? 2.5 : 1.5;
+    roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = !ok ? '#606060' : on ? '#70e8b0' : '#88b8a4';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(RUNGS.find(r => r.key === b.key).label, b.x + b.w / 2, b.y + b.h / 2);
+  }
+  const rung = RUNGS.find(r => r.key === aiRung);
+  const champOn = !!rungBrain(aiRung, factionSel.e);
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE THE ENEMY BRAIN', LANE_CX, 408);
+  // a bank entry says so: the Queen swaps vectors on what your nest shows it
+  // (T37), and that is worth knowing before the third rematch
+  const banked = champOn && !!rungBrain(aiRung, factionSel.e).default;
+  ctx.fillText(champOn ? rung.label + (banked ? ' COUNTER-PICKS' : ' CHAMPION') + ' PLAYS - TAP ANY TO START'
+    : 'CHOOSE THE ENEMY BRAIN', LANE_CX, 408);
+  if (!rungPlayable(aiRung)) {
+    ctx.fillStyle = '#e88060';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('no bred ' + rung.key + ' for ' + sim.FACTIONS[factionSel.e].label
+      + ' - the persona plays', LANE_CX, 421);
+  } else if (champOn && champsStale()) {
+    ctx.fillStyle = '#e8c060';
+    ctx.font = '10px sans-serif';
+    ctx.fillText('STALE: bred on engine ' + CHAMPS.engine + ', the numbers have moved since',
+      LANE_CX, 421);
+  }
   for (let i = 0; i < PERSONA_BTNS.length; i++) {
     const b = PERSONA_BTNS[i], foe = SKIRMISH_FOES[i];
     ctx.fillStyle = '#3a2a1c';
-    ctx.strokeStyle = '#c8a060';
+    ctx.strokeStyle = champOn ? '#6a5030' : '#c8a060';
     ctx.lineWidth = 2;
     roundRect(b.x, b.y, b.w, b.h, 10);
     ctx.fill(); ctx.stroke();
-    ctx.fillStyle = '#ffd870';
+    ctx.fillStyle = champOn ? '#8a7850' : '#ffd870';
     ctx.font = 'bold 16px sans-serif';
     ctx.fillText(foe.label, LANE_CX, b.y + 21);
-    ctx.fillStyle = '#d8c0a0';
+    ctx.fillStyle = champOn ? '#6a5c48' : '#d8c0a0';
     ctx.font = '11px sans-serif';
     ctx.fillText(foe.intro, LANE_CX, b.y + 45);
   }

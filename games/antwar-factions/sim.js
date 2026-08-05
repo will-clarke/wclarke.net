@@ -45,13 +45,13 @@ const CONFIG = {
   BASE_INCOME: 4,
   GOLD_CAP: 400,                 // income above this is wasted (anti-idle nudge)
   WAR_DRUM: 18,                  // base drum period; each side now beats alone
-  // fx0.2: drum-shifting buildings (the PISTON beat-delta prototype). Each
+  // fx0.2: drum-shifting buildings (the FOUNDRY beat-delta prototype). Each
   // one shifts ITS OWNER'S drum period; deltas stack per building and the
   // net period is clamped. A pending beat keeps its scheduled time - deltas
   // apply from the next beat onward (no sell-rebuild beat scrubbing).
   DRUM_DELTA: { hornb: 6, fifeb: -3 },
   DRUM_MIN: 10, DRUM_MAX: 36,
-  // fx0.4: the ROT paint FIELD - a per-side intensity grid (0..1 per cell)
+  // fx0.4: the SEEP paint FIELD - a per-side intensity grid (0..1 per cell)
   // over the lane, replacing fx0.3's single frontier line. Cell (col,row)
   // centre is (cx0 + col*cellW, cy0 + row*cellH).
   // INVARIANT: 2*cy0 + (rows-1)*cellH === 640 and rows is ODD, so the mirror
@@ -111,7 +111,7 @@ const CONFIG = {
                         // under a second and one passer-by takes 0.07 off it.
     goldPerCell: 0.09,  // income per unit of total intensity (income = area).
                         // Cut from T6a's 0.15 when trails doubled the paint
-                        // on the board: held ROT's total paint income where
+                        // on the board: held SEEP's total paint income where
                         // T6a tuned it, which measured strictly better than
                         // banking the windfall (creeper 0.341 vs 0.307, and
                         // a creep-turtle 0.81 vs 0.96). 0.25 pushed that
@@ -125,7 +125,7 @@ const CONFIG = {
     corrode: 3,         // dps to foe buildings standing in full paint
     hillDps: 7,         // strangle dps at a fully painted hill rim
     splatDmg: 40,       // hp a shambler CORPSE tears off the one foe building
-                        // it falls nearest, AT CONTACT - ROT's losses were only
+                        // it falls nearest, AT CONTACT - SEEP's losses were only
                         // ever worth territory, and territory stops at the
                         // tower line (T7c: paint felled 0.00 buildings ever).
     splatDmgR: 100,     // px reach, falling linearly to 0 at the edge like
@@ -147,7 +147,7 @@ const CONFIG = {
                         // so only 16-19% of own ticks on paint are on a wounded
                         // body and a life earns 0.97 hp back. DO NOT nudge this
                         // for balance: it is a switch, flat to 2 and then worth
-                        // 0.4 of ROT-vs-a-full-kit at 2.5.
+                        // 0.4 of SEEP-vs-a-full-kit at 2.5.
     corpseGold: 0,      // gold to the paint owner per unit dying in FULL paint
     spawnAt: 0.5,       // intensity a cell must hold to count as a womb
     spawnRate: 0,       // free shamblers/s per qualifying cell, born on the spot
@@ -162,7 +162,7 @@ const CONFIG = {
                         // slot is present and killable the whole time but does
                         // NOTHING (no income, no paint, no production, no fire,
                         // no drum shift). 0 = builds are instant, as shipped.
-                        // Symmetric: every faction pays it, and ROT is simply
+                        // Symmetric: every faction pays it, and SEEP is simply
                         // the one with paint under its own slots.
     stifle: 0,          // extra cooldown a SHOOTING tower pays for a SLIMED
                         // TARGET: cd *= 1 + stifle * k under the ant it just
@@ -176,8 +176,9 @@ const CONFIG = {
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
     farm: 80, grove: 90, plant: 120, mat: 100, governor: 110, redline: 110,
+    deep: 130, relic: 140,
     tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
-    dynamo: 130, coil: 140, rampart: 120, bell: 120, hall: 150,
+    dynamo: 130, coil: 140, rampart: 120, bell: 120, hall: 150, thicket: 100,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
     hornb: 100, fifeb: 80, oozeb: 90, grubb: 50, slitherb: 80, carrierb: 80,
     kiss: 150,
@@ -189,12 +190,15 @@ const CONFIG = {
     // a human who upgraded everything would have been locked out the same
     // way. Fitting one to a plant costs the 5.5 g/s difference - that price
     // is the choice, and it is why the bid takes the CHEAPEST farm it has.
-    farm:  ['grove', 'mat', 'governor', 'redline'],
-    grove: ['plant', 'governor', 'redline'],
-    plant: ['governor', 'redline'],
-    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'bell', 'dynamo', 'coil', 'rampart'],
+    // T45: VEIL's two eco leaves ride the same chain for the same reason - a
+    // brain that levels its farms owns no plain farm late, and VEIL's opening
+    // IS the farm chain. They are the only thing on it that is not a gear.
+    farm:  ['grove', 'mat', 'governor', 'redline', 'deep', 'relic'],
+    grove: ['plant', 'governor', 'redline', 'deep', 'relic'],
+    plant: ['governor', 'redline', 'deep', 'relic'],
+    tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'bell', 'dynamo', 'coil', 'rampart', 'thicket'],
     hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'carrierb'],
-    // T27: ROT's offence root is the Ooze Den, so its ONE specialisation has
+    // T27: SEEP's offence root is the Ooze Den, so its ONE specialisation has
     // to hang here - hung off `hatch` it would be born unreachable for the
     // only faction that owns it (T21's dead-mix-key diagnosis, T42's fix).
     // A den is now both a trunk and a leaf, which is new: see buildOptions.
@@ -209,6 +213,13 @@ const CONFIG = {
     // off the Cyst - which means BUILDING it eats a pip source. That trade is
     // the design: a Kiss on an uninfected nest does nothing at all.
     carrierb: ['kiss'],
+    // T44: SEEP's def trunk, and the only def root that is not a gun. The GUARD
+    // hangs off it because the patch cannot put a body in the lane and nothing
+    // else in seep.kit can either. The SAP does not: at `dense` 1 a Thicket is a
+    // wider sap that also burns, for the same 100g, so offering one as an
+    // upgrade of the other would be a trap. It stays on the tower tree, where
+    // the sandbox still reaches it.
+    thicket: ['guard'],
   },
   // specialised broods and towers can then level to 2 and 3: the late-game
   // gold sink. Costs scale superlinearly with power on purpose - concentrated
@@ -217,8 +228,8 @@ const CONFIG = {
   LVL_COST_MULT: { 2: 1.5, 3: 2.5 },   // of the building's base cost
   LVL_POWER: 1.5,                       // per level: production rate / tower dmg
   // T7c: a Mat pays a FARM's flat income, and the paint is what the extra
-  // 100g buys. At 1.5 it was ROT's ONLY eco building priced as a tier-2 one,
-  // so a Mat-less ROT was not just A strategy but THE strategy - a Mat build
+  // 100g buys. At 1.5 it was SEEP's ONLY eco building priced as a tier-2 one,
+  // so a Mat-less SEEP was not just A strategy but THE strategy - a Mat build
   // scored 0.681 of the field where den-spam scored 0.752; at 2.5 both read
   // 0.752.
   // T26: a gear pays a FARM's income, deliberately. T24's rampart proved a
@@ -226,7 +237,10 @@ const CONFIG = {
   // effect with the UPGRADE PATH (no grove, no plant off a geared farm) and
   // with each other, not with the 2.5 - a 0-income eco building would have
   // been the same dead-on-arrival shape in a different family.
-  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 2.5, governor: 2.5, redline: 2.5 },
+  // T45: and so do VEIL's, for the gears' reason - what a Deep Tithe or a
+  // Reliquary buys is paid for with the upgrade PATH it closes off, never with
+  // the 2.5 that keeps the slot from being T24's dead gunless tower.
+  INCOME_BY_TYPE: { farm: 2.5, grove: 5, plant: 8, mat: 2.5, governor: 2.5, redline: 2.5, deep: 2.5, relic: 2.5 },
   // production: what each offence building drops into the muster, and how often
   PRODUCTION: {
     hatch:    { unit: 'worker',  interval: 6 },
@@ -245,16 +259,16 @@ const CONFIG = {
     // the mechanism the den-interval cliff was made of (a metered arrival dies
     // alone, so shambler.dps never gets to exist).
     oozeb:  { unit: 'shambler', interval: 4, bloom: 3 },
-    // T18: PISTON's tier-1 rung. The press reduces a brood to (hp/s, dps/s),
+    // T18: FOUNDRY's tier-1 rung. The press reduces a brood to (hp/s, dps/s),
     // so a stamping faction cannot have a SIDE-grade - only a cheaper/weaker
     // or dearer/stronger step on one ladder. This is the cheap step: +41% mass
     // per gold on soldierb, -13% dps per gold, and less of both per SLOT, so
     // it is a tempo buy and never a replacement. PRICE is the whole balance
-    // lever here - grubb-only vs the ROT champion reads 0.98 at 40g and 0.55 at
+    // lever here - grubb-only vs the SEEP champion reads 0.98 at 40g and 0.55 at
     // 100g - and 50 is the point where a pure grub pour sits level with a pure
     // soldier pour, so the mix is a choice rather than an answer.
     grubb:  { unit: 'grub',     interval: 6 },
-    // T27: ROT's only specialisation - the den's other half. No bloom and no
+    // T27: SEEP's only specialisation - the den's other half. No bloom and no
     // splat, so it buys its keep in raw throughput: 8.6 hp/s and 1.43 dps/s
     // against the ooze den's 6.5 and 0.88. That is MORE per slot and slightly
     // less per gold (260g all-in against 180g), which is the choice - and the
@@ -262,7 +276,7 @@ const CONFIG = {
     // (at 5 a swapped den read 96 hill damage of the ooze den's 265; at 3.5 it
     // reads 252 and the duel sits at exactly 0.500, so the mix is a choice and
     // not an answer). A bloom is NOT the fix here: 2 read 120 and 3 read 46.
-    // NOT in piston.kit - the press sees a brood only as (hp/s, dps/s), so
+    // NOT in foundry.kit - the press sees a brood only as (hp/s, dps/s), so
     // `paintSpeed` would be a stat it discards.
     slitherb: { unit: 'slither', interval: 3.5 },
     // T30: the Carrier Cyst - VEIL's offence, which is not an offence. It ships
@@ -270,7 +284,7 @@ const CONFIG = {
     // one, and interval is the only rate there is. 5s puts 3.6 pips on the drum
     // (VEIL's plain 18s), which is roughly one saturated foe building per two
     // beats IF every carrier lands - and none of them lands past a gun line, so
-    // that is a ceiling and not a rate. NOT in piston.kit: the press reduces a
+    // that is a ceiling and not a rate. NOT in foundry.kit: the press reduces a
     // brood to (hp/s, dps/s) and a carrier's whole product is neither.
     carrierb: { unit: 'carrier', interval: 5 },
   },
@@ -289,7 +303,7 @@ const CONFIG = {
     // hp (a worker serves ~forever, a major shakes it off in seconds), times
     // level power. Convert-once immunity survives the revert (no ping-pong).
     conv: { range: 120, channel: 3.5, charmHpSec: 1200, charmMin: 4 },
-    // T23: PISTON's defensive law - uptime is power. Cold it is worse than a
+    // T23: FOUNDRY's defensive law - uptime is power. Cold it is worse than a
     // sharp (14 dps to 22.7); every shot adds `spinStep` to the slot's `spun`
     // multiplier up to `spinMax`, dividing the cooldown, so fully wound it out-
     // paces one (30.8 dps) after ~60 shots. Spin is CUMULATIVE, never decaying:
@@ -300,14 +314,14 @@ const CONFIG = {
     dynamo: { range: 150, dmg: 14, cooldown: 1.0, spinStep: 0.02, spinMax: 2.2 },
     // T25: the arc jumps to the nearest un-hit body, `falloff` weaker each hop.
     // hops/chainR are MEASURED at the instant a gun has a target (lesson 35):
-    // vs a ROT bloom, 1.19 extra bodies sit within 40px of the head and a
+    // vs a SEEP bloom, 1.19 extra bodies sit within 40px of the head and a
     // FOURTH is never there (0% at every radius to 80) - so 3 is the bloom, not
-    // a guess. vs sandbox worker floods it is 3.2 extra, and vs a PISTON
+    // a guess. vs sandbox worker floods it is 3.2 extra, and vs a FOUNDRY
     // product line 0.00 at every radius, which is the niche: the coil answers
     // arrivals-at-once and is dead against one fat body.
     coil:  { range: 130, dmg: 16, cooldown: 1.4, hops: 3, chainR: 46, falloff: 0.65 },
     // T24: no gun at all - the Rampart PUNCHES on its owner's beat, so its
-    // rate IS the drum and the def half of PISTON's metronome tension is a
+    // rate IS the drum and the def half of FOUNDRY's metronome tension is a
     // real bid (the ratchets want a long beat; the wall wants a short one).
     // What it costs the attacker is PROGRESS: a besieger drops back to
     // marching and has to walk the shove off at `punchSlow`. Damage stays 0 -
@@ -339,12 +353,28 @@ const CONFIG = {
     // its hold would have been the worst of both: so the hall keeps the job and
     // pays for the choir with `channel`. That is the trade in one number - 29%
     // slower to steal a body, twice as long to keep it - and it is the axis the
-    // triangle wants, because ROT beats VEIL on charm THROUGHPUT while PISTON
+    // triangle wants, because SEEP beats VEIL on charm THROUGHPUT while FOUNDRY
     // hands it one fat host the base charm cannot hold at all (1200/2000hp
     // bottoms out at `charmMin`). `choir*` are read at the instant an ant turns,
     // once, from the presence of ANY standing hall (T26's flag, not a stack).
     hall:  { range: 120, channel: 4.5, charmHpSec: 1200, charmMin: 4,
              choirCharm: 2, choirDps: 1.25 },
+    // T44: SEEP defends with GROUND. No gun and no new damage curve - inside the
+    // patch a hostile body wades in creep of at least `dense`, so the slow and
+    // the DoT are CREEP.slow / CREEP.dot, the numbers a mat's frontier already
+    // teaches. It writes nothing into the grid, so SEEP's area income never sees
+    // it (the T6b stealth-income tax).
+    // A MULTIPLIER on the paint already there was the first draft, and lesson
+    // 35's measurement killed it: a foe body within 120px of a SEEP def slot
+    // stands in 0.23-0.29 own paint vs sandbox/FOUNDRY and 0.013 in the SEEP
+    // mirror. So `dense` is a FLOOR, and 1 is the creep curve's own ceiling
+    // rather than a fitted fraction - at 0.75 the patch was worth so much less
+    // than the gun it replaces that seep-v-foundry fell 0.875 -> 0.000, and
+    // `dense` is the axis that buys it back (0.650 at r120, 0.775 at r175).
+    // `range` 175 is the knee: r200 reads the same in all three matchups,
+    // because from a nest slot 175 already spans the whole lane approach.
+    // No level scaling - the Thicket is a TRUNK, like the tower and the mat.
+    thicket: { range: 175, dense: 1 },
   },
   // v0.5 contact update: every defence building has HP (sappers chew it);
   // guard posts field a squad of defender ants that intercept on the lane.
@@ -369,7 +399,7 @@ const CONFIG = {
     // slower than workers so chaff it hasn't grabbed simply outruns it
     predator: { hp: 80, spd: 62, dps: 6,   r: 5.5 },
     // shamblers trickle: they skip the muster and march the moment they
-    // hatch (ROT has no drum), and their corpses feed the creep frontier
+    // hatch (SEEP has no drum), and their corpses feed the creep frontier
     shambler: { hp: 26,  spd: 44, dps: 3.5, r: 4.6, trickle: true, trail: 1 },
     // T27: the skirmisher. `paintSpeed` is a per-unit movement multiplier at
     // FULL own paint, scaled by the intensity underfoot - the exposure-time
@@ -379,7 +409,7 @@ const CONFIG = {
     // the second-slowest thing on legs, and 30hp still dies to one sharp shot,
     // so the speed is home-turf tempo and never a rush.
     slither: { hp: 30,  spd: 42, dps: 5,   r: 4.4, paintSpeed: 1.9, trail: 1 },
-    // T18: a fat, cheap, slow sack - PISTON's tier-1 pour. hp:dps 15 is
+    // T18: a fat, cheap, slow sack - FOUNDRY's tier-1 pour. hp:dps 15 is
     // bulk-LEAN, not bulk-only: the press ships one body whose power is mass x
     // dps, so a line far off a soldier's natural 9.5 ratio pours dead weight
     // (measured: a 58:1 version scored 0.24 where soldierb scored 0.88).
@@ -394,7 +424,7 @@ const CONFIG = {
     // lands. `sight` is the sapper's, and deliberately: the divert shape is
     // proven, and what changes is what arrival MEANS.
     carrier: { hp: 14, spd: 40, dps: 0, r: 3.6, implant: 1, sight: 90 },
-    // PISTON's stamped product: these are the stats at weight 1 (a soldier),
+    // FOUNDRY's stamped product: these are the stats at weight 1 (a soldier),
     // scaled by the weight the press shipped. Nothing breeds it.
     product: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
   },
@@ -406,14 +436,14 @@ const CONFIG = {
   // which faction each side plays (see FACTIONS). 'sandbox' is the tuning
   // line's everything-kit, so the default leaves every old matchup untouched.
   FACTION: { p: 'sandbox', e: 'sandbox' },
-  // T7b: PISTON's flywheel. A per-side income MULTIPLIER that charges while
+  // T7b: FOUNDRY's flywheel. A per-side income MULTIPLIER that charges while
   // the machine runs and is knocked back every time a building is destroyed.
   // The state is kept for both sides (like the paint field); only a faction
   // whose registry entry has an `income` hook actually reads it.
   FLYWHEEL: {
     cold: 0.8,    // multiplier at t=0 - and the floor: a stalled machine is
                   // poor, but never worth less than nothing. THE dial: it
-                  // sets PISTON's whole field score (0.7 reads 0.38 vs the
+                  // sets FOUNDRY's whole field score (0.7 reads 0.38 vs the
                   // sandbox, 0.8 reads 0.52, 1.0 reads 0.71) because the
                   // opening is the only window where gold decides matches.
     rate: 0.005,  // /s of multiplier while at least one building stands:
@@ -425,8 +455,8 @@ const CONFIG = {
     loss: 0.3,    // knocked off per building DESTROYED (60s of spin-up).
                   // T26 RETIRED its old justification ("vs mortarWall, 0.89
                   // at loss 0 and 0.44 at 0.3" - that archetype now builds 0
-                  // mortars against PISTON): ablating this to 0 is worth
-                  // ZERO hill damage in four matchups, because PISTON loses
+                  // mortars against FOUNDRY): ablating this to 0 is worth
+                  // ZERO hill damage in four matchups, because FOUNDRY loses
                   // ~1 building a match. It is a near-dead knob, and open
                   // question 22 asks whether it should vent GOLD instead.
                   // Selling is free - spin is per-side, so
@@ -447,7 +477,7 @@ const CONFIG = {
                   // its line pays nothing and one that is bleeding pays
                   // twice for every loss.
   },
-  // T7b-b: PISTON stamps, it does not breed. A stamping faction's broods pour
+  // T7b-b: FOUNDRY stamps, it does not breed. A stamping faction's broods pour
   // MASS into a press instead of ants into the muster; the drum stamps the
   // press into ONE product whose weight is the mass it holds, and shipping
   // COSTS GOLD - the sink T7b-a proved missing. A longer beat therefore ships
@@ -530,6 +560,18 @@ const CONFIG = {
     // is the answer the design wanted it to be.
     spreadR: 100,
     spreadEvery: 8,   // seconds between pulses; a level pulses oftener
+    // T45, the eco tier-2s. Both scale on `tithePips` - the pips standing on
+    // the FOE's board right now - because that is the quantity the parasite
+    // fantasy is about, and it is measured: a VEIL match holds 1.5-7.3 of them
+    // on average and peaks at 17-26. So the Deep Tithe is worth well under a
+    // farm early and more than a plant at saturation, which is the curve.
+    deepGain: 0.08,   // ...per pip, added to the skim MULTIPLIER
+    deepMax: 3,       // ...clamped here (reached at 25 pips)
+    relicGain: 0.06,  // Reliquary: charm hold multiplier per pip...
+    relicMax: 2,      // ...clamped here (reached at ~17 pips)
+    relicSkim: 0.5,   // ...and the share of the skim it SPENDS to do it. The
+                      // spend is the design: a Reliquary is the tithe turned
+                      // into seconds of theft instead of gold.
     spreadAmt: 1,     // pips seeded per source per pulse. A spread ADDS - it
                       // does not move the source's pips, because a transfer
                       // conserves the total and de-concentrates it, and T33
@@ -567,7 +609,7 @@ function createState(seed, overrides) {
     frenzy: false,
     decay: false,
     nextBeat: { p: cfg.WAR_DRUM, e: cfg.WAR_DRUM },
-    // ROT paint: one intensity grid per side, 0..1 per cell (CONFIG.FIELD).
+    // SEEP paint: one intensity grid per side, 0..1 per cell (CONFIG.FIELD).
     // fieldSum is the running total, kept by stepField so income and the
     // per-tick effect passes never have to walk the grid.
     field: {
@@ -645,8 +687,8 @@ function count(S, side, type) {
   return n;
 }
 const FAMILIES = {
-  eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline'],
-  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall'],
+  eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline', 'deep', 'relic'],
+  def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall', 'thicket'],
   off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss'],
 };
 // every built thing can be shot down - farms and hatcheries included.
@@ -660,21 +702,26 @@ function demolishable(type) {
 // drum at all, (T7b-a) an optional `income(S, side, gross)` hook and (T7b-b)
 // `stamp`, which swaps breeding for the press. The shared rules read those
 // flags, so a new faction is a table entry rather than a scatter of
-// `if (side is ROT)`.
+// `if (side is SEEP)`.
 const FACTIONS = {
   // the tuning sandbox: every building, the stacked drum. The default, so
   // every recorded matchup and evolved vector replays bit-identically.
   sandbox: { label: 'SANDBOX', roots: null, kit: null, drum: true },
-  // ROT: everything grows straight out of bare ground - no farms, no worker
+  // SEEP: everything grows straight out of bare ground - no farms, no worker
   // hatchery, no beat - and its defence only slows and blocks. Shamblers are
   // the whole army and the paint is the damage.
-  rot: {
-    label: 'ROT',
-    roots: ['mat', 'tower', 'oozeb'],
+  seep: {
+    label: 'SEEP',
+    // T44: the plain tower is GONE. SEEP's def root is the Thicket, and after
+    // this no two factions share a defensive building. The Thicket needs no
+    // `cost` line because it is not a spec grown from bare ground - it IS
+    // SEEP's trunk, and the sap and guard behind it pay the same 100 they
+    // always paid behind a tower.
+    roots: ['mat', 'thicket', 'oozeb'],
     // T27: 'slitherb' is a KIT entry only, never a root - it grows off the den,
     // so it pays no trunk price and needs no `cost` line (the T7a half-price
     // trap only bites a spec grown straight from bare ground).
-    kit: ['mat', 'tower', 'sap', 'guard', 'oozeb', 'slitherb'],
+    kit: ['mat', 'thicket', 'guard', 'oozeb', 'slitherb'],
     drum: false,
     // a spec grown straight from bare ground still pays for the trunk it
     // skipped (farm 80 + mat 100, hatch 90 + oozeb 90) - otherwise a faction
@@ -682,14 +729,14 @@ const FACTIONS = {
     // level costs stay keyed to COSTS, since a level buys tech, not ground.
     cost: { mat: 180, oozeb: 180 },
   },
-  // PISTON: the machine. Its trunks are the standard three, so nothing is
+  // FOUNDRY: the machine. Its trunks are the standard three, so nothing is
   // grown from bare ground and no cost table is needed - the faction lives in
   // its income CURVE (a cold start that compounds, and stalls when anything
   // breaks) and in its PRESS: broods pour mass, the drum stamps one product.
   // The mortar stays until Will rules on it (FACTIONS open question 15) - the
   // juggernaut is now a second, slower answer to buildings, not a replacement.
-  piston: {
-    label: 'PISTON',
+  foundry: {
+    label: 'FOUNDRY',
     roots: ['farm', 'tower', 'hatch'],
     // T24: 'rampart' is deliberately NOT here - the wall is built and proven,
     // but it ships DARK. Its output is 0 or the whole wave depending on a drum
@@ -697,7 +744,7 @@ const FACTIONS = {
     // slot never repays a gun. Awaiting a ruling, not a number.
     // T26: neither GEAR is here - both are built and proven to fire, and both
     // ship DARK. The flywheel pays too slowly to buy in the only window that
-    // decides a PISTON match: ablating FLYWHEEL.loss entirely is worth 0 hill
+    // decides a FOUNDRY match: ablating FLYWHEEL.loss entirely is worth 0 hill
     // damage, peak spin ever measured is 1.27 against a 1.9 cap, and a FREE
     // governor reads exactly 0.00. A ruling, not a number.
     kit: ['farm', 'grove', 'plant',
@@ -738,15 +785,31 @@ const FACTIONS = {
     // so neither needs a root or a `cost` line - and neither competes for an
     // offence SLOT the way T31's rejected chaff line did: each one eats the
     // building it grows out of.
-    kit: ['farm', 'grove', 'plant',
+    // T45: the two eco leaves. VEIL's opening is literally FOUNDRY's farm chain,
+    // and these are what make it BECOME parasitic - neither is worth a slot on a
+    // board with no corruption on it, so buying one is a bet that the carriers
+    // are landing. Neither competes for an offence slot (T31's law).
+    kit: ['farm', 'grove', 'plant', 'deep', 'relic',
           'conv', 'bell', 'hall',
           'carrierb', 'kiss'],
     drum: true,
-    cost: { bell: 220, carrierb: 170 },
+    // T35: the bell root came down from 220 (tower 100 + bell 120, and exactly
+    // START_MONEY, so the opening bell left VEIL with nothing). At 220 a
+    // money-limited brain reached the charmer in 0 of 20 matches against FOUNDRY;
+    // at 170 it reaches it at ~70s in 20 of 20 and the designed steal-the-fat-
+    // product edge appears for the first time (2.60 charms, 232 foe hill hp
+    // against 0, win 0.000 -> 0.750 on fixed brains). Below ~160 the saving goes
+    // back into BELLS instead - the def-shortfall bid buys the root it is
+    // measured against - so the usable band has a floor as well as a ceiling.
+    cost: { bell: 170, carrierb: 170 },
     // the tithe: every pip VEIL has planted on a standing foe building pays it
     // CORRUPT.skim gold/s. The DEBIT is not here - it is in income() itself,
     // because a leak belongs to the pip, not to the faction drinking it.
-    income: (S, side, gross) => gross + S.cfg.CORRUPT.skim * tithePips(S, side),
+    income: (S, side, gross) => gross + titheOf(S, side),
+    // T45: `flywheel`'s counterpart, for the same reason T31 split those two
+    // apart - the eco leaves need "does this side DRINK a tithe", and `income`
+    // is true of FOUNDRY too.
+    tithe: true,
   },
 };
 function faction(S, side) { return FACTIONS[S.cfg.FACTION[side]]; }
@@ -772,6 +835,32 @@ function gearOf(S, side) {
     if (s.type === 'redline') red = true;
   }
   return red ? 'redline' : null;
+}
+// T45: gearOf/choirOf's presence rule, generalised - one standing copy is the
+// whole effect, a second buys nothing, and a scaffold is not standing yet. Like
+// both of those it reads the GROUND, so a flipped leaf still serves the nest
+// that paid for it; only T33's five sites follow the flip.
+function standing(S, side, type) {
+  for (const s of S.slots[side]) if (s.type === type && !underway(s)) return true;
+  return false;
+}
+// T45: what a corruptor DRINKS. The DEBIT in income() stays a flat CORRUPT.skim
+// per pip (T31: the leak belongs to the pip), so both leaves change extraction
+// and never the host's bleed - the flywheel's shape, minting on what it holds.
+function titheOf(S, side) {
+  const CR = S.cfg.CORRUPT, pips = tithePips(S, side);
+  let rate = CR.skim;
+  if (standing(S, side, 'deep')) rate *= Math.min(CR.deepMax, 1 + CR.deepGain * pips);
+  if (standing(S, side, 'relic')) rate *= 1 - CR.relicSkim;
+  return rate * pips;
+}
+// ...and what a Reliquary bought with the half it spent: a longer hold, scaled
+// by the same corruption. Read ONCE at the instant an ant turns (the choir's
+// rule), so a Reliquary lost mid-charm never shortens a charm it already paid.
+function relicHold(S, side) {
+  const CR = S.cfg.CORRUPT;
+  if (!standing(S, side, 'relic')) return 1;
+  return Math.min(CR.relicMax, 1 + CR.relicGain * tithePips(S, side));
 }
 // T34: every building that channels a charm. The Chorus Hall is a charmer with a
 // slower channel, so the pass, the bell's "never the last one" guard and the
@@ -952,11 +1041,11 @@ function stepField(S, dt) {
       const i = fieldRow(S, s.y) * F.cols + laneC;
       g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
     }
-    // slime trails: a marching ROT body smears its own cell only - a line, not
+    // slime trails: a marching SEEP body smears its own cell only - a line, not
     // a blot, and it is laid exactly where the fight happens.
     // T27 made the SOURCE a per-unit factor rather than "is it a shambler":
     // measured, a den swapped for a slither den cost 215 of 262 hill damage,
-    // because what a den really sells ROT is the TRAIL (income, dot, corrode
+    // because what a den really sells SEEP is the TRAIL (income, dot, corrode
     // and the hill strangle all read `fieldSum`) and the unit is the smaller
     // half of it. A skirmisher that skates on slime leaves slime. The rate is
     // per SECOND in a cell, so a hasted body self-limits: crossing at 1.5x
@@ -1066,7 +1155,7 @@ function musterCount(S, side) {
 const LEVELABLE = ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss'];
 // levels speed a drum-shifter's PRODUCTION like any brood; the beat delta
 // stays one step per building, so the metronome is read by counting them.
-// null means the faction has no drum at all (ROT): nothing musters, so
+// null means the faction has no drum at all (SEEP): nothing musters, so
 // nothing is waiting for a beat.
 function drumPeriod(S, side) {
   if (!faction(S, side).drum) return null;
@@ -1104,7 +1193,7 @@ function buildOptions(S, side, slotIdx) {
   const out = f.kit ? opts.filter(t => f.kit.includes(t)) : opts;
   // T27: a type may be BOTH a trunk and a leaf. Before the Ooze Den grew a
   // child no type was, so the tree branch could swallow 'lvl' - and a den that
-  // gained one would have silently lost ROT's main gold sink. Appended after
+  // gained one would have silently lost SEEP's main gold sink. Appended after
   // the kit filter, so a faction that owns the den but not the child keeps its
   // levels rather than getting a dead slot.
   if (slot.type !== null && LEVELABLE.includes(slot.type) && slot.lvl < S.cfg.MAX_LVL) out.push('lvl');
@@ -1430,7 +1519,7 @@ function stepEconomy(S, dt) {
 }
 
 // hatcheries produce into the muster; guard posts keep their squad manned.
-// A stamping faction (PISTON) breeds nothing: the same buildings pour mass
+// A stamping faction (FOUNDRY) breeds nothing: the same buildings pour mass
 // into the press, capped, and the drum stamps it.
 function stepProduction(S, dt) {
   const cfg = S.cfg;
@@ -1467,7 +1556,7 @@ function stepProduction(S, dt) {
         // the stolen building now, wait there, and release on the corruptor's
         // beat - hatching invisibly at the far nest is what made a flipped
         // hatchery read dead on screen. Siege range at birth is the designed
-        // catastrophe (VEIL > PISTON rides on it), not an accident.
+        // catastrophe (VEIL > FOUNDRY rides on it), not an accident.
         const at = slot.flipped ? { x: slot.x, y: slot.y } : null;
         for (let n = prod.bloom || 1; n > 0; n--) spawnUnit(S, es, prod.unit, at);
         slot.prodCd += prodPeriod(prod) / lvlPower(S, slot);
@@ -1563,17 +1652,29 @@ function stepAuras(S, dt) {
   // intensity where they stand. Guards are included - paint lapping the nest
   // is defence-in-depth turned inside out; only the muster is exempt.
   for (const side of ['p', 'e']) {
-    if (S.fieldSum[side] <= 0) continue;
+    // T44: a Thicket is a patch of creep that is always thick, so it belongs
+    // to this pass rather than owning one - it raises the intensity a wader
+    // reads, and every consequence is the curve above. It writes nothing into
+    // the grid, so `fieldSum` (and SEEP's area income) never sees it.
+    const thick = [];
+    for (const slot of S.slots[side]) {
+      if (slot.type === 'thicket' && !underway(slot)) thick.push(slot);
+    }
+    if (S.fieldSum[side] <= 0 && !thick.length) continue;
+    const TH = cfg.TOWERS.thicket;
     const foe = other(side);
     for (const u of S.units) {
       if (u.side !== foe || u.state === 'muster') continue;
-      const k = fieldAt(S, side, u.x, u.y);
+      let k = fieldAt(S, side, u.x, u.y);
+      for (const slot of thick) {
+        if (Math.hypot(u.x - slot.x, u.y - slot.y) < TH.range) k = Math.max(k, TH.dense);
+      }
       if (k <= 0) continue;
       u.slowed = Math.min(u.slowed || 1, 1 + (CR.slow - 1) * k);
       u.hp -= CR.dot * k * dt;
     }
     // T6c PAINT_HEALS: the same ground knits your own bodies back together,
-    // so ROT's paint is a field hospital as well as a minefield
+    // so SEEP's paint is a field hospital as well as a minefield
     if (cfg.SPICE.heal > 0) {
       for (const u of S.units) {
         if (u.side !== side || u.state === 'muster') continue;
@@ -2048,8 +2149,10 @@ function stepConverters(S, dt) {
       // T34: a standing Chorus Hall stretches the hold and stiffens the convert.
       // Both are read HERE, once - a hall lost mid-charm does not un-sing what
       // it already sang, and `dps0` is what lets the revert put the ant back.
+      // T45: ...and a Reliquary stretches it again, by however much corruption
+      // is standing on the foe's board at this instant.
       u.charmT = Math.max(spec.charmMin, spec.charmHpSec / hostHp) * lvlPower(S, slot)
-        * (choir ? choir.choirCharm : 1);
+        * (choir ? choir.choirCharm : 1) * relicHold(S, side);
       if (choir) { u.dps0 = u.dps; u.dps *= choir.choirDps; }
       // it about-faces on the spot and fights at once: no walk home to the
       // muster, and no protection on the way - a convert is shootable now
@@ -2173,6 +2276,7 @@ return {
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
   fieldCol, fieldRow, faction, costOf, pressRate, gearOf, tithePips,
+  titheOf, relicHold,
   // exported for the selftest only: a building dies where damage lands, and
   // there is no hp<=0 sweep, so a guard for the flywheel knock has to call it -
   // and implantPip is the flip's only writer, so a guard for the last pip has to

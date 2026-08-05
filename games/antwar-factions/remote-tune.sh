@@ -13,8 +13,14 @@ JOBS="${JOBS:-20}"
 # it evolves K times, so budget K x the time of a single evolve.
 # ./remote-tune.sh coevolve 3 15 24 (T22) evolves rounds x factions times, so
 # budget 9 x a single evolve plus four duel grids.
+# ./remote-tune.sh bank 20 24 (T37) breeds the adaptive counters - one evolve per
+# faction per bank rule against a SINGLE opponent, so budget 20 cheap evolves;
+# it needs the coevolve seats cached first. `adaptive` only prints, so it is safe
+# here too (and wants the bank already bred).
 # nohup ./remote-tune.sh sweep sweep-spec.example.json 2000 9 & is the overnight
 # number search (T8); sweep-results.json comes back with it.
+# NOT export-champions: that mode WRITES champions.js, and only the results
+# files come back - run it locally once the champions have synced down.
 SPICE_ENV=""
 [ -n "${SPICE:-}" ] && SPICE_ENV="SPICE=$SPICE"
 FACTION_ENV=""
