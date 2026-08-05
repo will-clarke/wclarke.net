@@ -51,6 +51,7 @@ const LABELS = {
   hatch: 'Smelter', swarmb: 'Swarm', soldierb: 'Steel', majorb: 'Major', sapperb: 'Sapper', predatorb: 'Predator',
   hornb: 'Horn', fifeb: 'Whistle', oozeb: 'Ooze', grubb: 'Pig Iron', slitherb: 'Slither',
   carrierb: 'Loom', kiss: 'Echo',
+  sprout: 'Sprout', spindle: 'Spindle',
 };
 // T47: the farm chain is the only type two carved factions SHARE, so it is the
 // only label that needs a per-faction word - FOUNDRY mills its gold out of the
@@ -95,6 +96,8 @@ const DESC = {
   slitherb: 'frail skirmishers: race across YOUR stain, crawl off it',
   carrierb: 'carriers: no damage at all - they touch a foe building and stake a claim',
   kiss: 'breeds nothing: claims crawl from each claimed building to its nearest neighbour',
+  sprout: 'a cheap bud that weeps a little stain - no reach, no gold of its own',
+  spindle: 'a small slow loom: one carrier now and then, cheap enough to start taking early',
   lvl: 'level up: more power, superlinear cost',
 };
 
@@ -598,6 +601,14 @@ function typeStats(slot) {
               + Math.round(CR.slow * 100) + '% and take ' + CR.dot + ' dps, buildings ' + CR.corrode + ' dps',
             'it dissolves untended and foe guns burn it back',
             'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP + ' - mortars and a rival stain can kill it'];
+  }
+  if (t === 'sprout') {
+    const CR = CFG.CREEP;
+    return ['a bud of the stain: a small puddle, paid by area like all your ground',
+            'weeps at ' + Math.round(CR.sproutEmit / CR.emit * 100) + '% of a Wellspring\'s rate,'
+              + ' no flat gold, and it never reaches for the lane',
+            'cheap enough to plant while you save - and to plant MANY',
+            'hp ' + Math.ceil(slot.hp) + '/' + CFG.TOWER_HP];
   }
   const hpLine = 'hp ' + Math.ceil(slot.hp) + '/' + Math.round(CFG.TOWER_HP * k);
   if (t === 'governor' || t === 'redline') {
@@ -1736,6 +1747,16 @@ function drawSlot(slot, side, idx, time) {
     for (const [dx, dy] of [[-5, -2], [4, 3], [1, -5], [-2, 4], [7, -3]]) {
       ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.6, 0, 7); ctx.fill();
     }
+  } else if (slot.type === 'sprout') {
+    // T51: the Wellspring's little sibling - one breathing bud, no lane arm
+    const col = side === 'p' ? '110,140,80' : '150,70,110';
+    const pulse = 1 + 0.1 * Math.sin(time * 3 + slot.x);
+    ctx.fillStyle = 'rgba(' + col + ',0.3)';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 13 * pulse, 9 * pulse, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(' + col + ',0.8)';
+    ctx.beginPath(); ctx.ellipse(slot.x, slot.y, 7, 5.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,240,200,0.7)';
+    ctx.beginPath(); ctx.arc(slot.x + 1, slot.y - 2, 1.4, 0, 7); ctx.fill();
   } else if (slot.type === 'hatch') {
     if (fac === 'foundry') {
       // T40: the Smelter - a riveted furnace dome with a glowing mouth. It
@@ -1821,6 +1842,12 @@ function drawSlot(slot, side, idx, time) {
     ctx.strokeStyle = 'rgba(201,160,232,' + (0.3 + 0.2 * Math.sin(time * 2)) + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 2, 15 + Math.sin(time * 2) * 2, 0, 7); ctx.stroke();
+  } else if (slot.type === 'spindle') {
+    // T51: the Loom's little sibling - one small pod, a thinner slower ring
+    drawEggs(slot, [[0, 2, 7]], '#c9a0e8');
+    ctx.strokeStyle = 'rgba(201,160,232,' + (0.2 + 0.15 * Math.sin(time * 1.2)) + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(slot.x, slot.y - 1, 10 + Math.sin(time * 1.2) * 1.5, 0, 7); ctx.stroke();
   } else if (slot.type === 'kiss') {
     // a violet bloom that OPENS on the pulse. Deliberately no reach ring: the
     // radius is measured between the FOE's slots, not from this building, so a
@@ -2667,6 +2694,19 @@ function drawKitIcon(type, x, y) {
     ctx.beginPath(); ctx.arc(x, y, 11, 0, 7); ctx.stroke();
     ctx.fillStyle = '#c9a0e8';
     ctx.beginPath(); ctx.ellipse(x, y, 6, 7.5, 0, 0, 7); ctx.fill();
+  } else if (type === 'sprout') {
+    ctx.fillStyle = 'rgba(110,140,80,0.45)';
+    ctx.beginPath(); ctx.ellipse(x, y + 1, 8, 5.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(110,140,80,0.95)';
+    ctx.beginPath(); ctx.ellipse(x, y + 1, 4.5, 3.5, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,240,200,0.8)';
+    ctx.beginPath(); ctx.arc(x + 1, y - 1, 1, 0, 7); ctx.fill();
+  } else if (type === 'spindle') {
+    ctx.strokeStyle = 'rgba(201,160,232,0.4)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(x, y, 8, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#c9a0e8';
+    ctx.beginPath(); ctx.ellipse(x, y, 4, 5, 0, 0, 7); ctx.fill();
   } else {
     ctx.strokeStyle = '#c8a060';
     ctx.lineWidth = 2;
@@ -2708,8 +2748,11 @@ function drawSelect() {
     wrapText(f.blurb, c.x + 16, c.y + 44, c.w - 32, 15);
     ctx.textAlign = 'center';
     ctx.globalAlpha = on ? 1 : 0.55;
+    // T51: four roots now (the rungs) - clamp spacing so the row stays inside
+    // the card; at three roots this is the old 120 exactly.
+    const step = Math.min(120, (c.w - 120) / Math.max(1, f.roots.length - 1));
     for (let i = 0; i < f.roots.length; i++) {
-      const ix = c.x + 60 + i * 120, iy = c.y + 76;
+      const ix = c.x + 60 + i * step, iy = c.y + 76;
       drawKitIcon(f.roots[i], ix, iy);
       ctx.fillStyle = on ? '#c8b08c' : 'rgba(170,150,120,0.8)';
       ctx.font = '9px sans-serif';

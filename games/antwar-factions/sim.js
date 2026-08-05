@@ -73,6 +73,11 @@ const CONFIG = {
                         // this their paint only reaches the fight via shambler
                         // trails - this is the arm that connects fountain to
                         // lane, and what makes the field pulse toward it.
+    sproutEmit: 0.28,   // /s under a Sprout (T50): the 50g rung's WHOLE
+                        // output - no lane arm, no flat income, so what a
+                        // Wellspring's 180g buys over three of these is the
+                        // road to the fight plus the 2.5. TUNE-LATER: sized
+                        // so per-gold blob income sits just under the Mat's.
     flow: 0.6,          // /s spread toward lower-intensity neighbours
     seep: 0.15,         // /s of a cell's paint advected one row toward the foe
     backSeep: 0.05,     // /s advected one row toward HOME. Net transport stays
@@ -176,12 +181,12 @@ const CONFIG = {
   // buildings: empty slot -> farm | tower | hatch; then one upgrade tree each
   COSTS: {
     farm: 80, grove: 90, plant: 120, mat: 100, governor: 110, redline: 110,
-    deep: 130, relic: 140,
+    deep: 130, relic: 140, sprout: 50,
     tower: 100, sharp: 120, spit: 120, sap: 100, guard: 110, mortar: 220, conv: 160,
     dynamo: 130, coil: 140, rampart: 120, bell: 120, hall: 150, thicket: 100,
     hatch: 90, swarmb: 70, soldierb: 80, majorb: 130, sapperb: 110, predatorb: 100,
     hornb: 100, fifeb: 80, oozeb: 90, grubb: 50, slitherb: 80, carrierb: 80,
-    kiss: 150,
+    kiss: 150, spindle: 60,
   },
   UPGRADE_TREE: {
     // T26: a gear can be fitted anywhere on the farm CHAIN, not just to a
@@ -193,11 +198,15 @@ const CONFIG = {
     // T45: VEIL's two eco leaves ride the same chain for the same reason - a
     // brain that levels its farms owns no plain farm late, and VEIL's opening
     // IS the farm chain. They are the only thing on it that is not a gear.
-    farm:  ['grove', 'mat', 'governor', 'redline', 'deep', 'relic'],
+    // T50: 'sprout' rides the farm tree for the SANDBOX only - seep grows it
+    // from bare ground (a root, like the thicket: its own cheap trunk, not a
+    // spec that skipped one) and no other kit contains it, so the entry is
+    // invisible everywhere the farm is live.
+    farm:  ['grove', 'mat', 'governor', 'redline', 'deep', 'relic', 'sprout'],
     grove: ['plant', 'governor', 'redline', 'deep', 'relic'],
     plant: ['governor', 'redline', 'deep', 'relic'],
     tower: ['sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'bell', 'dynamo', 'coil', 'rampart', 'thicket'],
-    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'carrierb'],
+    hatch: ['swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'carrierb', 'spindle'],
     // T27: SEEP's offence root is the Ooze Den, so its ONE specialisation has
     // to hang here - hung off `hatch` it would be born unreachable for the
     // only faction that owns it (T21's dead-mix-key diagnosis, T42's fix).
@@ -287,6 +296,12 @@ const CONFIG = {
     // that is a ceiling and not a rate. NOT in foundry.kit: the press reduces a
     // brood to (hp/s, dps/s) and a carrier's whole product is neither.
     carrierb: { unit: 'carrier', interval: 5 },
+    // T50: the Spindle - VEIL's cheap rung (the grubb ruling: a rung is a
+    // price step on ONE ladder, and price is the only axis). Same carrier,
+    // a third of the Loom's rate for just over a third of its price, so the
+    // Loom stays strictly better per gold AND per slot AND levelable - what
+    // 60g buys is the taking STARTING at t=0 instead of t=45. TUNE-LATER.
+    spindle: { unit: 'carrier', interval: 15 },
   },
   TOWERS: {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
@@ -713,9 +728,9 @@ function count(S, side, type) {
   return n;
 }
 const FAMILIES = {
-  eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline', 'deep', 'relic'],
+  eco: ['farm', 'grove', 'plant', 'mat', 'governor', 'redline', 'deep', 'relic', 'sprout'],
   def: ['tower', 'sharp', 'spit', 'sap', 'guard', 'mortar', 'conv', 'dynamo', 'coil', 'rampart', 'bell', 'hall', 'thicket'],
-  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss'],
+  off: ['hatch', 'swarmb', 'soldierb', 'majorb', 'sapperb', 'predatorb', 'hornb', 'fifeb', 'oozeb', 'grubb', 'slitherb', 'carrierb', 'kiss', 'spindle'],
 };
 // every built thing can be shot down - farms and hatcheries included.
 // Nothing is safe just for being behind the line: an economy has to be
@@ -749,11 +764,14 @@ const FACTIONS = {
     // `cost` line because it is not a spec grown from bare ground - it IS
     // SEEP's trunk, and the sap and guard behind it pay the same 100 they
     // always paid behind a tower.
-    roots: ['mat', 'thicket', 'oozeb'],
+    // T50: 'sprout' is appended LAST on purpose - rootOf() takes the FIRST
+    // root in each family, so the Wellspring stays the eco root every old
+    // vector bids for and the rung needs its own key (sproutTarget) to exist.
+    roots: ['mat', 'thicket', 'oozeb', 'sprout'],
     // T27: 'slitherb' is a KIT entry only, never a root - it grows off the den,
     // so it pays no trunk price and needs no `cost` line (the T7a half-price
     // trap only bites a spec grown straight from bare ground).
-    kit: ['mat', 'thicket', 'guard', 'oozeb', 'slitherb'],
+    kit: ['mat', 'thicket', 'guard', 'oozeb', 'slitherb', 'sprout'],
     drum: false,
     // a spec grown straight from bare ground still pays for the trunk it
     // skipped (farm 80 + mat 100, hatch 90 + oozeb 90) - otherwise a faction
@@ -796,13 +814,14 @@ const FACTIONS = {
   // whatever it has claimed. Every gun VEIL ever fires is a stolen one.
   veil: {
     label: 'VEIL',
-    blurb: 'The thing that woke under the world. It cannot breed alone - it takes.',
+    blurb: 'The thing that woke under the world. It cannot spread alone - it takes.',
     // the bell and the loom are ROOTS, so both pay the trunk they skip
     // (tower 100 + bell 120 = 220 - which START_MONEY buys at t=0, the whole
     // point of open question 25's ruling; hatch 90 + carrierb 80). The
     // charmer is a LEAF of the bell now, at its plain 160. VEIL owning no
     // plain tower still deletes its tower-spec branch from the controller.
-    roots: ['farm', 'bell', 'carrierb'],
+    // T50: 'spindle' appended last for rootOf()'s sake, same as seep's sprout.
+    roots: ['farm', 'bell', 'carrierb', 'spindle'],
     // T31 measured purity FIRST, as the spec asked, and purity WON - but not
     // the way it was framed. The alternative carve (a 'hatch' off-root with
     // 'swarmb' beside the loom) does not SCREEN the carriers, it REPLACES them:
@@ -825,7 +844,7 @@ const FACTIONS = {
     // are landing. Neither competes for an offence slot (T31's law).
     kit: ['farm', 'grove', 'plant', 'deep', 'relic',
           'conv', 'bell', 'hall',
-          'carrierb', 'kiss'],
+          'carrierb', 'kiss', 'spindle'],
     drum: true,
     // T35: the bell root came down from 220 (tower 100 + bell 120, and exactly
     // START_MONEY, so the opening bell left VEIL with nothing). At 220 a
@@ -1060,7 +1079,7 @@ function stepField(S, dt) {
   for (const side of ['p', 'e']) {
     const g = S.field[side];
     let src = 0;
-    for (const s of S.slots[side]) if (s.type === 'mat' && !underway(s)) src++;
+    for (const s of S.slots[side]) if ((s.type === 'mat' || s.type === 'sprout') && !underway(s)) src++;
     if (!src) {
       for (const u of S.units) {
         if (u.side === side && u.typeKey === 'shambler' && u.state !== 'muster') { src++; break; }
@@ -1070,10 +1089,15 @@ function stepField(S, dt) {
 
     const laneC = fieldCol(S, cfg.LANE_CX);
     for (const s of S.slots[side]) {
-      if (s.type !== 'mat' || underway(s)) continue;
-      paintAt(S, g, s.x, s.y, CR.emit * dt);
-      const i = fieldRow(S, s.y) * F.cols + laneC;
-      g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
+      if (underway(s)) continue;
+      if (s.type === 'mat') {
+        paintAt(S, g, s.x, s.y, CR.emit * dt);
+        const i = fieldRow(S, s.y) * F.cols + laneC;
+        g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
+      } else if (s.type === 'sprout') {
+        // the rung's whole body: a local puddle, no lane arm
+        paintAt(S, g, s.x, s.y, CR.sproutEmit * dt);
+      }
     }
     // slime trails: a marching SEEP body smears its own cell only - a line, not
     // a blot, and it is laid exactly where the fight happens.
