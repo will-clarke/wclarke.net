@@ -248,6 +248,14 @@ for (const s of ['p', 'e']) if (!sim.FACTIONS[factionSel[s]]) factionSel[s] = 's
 function saveFactionSel() {
   try { localStorage.setItem('antwar-faction-pick', JSON.stringify(factionSel)); } catch (e) {}
 }
+// ?map=three plays a sim.MAPS lane preset (T19's experiment). Unknown names
+// are ignored; no picker on purpose - a finding, not a shipped map set.
+const MAP_NAME = (() => {
+  const q = new URLSearchParams(location.search).get('map');
+  return q && sim.MAPS[q] ? q : null;
+})();
+const MAP_OVERRIDE = MAP_NAME ? sim.MAPS[MAP_NAME] : null;
+const LANES = (MAP_OVERRIDE || CFG.MAP).lanes;
 // ?ai=queen picks the rung for testing (with ?faction=veil:foundry, the whole
 // matchup is one URL); the remembered pick is the fallback.
 let aiRung = (() => {
@@ -265,6 +273,7 @@ function newState(extra) {
   const ov = Object.assign({}, extra);
   if (SPICE_OVERRIDE) ov.SPICE = SPICE_OVERRIDE;
   if (FACTION_OVERRIDE && !ov.FACTION) ov.FACTION = FACTION_OVERRIDE;
+  if (MAP_OVERRIDE) ov.MAP = MAP_OVERRIDE;
   return sim.createState((Math.random() * 2 ** 31) | 0, ov);
 }
 function saveStars() {
@@ -290,6 +299,7 @@ function startReplay(opponent) {
   replay = {
     v: 'fx0.4', mode, opponent, seed: S.seed,
     faction: S.cfg.FACTION,      // both kits; without it a faction replay is unreconstructable
+    map: MAP_NAME,               // T19: lane preset, null = the classic lane
     // which brain actually played (T36): at a champion rung `opponent` is the
     // persona the player tapped and the champion is what they fought
     ai: mode === 'skirmish' ? { rung: aiRung, engine: CHAMPS ? CHAMPS.engine : null } : null,
@@ -1137,18 +1147,23 @@ function buildGround() {
     g.fillStyle = grad;
     g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
   }
-  // the dirt road down the middle
-  const road = g.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
-  road.addColorStop(0, 'rgba(130,100,68,0)');
-  road.addColorStop(0.25, 'rgba(140,110,76,0.8)');
-  road.addColorStop(0.75, 'rgba(140,110,76,0.8)');
-  road.addColorStop(1, 'rgba(130,100,68,0)');
-  g.fillStyle = road;
-  g.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
-  // a flank x: anywhere off the road (both flanks are 156px wide)
+  // the dirt road(s) the armies march - one per lane (T19)
+  for (const ln of LANES) {
+    const road = g.createLinearGradient(ln.cx - ln.half - 14, 0, ln.cx + ln.half + 14, 0);
+    road.addColorStop(0, 'rgba(130,100,68,0)');
+    road.addColorStop(0.25, 'rgba(140,110,76,0.8)');
+    road.addColorStop(0.75, 'rgba(140,110,76,0.8)');
+    road.addColorStop(1, 'rgba(130,100,68,0)');
+    g.fillStyle = road;
+    g.fillRect(ln.cx - ln.half - 14, 0, (ln.half + 14) * 2, UI_TOP);
+  }
+  // a flank x: anywhere off the roads
   const flankX = () => {
-    const w = LANE_CX - LANE_HALF - 20;
-    return Math.random() < 0.5 ? Math.random() * w : W - Math.random() * w;
+    for (let t = 0; t < 20; t++) {
+      const x = Math.random() * W;
+      if (LANES.every(ln => Math.abs(x - ln.cx) > ln.half + 20)) return x;
+    }
+    return Math.random() * W;
   };
   // grass tufts
   for (let i = 0; i < 130; i++) {
@@ -1220,13 +1235,15 @@ function drawGround() {
   if (!PLAIN) { ctx.drawImage(groundCv, 0, 0, W, H); return; }
   ctx.fillStyle = '#7a5c3e';
   ctx.fillRect(0, 0, W, H);
-  const g = ctx.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
-  g.addColorStop(0, '#7a5c3e');
-  g.addColorStop(0.2, '#96754f');
-  g.addColorStop(0.8, '#96754f');
-  g.addColorStop(1, '#7a5c3e');
-  ctx.fillStyle = g;
-  ctx.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
+  for (const ln of LANES) {
+    const g = ctx.createLinearGradient(ln.cx - ln.half - 14, 0, ln.cx + ln.half + 14, 0);
+    g.addColorStop(0, '#7a5c3e');
+    g.addColorStop(0.2, '#96754f');
+    g.addColorStop(0.8, '#96754f');
+    g.addColorStop(1, '#7a5c3e');
+    ctx.fillStyle = g;
+    ctx.fillRect(ln.cx - ln.half - 14, 0, (ln.half + 14) * 2, UI_TOP);
+  }
   ctx.fillStyle = 'rgba(0,0,0,1)';
   for (const p of pebbles) {
     ctx.globalAlpha = p.a;
@@ -1244,7 +1261,7 @@ fieldCv.width = FLD.cols; fieldCv.height = FLD.rows;
 const fieldCtx = fieldCv.getContext('2d');
 const fieldImg = fieldCtx.createImageData(FLD.cols, FLD.rows);
 const PAINT_RGB = { p: [104, 138, 72], e: [138, 62, 104] };
-const LANE_C = sim.fieldCol({ cfg: CFG }, CFG.LANE_CX);
+const LANE_CS = LANES.map(ln => sim.fieldCol({ cfg: CFG }, ln.cx));
 const rowWob = new Float64Array(FLD.rows);
 
 // T13's pulse: the wave travels OUT of the fountain rows, foe-ward in front
@@ -1273,7 +1290,8 @@ function drawCreep(time) {
     for (let i = 0; i < g.length; i++) {
       const k = g[i];
       d[i * 4] = rgb[0]; d[i * 4 + 1] = rgb[1]; d[i * 4 + 2] = rgb[2];
-      const amp = Math.abs((i % FLD.cols) - LANE_C) <= 1 ? 0.3 : 0.1;
+      const col = i % FLD.cols;
+      const amp = LANE_CS.some(c => Math.abs(col - c) <= 1) ? 0.3 : 0.1;
       // gamma < 1 keeps a wispy edge without a floor: a trace cell is a
       // faint stain, deep paint is a solid murky core you can read at a
       // glance (a linear ramp made the whole field one flat haze)

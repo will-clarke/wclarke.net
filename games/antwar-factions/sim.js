@@ -20,6 +20,13 @@ const CONFIG = {
   ENEMY_BASE: { x: 210, y: 82, r: 44 },
   PLAYER_BASE: { x: 210, y: 558, r: 44 },
   SIEGE_DIST: 72,
+  // T19: the lane LIST - the sim reads lanes from here; LANE_CX/LANE_HALF stay
+  // as the classic constants the renderer and old comments quote. Default is
+  // the single centre lane, and under it every code path must be byte-identical
+  // to pre-T19 (lane 0 always picked, no extra rng draw). `funnel` only matters
+  // with >1 lane: an outer lane crosses the nest's latitude wider than
+  // SIEGE_DIST, so inside the funnel a marcher steers for the nest itself.
+  MAP: { lanes: [{ cx: 210, half: 34 }], funnel: 150 },
   // 8 slots per side: A lane-hugging by the nest, B mid flank, C rear,
   // D forward outposts (reach the lane early, can't defend the nest).
   PLAYER_SLOTS: [
@@ -670,6 +677,7 @@ function createState(seed, overrides) {
     // Building pips live on the slot; these have nowhere else to sit. Floats -
     // a carrier may stake a fraction, and saturation compares `>=`.
     hillPips: { p: 0, e: 0 },
+    laneN: { p: 0, e: 0 },       // T19: round-robin lane pick (a counter, not rng)
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
@@ -738,6 +746,15 @@ const FAMILIES = {
 function demolishable(type) {
   return !!type;
 }
+// T19: named map presets - `?map=three` in the browser, `MAP=three` in
+// tune.js. Lanes vary only in x, so every preset mirrors exactly under
+// y' = 640 - y by construction. Slots and bases are deliberately untouched:
+// the 8-slot layout was designed around ONE lane, and what that does to a
+// three-lane board is part of what the experiment measures.
+const MAPS = {
+  three: { lanes: [{ cx: 70, half: 26 }, { cx: 210, half: 26 }, { cx: 350, half: 26 }], funnel: 150 },
+};
+
 // A faction is DATA, not a branch in step(): which building types it may
 // build (`kit`), what an empty slot offers (`roots`), whether it owns a war
 // drum at all, (T7b-a) an optional `income(S, side, gross)` hook and (T7b-b)
@@ -1087,12 +1104,12 @@ function stepField(S, dt) {
     }
     if (!src && S.fieldSum[side] <= 0) continue;   // nothing to simulate
 
-    const laneC = fieldCol(S, cfg.LANE_CX);
+    const laneCs = cfg.MAP.lanes.map(l => fieldCol(S, l.cx));
     for (const s of S.slots[side]) {
       if (underway(s)) continue;
       if (s.type === 'mat') {
         paintAt(S, g, s.x, s.y, CR.emit * dt);
-        const i = fieldRow(S, s.y) * F.cols + laneC;
+        const i = fieldRow(S, s.y) * F.cols + laneCs[laneIdxFor(cfg, s.x)];
         g[i] = Math.min(1, g[i] + CR.laneEmit * dt);
       } else if (s.type === 'sprout') {
         // the rung's whole body: a local puddle, no lane arm
@@ -1344,9 +1361,23 @@ function applyAction(S, side, action) {
   return true;
 }
 
+// T19: nearest lane to an x - deterministic, ties keep the earlier lane
+function laneIdxFor(cfg, x) {
+  const lanes = cfg.MAP.lanes;
+  let bi = 0;
+  for (let i = 1; i < lanes.length; i++) {
+    if (Math.abs(lanes[i].cx - x) < Math.abs(lanes[bi].cx - x)) bi = i;
+  }
+  return bi;
+}
+
 function musterSpot(S, side) {
-  // behind own nest, inside the lane
-  const x = S.cfg.LANE_CX + (S.rng() * 2 - 1) * (S.cfg.LANE_HALF - 6);
+  // behind own nest, inside the unit's lane. Lanes rotate on a per-side
+  // COUNTER, never an rng draw - a draw here would shift the stream for
+  // everything after it and no recorded match would replay.
+  const lanes = S.cfg.MAP.lanes;
+  const lane = lanes[S.laneN[side]++ % lanes.length];
+  const x = lane.cx + (S.rng() * 2 - 1) * (lane.half - 6);
   const y = side === 'p' ? 600 + S.rng() * 30 : 40 - S.rng() * 30;
   return { x, y };
 }
@@ -1483,8 +1514,9 @@ function guardsAlive(S, side, slotIdx) {
 function spawnGuard(S, side, slotIdx) {
   const cfg = S.cfg, slot = S.slots[side][slotIdx];
   const t = cfg.UNITS.guard, k = lvlPower(S, slot);
-  const ax = Math.max(cfg.LANE_CX - cfg.LANE_HALF + 8,
-    Math.min(cfg.LANE_CX + cfg.LANE_HALF - 8, slot.x));
+  const lane = cfg.MAP.lanes[laneIdxFor(cfg, slot.x)];
+  const ax = Math.max(lane.cx - lane.half + 8,
+    Math.min(lane.cx + lane.half - 8, slot.x));
   S.units.push({
     side, typeKey: 'guard',
     x: slot.x, y: slot.y,
@@ -1937,7 +1969,15 @@ function stepUnits(S, dt) {
 
     const nest = u.side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
     if (u.state === 'march') {
-      u.y += (u.side === 'p' ? -1 : 1) * u.spd * mv * dt;
+      if (cfg.MAP.lanes.length > 1 && Math.abs(nest.y - u.y) < cfg.MAP.funnel) {
+        // T19 funnel: an outer lane crosses the nest's latitude wider than
+        // SIEGE_DIST, so from here a marcher steers for the nest itself
+        const dx = nest.x - u.x, dy = nest.y - u.y, d = Math.hypot(dx, dy) || 1;
+        u.x += (dx / d) * u.spd * mv * dt;
+        u.y += (dy / d) * u.spd * mv * dt;
+      } else {
+        u.y += (u.side === 'p' ? -1 : 1) * u.spd * mv * dt;
+      }
       if (Math.hypot(u.x - nest.x, u.y - nest.y) < cfg.SIEGE_DIST) {
         u.state = 'siege';
         const sp = siegeSpot(u, nest);
@@ -2381,7 +2421,7 @@ function playMatch(ctrlP, ctrlE, seed, overrides) {
 }
 
 return {
-  CONFIG, createState, applyAction, step, playMatch, buildOptions,
+  CONFIG, MAPS, createState, applyAction, step, playMatch, buildOptions,
   count, familyCount, income, musterCount, other, mulberry32,
   lvlCost, lvlPower, sellRefund, drumPeriod, creepHome, creepAdvance,
   fieldCol, fieldRow, faction, costOf, pressRate, gearOf, tithePips,

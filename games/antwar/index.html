@@ -49,7 +49,11 @@ const LABELS = {
 
 const PERSONA_ORDER = ['bloom', 'tussock', 'rustle', 'optimum'];
 const PERSONA_BTNS = PERSONA_ORDER.map((key, i) => ({
-  key, x: 24, y: 390 + i * 80, w: W - 48, h: 68,
+  key, x: 24, y: 456 + i * 66, w: W - 48, h: 58,
+}));
+const MAP_ORDER = Object.keys(CFG.MAPS);
+const MAP_BTNS = MAP_ORDER.map((key, i) => ({
+  key, x: 24 + i * 95, y: 372, w: 87, h: 40,
 }));
 
 // campaign trail: a winding path up the screen, boss node centred on top
@@ -94,6 +98,7 @@ function startReplay(opponent) {
   replay = {
     v: 'v1.0', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
+    map: S.map.key,
     startedAt: new Date().toISOString(),
     actions: [],               // {tk: sim tick index, slot, type} ('sell' sells)
   };
@@ -157,6 +162,7 @@ let earnedUnlock = null;         // reward looted on a first win, for the end sc
 let S = null;
 let enemyCtrl = null;
 let personaKey = PERSONA_ORDER[0];
+let mapKey = 'clash';            // skirmish battlefield pick (campaign: per level)
 let matchResult = '';
 let banners = [];
 let openSlot = null;
@@ -239,7 +245,7 @@ function resetMatchFx() {
 function begin(key) {           // skirmish: pick a persona, symmetric start
   mode = 'skirmish';
   personaKey = key;
-  S = sim.createState((Math.random() * 2 ** 31) | 0);
+  S = sim.createState((Math.random() * 2 ** 31) | 0, { MAP: mapKey });
   // the champion also gets its campaign-boss reaction speed here
   enemyCtrl = pol.makeController(pol.PERSONAS[key].params,
     key === 'optimum' ? { thinkEvery: 0.5 } : undefined);
@@ -251,7 +257,7 @@ function beginLevel(i) {        // campaign: level AI + level setup + kits
   mode = 'campaign';
   currentLevel = i;
   const L = pol.LEVELS[i];
-  S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null });
+  S = sim.createState((Math.random() * 2 ** 31) | 0, { SETUP: L.setup || null, MAP: L.map || 'clash' });
   // the enemy escalates in step with the ladder: player-kit-so-far plus
   // this level's own loot (and any extraKit showcase)
   enemyCtrl = pol.makeController(L.ai.params, {
@@ -321,6 +327,9 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
   if (phase === 'skirmish') {
+    for (const b of MAP_BTNS) {
+      if (inRect(x, y, b)) { mapKey = b.key; return; }
+    }
     for (const b of PERSONA_BTNS) {
       if (inRect(x, y, b)) { begin(b.key); return; }
     }
@@ -433,16 +442,29 @@ function advance(dtReal) {
 }
 
 // ------------------------------------------------------------------ draw ---
-function drawGround() {
+function drawGround(map) {
   ctx.fillStyle = '#7a5c3e';
   ctx.fillRect(0, 0, W, H);
-  const g = ctx.createLinearGradient(LANE_CX - LANE_HALF - 14, 0, LANE_CX + LANE_HALF + 14, 0);
-  g.addColorStop(0, '#7a5c3e');
-  g.addColorStop(0.2, '#96754f');
-  g.addColorStop(0.8, '#96754f');
-  g.addColorStop(1, '#7a5c3e');
-  ctx.fillStyle = g;
-  ctx.fillRect(LANE_CX - LANE_HALF - 14, 0, (LANE_HALF + 14) * 2, UI_TOP);
+  // lane bands: player base -> waypoints -> enemy base, plus vertical stubs
+  // to the muster zones. Two-pass stroke fakes the old soft gradient edge.
+  const m = map || { laneHalf: LANE_HALF, lanes: [[]] };
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0, 0, W, UI_TOP); ctx.clip();
+  ctx.lineJoin = 'round';
+  for (const path of m.lanes) {
+    const pts = [{ x: LANE_CX, y: UI_TOP }, CFG.PLAYER_BASE]
+      .concat(path)
+      .concat([CFG.ENEMY_BASE, { x: LANE_CX, y: 0 }]);
+    for (const pass of [{ pad: 14, col: '#88684a' }, { pad: 4, col: '#96754f' }]) {
+      ctx.strokeStyle = pass.col;
+      ctx.lineWidth = (m.laneHalf + pass.pad) * 2;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
   ctx.fillStyle = 'rgba(0,0,0,1)';
   for (const p of pebbles) {
     ctx.globalAlpha = p.a;
@@ -803,7 +825,7 @@ function roundRect(x, y, w, h, r) {
 }
 
 function drawMatch(time) {
-  drawGround();
+  drawGround(S.map);
   drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
   drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);
@@ -975,7 +997,25 @@ function drawSkirmish() {
   lines.forEach((l, i) => ctx.fillText(l, LANE_CX, 176 + i * 22));
   ctx.fillStyle = '#ffffff';
   ctx.font = 'bold 16px sans-serif';
-  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 368);
+  ctx.fillText('BATTLEFIELD', LANE_CX, 356);
+  for (const b of MAP_BTNS) {
+    const m = CFG.MAPS[b.key];
+    const sel = b.key === mapKey;
+    ctx.fillStyle = sel ? '#40331c' : '#2c2014';
+    ctx.strokeStyle = sel ? '#ffd870' : '#7a5f40';
+    ctx.lineWidth = 2;
+    roundRect(b.x, b.y, b.w, b.h, 8);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = sel ? '#ffd870' : '#d8c0a0';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(m.label, b.x + b.w / 2, b.y + 15);
+    ctx.fillStyle = '#a89070';
+    ctx.font = '9px sans-serif';
+    ctx.fillText(m.sub, b.x + b.w / 2, b.y + 30);
+  }
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 16px sans-serif';
+  ctx.fillText('CHOOSE YOUR OPPONENT', LANE_CX, 440);
   for (const b of PERSONA_BTNS) {
     const persona = pol.PERSONAS[b.key];
     const boss = b.key === 'optimum';
@@ -986,15 +1026,15 @@ function drawSkirmish() {
     ctx.fill(); ctx.stroke();
     ctx.fillStyle = '#ffd870';
     ctx.font = 'bold 16px sans-serif';
-    ctx.fillText(persona.label, LANE_CX, b.y + 22);
+    ctx.fillText(persona.label, LANE_CX, b.y + 20);
     ctx.fillStyle = '#d8c0a0';
     ctx.font = '11px sans-serif';
-    ctx.fillText(persona.intro, LANE_CX, b.y + 46);
+    ctx.fillText(persona.intro, LANE_CX, b.y + 42);
   }
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '12px sans-serif';
-  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 724);
-  ctx.fillText('tap anywhere else for the trail', LANE_CX, 744);
+  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 736);
+  ctx.fillText('tap anywhere else for the trail', LANE_CX, 754);
 }
 
 function drawEnd() {

@@ -46,6 +46,58 @@ const CONFIG = {
     { x: 140, y: 290 }, { x: 280, y: 290 },
   ],
 
+  // battlefield variants: same rules, different roads. Each lane is a list
+  // of PLAYER-side waypoints (own base toward the enemy); the enemy walks
+  // the y-mirror. Waypoint y-pairs sum to 640 so both armies march the same
+  // drawn corridor. Slots keep the classic role order (0-1 nest guards,
+  // 2-3 mid flank, 4-5 rear eco, 6-7 forward outposts) so policies transfer
+  // unchanged; the enemy side is auto-mirrored. clash keeps lanes:[[]] and
+  // slots:null = the exact legacy geometry/code path above (no re-tuning).
+  MAP: 'clash',
+  MAPS: {
+    clash: { label: 'Clash', sub: 'one lane', laneHalf: 34, lanes: [[]], slots: null },
+    pincer: {
+      label: 'Pincer', sub: 'two lanes', laneHalf: 24,
+      lanes: [
+        [{ x: 120, y: 465 }, { x: 120, y: 175 }],
+        [{ x: 300, y: 465 }, { x: 300, y: 175 }],
+      ],
+      slots: [
+        { x: 95,  y: 505 }, { x: 325, y: 505 },
+        { x: 75,  y: 400 }, { x: 345, y: 400 },
+        { x: 40,  y: 585 }, { x: 380, y: 585 },
+        { x: 160, y: 350 }, { x: 260, y: 350 },
+      ],
+    },
+    trident: {
+      label: 'Trident', sub: 'three lanes', laneHalf: 22,
+      lanes: [
+        [{ x: 70, y: 520 }, { x: 70, y: 120 }],
+        [],
+        [{ x: 350, y: 520 }, { x: 350, y: 120 }],
+      ],
+      slots: [
+        { x: 140, y: 485 }, { x: 280, y: 485 },
+        { x: 140, y: 405 }, { x: 280, y: 405 },
+        { x: 40,  y: 585 }, { x: 380, y: 585 },
+        { x: 110, y: 350 }, { x: 310, y: 350 },
+      ],
+    },
+    hourglass: {
+      label: 'Hourglass', sub: 'crossing lanes', laneHalf: 26,
+      lanes: [
+        [{ x: 130, y: 465 }, { x: 210, y: 320 }, { x: 130, y: 175 }],
+        [{ x: 290, y: 465 }, { x: 210, y: 320 }, { x: 290, y: 175 }],
+      ],
+      slots: [
+        { x: 110, y: 510 }, { x: 310, y: 510 },
+        { x: 105, y: 420 }, { x: 315, y: 420 },
+        { x: 45,  y: 555 }, { x: 375, y: 555 },
+        { x: 140, y: 355 }, { x: 280, y: 355 },
+      ],
+    },
+  },
+
   // balance
   BASE_HP: 240,
   START_MONEY: 220,
@@ -135,6 +187,8 @@ function other(side) { return side === 'p' ? 'e' : 'p'; }
 
 function createState(seed, overrides) {
   const cfg = Object.assign({}, CONFIG, overrides || {});
+  const mapDef = cfg.MAPS[cfg.MAP] || cfg.MAPS.clash;
+  const mirrorPt = pt => ({ x: pt.x, y: cfg.PLAYER_BASE.y + cfg.ENEMY_BASE.y - pt.y });
   // spent tracks all gold sunk into the slot (build + upgrades) for refunds
   const slotRow = pos => ({ x: pos.x, y: pos.y, type: null, lvl: 1, cd: 0, prodCd: 0, hp: 0, spent: 0 });
   const S = {
@@ -148,9 +202,16 @@ function createState(seed, overrides) {
     money: { p: cfg.START_MONEY, e: cfg.START_MONEY },
     baseHP: { p: cfg.BASE_HP, e: cfg.BASE_HP },
     slots: {
-      p: cfg.PLAYER_SLOTS.map(slotRow),
-      e: cfg.ENEMY_SLOTS.map(slotRow),
+      p: (mapDef.slots || cfg.PLAYER_SLOTS).map(slotRow),
+      e: (mapDef.slots ? mapDef.slots.map(mirrorPt) : cfg.ENEMY_SLOTS).map(slotRow),
     },
+    map: {
+      key: cfg.MAPS[cfg.MAP] ? cfg.MAP : 'clash',
+      laneHalf: mapDef.laneHalf,
+      lanes: mapDef.lanes,
+      paths: { p: mapDef.lanes, e: mapDef.lanes.map(path => path.map(mirrorPt)) },
+    },
+    laneNext: { p: 0, e: 0 },    // round-robin lane assignment per side
     units: [],
     shots: [],                   // presentational, consumed by the renderer
     events: [],                  // presentational, consumed by the renderer
@@ -275,8 +336,9 @@ function applyAction(S, side, action) {
 }
 
 function musterSpot(S, side) {
-  // behind own nest, inside the lane
-  const x = S.cfg.LANE_CX + (S.rng() * 2 - 1) * (S.cfg.LANE_HALF - 6);
+  // behind own nest, inside the centre column (armies fan out to their
+  // lanes on the march)
+  const x = S.cfg.LANE_CX + (S.rng() * 2 - 1) * (S.map.laneHalf - 6);
   const y = side === 'p' ? 600 + S.rng() * 30 : 40 - S.rng() * 30;
   return { x, y };
 }
@@ -309,6 +371,12 @@ function spawnUnit(S, side, slot) {
     fx: 0,                       // renderer hint: fighting this tick
   };
   u.maxHp = u.hp;
+  // multi-lane maps: round-robin lane assignment (even, fair, no rng), a
+  // fixed lateral offset so a lane's army keeps its width at waypoints
+  u.lane = S.laneNext[side] % S.map.paths.p.length;
+  S.laneNext[side]++;
+  u.wp = 0;
+  u.off = ((u.seed % 1) * 2 - 1) * (S.map.laneHalf - 6);
   S.units.push(u);
   S.hatched[side][unitKey]++;
 }
@@ -457,8 +525,30 @@ function step(S) {
 
     const nest = u.side === 'p' ? cfg.ENEMY_BASE : cfg.PLAYER_BASE;
     if (u.state === 'march') {
-      u.my = (u.side === 'p' ? -1 : 1) * u.spd * dt;
-      if (Math.hypot(u.x - nest.x, u.y + u.my - nest.y) < cfg.SIEGE_DIST) {
+      // march the assigned lane: waypoint after waypoint, then the nest.
+      // The empty path (clash / trident centre) is the legacy straight
+      // march. Fights shove units around, so waypoints already passed in
+      // the march direction are skipped, not walked back to.
+      const path = S.map.paths[u.side][u.lane];
+      while (u.wp < path.length) {
+        const wx = path[u.wp].x + u.off, wy = path[u.wp].y;
+        const passed = u.side === 'p' ? u.y <= wy : u.y >= wy;
+        if (passed || Math.hypot(wx - u.x, wy - u.y) < 12) { u.wp++; continue; }
+        break;
+      }
+      if (u.wp < path.length) {
+        const wx = path[u.wp].x + u.off, wy = path[u.wp].y;
+        const d = Math.hypot(wx - u.x, wy - u.y);
+        u.mx = ((wx - u.x) / d) * u.spd * dt;
+        u.my = ((wy - u.y) / d) * u.spd * dt;
+      } else if (path.length) {
+        const d = Math.hypot(nest.x - u.x, nest.y - u.y) || 1;
+        u.mx = ((nest.x - u.x) / d) * u.spd * dt;
+        u.my = ((nest.y - u.y) / d) * u.spd * dt;
+      } else {
+        u.my = (u.side === 'p' ? -1 : 1) * u.spd * dt;
+      }
+      if (Math.hypot(u.x + u.mx - nest.x, u.y + u.my - nest.y) < cfg.SIEGE_DIST) {
         u.state = 'siege';
         const sp = siegeSpot(u, nest);
         u.sx = sp.x; u.sy = sp.y;
