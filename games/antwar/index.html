@@ -75,6 +75,7 @@ const EXPORT_BTN = { x: 110, y: 752, w: 200, h: 24 };
 let stars = {};
 try { stars = JSON.parse(localStorage.getItem('antwar-v1-stars') || '{}') || {}; } catch (e) {}
 let unlocks = pol.unlocksFrom(stars);
+const FULL_KIT = pol.fullKit();
 function saveStars() {
   try { localStorage.setItem('antwar-v1-stars', JSON.stringify(stars)); } catch (e) {}
   unlocks = pol.unlocksFrom(stars);
@@ -82,11 +83,16 @@ function saveStars() {
 function levelUnlocked(i) {
   return i === 0 || (stars[pol.LEVELS[i - 1].key] || 0) >= 1;
 }
-// the player's tappable build options for a slot, locked tech hidden
+// the player's tappable build options for a slot, locked tech hidden.
+// Campaign gates tech behind stars; skirmish is free play at FULL tech,
+// because the personas there always played unrestricted - a star-gated
+// player facing a lvl-3 persona was just handicapped (v1.1 playtest).
+function playerKit() { return mode === 'skirmish' ? FULL_KIT : unlocks; }
 function allowedOptions(slotIdx) {
   const slot = S.slots.p[slotIdx];
+  const kit = playerKit();
   return sim.buildOptions(S, 'p', slotIdx).filter(t =>
-    t === 'lvl' ? slot.lvl + 1 <= unlocks.maxLvl : unlocks.types.includes(t));
+    t === 'lvl' ? slot.lvl + 1 <= kit.maxLvl : kit.types.includes(t));
 }
 
 // ----------------------------------------------------------------- replays --
@@ -166,6 +172,7 @@ let mapKey = 'clash';            // skirmish battlefield pick (campaign: per lev
 let matchResult = '';
 let banners = [];
 let openSlot = null;
+let pendingType = null;          // first tap previews, second tap on the same button buys
 let acc = 0;
 let fullFlash = 0;
 let drumFlash = 0;
@@ -233,6 +240,7 @@ for (let i = 0; i < 70; i++) {
 function resetMatchFx() {
   banners = [];
   openSlot = null;
+  pendingType = null;
   acc = 0;
   fullFlash = 0;
   drumFlash = 0;
@@ -273,6 +281,125 @@ function opponentLabel() {
 
 function banner(text) { banners.push({ text, ttl: 2.4 }); }
 
+// --------------------------------------------------------------- readout ---
+// What a building DOES, in the same lines whether it stands here already or a
+// tap would build it. Ported from antwar-factions (its T1 two-tap confirm):
+// nothing is ever bought on a first tap - tap once to preview, tap the same
+// button to commit.
+const DESC = {
+  farm: 'gold and nothing else. The whole economy is farms.',
+  tower: 'cheap, fast, short-ranged. Shoots anything, assassins included.',
+  sharp: 'long range, one heavy shot. Big soldiers fear it.',
+  spit: 'short range, splashes. Chaff melts to it.',
+  hatch: 'breeds plain workers - and every brood upgrades from here.',
+  soldierb: 'breeds soldiers: the line that holds the clash.',
+  assassinb: 'breeds assassins: they walk through the war to your hill.',
+  sapperb: 'breeds sappers: they DEMOLISH towers, and lose the clash.',
+};
+const r1 = n => Math.round(n * 10) / 10;
+
+function statsLines(slot) {
+  const t = slot.type, lvl = slot.lvl || 1;
+  if (!t) return [];
+  const k = Math.pow(CFG.LVL_POWER, lvl - 1);
+  if (t === 'farm') {
+    return ['+' + CFG.FARM_INCOME[lvl] + ' gold/s on top of the '
+      + CFG.BASE_INCOME + ' base (doubled at frenzy)',
+      'nothing can kill a farm - sappers only demolish towers'];
+  }
+  const tw = CFG.TOWERS[t];
+  if (tw) {
+    const dmg = r1(tw.dmg * k);
+    return [dmg + ' dmg every ' + tw.cooldown + 's (' + r1(dmg / tw.cooldown) + ' dps)'
+      + (tw.splash ? ' - splash ' + tw.splash + 'px' : ''),
+      'range ' + tw.range + ' - towers are the ONLY answer to assassins',
+      Math.round(CFG.TOWER_HP * k) + 'hp - sappers demolish it at '
+      + CFG.UNITS.sapper.vsTower + ' dps'];
+  }
+  const prod = CFG.PRODUCTION[t];
+  if (prod) {
+    const u = CFG.UNITS[prod.unit], rate = CFG.RATE_LVL.includes(t);
+    const sk = t === 'soldierb' ? lvl - 1 : 0;   // soldier broods scale the UNIT
+    const L = CFG.SOLDIER_LVL;
+    const out = ['1 ' + prod.unit + ' every ' + r1(rate ? prod.interval / k : prod.interval)
+      + 's' + (lvl < CFG.MAX_LVL ? (rate ? ' - a level breeds FASTER' : ' - a level breeds BIGGER, not faster') : ''),
+      Math.round(u.hp * Math.pow(L.hp, sk)) + 'hp - '
+      + r1(u.dps * Math.pow(L.dps, sk)) + ' dps - speed '
+      + Math.round(u.spd * Math.pow(L.spd, sk))
+      + (u.vsTower ? ' - ' + u.vsTower + ' dps vs towers' : '')];
+    if (u.ghost) out.push('ants ignore it and it ignores ants: only TOWERS can kill it');
+    if (u.vsTower) out.push('diverts to any enemy tower within ' + u.sight + 'px');
+    return out;
+  }
+  return [];
+}
+
+// the comparable numbers for a (type, level); a key absent on either side of
+// the compare prints no delta line - statsLines already spelled that one out
+const STAT_LABELS = {
+  income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
+  range: ['range', ''], splash: ['splash', 'px'], hp: ['building hp', ''],
+  every: ['breeds every', 's'], unitHp: ['unit hp', ''],
+  unitDps: ['unit dps', ''], unitSpd: ['unit speed', ''],
+};
+const LOWER_BETTER = ['every'];
+
+function keyStats(type, lvl) {
+  const k = Math.pow(CFG.LVL_POWER, lvl - 1);
+  const o = {};
+  if (type === 'farm') o.income = CFG.FARM_INCOME[lvl];
+  const tw = CFG.TOWERS[type];
+  if (tw) {
+    o.dmg = r1(tw.dmg * k);
+    o.dps = r1(tw.dmg * k / tw.cooldown);
+    o.range = tw.range;
+    if (tw.splash) o.splash = tw.splash;
+    o.hp = Math.round(CFG.TOWER_HP * k);
+  }
+  const prod = CFG.PRODUCTION[type];
+  if (prod) {
+    const u = CFG.UNITS[prod.unit], L = CFG.SOLDIER_LVL;
+    const sk = type === 'soldierb' ? lvl - 1 : 0;
+    o.every = r1(CFG.RATE_LVL.includes(type) ? prod.interval / k : prod.interval);
+    o.unitHp = Math.round(u.hp * Math.pow(L.hp, sk));
+    o.unitDps = r1(u.dps * Math.pow(L.dps, sk));
+    o.unitSpd = Math.round(u.spd * Math.pow(L.spd, sk));
+  }
+  return o;
+}
+
+function previewLines(slotIdx, type) {
+  const slot = S.slots.p[slotIdx];
+  if (type === 'sell') {
+    const gain = sim.sellRefund(S, slot);
+    // the refund clamps at the gold cap, and that is exactly the kind of thing
+    // a preview exists to say out loud
+    const lost = Math.max(0, S.money.p + gain - CFG.GOLD_CAP);
+    return [{ text: 'sell for +' + gain + ' gold'
+      + (lost ? ' - ' + lost + 'g of it is over the cap and LOST' : ''),
+      color: lost ? '#e0a05a' : '#f0b0a0' }]
+      .concat(statsLines(slot).map(t => ({ text: t })));
+  }
+  const cand = {
+    type: type === 'lvl' ? slot.type : type,
+    lvl: type === 'lvl' ? slot.lvl + 1 : 1,
+  };
+  const out = [{ text: DESC[cand.type] }].concat(statsLines(cand).map(t => ({ text: t })));
+  if (slot.type) {
+    const now = keyStats(slot.type, slot.lvl), next = keyStats(cand.type, cand.lvl);
+    for (const key of Object.keys(STAT_LABELS)) {
+      if (now[key] === undefined || next[key] === undefined || now[key] === next[key]) continue;
+      const better = LOWER_BETTER.includes(key) ? next[key] < now[key] : next[key] > now[key];
+      const [name, unit] = STAT_LABELS[key];
+      out.push({
+        text: name + ' ' + now[key] + unit + ' -> ' + next[key] + unit,
+        color: better ? '#8ee06a' : '#e0a05a',
+      });
+    }
+  }
+  return out;
+}
+
 // ------------------------------------------------------------------ input --
 function popupRects(slotIdx) {
   const slot = S.slots.p[slotIdx];
@@ -281,20 +408,25 @@ function popupRects(slotIdx) {
     label: type === 'lvl' ? 'Lvl ' + (slot.lvl + 1) : LABELS[type],
     cost: type === 'lvl' ? sim.lvlCost(S, slot) : CFG.COSTS[type],
   }));
-  // any occupied slot can be sold for a partial refund of its total spend
-  if (slot.type !== null) {
-    entries.push({ type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot) });
-  }
-  if (!entries.length) return [];
-  // shrink buttons when the hatch tree offers 3 specs + lvl + sell
+  if (!entries.length && slot.type === null) return [];
+  // shrink buttons when the hatch tree offers 3 specs + lvl
   const gap = 4;
-  const bw = Math.min(66, Math.floor((W - 12 - (entries.length - 1) * gap) / entries.length));
-  const total = entries.length * bw + (entries.length - 1) * gap;
+  const n = Math.max(1, entries.length);
+  const bw = Math.min(66, Math.floor((W - 12 - (n - 1) * gap) / n));
+  const total = n * bw + (n - 1) * gap;
   const x0 = Math.max(6, Math.min(W - total - 6, slot.x - total / 2));
-  const y = slot.y - 82;
-  return entries.map((en, i) => Object.assign(en, {
-    x: x0 + i * (bw + gap), y, w: bw, h: 52,
+  const out = entries.map((en, i) => Object.assign(en, {
+    x: x0 + i * (bw + gap), y: slot.y - 82, w: bw, h: 52,
   }));
+  // any occupied slot sells for a partial refund of its total spend - on its
+  // own slim row, so a stray tap in the build row can never hit it
+  if (slot.type !== null) {
+    out.push({
+      type: 'sell', label: 'Sell', gain: sim.sellRefund(S, slot),
+      x: x0 + total / 2 - 37, y: slot.y - 26, w: 74, h: 24,
+    });
+  }
+  return out;
 }
 
 function inRect(px, py, r) {
@@ -343,22 +475,38 @@ cv.addEventListener('pointerdown', (e) => {
     return;
   }
 
-  // build/upgrade/sell popup gets first claim on the tap
+  // build/upgrade/sell popup gets first claim on the tap. Nothing is ever
+  // bought on a first tap: tap once to preview, tap the same button to commit.
   if (openSlot !== null) {
     for (const r of popupRects(openSlot)) {
       if (inRect(x, y, r)) {
+        if (r.type !== pendingType) {
+          pendingType = r.type;   // preview only
+          blip(340, 0.04, 'triangle', 0.1);
+          return;
+        }
         const action = r.type === 'sell'
           ? { kind: 'sell', slot: openSlot }
           : { kind: 'build', slot: openSlot, type: r.type };
-        if (sim.applyAction(S, 'p', action)) {
-          (r.type === 'sell' ? SFX.sell : SFX.build)();
-          logAction(openSlot, r.type);
-        }
+        if (!sim.applyAction(S, 'p', action)) return;   // can't afford: stay open
+        (r.type === 'sell' ? SFX.sell : SFX.build)();
+        logAction(openSlot, r.type);
         openSlot = null;
+        pendingType = null;
         return;
       }
     }
-    openSlot = null;             // tap anywhere else just closes it
+    // tapping another of your slots browses on; anything else closes
+    for (let i = 0; i < S.slots.p.length; i++) {
+      const s = S.slots.p[i];
+      if (i !== openSlot && Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
+        openSlot = i;
+        pendingType = null;
+        return;
+      }
+    }
+    openSlot = null;
+    pendingType = null;
     return;
   }
 
@@ -366,6 +514,7 @@ cv.addEventListener('pointerdown', (e) => {
     const s = S.slots.p[i];
     if (Math.hypot(x - s.x, y - s.y) < 30 && popupRects(i).length) {
       openSlot = i;
+      pendingType = null;
       return;
     }
   }
@@ -771,7 +920,7 @@ function drawHUD(time) {
 
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '11px sans-serif';
-  ctx.fillText('tap a slot to build - Farm / Tower / Hatchery - tap again to upgrade or sell', LANE_CX, UI_TOP + 106);
+  ctx.fillText('tap a slot to build - tap an option to preview - tap again to confirm', LANE_CX, UI_TOP + 106);
 
   // banners
   let by = 200;
@@ -795,21 +944,67 @@ function drawPopup() {
   ctx.strokeStyle = '#ffe9b0';
   ctx.lineWidth = 2;
   ctx.beginPath(); ctx.arc(slot.x, slot.y, 24, 0, 7); ctx.stroke();
-  for (const r of popupRects(openSlot)) {
+  // range ring: the CANDIDATE's while previewing, else what stands here
+  const previewing = pendingType !== null;
+  const ringType = previewing && pendingType !== 'lvl' && pendingType !== 'sell'
+    ? pendingType : slot.type;
+  const spec = CFG.TOWERS[ringType];
+  if (spec) {
+    ctx.strokeStyle = previewing && pendingType !== 'sell'
+      ? 'rgba(140,224,106,0.5)' : 'rgba(255,233,176,0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath(); ctx.arc(slot.x, slot.y, spec.range, 0, 7); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  const rects = popupRects(openSlot);
+  const lines = previewing ? previewLines(openSlot, pendingType)
+    : statsLines(slot).map(t => ({ text: t }));
+  if (lines.length) {
+    ctx.font = '10px sans-serif';
+    const wMax = Math.max(...lines.map(l => ctx.measureText(l.text).width));
+    const bw = wMax + 16, bh = lines.length * 13 + 9;
+    const bx = Math.max(4, Math.min(W - bw - 4, slot.x - bw / 2));
+    const by = slot.y - 82 - bh - 5;    // just above the build row
+    ctx.fillStyle = 'rgba(20,14,8,0.92)';
+    ctx.strokeStyle = previewing ? '#8ee06a' : '#7a6448';
+    ctx.lineWidth = 1;
+    roundRect(bx, by, bw, bh, 5);
+    ctx.fill(); ctx.stroke();
+    ctx.textAlign = 'center';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillStyle = lines[i].color || '#e8d8b8';
+      ctx.fillText(lines[i].text, bx + bw / 2, by + 11 + i * 13);
+    }
+  }
+  for (const r of rects) {
     const isSell = r.type === 'sell';
     const afford = isSell || S.money.p >= r.cost;
+    const pend = r.type === pendingType;
     ctx.fillStyle = 'rgba(20,14,8,0.92)';
-    ctx.strokeStyle = isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38');
+    ctx.strokeStyle = pend ? '#8ee06a' : (isSell ? '#a05840' : (afford ? '#c8a060' : '#5a4a38'));
+    ctx.lineWidth = pend ? 2 : 1;
     roundRect(r.x, r.y, r.w, r.h, 7);
     ctx.fill(); ctx.stroke();
+    ctx.lineWidth = 1;
     ctx.globalAlpha = afford ? 1 : 0.45;
-    ctx.fillStyle = isSell ? '#f0b0a0' : '#ffe9c0';
-    ctx.font = 'bold 12px sans-serif';
+    ctx.fillStyle = pend ? '#8ee06a' : (isSell ? '#f0b0a0' : '#ffe9c0');
     ctx.textAlign = 'center';
-    ctx.fillText(r.label, r.x + r.w / 2, r.y + 16);
-    ctx.fillStyle = isSell ? '#8ee06a' : '#ffd870';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(isSell ? '+' + r.gain + 'g' : r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    const label = pend ? (isSell ? 'Sell?' : 'Confirm?') : r.label;
+    // a label too long for its button shrinks rather than spilling over
+    let fs = r.w < 52 ? 10 : 12;
+    ctx.font = 'bold ' + fs + 'px sans-serif';
+    while (fs > 8 && ctx.measureText(label).width > r.w - 6) {
+      ctx.font = 'bold ' + (--fs) + 'px sans-serif';
+    }
+    if (r.h < 40) {                // the slim sell row: one line, label + gold
+      ctx.fillText(label + '  +' + r.gain + 'g', r.x + r.w / 2, r.y + 16);
+    } else {
+      ctx.fillText(label, r.x + r.w / 2, r.y + 16);
+      ctx.fillStyle = pend ? '#8ee06a' : '#ffd870';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(r.cost + 'g', r.x + r.w / 2, r.y + 36);
+    }
     ctx.globalAlpha = 1;
   }
 }
@@ -1033,7 +1228,7 @@ function drawSkirmish() {
   }
   ctx.fillStyle = '#d8c0a0';
   ctx.font = '12px sans-serif';
-  ctx.fillText('tech unlocks carry over from the campaign trail', LANE_CX, 736);
+  ctx.fillText('free play: the full tech tree, both sides', LANE_CX, 736);
   ctx.fillText('tap anywhere else for the trail', LANE_CX, 754);
 }
 

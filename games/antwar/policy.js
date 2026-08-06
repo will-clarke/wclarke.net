@@ -427,18 +427,21 @@ for (const L of LEVELS) {
 
 // campaign kit helpers (ladder beaten in order): what the player holds
 // ENTERING level i, and what that level's enemy may use - the player's kit
-// plus the very tech this level's victory hands over. You loot it from
+// plus any BUILDING this level's victory hands over. You loot it from
 // them, and enemies escalate in step with the player instead of fielding
-// tech the player has never seen.
+// tech the player has never seen - and never out-tier the player's levels.
 function kitAtLevel(i) {
   const starsSoFar = {};
   for (let j = 0; j < i; j++) starsSoFar[LEVELS[j].key] = 1;
   return unlocksFrom(starsSoFar);
 }
 function enemyKitAt(i) {
-  const starsSoFar = {};
-  for (let j = 0; j <= i; j++) starsSoFar[LEVELS[j].key] = 1;
-  const kit = unlocksFrom(starsSoFar);
+  const kit = kitAtLevel(i);              // starts from the player's own tech
+  // the level showcases its own loot - but only if it is a BUILDING. A tier
+  // unlock is a flat stat edge on every building, not a toy to learn, so the
+  // enemy never out-levels the player (v1.1 playtest: lvl-2 player, lvl-3 AI)
+  const r = LEVELS[i].reward;
+  if (r && r.key !== 'lvl2' && r.key !== 'lvl3') kit.types.push(r.key);
   // a level may showcase tech beyond the loot rule (ai.extraKit)
   for (const key of (LEVELS[i].ai.extraKit || [])) {
     if (key === 'lvl2') kit.maxLvl = Math.max(kit.maxLvl, 2);
@@ -448,6 +451,13 @@ function enemyKitAt(i) {
   return kit;
 }
 
+// every tech in the game - what skirmish plays with on BOTH sides
+function fullKit() {
+  const all = {};
+  for (const L of LEVELS) all[L.key] = 1;
+  return unlocksFrom(all);
+}
+
 return { PARAM_SPEC, PARAM_NAMES, clampParams, makeController, PERSONAS, ARCHETYPES,
-  LEVELS, BASE_KIT, unlocksFrom, kitAtLevel, enemyKitAt };
+  LEVELS, BASE_KIT, unlocksFrom, kitAtLevel, enemyKitAt, fullKit };
 });
