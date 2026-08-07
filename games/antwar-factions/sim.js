@@ -130,10 +130,12 @@ const CONFIG = {
                         // turtle to 0.86 of the field and 0.4 to a clean
                         // 1.00 - the fx0.3 failure mode, still one knob away.
     slow: 0.45,         // speed factor for foes standing in FULL paint
-    dot: 3,             // dps to foes standing in full paint. Both raised
-                        // from 0.65/1.5 once T6b's trails put paint where
-                        // foes actually walk - before that, geography made
-                        // any value outcome-neutral.
+    dot: 10,            // dps to foes standing in full paint. Raised from
+                        // 0.65 at T6b (trails put paint where foes walk),
+                        // then 3 -> 10 at T52 (Will: creep felt toothless
+                        // and SEEP indefensible vs a rush - the Thicket
+                        // floors intensity at 1, so this IS its damage).
+                        // TUNE-LATER.
     corrode: 3,         // dps to foe buildings standing in full paint
     hillDps: 7,         // strangle dps at a fully painted hill rim
     splatDmg: 40,       // hp a shambler CORPSE tears off the one foe building
@@ -323,8 +325,12 @@ const CONFIG = {
     // skips them) and flip it after `channel` seconds; levels channel faster.
     // The charm is TIMED and scaled by the body: duration = charmHpSec / base
     // hp (a worker serves ~forever, a major shakes it off in seconds), times
-    // level power. Convert-once immunity survives the revert (no ping-pong).
-    conv: { range: 120, channel: 3.5, charmHpSec: 1200, charmMin: 4 },
+    // level power. `charmMin` is the floor a FAT body bottoms out at - 4 made
+    // a seized juggernaut a four-second toy (T52, Will's playtest gripe).
+    // `recharm` replaces the old convert-FOREVER immunity: a reverted body is
+    // immune for this long, then seizable again. Ping-pong stays impossible
+    // for a different reason - a body still under a charm cannot be charmed.
+    conv: { range: 120, channel: 3.5, charmHpSec: 1200, charmMin: 12, recharm: 6 },
     // T23: FOUNDRY's defensive law - uptime is power. Cold it is worse than a
     // sharp (14 dps to 22.7); every shot adds `spinStep` to the slot's `spun`
     // multiplier up to `spinMax`, dividing the cooldown, so fully wound it out-
@@ -368,7 +374,11 @@ const CONFIG = {
     // every count and phase measures 50.5%, the same as one bell alone. Two
     // bells never break it either way: a ring blocked by an existing hold
     // re-arms the whole cooldown, which desynchronises the pair on its own.
-    bell:  { range: 120, freezeDur: 3, cooldown: 6, immune: 1.5 },
+    // T52: freezeDur 3 -> 4 (denial uptime 50% -> 66%) - Will's playtest
+    // ruling that VEIL has no solid answer to a rush. `immune` rose with it
+    // to cooldown - freezeDur, which is what actually caps a phased stack at
+    // one bell's own duty cycle. TUNE-LATER.
+    bell:  { range: 120, freezeDur: 4, cooldown: 6, immune: 2 },
     // T34: the Chorus Hall - VEIL's def tier-2, and a CHARMER in its own right.
     // A buff-only slot was the one shape T24 ruled out (a gunless tower never
     // repays a gun), and halving a throughput-limited kit's charm rate to double
@@ -379,7 +389,7 @@ const CONFIG = {
     // hands it one fat body the base charm cannot hold at all (1200/2000hp
     // bottoms out at `charmMin`). `choir*` are read at the instant an ant turns,
     // once, from the presence of ANY standing hall (T26's flag, not a stack).
-    hall:  { range: 120, channel: 4.5, charmHpSec: 1200, charmMin: 4,
+    hall:  { range: 120, channel: 4.5, charmHpSec: 1200, charmMin: 12,
              choirCharm: 2, choirDps: 1.25 },
     // T44: SEEP defends with GROUND. No gun and no new damage curve - inside the
     // patch a hostile body wades in creep of at least `dense`, so the slow and
@@ -1401,7 +1411,7 @@ function spawnUnit(S, side, unitKey, at) {
     // drumless faction breeds nothing else - a muster with no beat never moves
     state: (t.trickle || !faction(S, side).drum) ? 'march' : 'muster', // muster -> march -> siege (predators: -> hunt)
     sx: 0, sy: 0,
-    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0, convCd: 0,
   };
   if (unitKey === 'predator') {
     // hold point just past the midline on the owner's side, mirrored so
@@ -1448,7 +1458,7 @@ function spawnProduct(S, side, mass, dps) {
     seed: S.rng() * 10,
     state: 'march',              // stamped ON the beat: it never musters
     sx: 0, sy: 0,
-    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0, convCd: 0,
   });
   S.hatched[side].product++;
   S.stamped[side] += w;
@@ -1525,7 +1535,7 @@ function spawnGuard(S, side, slotIdx) {
     state: 'guard',
     ax, ay: slot.y, srcSlot: slotIdx,
     sx: 0, sy: 0,
-    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0,
+    slowed: false, hasted: false, punchT: 0, frozen: 0, thawT: 0, convCd: 0,
   });
 }
 
@@ -1740,6 +1750,8 @@ function stepAuras(S, dt) {
     } else if (u.thawT > 0) {
       u.thawT = Math.max(0, u.thawT - dt);
     }
+    // T52: the post-revert charm immunity burns down beside its siblings
+    if (u.convCd > 0) u.convCd = Math.max(0, u.convCd - dt);
   }
   for (const side of ['p', 'e']) {
     const foe = other(side);
@@ -2255,9 +2267,12 @@ function tithePips(S, side) {
 // the ant walks home and marches with its NEW side's next drum. The three
 // load-bearing guards (see README v1.0 design): one target at a time
 // (throughput-limited - chaff saturates it), the channel is interruptible
-// (death, leaving range, or losing the tower resets progress), and a
-// converted ant can never be converted again (no ping-pong). The charm
-// revert pass rides at the tail so a flip and its wear-off share a tick order.
+// (death, leaving range, or losing the tower resets progress), and a body
+// under a charm cannot be charmed - which is all the anti-ping-pong the rule
+// needs, so the old convert-FOREVER immunity became `recharm` seconds after
+// the revert (T52: a shaken-off juggernaut was permanently unanswerable).
+// The charm revert pass rides at the tail so a flip and its wear-off share a
+// tick order.
 function stepConverters(S, dt) {
   const cfg = S.cfg;
   for (const side of ['p', 'e']) {
@@ -2269,7 +2284,7 @@ function stepConverters(S, dt) {
       if (!CHARMERS.includes(slot.type) || underway(slot)) continue;
       const spec = cfg.TOWERS[slot.type];
       const convertible = v =>
-        v.side === foe && v.hp > 0 && !v.conv &&
+        v.side === foe && v.hp > 0 && !(v.charmT > 0) && !(v.convCd > 0) &&
         (v.state === 'march' || v.state === 'siege') &&
         Math.hypot(v.x - slot.x, v.y - slot.y) < spec.range;
       // sticky target: re-aiming mid-channel would reset progress forever
@@ -2278,7 +2293,7 @@ function stepConverters(S, dt) {
         slot.chT = 0;
         let best = null, bestD = spec.range;
         for (const v of S.units) {
-          if (v.side !== foe || v.hp <= 0 || v.conv) continue;
+          if (v.side !== foe || v.hp <= 0 || v.charmT > 0 || v.convCd > 0) continue;
           if (v.state !== 'march' && v.state !== 'siege') continue;
           const d = Math.hypot(v.x - slot.x, v.y - slot.y);
           if (d < bestD) { bestD = d; best = v; }
@@ -2292,7 +2307,6 @@ function stepConverters(S, dt) {
       const bodyHp = u.maxHp || cfg.UNITS[u.typeKey].hp;   // a stamped giant's
                                                            // size is its weight
       u.side = side;
-      u.conv = true;
       // the charm wears off: big bodies resist it (v-fork gripe fix). Higher
       // charmer levels hold the charm longer as well as channelling faster.
       // T34: a standing Chorus Hall stretches the hold and stiffens the convert.
@@ -2320,12 +2334,15 @@ function stepConverters(S, dt) {
 
   // charms wear off: the ant comes to its senses wherever it stands and
   // marches on for its ORIGINAL army from there - the same U-turn as the
-  // flip. It keeps its current hp and its convert-once immunity.
+  // flip. It keeps its current hp; `recharm` seconds later it is seizable
+  // again (T52 - the permanent immunity made one shaken-off juggernaut the
+  // end of VEIL's whole answer to it).
   for (const u of S.units) {
     if (!(u.charmT > 0)) continue;
     u.charmT -= dt;
     if (u.charmT > 0) continue;
     u.charmT = 0;
+    u.convCd = cfg.TOWERS.conv.recharm;
     if (u.dps0 !== undefined) { u.dps = u.dps0; u.dps0 = undefined; }
     const home = other(u.side);
     u.side = home;

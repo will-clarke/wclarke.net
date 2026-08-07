@@ -101,6 +101,14 @@ const DESC = {
   lvl: 'level up: more power, superlinear cost',
 };
 
+// T52 (Will: "possibly there's an education gap"): every build button carries
+// its JOB under its name - the flavor word says what it is, the caption says
+// what it is FOR. The grouping is the sim's own family table, so a new type
+// is captioned the day it exists.
+const ROLE_WORDS = { eco: ['ECONOMY', '#c9b96e'], def: ['DEFENCE', '#7ec4dc'], off: ['TROOPS', '#e89078'] };
+const ROLE = {};
+for (const fam in ROLE_WORDS) for (const t of sim.FAMILIES[fam]) ROLE[t] = ROLE_WORDS[fam];
+
 // skirmish opponents: the three personas plus the fx0.3 creep probe (an
 // ARCHETYPE, not a persona - it lives outside the counter-triangle)
 const SKIRMISH_FOES = ['bloom', 'tussock', 'rustle'].map(key => ({
@@ -2429,6 +2437,12 @@ function drawPopup() {
       ctx.fillText(label + (isSell ? '  +' + r.gain : '  -' + r.cost) + 'g', r.x + r.w / 2, r.y + 16);
     } else {
       ctx.fillText(label, r.x + r.w / 2, r.y + 16);
+      const role = !pend && ROLE[r.type];
+      if (role) {
+        ctx.fillStyle = role[1];
+        ctx.font = '8px sans-serif';
+        ctx.fillText(role[0], r.x + r.w / 2, r.y + 25);
+      }
       ctx.fillStyle = '#ffd870';
       ctx.font = 'bold 13px sans-serif';
       ctx.fillText(r.cost + 'g', r.x + r.w / 2, r.y + 36);
