@@ -109,11 +109,11 @@ const CONFIG = {
   // buildings: empty slot -> farm | tower | hatch
   COSTS: {
     farm: 80,
-    tower: 100, sharp: 120, spit: 120,
+    tower: 100, sharp: 120, spit: 120, amber: 110,
     hatch: 90, soldierb: 80, assassinb: 120, sapperb: 100,
   },
   UPGRADE_TREE: {
-    tower: ['sharp', 'spit'],
+    tower: ['sharp', 'spit', 'amber'],
     hatch: ['soldierb', 'assassinb', 'sapperb'],
   },
   MAX_LVL: 3,
@@ -122,10 +122,12 @@ const CONFIG = {
   // farms level in place (the old farm->grove->plantation chain, one slot)
   FARM_INCOME: { 1: 2.5, 2: 5, 3: 8 },
   // soldier broods level differently: same rate, BIGGER soldiers - the
-  // concentration axis (a lvl-3 soldier is the old major). Superlinear
-  // value per gold on purpose: concentrated stats beat distributed ones
-  // against throughput-limited towers.
-  SOLDIER_LVL: { hp: 1.75, dps: 1.35, spd: 0.88, r: 1.22 },
+  // concentration axis (a lvl-3 soldier is the old major). The hp curve is
+  // pinched between two failure modes: at 1.75 it outran the tower level
+  // curve (LVL_POWER 1.5) so far that nothing countered a levelled soldier
+  // line, at 1.5 the greed persona's giant identity collapsed. 1.6 is the
+  // measured knee.
+  SOLDIER_LVL: { hp: 1.6, dps: 1.35, spd: 0.88, r: 1.22 },
   PRODUCTION: {
     hatch:     { unit: 'worker',   interval: 6 },
     soldierb:  { unit: 'soldier',  interval: 9 },
@@ -139,6 +141,12 @@ const CONFIG = {
     tower: { range: 130, dmg: 6,  cooldown: 0.4 },
     sharp: { range: 175, dmg: 34, cooldown: 1.5 },
     spit:  { range: 105, dmg: 5,  cooldown: 0.45, splash: 28 },
+    // amber never shoots (dmg absent = skipped by the fire pass): every
+    // enemy in range crawls at the slow factor. A pure force-multiplier -
+    // worthless alone, and the only tower that helps against assassins
+    // without itself dealing the damage. Levels deepen the slow; the
+    // strongest single slow applies, slows NEVER stack.
+    amber: { range: 150, slow: { 1: 0.45, 2: 0.35, 3: 0.25 } },
   },
   TOWER_HP: 130,
   // the clash: fighters seek enemies within `seek` while marching/sieging;
@@ -154,10 +162,17 @@ const CONFIG = {
     soldier: { hp: 62,  spd: 52, dps: 6.5, r: 6.0 },
     // assassins never fight ants and ants never fight them; only towers
     // hit them. Pure hill pressure - the reason armies alone can't win.
-    assassin: { hp: 26, spd: 60, dps: 4.5, r: 4.4, ghost: true },
+    // 40hp = survives a lvl-1 sharp shot and ~2.7s of one plain tower's
+    // fire. Both edges of this knob are cliffs: at 26 any single tower
+    // deleted them mid-crossing (the stalemate valve never fired), at 56
+    // a levelled brood out-shipped a whole tower's dps and sapper+assassin
+    // attrition beat the entire field.
+    assassin: { hp: 40, spd: 60, dps: 4.5, r: 4.4, ghost: true },
     // sappers divert to enemy defence buildings in sight and demolish them;
-    // they never seek melee but bite back on contact (soldiers eat them)
-    sapper:  { hp: 62,  spd: 50, dps: 3,   r: 5.0, vsTower: 22, sight: 90 },
+    // they never seek melee but bite back on contact (soldiers eat them).
+    // sight must stay near sharp range (175) or they wade through sharp
+    // fire blind before they can even pick a target
+    sapper:  { hp: 62,  spd: 50, dps: 3,   r: 5.0, vsTower: 22, sight: 160 },
   },
   // the match clock, compressed for the clash world: armies annihilating
   // mid-lane means far less incidental hill chip than pass-through had,
@@ -253,7 +268,7 @@ function count(S, side, type) {
 }
 const FAMILIES = {
   eco: ['farm'],
-  def: ['tower', 'sharp', 'spit'],
+  def: ['tower', 'sharp', 'spit', 'amber'],
   off: ['hatch', 'soldierb', 'assassinb', 'sapperb'],
 };
 function familyCount(S, side, family) {
@@ -272,7 +287,7 @@ function musterCount(S, side) {
   for (const u of S.units) if (u.side === side && u.state === 'muster') n++;
   return n;
 }
-const LEVELABLE = ['farm', 'hatch', 'sharp', 'spit', 'soldierb', 'assassinb', 'sapperb'];
+const LEVELABLE = ['farm', 'hatch', 'sharp', 'spit', 'amber', 'soldierb', 'assassinb', 'sapperb'];
 function lvlPower(S, slot) {
   return Math.pow(S.cfg.LVL_POWER, (slot.lvl || 1) - 1);
 }
@@ -422,8 +437,8 @@ function nearestFoe(S, u, maxD, states) {
 function fight(u, tgt, dt) {
   const dx = tgt.x - u.x, dy = tgt.y - u.y, d = Math.hypot(dx, dy);
   if (d > contactR(u, tgt)) {
-    u.mx = (dx / d) * u.spd * dt;
-    u.my = (dy / d) * u.spd * dt;
+    u.mx = (dx / d) * u.spd * u.sf * dt;
+    u.my = (dy / d) * u.spd * u.sf * dt;
   } else {
     tgt.pd += u.dps * dt;
     tgt.nb++;
@@ -469,7 +484,22 @@ function step(S) {
   // Two phases: every unit DECIDES against the same tick-start snapshot
   // (buffered into mx/my/pd), then everything applies at once.
   const hillDmg = { p: 0, e: 0 };
-  for (const u of S.units) { u.fx = 0; u.mx = 0; u.my = 0; u.pd = 0; u.nb = 0; }
+  for (const u of S.units) { u.fx = 0; u.mx = 0; u.my = 0; u.pd = 0; u.nb = 0; u.sf = 1; }
+  // amber towers coat enemies in resin before anyone moves: the strongest
+  // slow in range wins, slows never stack. Muster clouds stay sanctuary,
+  // matching tower fire.
+  for (const side of ['p', 'e']) {
+    const foe = other(side);
+    for (const slot of S.slots[side]) {
+      if (slot.type !== 'amber') continue;
+      const spec = cfg.TOWERS.amber;
+      const f = spec.slow[slot.lvl];
+      for (const u of S.units) {
+        if (u.side !== foe || u.state === 'muster' || f >= u.sf) continue;
+        if (Math.hypot(u.x - slot.x, u.y - slot.y) <= spec.range) u.sf = f;
+      }
+    }
+  }
   for (const u of S.units) {
     const foe = other(u.side);
 
@@ -513,8 +543,8 @@ function step(S) {
       }
       if (ts) {
         if (td > 18) {
-          u.mx = ((ts.x - u.x) / td) * u.spd * dt;
-          u.my = ((ts.y - u.y) / td) * u.spd * dt;
+          u.mx = ((ts.x - u.x) / td) * u.spd * u.sf * dt;
+          u.my = ((ts.y - u.y) / td) * u.spd * u.sf * dt;
         } else {
           ts.hp -= spec.vsTower * dt;
           u.fx = 1;
@@ -539,14 +569,14 @@ function step(S) {
       if (u.wp < path.length) {
         const wx = path[u.wp].x + u.off, wy = path[u.wp].y;
         const d = Math.hypot(wx - u.x, wy - u.y);
-        u.mx = ((wx - u.x) / d) * u.spd * dt;
-        u.my = ((wy - u.y) / d) * u.spd * dt;
+        u.mx = ((wx - u.x) / d) * u.spd * u.sf * dt;
+        u.my = ((wy - u.y) / d) * u.spd * u.sf * dt;
       } else if (path.length) {
         const d = Math.hypot(nest.x - u.x, nest.y - u.y) || 1;
-        u.mx = ((nest.x - u.x) / d) * u.spd * dt;
-        u.my = ((nest.y - u.y) / d) * u.spd * dt;
+        u.mx = ((nest.x - u.x) / d) * u.spd * u.sf * dt;
+        u.my = ((nest.y - u.y) / d) * u.spd * u.sf * dt;
       } else {
-        u.my = (u.side === 'p' ? -1 : 1) * u.spd * dt;
+        u.my = (u.side === 'p' ? -1 : 1) * u.spd * u.sf * dt;
       }
       if (Math.hypot(u.x + u.mx - nest.x, u.y + u.my - nest.y) < cfg.SIEGE_DIST) {
         u.state = 'siege';
@@ -557,8 +587,8 @@ function step(S) {
       const dx = u.sx - u.x, dy = u.sy - u.y;
       const d = Math.hypot(dx, dy);
       if (d > 3) {
-        u.mx = (dx / d) * u.spd * dt;
-        u.my = (dy / d) * u.spd * dt;
+        u.mx = (dx / d) * u.spd * u.sf * dt;
+        u.my = (dy / d) * u.spd * u.sf * dt;
       } else {
         hillDmg[other(u.side)] += u.dps * dt;
       }
@@ -582,7 +612,7 @@ function step(S) {
     const foe = other(side);
     for (const slot of S.slots[side]) {
       const spec = cfg.TOWERS[slot.type];
-      if (!spec) continue;
+      if (!spec || !spec.dmg) continue;   // amber snares, it never shoots
       slot.cd -= dt;
       if (slot.cd > 0) continue;
       let best = null, bestD = spec.range;

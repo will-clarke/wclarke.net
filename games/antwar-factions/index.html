@@ -1335,227 +1335,552 @@ function drawCreep(time) {
   }
 }
 
+function nestCracks(b, flash) {
+  if (!(flash > 0.02)) return;
+  // cracks spider out while the hill is being chewed
+  ctx.strokeStyle = 'rgba(255,90,50,' + (0.35 + 0.5 * flash) + ')';
+  ctx.lineWidth = 1.5;
+  for (let i = 0; i < 5; i++) {
+    const a = i * 1.26 + 0.4;
+    ctx.beginPath();
+    ctx.moveTo(b.x + Math.cos(a) * b.r * 0.25, b.y + Math.sin(a) * b.r * 0.18);
+    ctx.lineTo(b.x + Math.cos(a + 0.3) * b.r * 0.6, b.y + Math.sin(a + 0.3) * b.r * 0.45);
+    ctx.lineTo(b.x + Math.cos(a + 0.1) * b.r * 0.95, b.y + Math.sin(a + 0.1) * b.r * 0.68);
+    ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(255,120,70,' + 0.16 * flash + ')';
+  ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
+}
+
 function drawMound(b, color, hole, flash) {
   const g = ctx.createRadialGradient(b.x, b.y - 8, 4, b.x, b.y, b.r);
   g.addColorStop(0, color);
   g.addColorStop(1, '#5d4630');
   ctx.fillStyle = g;
   ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
-  if (flash > 0.02) {
-    // cracks spider out while the hill is being chewed
-    ctx.strokeStyle = 'rgba(255,90,50,' + (0.35 + 0.5 * flash) + ')';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) {
-      const a = i * 1.26 + 0.4;
-      ctx.beginPath();
-      ctx.moveTo(b.x + Math.cos(a) * b.r * 0.25, b.y + Math.sin(a) * b.r * 0.18);
-      ctx.lineTo(b.x + Math.cos(a + 0.3) * b.r * 0.6, b.y + Math.sin(a + 0.3) * b.r * 0.45);
-      ctx.lineTo(b.x + Math.cos(a + 0.1) * b.r * 0.95, b.y + Math.sin(a + 0.1) * b.r * 0.68);
-      ctx.stroke();
-    }
-    ctx.fillStyle = 'rgba(255,120,70,' + 0.16 * flash + ')';
-    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r, b.r * 0.72, 0, 0, 7); ctx.fill();
-  }
+  nestCracks(b, flash);
   ctx.fillStyle = hole;
   ctx.beginPath(); ctx.ellipse(b.x, b.y - 6, b.r * 0.3, b.r * 0.2, 0, 0, 7); ctx.fill();
 }
 
-// T40: the side owns the hue family (player dark, enemy red - the paint
-// field's split), the faction owns the chassis shape drawn below
-const ANT_BODY = {
+// T48a: each faction builds its own NEST - the mound was an anthill. The
+// drum-driven bits read S the way the rampart does: phase off nextBeat,
+// so a slam or a ripple needs no state of its own.
+function drawNest(b, side, time, flash) {
+  const fac = facOf(side);
+  const player = side === 'p';
+  if (fac === 'foundry') {
+    // the works: stacked iron plates around a furnace maw, chimneys running,
+    // rim gears meshed - and the maw flares on the shift whistle
+    const rPer = sim.drumPeriod(S, side);
+    const slam = Math.max(0, 1 - (rPer === null ? 9 : rPer - (S.nextBeat[side] - S.t)) / 0.5);
+    const iron = player ? ['#3c4038', '#2e322c'] : ['#5a3830', '#462a24'];
+    for (const [rr, col] of [[1, iron[0]], [0.72, iron[1]]]) {
+      ctx.fillStyle = col;
+      ctx.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + Math.PI / 8;
+        const px = b.x + Math.cos(a) * b.r * rr, py = b.y + Math.sin(a) * b.r * rr * 0.76;
+        i ? ctx.lineTo(px, py) : ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(215,225,232,0.4)';
+    for (let i = 0; i < 8; i++) {
+      const a = i * Math.PI / 4;
+      ctx.beginPath();
+      ctx.arc(b.x + Math.cos(a) * b.r * 0.84, b.y + Math.sin(a) * b.r * 0.64, 1.4, 0, 7);
+      ctx.fill();
+    }
+    const heat = 0.5 + 0.2 * Math.sin(time * 2.4) + slam * 0.4;
+    const mg = ctx.createRadialGradient(b.x, b.y, 2, b.x, b.y, b.r * 0.42);
+    mg.addColorStop(0, 'rgba(255,220,140,' + heat + ')');
+    mg.addColorStop(0.55, 'rgba(255,140,50,' + heat * 0.8 + ')');
+    mg.addColorStop(1, 'rgba(120,40,10,0.9)');
+    ctx.fillStyle = mg;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.4, b.r * 0.3, 0, 0, 7); ctx.fill();
+    if (slam > 0) {
+      ctx.strokeStyle = 'rgba(255,176,96,' + 0.55 * slam + ')';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y, b.r * (0.42 + 0.55 * (1 - slam)), b.r * (0.32 + 0.42 * (1 - slam)), 0, 0, 7);
+      ctx.stroke();
+    }
+    for (const [cx, k] of [[-0.55, 0], [0.55, 1]]) {
+      const sx = b.x + cx * b.r;
+      ctx.fillStyle = '#4a4640';
+      ctx.fillRect(sx - 3, b.y - b.r * 0.5 - 12, 6, 12);
+      for (let p = 0; p < 3; p++) {
+        const ph = (time * 0.4 + p / 3 + k * 0.5) % 1;
+        ctx.fillStyle = 'rgba(200,200,195,' + 0.28 * (1 - ph) + ')';
+        ctx.beginPath();
+        ctx.arc(sx + Math.sin(ph * 5 + k) * 3, b.y - b.r * 0.5 - 14 - ph * 22, 2 + ph * 4, 0, 7);
+        ctx.fill();
+      }
+    }
+    gear(b.x - b.r * 0.85, b.y + b.r * 0.4, 7, time * 1.1, 'rgba(200,176,112,0.8)', 1.6);
+    gear(b.x + b.r * 0.85, b.y + b.r * 0.4, 5.5, -time * 1.5, 'rgba(200,176,112,0.8)', 1.4);
+    nestCracks(b, flash);
+  } else if (fac === 'seep') {
+    // the heart of the mass: it beats lub-dub, the orifice dilates with it,
+    // spores drift off the crown, and the ground around it never dries
+    const col = player ? '110,140,80' : '150,70,110';
+    const pulse = 1 + 0.05 * Math.sin(time * 2.2) + 0.03 * Math.max(0, Math.sin(time * 4.4 + 1.2));
+    ctx.fillStyle = 'rgba(' + col + ',0.25)';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 1.3 * pulse, b.r * pulse, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(' + col + ',0.55)';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 1.02 * pulse, b.r * 0.76 * pulse, 0, 0, 7); ctx.fill();
+    // side lobes wobbling out of phase keep the outline alive
+    ctx.fillStyle = 'rgba(' + col + ',0.75)';
+    for (let i = 0; i < 5; i++) {
+      const a = i * 1.26 + 0.5;
+      const lw = 1 + 0.12 * Math.sin(time * 3.2 + i * 2.1);
+      ctx.beginPath();
+      ctx.ellipse(b.x + Math.cos(a) * b.r * 0.55, b.y + Math.sin(a) * b.r * 0.4,
+        b.r * 0.34 * lw, b.r * 0.26 * lw, 0, 0, 7);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(' + col + ',0.9)';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.6 * pulse, b.r * 0.46 * pulse, 0, 0, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(230,240,200,0.6)';
+    for (const [dx, dy] of [[-0.35, -0.2], [0.3, 0.15], [0.05, -0.35], [-0.15, 0.3]]) {
+      ctx.beginPath(); ctx.arc(b.x + dx * b.r, b.y + dy * b.r, 1.8, 0, 7); ctx.fill();
+    }
+    for (let k = 0; k < 4; k++) {
+      const ph = (time * 0.3 + k / 4) % 1;
+      ctx.fillStyle = 'rgba(' + col + ',' + 0.5 * (1 - ph) + ')';
+      ctx.beginPath();
+      ctx.arc(b.x + Math.sin(k * 2.4 + ph * 4) * b.r * 0.5, b.y - b.r * 0.5 - ph * 24, 1.4 + ph, 0, 7);
+      ctx.fill();
+    }
+    nestCracks(b, flash);
+    const mouth = 1 + 0.18 * Math.sin(time * 2.2);
+    ctx.fillStyle = player ? '#10140a' : '#2a0e18';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y - 2, b.r * 0.26 * mouth, b.r * 0.18 * mouth, 0, 0, 7); ctx.fill();
+  } else if (fac === 'veil') {
+    // the rift: a void the ground curves into, a translucent caul breathing
+    // over it, motes on slow orbits - and a ripple on every pulse of its drum
+    const rPer = sim.drumPeriod(S, side);
+    const ring = Math.max(0, 1 - (rPer === null ? 9 : rPer - (S.nextBeat[side] - S.t)) / 0.9);
+    ctx.fillStyle = player ? 'rgba(26,18,40,0.9)' : 'rgba(46,16,40,0.9)';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.95, b.r * 0.7, 0, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'lighter';
+    const sh = 0.16 + 0.07 * Math.sin(time * 1.7);
+    const gl = ctx.createRadialGradient(b.x, b.y, 3, b.x, b.y, b.r * 1.15);
+    gl.addColorStop(0, 'rgba(150,110,220,' + sh + ')');
+    gl.addColorStop(1, 'rgba(150,110,220,0)');
+    ctx.fillStyle = gl;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 1.15, b.r * 0.9, 0, 0, 7); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    if (ring > 0) {
+      ctx.strokeStyle = 'rgba(206,168,255,' + 0.5 * ring + ')';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y, b.r * (0.3 + 0.75 * (1 - ring)), b.r * (0.22 + 0.56 * (1 - ring)), 0, 0, 7);
+      ctx.stroke();
+    }
+    for (let i = 0; i < 6; i++) {
+      const a = time * (0.4 + (i % 3) * 0.12) + i * 1.05;
+      const rr = b.r * (0.5 + (i % 3) * 0.16);
+      ctx.fillStyle = 'rgba(214,180,250,' + (0.4 + 0.25 * Math.sin(time * 2 + i)) + ')';
+      ctx.beginPath();
+      ctx.arc(b.x + Math.cos(a) * rr, b.y + Math.sin(a) * rr * 0.72, 1.3 + (i % 3) * 0.5, 0, 7);
+      ctx.fill();
+    }
+    nestCracks(b, flash);
+    ctx.fillStyle = '#0c0614';
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.34, b.r * 0.24, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(214,180,250,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(b.x, b.y, b.r * 0.34, b.r * 0.24, 0, 0, 7); ctx.stroke();
+  } else {
+    drawMound(b, player ? '#4a3826' : '#9a4030', player ? '#160f08' : '#3a140c', flash);
+  }
+}
+
+// T48a: sprites v2 - the faction owns the whole BODY now, not an ant with
+// trim. Each unit carries renderer-side motion state (a velocity-smoothed
+// heading plus a gait phase wound by the distance actually travelled), so a
+// chassis moves like the thing it is: FOUNDRY walks on pistons, SEEP pours
+// itself forward, VEIL floats and phase-slips. Nothing here writes sim state.
+// The side still owns the hue family (player dark, enemy red).
+const BODY_HUE = {
   sandbox: { p: '#1d150c', e: '#a8321e' },
-  seep:    { p: '#20280f', e: '#8e3050' },
+  seep:    { p: '#28380f', e: '#8e3050' },
   foundry: { p: '#2a2e26', e: '#96382a' },
   veil:    { p: '#2a2138', e: '#9c3060' },
 };
+const RS = new WeakMap();
+function motionOf(u, time) {
+  let rs = RS.get(u);
+  if (!rs) {
+    rs = { x: u.x, y: u.y, ang: u.side === 'p' ? -Math.PI / 2 : Math.PI / 2,
+           ph: u.seed * 7, spd: 0, t: time };
+    RS.set(u, rs);
+  }
+  const dt = Math.min(0.1, Math.max(0.001, time - rs.t));
+  const dx = u.x - rs.x, dy = u.y - rs.y, dist = Math.hypot(dx, dy);
+  if (dist > 0.03) {
+    let d = Math.atan2(dy, dx) - rs.ang;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    rs.ang += d * Math.min(1, dt * 9);
+    rs.ph += dist * 0.55;
+  } else if (u.state === 'muster') {
+    // a gathered army slowly squares up to face the road ahead
+    let d = (u.side === 'p' ? -Math.PI / 2 : Math.PI / 2) - rs.ang;
+    while (d > Math.PI) d -= Math.PI * 2;
+    while (d < -Math.PI) d += Math.PI * 2;
+    rs.ang += d * Math.min(1, dt * 1.5);
+  }
+  rs.spd += (dist / dt - rs.spd) * Math.min(1, dt * 6);
+  rs.x = u.x; rs.y = u.y; rs.t = time;
+  return rs;
+}
+
+function gear(x, y, R, a0, color, lw) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.arc(x, y, R * 0.62, 0, 7); ctx.stroke();
+  ctx.beginPath();
+  for (let i = 0; i < 5; i++) {
+    const a = a0 + i * Math.PI * 0.4;
+    ctx.moveTo(x + Math.cos(a) * R * 0.45, y + Math.sin(a) * R * 0.45);
+    ctx.lineTo(x + Math.cos(a) * R, y + Math.sin(a) * R);
+  }
+  ctx.stroke();
+}
+
+// FOUNDRY: a stamped walker seen from above - riveted boiler, piston struts
+// swinging in diagonal pairs, a drive cog wound by the ground it covers, a
+// furnace slit at the prow and exhaust off the stern while it is under way
+function foundryChassis(u, rs, time, hue) {
+  const r = u.r, moving = rs.spd > 4;
+  if (u.typeKey === 'grub') { foundryCart(u, rs, time, hue); return; }
+  const step = Math.sin(rs.ph);
+  ctx.strokeStyle = hue;
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.4, r * 0.3);
+  ctx.fillStyle = hue;
+  for (const sgn of [-1, 1]) {
+    for (const fk of [-1, 1]) {
+      const sw = step * sgn * fk * (moving ? 1 : 0.15);
+      const fx = fk * r * 0.75 + sw * r * 0.6, fy = sgn * r * 1.35;
+      ctx.beginPath();
+      ctx.moveTo(fk * r * 0.75, sgn * r * 0.6);
+      ctx.lineTo(fx, fy);
+      ctx.stroke();
+      ctx.fillRect(fx - r * 0.2, fy - r * 0.14, r * 0.4, r * 0.28);
+    }
+  }
+  ctx.lineCap = 'butt';
+  roundRect(-r * 1.3, -r * 0.85, r * 2.6, r * 1.7, r * 0.6);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(215,225,232,0.35)';
+  ctx.lineWidth = 1;
+  roundRect(-r * 1.3, -r * 0.85, r * 2.6, r * 1.7, r * 0.6);
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(215,225,232,0.55)';
+  for (const [rx, ry] of [[-1, -0.5], [-1, 0.5], [0.15, -0.58], [0.15, 0.58], [1, 0]]) {
+    ctx.beginPath(); ctx.arc(rx * r, ry * r, Math.max(0.5, r * 0.09), 0, 7); ctx.fill();
+  }
+  gear(-r * 0.4, 0, r * 0.55, rs.ph * 1.6, 'rgba(200,176,112,0.95)', Math.max(1, r * 0.16));
+  const heat = 0.55 + 0.3 * Math.sin(time * 6 + u.seed);
+  ctx.fillStyle = 'rgba(255,140,50,' + heat + ')';
+  ctx.fillRect(r * 0.9, -r * 0.28, r * 0.42, r * 0.56);
+  if (moving) {
+    for (let k = 0; k < 2; k++) {
+      const ph = (time * 1.4 + k * 0.5 + u.seed) % 1;
+      ctx.fillStyle = 'rgba(200,200,195,' + 0.3 * (1 - ph) + ')';
+      ctx.beginPath();
+      ctx.arc(-r * 1.5 - ph * r * 2.2, -r * 0.4, r * 0.2 + ph * r * 0.5, 0, 7);
+      ctx.fill();
+    }
+  }
+  if (u.typeKey === 'product' && u.w >= CFG.STAMP.smashAt) {
+    // the ram: a juggernaut's prow plate pumps as it walks through walls
+    const pump = Math.max(0, Math.sin(rs.ph * 2)) * r * 0.3;
+    ctx.fillStyle = '#d8dce8';
+    ctx.fillRect(r * 1.3 + pump, -r * 0.75, r * 0.3, r * 1.5);
+    ctx.strokeStyle = 'rgba(255,180,90,0.35)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(0, 0, CFG.STAMP.smashR * 0.5, 0, 7); ctx.stroke();
+  }
+}
+
+// the Pig Iron: a tracked hopper cart, treads crawling with the ground
+// covered, three ingots cooling in the bed
+function foundryCart(u, rs, time, hue) {
+  const r = u.r;
+  for (const sgn of [-1, 1]) {
+    ctx.fillStyle = hue;
+    roundRect(-r * 0.95, sgn * r * 0.62 - r * 0.26, r * 1.9, r * 0.52, r * 0.2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(215,225,232,0.45)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 3]);
+    ctx.lineDashOffset = -rs.ph * 2;
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.9, sgn * r * 0.62); ctx.lineTo(r * 0.9, sgn * r * 0.62);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.fillStyle = hue;
+  roundRect(-r * 1.05, -r * 0.55, r * 2.1, r * 1.1, r * 0.25);
+  ctx.fill();
+  const heat = 0.45 + 0.3 * Math.sin(time * 3 + u.seed * 2);
+  ctx.fillStyle = 'rgba(255,150,60,' + heat + ')';
+  for (const ix of [-0.55, 0, 0.55]) {
+    ctx.fillRect(ix * r * 1.2 - r * 0.2, -r * 0.32, r * 0.4, r * 0.64);
+  }
+}
+
+// SEEP: nothing here has legs. The mass pours itself forward - front lobes
+// reach on the surge, the rear catches up, and the outline never sits still
+function seepChassis(u, rs, time, hue) {
+  const r = u.r;
+  if (u.typeKey === 'slither') { seepSerpent(u, rs, time); return; }
+  const going = Math.min(1, rs.spd / 28);
+  const reach = (0.45 + 0.55 * Math.max(0, Math.sin(rs.ph * 0.5))) * going;
+  const wob = k => 1 + 0.17 * Math.sin(time * 4.5 + u.seed * 7 + k * 2.3);
+  const lobes = [
+    [-r * (0.9 - 0.3 * reach), 0, r * 1.05 * wob(0), r * 0.95 * wob(1)],
+    [0, -r * 0.4, r * 0.8 * wob(1), r * 0.7 * wob(0)],
+    [0, r * 0.4, r * 0.8 * wob(2), r * 0.7 * wob(1)],
+    [r * (0.5 + reach * 0.9), -r * 0.38, r * (0.5 + reach * 0.35), r * 0.42 * wob(1)],
+    [r * (0.5 + reach * 1.1), r * 0.34, r * (0.45 + reach * 0.4), r * 0.4 * wob(2)],
+  ];
+  ctx.fillStyle = 'rgba(12,18,4,0.55)';
+  for (const [lx, ly, lrx, lry] of lobes) {
+    ctx.beginPath(); ctx.ellipse(lx, ly, lrx + 1.6, lry + 1.6, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = hue;
+  for (const [lx, ly, lrx, lry] of lobes) {
+    ctx.beginPath(); ctx.ellipse(lx, ly, lrx, lry, 0, 0, 7); ctx.fill();
+  }
+  if (u.typeKey === 'shambler') {
+    ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
+    ctx.beginPath(); ctx.arc(-r * 0.7, 0, r * 0.42, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.1, r * 0.25, r * 0.3, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(226,244,190,0.5)';
+  ctx.beginPath(); ctx.arc(-r * 0.25, -r * 0.35, r * 0.26, 0, 7); ctx.fill();
+  const dp = (time * 0.8 + u.seed) % 1;
+  if (dp < 0.5 && going > 0.2) {
+    ctx.fillStyle = (u.side === 'p' ? 'rgba(140,168,88,' : 'rgba(200,110,150,')
+      + 0.55 * (1 - dp * 2) + ')';
+    ctx.beginPath(); ctx.ellipse(-r * 1.3 - dp * 10, 0, 1.6, 1.2, 0, 0, 7); ctx.fill();
+  }
+}
+
+// the Slither: a slick of slime swimming in an S, head glistening, and the
+// wake behind it is still the haste it is actually getting off its own paint
+function seepSerpent(u, rs, time) {
+  const r = u.r;
+  const seg = k => [
+    -k * r * 0.62,
+    Math.sin(rs.ph * 0.9 - k * 0.85 + u.seed) * r * 0.55 * (0.25 + k / 7),
+    r * (0.72 - k * 0.07),
+  ];
+  ctx.fillStyle = 'rgba(12,18,4,0.5)';
+  for (let k = 6; k >= 0; k--) {
+    const [sx, sy, sr] = seg(k);
+    ctx.beginPath(); ctx.ellipse(sx, sy, sr + 1.3, sr * 0.9 + 1.3, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = u.side === 'p' ? '#a8c860' : '#e090b8';
+  for (let k = 6; k >= 0; k--) {
+    const [sx, sy, sr] = seg(k);
+    ctx.beginPath(); ctx.ellipse(sx, sy, sr, sr * 0.9, 0, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle = 'rgba(240,250,210,0.6)';
+  ctx.beginPath(); ctx.arc(r * 0.1, -r * 0.2, r * 0.2, 0, 7); ctx.fill();
+  const wake = (u.hasted || 1) - 1;
+  if (wake > 0.02) {
+    ctx.strokeStyle = u.side === 'p' ? 'rgba(168,200,96,0.5)' : 'rgba(224,144,184,0.5)';
+    ctx.lineWidth = 1.4;
+    for (const s of [-1, 1]) {
+      ctx.beginPath();
+      ctx.moveTo(-r * 2, s * r * 0.5);
+      ctx.lineTo(-r * (2 + 9 * wake), s * r * 1.3);
+      ctx.stroke();
+    }
+  }
+}
+
+// VEIL: nothing touches the ground. A translucent hood with a ragged hem
+// trailing the march, a bright mote where a face would be, and every so
+// often it phase-slips and leaves itself behind for a blink
+function veilChassis(u, rs, time, hue) {
+  const r = u.r;
+  const slip = Math.sin(time * 1.1 + u.seed * 5) > 0.88;
+  if (slip) {
+    ctx.globalAlpha = 0.22;
+    ctx.fillStyle = hue;
+    ctx.beginPath(); ctx.ellipse(-r * 1.5, 0, r, r * 0.8, 0, 0, 7); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.globalAlpha = slip ? 0.4 : 0.62;
+  ctx.fillStyle = hue;
+  ctx.beginPath();
+  ctx.moveTo(r * 1.25, 0);
+  ctx.quadraticCurveTo(r * 0.9, -r * 0.95, -r * 0.15, -r * 0.88);
+  for (let k = 0; k < 5; k++) {
+    const far = k % 2 ? 0.7 : 1.25;
+    const sway = Math.sin(time * 2.8 + u.seed * 4 + k * 1.9) * r * 0.28;
+    ctx.lineTo(-r * far + sway, -r * 0.88 + (k + 1) * r * 0.352);
+  }
+  ctx.quadraticCurveTo(r * 0.9, r * 0.95, r * 1.25, 0);
+  ctx.closePath(); ctx.fill();
+  ctx.globalAlpha = 1;
+  const pulse = 0.7 + 0.3 * Math.sin(time * 5 + u.seed * 2);
+  ctx.fillStyle = 'rgba(230,205,255,' + pulse + ')';
+  ctx.beginPath(); ctx.arc(r * 0.35, 0, r * 0.3, 0, 7); ctx.fill();
+  if (u.typeKey === 'carrier') {
+    // the cargo bead and its leaking wake, and NO weapon mark of any kind -
+    // the tell stays "this one is not here to fight"
+    const glow = 0.3 + 0.2 * Math.sin(time * 3 + u.seed);
+    ctx.strokeStyle = 'rgba(186,140,232,' + glow + ')';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 0, r * 2.4, 0, 7); ctx.stroke();
+    ctx.fillStyle = u.side === 'p' ? '#c9a0e8' : '#e8a0d0';
+    ctx.beginPath(); ctx.arc(-r * 0.3, 0, r * 0.55, 0, 7); ctx.fill();
+    if (!PLAIN && u.state !== 'muster') {
+      for (let k = 0; k < 3; k++) {
+        ctx.fillStyle = 'rgba(201,160,232,'
+          + (0.4 - k * 0.11 + 0.1 * Math.sin(time * 5 + k * 2 + u.seed)) + ')';
+        ctx.beginPath();
+        ctx.arc(-r * (2.4 + k * 1.5), Math.sin(time * 2.2 + k * 2.4 + u.seed) * 2.5,
+          1.5 - k * 0.3, 0, 7);
+        ctx.fill();
+      }
+    }
+  }
+  ctx.globalCompositeOperation = 'lighter';
+  const sh = 0.10 + 0.08 * Math.sin(time * 4 + u.seed * 3);
+  const gl = ctx.createRadialGradient(0, 0, 1, 0, 0, r * 2.6);
+  gl.addColorStop(0, 'rgba(150,110,220,' + sh + ')');
+  gl.addColorStop(1, 'rgba(150,110,220,0)');
+  ctx.fillStyle = gl;
+  ctx.beginPath(); ctx.arc(0, 0, r * 2.6, 0, 7); ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+// the sandbox keeps its ants (the debug look is the point) - but they walk
+// now: a tripod gait swung by ground covered, and the body faces its heading
+function antChassis(u, rs, time, hue) {
+  const r = u.r;
+  const step = Math.sin(rs.ph * 1.4);
+  ctx.strokeStyle = hue;
+  ctx.lineWidth = 1;
+  for (const sgn of [-1, 1]) {
+    for (let i = 0; i < 3; i++) {
+      const sw = step * ((i + (sgn > 0 ? 0 : 1)) % 2 ? 1 : -1);
+      ctx.beginPath();
+      ctx.moveTo((i - 1) * r * 0.55, sgn * r * 0.3);
+      ctx.lineTo((i - 1) * r * 0.8 + sw * r * 0.45, sgn * (r + 2));
+      ctx.stroke();
+    }
+  }
+  ctx.fillStyle = hue;
+  ctx.beginPath(); ctx.ellipse(-r * 1.5, 0, r * 1.4, r * 1.1, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, r * 0.9, r * 0.8, 0, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(r * 1.2, 0, r * 1.1, r * 0.9, 0, 0, 7); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(r * 1.8, -r * 0.3); ctx.lineTo(r * 2.6, -r * 0.7);
+  ctx.moveTo(r * 1.8, r * 0.3); ctx.lineTo(r * 2.6, r * 0.7);
+  ctx.stroke();
+  if (u.typeKey === 'sapper') {
+    ctx.strokeStyle = '#ffe9b0';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(r * 1.6, -r * 0.7); ctx.lineTo(r * 2.4, 0); ctx.lineTo(r * 1.6, r * 0.7);
+    ctx.stroke();
+  } else if (u.typeKey === 'predator') {
+    ctx.strokeStyle = '#ff9068';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(r * 1.6, -r * 0.9); ctx.quadraticCurveTo(r * 2.9, -r * 0.5, r * 2.5, 0);
+    ctx.moveTo(r * 1.6, r * 0.9); ctx.quadraticCurveTo(r * 2.9, r * 0.5, r * 2.5, 0);
+    ctx.stroke();
+  } else if (u.typeKey === 'shambler') {
+    ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
+    ctx.beginPath(); ctx.arc(-r * 1.2, 0, r * 0.5, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.arc(r * 0.2, 0, r * 0.4, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'slither') {
+    ctx.fillStyle = u.side === 'p' ? '#a8c860' : '#e090b8';
+    ctx.beginPath(); ctx.ellipse(-r * 0.6, 0, r * 1.9, r * 0.35, 0, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'carrier') {
+    const glow = 0.3 + 0.2 * Math.sin(time * 3 + u.seed);
+    ctx.strokeStyle = 'rgba(186,140,232,' + glow + ')';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 0, r * 2.4, 0, 7); ctx.stroke();
+    ctx.fillStyle = u.side === 'p' ? '#c9a0e8' : '#e8a0d0';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.6, 0, 7); ctx.fill();
+  } else if (u.typeKey === 'grub') {
+    ctx.strokeStyle = u.side === 'p' ? 'rgba(240,232,208,0.7)' : 'rgba(248,216,208,0.7)';
+    ctx.lineWidth = 1.2;
+    for (const i of [-1.4, -0.4, 0.6]) {
+      ctx.beginPath();
+      ctx.ellipse(i * r, 0, r * 0.35, r * 0.7, 0, 0, 7);
+      ctx.stroke();
+    }
+  } else if (u.typeKey === 'product') {
+    ctx.strokeStyle = u.side === 'p' ? '#b8c8d0' : '#e0b0a0';
+    ctx.lineWidth = 1.2;
+    for (let i = -1; i <= 1; i++) {
+      ctx.beginPath();
+      ctx.moveTo(i * r * 0.7, -r * 0.7); ctx.lineTo(i * r * 0.7, r * 0.7);
+      ctx.stroke();
+    }
+    if (u.w >= CFG.STAMP.smashAt) {
+      ctx.strokeStyle = 'rgba(255,180,90,0.35)';
+      ctx.beginPath(); ctx.arc(0, 0, CFG.STAMP.smashR * 0.5, 0, 7); ctx.stroke();
+    }
+  }
+}
 
 function drawAnt(u, time) {
   const fac = facOf(u.side);
-  const body = (ANT_BODY[fac] || ANT_BODY.sandbox)[u.side];
-  const dir = u.side === 'p' ? -1 : 1;
+  const hue = (BODY_HUE[fac] || BODY_HUE.sandbox)[u.side];
+  const rs = motionOf(u, time);
   const mustering = u.state === 'muster';
   ctx.save();
   // musters mill about a little so the gathering army looks alive
   const mx = mustering ? Math.sin(time * 1.7 + u.seed * 3) * 3 : 0;
   const my = mustering ? Math.cos(time * 1.3 + u.seed * 2) * 2 : 0;
-  ctx.translate(u.x + mx, u.y + my);
-  ctx.strokeStyle = body;
-  ctx.lineWidth = 1;
-  const biting = u.state === 'siege' || u.state === 'hunt';
-  const wig = Math.sin(time * (biting ? 26 : mustering ? 8 : 18) + u.seed) * 2;
-  if (fac === 'foundry') {
-    // stamped, not born: stiff straight legs, three riveted plates, and the
-    // juggernaut pumps vertically as it walks - a piston stroke, not a gait
-    const pump = u.typeKey === 'product' && !mustering && !(u.frozen > 0)
-      ? Math.sin(time * 9 + u.seed * 5) : 0;
-    ctx.translate(0, pump * 1.4);
-    ctx.lineWidth = 1.2;
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i * 0.4);
-      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i * 0.4);
-      ctx.stroke();
-    }
-    ctx.fillStyle = body;
-    const plate = (cy, w, h) => ctx.fillRect(-w / 2, cy - h / 2, w, h);
-    plate(dir * u.r * 1.2, u.r * 1.8, u.r * 1.7);
-    plate(0, u.r * 1.5, u.r * 1.4);
-    plate(-dir * u.r * 1.5, u.r * 2.1, u.r * 2.2);
-    ctx.fillStyle = 'rgba(215,225,232,0.5)';
-    for (const [rx, ry] of [[-0.6, -0.6], [0.6, -0.6], [0, 0.7]]) {
-      ctx.beginPath();
-      ctx.arc(rx * u.r * 0.7, -dir * u.r * 1.5 + ry * u.r * 0.7, u.r * 0.16 + 0.4, 0, 7);
-      ctx.fill();
-    }
-  } else if (fac === 'seep') {
-    // one wet mass on the move: pseudopod legs, lobes that wobble out of
-    // phase, a glisten, and a drip it leaves as it goes
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
-      ctx.quadraticCurveTo(0, i * u.r * 1.3, u.r + 2, i * u.r * 0.8 - wig * i);
-      ctx.stroke();
-    }
-    const wob = k => 1 + 0.15 * Math.sin(time * 5 + u.seed * 7 + k * 2.1);
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9 * wob(0), u.r * 1.1 * wob(1), 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.85 * wob(2), u.r * 0.95 * wob(0), 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.15 * wob(1), u.r * 1.45 * wob(2), 0, 0, 7); ctx.fill();
-    ctx.fillStyle = 'rgba(222,240,190,0.4)';
-    ctx.beginPath(); ctx.arc(u.r * 0.3, -dir * u.r * 1.8, u.r * 0.28, 0, 7); ctx.fill();
-    const dp = (time * 0.7 + u.seed) % 1;
-    if (dp < 0.5) {
-      ctx.fillStyle = 'rgba(140,168,88,' + (0.55 * (1 - dp * 2)) + ')';
-      ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.2 + dp * 9, 1.2, 1.7, 0, 0, 7); ctx.fill();
-    }
-  } else if (fac === 'veil') {
-    // half-there: the body draws translucent, then an additive shimmer
-    // breathes over it - more a presence than a physique
-    ctx.globalAlpha = 0.72;
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
-      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
-      ctx.stroke();
-    }
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'lighter';
-    const sh = 0.10 + 0.08 * Math.sin(time * 4 + u.seed * 3);
-    const gl = ctx.createRadialGradient(0, 0, 1, 0, 0, u.r * 2.6);
-    gl.addColorStop(0, 'rgba(150,110,220,' + sh + ')');
-    gl.addColorStop(1, 'rgba(150,110,220,0)');
-    ctx.fillStyle = gl;
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-  } else {
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-u.r - 2, i * u.r * 0.8 + wig * i);
-      ctx.lineTo(u.r + 2, i * u.r * 0.8 - wig * i);
-      ctx.stroke();
-    }
-    ctx.fillStyle = body;
-    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 1.2, u.r * 0.9, u.r * 1.1, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 0.8, u.r * 0.9, 0, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(0, -dir * u.r * 1.5, u.r * 1.1, u.r * 1.4, 0, 0, 7); ctx.fill();
-  }
+  // a fighter that has stopped moving still STRIKES: a lunge along its heading
+  const fighting = (u.state === 'siege' || u.state === 'hunt')
+    && rs.spd < 8 && !(u.frozen > 0);
+  const lunge = fighting ? Math.pow(Math.max(0, Math.sin(time * 8 + u.seed * 4)), 3) * 3 : 0;
+  ctx.translate(u.x + mx + Math.cos(rs.ang) * lunge, u.y + my + Math.sin(rs.ang) * lunge);
+  if (fac === 'veil') ctx.translate(0, Math.sin(time * 2.1 + u.seed * 3) * 1.3);
+  ctx.save();
+  ctx.rotate(rs.ang);
+  if (fac === 'foundry') foundryChassis(u, rs, time, hue);
+  else if (fac === 'seep') seepChassis(u, rs, time, hue);
+  else if (fac === 'veil') veilChassis(u, rs, time, hue);
+  else antChassis(u, rs, time, hue);
+  ctx.restore();
   if (u.typeKey === 'guard') {
-    // gold thorax band: defenders read differently from attackers
+    // gold core: defenders read differently from attackers in every chassis
     ctx.fillStyle = '#ffd870';
     ctx.beginPath(); ctx.arc(0, 0, u.r * 0.45, 0, 7); ctx.fill();
-  } else if (u.typeKey === 'sapper') {
-    // pale mandibles: the demolition crew
-    ctx.strokeStyle = '#ffe9b0';
-    ctx.lineWidth = 1.5;
-    const hy = -dir * u.r * 2.3;
-    ctx.beginPath();
-    ctx.moveTo(-u.r * 0.7, hy + dir * u.r * 0.8); ctx.lineTo(0, hy);
-    ctx.lineTo(u.r * 0.7, hy + dir * u.r * 0.8);
-    ctx.stroke();
-  } else if (u.typeKey === 'shambler') {
-    // mossy back-spots: the creep's shambling drip
-    ctx.fillStyle = u.side === 'p' ? '#8aa858' : '#c878a0';
-    ctx.beginPath(); ctx.arc(0, dir * u.r * 1.2, u.r * 0.5, 0, 7); ctx.fill();
-    ctx.beginPath(); ctx.arc(0, -dir * u.r * 0.2, u.r * 0.4, 0, 7); ctx.fill();
-  } else if (u.typeKey === 'slither') {
-    // a long tapered body, and a WAKE behind it whose length is the haste it
-    // is actually getting - the speed has to be visible or the building's
-    // whole product is invisible
-    ctx.fillStyle = u.side === 'p' ? '#a8c860' : '#e090b8';
-    ctx.beginPath(); ctx.ellipse(0, dir * u.r * 0.6, u.r * 0.35, u.r * 1.9, 0, 0, 7); ctx.fill();
-    const wake = (u.hasted || 1) - 1;
-    if (wake > 0.02) {
-      ctx.strokeStyle = u.side === 'p' ? 'rgba(168,200,96,0.5)' : 'rgba(224,144,184,0.5)';
-      ctx.lineWidth = 1.4;
-      for (const s of [-1, 1]) {
-        ctx.beginPath();
-        ctx.moveTo(s * u.r * 0.5, dir * u.r * 2);
-        ctx.lineTo(s * u.r * 1.3, dir * u.r * (2 + 9 * wake));
-        ctx.stroke();
-      }
-    }
-  } else if (u.typeKey === 'carrier') {
-    // half-there: a violet cargo bead riding the thorax and a faint aura, and
-    // NO mandible mark of any kind - the tell has to be "this one is not here
-    // to fight", because a player who screens it like an attacker has wasted
-    // the shots that were the actual counterplay
-    const glow = 0.3 + 0.2 * Math.sin(time * 3 + u.seed);
-    ctx.strokeStyle = 'rgba(186,140,232,' + glow + ')';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 2.4, 0, 7); ctx.stroke();
-    ctx.fillStyle = u.side === 'p' ? '#c9a0e8' : '#e8a0d0';
-    ctx.beginPath(); ctx.arc(0, 0, u.r * 0.6, 0, 7); ctx.fill();
-    if (!PLAIN && !mustering) {
-      // T40: a wake of motes behind the march - the claim it carries, leaking
-      for (let k = 0; k < 3; k++) {
-        ctx.fillStyle = 'rgba(201,160,232,' + (0.4 - k * 0.11 + 0.1 * Math.sin(time * 5 + k * 2 + u.seed)) + ')';
-        ctx.beginPath();
-        ctx.arc(Math.sin(time * 2.2 + k * 2.4 + u.seed) * 2.5, -dir * u.r * (2.4 + k * 1.5), 1.5 - k * 0.3, 0, 7);
-        ctx.fill();
-      }
-    }
-  } else if (u.typeKey === 'grub') {
-    // pale segment bands and no mandible mark: a sack that trundles
-    ctx.strokeStyle = u.side === 'p' ? 'rgba(240,232,208,0.7)' : 'rgba(248,216,208,0.7)';
-    ctx.lineWidth = 1.2;
-    for (const i of [-0.6, 0.4, 1.4]) {
-      ctx.beginPath();
-      ctx.ellipse(0, dir * u.r * i, u.r * 0.7, u.r * 0.35, 0, 0, 7);
-      ctx.stroke();
-    }
-  } else if (u.typeKey === 'product') {
-    // riveted plates: FOUNDRY's product is stamped, not born, and a heavy one
-    // reads as a juggernaut because its whole body scales with the press
-    ctx.strokeStyle = u.side === 'p' ? '#b8c8d0' : '#e0b0a0';
-    ctx.lineWidth = 1.2;
-    for (let i = -1; i <= 1; i++) {
-      ctx.beginPath();
-      ctx.moveTo(-u.r * 0.7, i * u.r * 0.7); ctx.lineTo(u.r * 0.7, i * u.r * 0.7);
-      ctx.stroke();
-    }
-    if (u.w >= CFG.STAMP.smashAt) {
-      // the crush halo: this one walks through walls
-      ctx.strokeStyle = 'rgba(255,180,90,0.35)';
-      ctx.beginPath(); ctx.arc(0, 0, CFG.STAMP.smashR * 0.5, 0, 7); ctx.stroke();
-    }
-  } else if (u.typeKey === 'predator') {
-    // rust pincers: the hunter
-    ctx.strokeStyle = '#ff9068';
-    ctx.lineWidth = 1.5;
-    const hy = -dir * u.r * 2.5;
-    ctx.beginPath();
-    ctx.moveTo(-u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(-u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
-    ctx.moveTo(u.r * 0.9, hy + dir * u.r); ctx.quadraticCurveTo(u.r * 0.5, hy - dir * u.r * 0.4, 0, hy);
-    ctx.stroke();
   }
   if (u.charmT > 0) {
-    // violet halo: a charmed ant reads as converted at a glance; the halo
-    // thins as the charm wears off, so a fading grip is visible too
-    ctx.strokeStyle = 'rgba(201,160,232,' + (0.35 + 0.5 * Math.min(1, u.charmT / 6)) + ')';
+    // the puppeteer's rig: a crossbar sways above, three threads run down to
+    // the body, and the whole rig thins as the hold wears off
+    const a = 0.3 + 0.5 * Math.min(1, u.charmT / 6);
+    const bx = Math.sin(time * 1.6 + u.seed) * 3;
+    const by = -u.r * 2 - 14;
+    ctx.strokeStyle = 'rgba(201,160,232,' + a + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bx - 7, by); ctx.lineTo(bx + 7, by);
+    for (const k of [-1, 0, 1]) {
+      ctx.moveTo(bx + k * 6, by);
+      ctx.quadraticCurveTo(bx + k * 6, by / 2, k * u.r * 0.7, -u.r * 0.3);
+    }
+    ctx.stroke();
     ctx.lineWidth = 1.3;
     ctx.beginPath(); ctx.arc(0, 0, u.r * 2.1, 0, 7); ctx.stroke();
   }
@@ -1564,7 +1889,7 @@ function drawAnt(u, time) {
     ctx.beginPath(); ctx.arc(0, 0, u.r * 2.6, 0, 7); ctx.stroke();
   }
   if (u.frozen > 0) {
-    // a frost shell, not a halo: a held ant must read as STOPPED rather than
+    // a frost shell, not a halo: a held body must read as STOPPED rather than
     // as debuffed, since it looks identical to a live one otherwise
     ctx.fillStyle = 'rgba(200,225,255,0.32)';
     ctx.beginPath(); ctx.arc(0, 0, u.r * 1.9, 0, 7); ctx.fill();
@@ -1669,13 +1994,36 @@ function drawFeeder(slot, side, tier, time) {
   }
 }
 
-function drawEggs(slot, spots, eggColor) {
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+function drawEggs(slot, spots, eggColor, time) {
   ctx.lineWidth = 1;
   for (const [dx, dy, r] of spots) {
+    // T48a: the clutch breathes and each egg carries a wet glint
+    const wob = time === undefined ? 1 : 1 + 0.05 * Math.sin(time * 2.6 + dx * 1.7 + dy);
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
     ctx.fillStyle = eggColor;
-    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, r * 0.8, r, 0, 0, 7); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, r * 0.8 * wob, r / wob, 0, 0, 7); ctx.fill();
     ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,245,0.35)';
+    ctx.beginPath(); ctx.arc(slot.x + dx - r * 0.25, slot.y + dy - r * 0.35, r * 0.22, 0, 7); ctx.fill();
+  }
+}
+
+// T48a: SEEP does not lay eggs - a gel sac is translucent, and the embryo
+// inside it visibly twitches, which is what makes a den read as ALIVE
+function drawSacs(slot, spots, side, time) {
+  const col = side === 'p' ? '110,140,80' : '150,70,110';
+  for (const [dx, dy, r] of spots) {
+    const wob = 1 + 0.08 * Math.sin(time * 3.2 + dx * 2.1 + dy);
+    ctx.fillStyle = 'rgba(' + col + ',0.4)';
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, (r + 1.5) * wob, (r + 1) / wob, 0, 0, 7); ctx.fill();
+    ctx.strokeStyle = 'rgba(230,245,200,0.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.ellipse(slot.x + dx, slot.y + dy, r * wob, r * 0.9 / wob, 0, 0, 7); ctx.stroke();
+    ctx.fillStyle = 'rgba(24,36,10,0.85)';
+    ctx.beginPath();
+    ctx.arc(slot.x + dx + Math.sin(time * 5 + dx * 3) * 1.2,
+      slot.y + dy + Math.cos(time * 4 + dy) * 1, r * 0.32, 0, 7);
+    ctx.fill();
   }
 }
 
@@ -1773,6 +2121,15 @@ function drawSlot(slot, side, idx, time) {
     for (const [dx, dy] of [[-5, -2], [4, 3], [1, -5], [-2, 4], [7, -3]]) {
       ctx.beginPath(); ctx.arc(slot.x + dx, slot.y + dy, 1.6, 0, 7); ctx.fill();
     }
+    // T48a: ripples run off the spring - the stain has a source you can SEE
+    for (let k = 0; k < 2; k++) {
+      const ph = (time * 0.5 + k * 0.5) % 1;
+      ctx.strokeStyle = 'rgba(' + col + ',' + 0.4 * (1 - ph) + ')';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.ellipse(slot.x, slot.y, 13 + ph * 14, (13 + ph * 14) * 0.72, 0, 0, 7);
+      ctx.stroke();
+    }
   } else if (slot.type === 'sprout') {
     // T51: the Wellspring's little sibling - one breathing bud, no lane arm
     const col = side === 'p' ? '110,140,80' : '150,70,110';
@@ -1801,20 +2158,55 @@ function drawSlot(slot, side, idx, time) {
       ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 6, 4, 0, 0, 7); ctx.fill();
       ctx.fillStyle = 'rgba(255,225,150,' + heat + ')';
       ctx.beginPath(); ctx.ellipse(slot.x, slot.y + 4, 3.2, 2, 0, 0, 7); ctx.fill();
+      // T48a: the press hammer drops on the shift whistle and lifts away -
+      // phase read straight off nextBeat, the rampart's stateless trick
+      const rPer = sim.drumPeriod(S, side);
+      const fx = Math.max(0, 1 - (rPer === null ? 9 : rPer - (S.nextBeat[side] - S.t)) / 0.45);
+      const hy = slot.y - 22 + fx * 14;
+      ctx.fillStyle = '#565248';
+      ctx.fillRect(slot.x - 2.5, hy - 12, 5, 12);
+      ctx.fillStyle = '#6e6a62';
+      ctx.fillRect(slot.x - 6, hy - 2, 12, 6);
+      if (fx > 0.55) {
+        ctx.fillStyle = 'rgba(255,200,90,' + fx + ')';
+        for (const [sx, sy] of [[-9, 2], [9, 1], [0, -6]]) {
+          ctx.beginPath();
+          ctx.arc(slot.x + sx * (1.6 - fx), slot.y + 2 + sy * (1.6 - fx), 1.5, 0, 7);
+          ctx.fill();
+        }
+      }
     } else {
-      drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc');
+      drawEggs(slot, [[-7, 3, 6], [7, 4, 6], [0, -5, 7]], '#e8e0cc', time);
     }
   } else if (slot.type === 'swarmb') {
-    drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8');
+    drawEggs(slot, [[-10, 3, 4], [-3, 6, 4], [4, 2, 4], [10, 6, 4], [0, -5, 4], [-7, -4, 4], [7, -6, 4]], '#e8d8a8', time);
   } else if (slot.type === 'soldierb') {
-    drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090');
+    drawEggs(slot, [[-8, 4, 7], [8, 4, 7], [0, -6, 7]], '#d8c090', time);
   } else if (slot.type === 'majorb') {
-    drawEggs(slot, [[0, 0, 13]], '#c8a878');
+    drawEggs(slot, [[0, 0, 13]], '#c8a878', time);
   } else if (slot.type === 'grubb') {
-    // bloated pale eggs, packed in: this pit ships weight and nothing else
-    drawEggs(slot, [[-9, 3, 8], [9, 3, 8], [0, -6, 8]], '#f0e8d0');
+    if (fac === 'foundry') {
+      // T48a: a casting tray - three pig-iron ingots cooling out of phase.
+      // This pit ships weight and nothing else, so the art is all mass.
+      ctx.fillStyle = '#3a3e36';
+      roundRect(slot.x - 17, slot.y - 10, 34, 21, 4);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(215,225,232,0.35)';
+      ctx.lineWidth = 1;
+      roundRect(slot.x - 17, slot.y - 10, 34, 21, 4);
+      ctx.stroke();
+      for (let k = 0; k < 3; k++) {
+        const glow = 0.25 + 0.45 * (0.5 + 0.5 * Math.sin(time * 1.8 + k * 2.1));
+        ctx.fillStyle = 'rgba(255,150,60,' + glow + ')';
+        roundRect(slot.x - 13 + k * 9.5, slot.y - 6, 7, 13, 2);
+        ctx.fill();
+      }
+    } else {
+      // bloated pale eggs, packed in: this pit ships weight and nothing else
+      drawEggs(slot, [[-9, 3, 8], [9, 3, 8], [0, -6, 8]], '#f0e8d0', time);
+    }
   } else if (slot.type === 'sapperb') {
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0');
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0c8a0', time);
     // pick-axe mandible mark on the brood
     ctx.strokeStyle = '#6a4a20';
     ctx.lineWidth = 2;
@@ -1822,7 +2214,7 @@ function drawSlot(slot, side, idx, time) {
     ctx.moveTo(slot.x - 5, slot.y - 12); ctx.lineTo(slot.x, slot.y - 17); ctx.lineTo(slot.x + 5, slot.y - 12);
     ctx.stroke();
   } else if (slot.type === 'predatorb') {
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0b8a8');
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#e0b8a8', time);
     // paired fang mark: the hunter brood
     ctx.strokeStyle = '#a03828';
     ctx.lineWidth = 2;
@@ -1831,13 +2223,13 @@ function drawSlot(slot, side, idx, time) {
     ctx.moveTo(slot.x + 6, slot.y - 17); ctx.lineTo(slot.x + 3, slot.y - 11);
     ctx.stroke();
   } else if (slot.type === 'hornb') {
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#d8c090');
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#d8c090', time);
     // curled war horn: this brood slows YOUR drum for heavier waves
     ctx.strokeStyle = '#8a6a30';
     ctx.lineWidth = 2.5;
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 14, 6, Math.PI * 0.2, Math.PI * 1.4); ctx.stroke();
   } else if (slot.type === 'fifeb') {
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#c8d8c0');
+    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#c8d8c0', time);
     // triple quick-strokes: this brood quickens YOUR drum
     ctx.strokeStyle = '#5a7a50';
     ctx.lineWidth = 2;
@@ -1852,7 +2244,8 @@ function drawSlot(slot, side, idx, time) {
       ctx.ellipse(slot.x, slot.y + 3, 20 + Math.sin(time * 1.5 + slot.x) * 1.5, 12, 0, 0, 7);
       ctx.fill();
     }
-    drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#b8c8a0');
+    if (fac === 'seep') drawSacs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], side, time);
+    else drawEggs(slot, [[-8, 4, 6], [8, 4, 6], [0, -5, 6]], '#b8c8a0', time);
     // hanging drips: the den oozes shamblers with no drum
     ctx.strokeStyle = '#6a8a48';
     ctx.lineWidth = 2;
@@ -1864,13 +2257,13 @@ function drawSlot(slot, side, idx, time) {
     ctx.stroke();
   } else if (slot.type === 'carrierb') {
     // one violet pod: a loom spins cargo, not soldiers
-    drawEggs(slot, [[0, 2, 11]], '#c9a0e8');
+    drawEggs(slot, [[0, 2, 11]], '#c9a0e8', time);
     ctx.strokeStyle = 'rgba(201,160,232,' + (0.3 + 0.2 * Math.sin(time * 2)) + ')';
     ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 2, 15 + Math.sin(time * 2) * 2, 0, 7); ctx.stroke();
   } else if (slot.type === 'spindle') {
     // T51: the Loom's little sibling - one small pod, a thinner slower ring
-    drawEggs(slot, [[0, 2, 7]], '#c9a0e8');
+    drawEggs(slot, [[0, 2, 7]], '#c9a0e8', time);
     ctx.strokeStyle = 'rgba(201,160,232,' + (0.2 + 0.15 * Math.sin(time * 1.2)) + ')';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(slot.x, slot.y - 1, 10 + Math.sin(time * 1.2) * 1.5, 0, 7); ctx.stroke();
@@ -1901,7 +2294,8 @@ function drawSlot(slot, side, idx, time) {
       }
     }
   } else if (slot.type === 'slitherb') {
-    drawEggs(slot, [[-9, 4, 5], [0, 4, 5], [9, 4, 5]], '#a8c860');
+    if (fac === 'seep') drawSacs(slot, [[-9, 4, 5], [0, 4, 5], [9, 4, 5]], side, time);
+    else drawEggs(slot, [[-9, 4, 5], [0, 4, 5], [9, 4, 5]], '#a8c860', time);
     // three speed-streaks: this den ships tempo, not mass
     ctx.strokeStyle = '#7aa838';
     ctx.lineWidth = 2;
@@ -2464,8 +2858,8 @@ function roundRect(x, y, w, h, r) {
 function drawMatch(time) {
   drawGround();
   drawCreep(time);
-  drawMound(CFG.ENEMY_BASE, '#9a4030', '#3a140c', hillFlash.e);
-  drawMound(CFG.PLAYER_BASE, '#4a3826', '#160f08', hillFlash.p);
+  drawNest(CFG.ENEMY_BASE, 'e', time, hillFlash.e);
+  drawNest(CFG.PLAYER_BASE, 'p', time, hillFlash.p);
   drawHillPips(CFG.ENEMY_BASE, S.hillPips.e, time);
   drawHillPips(CFG.PLAYER_BASE, S.hillPips.p, time);
   for (let i = 0; i < S.slots.e.length; i++) drawSlot(S.slots.e[i], 'e', i, time);

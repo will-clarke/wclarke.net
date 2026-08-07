@@ -24,7 +24,7 @@
 'use strict';
 
 // ---------------------------------------------------------------------------
-// Ant War renderer (v1.0 "the clash"). All rules live in sim.js (shared with the Node
+// Ant War renderer (v1.2 "amber and edge"). All rules live in sim.js (shared with the Node
 // tuning harness); strategies, personas and campaign levels live in
 // policy.js. This file only draws, reads taps, and steps the sim at a fixed
 // tick. There are no manual sends: every tap is a build, an upgrade or a
@@ -43,7 +43,7 @@ const UI_TOP = 648;
 
 const LABELS = {
   farm: 'Farm',
-  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter',
+  tower: 'Tower', sharp: 'Sharp', spit: 'Spitter', amber: 'Amber',
   hatch: 'Hatchery', soldierb: 'Soldier', assassinb: 'Assassin', sapperb: 'Sapper',
 };
 
@@ -102,7 +102,7 @@ function allowedOptions(slotIdx) {
 let replay = null;
 function startReplay(opponent) {
   replay = {
-    v: 'v1.0', mode, opponent, seed: S.seed,
+    v: 'v1.2', mode, opponent, seed: S.seed,
     setup: S.cfg.SETUP || null,
     map: S.map.key,
     startedAt: new Date().toISOString(),
@@ -254,9 +254,9 @@ function begin(key) {           // skirmish: pick a persona, symmetric start
   mode = 'skirmish';
   personaKey = key;
   S = sim.createState((Math.random() * 2 ** 31) | 0, { MAP: mapKey });
-  // the champion also gets its campaign-boss reaction speed here
-  enemyCtrl = pol.makeController(pol.PERSONAS[key].params,
-    key === 'optimum' ? { thinkEvery: 0.5 } : undefined);
+  // every persona thinks at the default cadence - faster is measurably
+  // WORSE for the champion (it flips intents instead of saving)
+  enemyCtrl = pol.makeController(pol.PERSONAS[key].params);
   startReplay(key);
   resetMatchFx();
 }
@@ -291,6 +291,7 @@ const DESC = {
   tower: 'cheap, fast, short-ranged. Shoots anything, assassins included.',
   sharp: 'long range, one heavy shot. Big soldiers fear it.',
   spit: 'short range, splashes. Chaff melts to it.',
+  amber: 'no sting - a resin snare. Everything in range SLOWS.',
   hatch: 'breeds plain workers - and every brood upgrades from here.',
   soldierb: 'breeds soldiers: the line that holds the clash.',
   assassinb: 'breeds assassins: they walk through the war to your hill.',
@@ -308,6 +309,13 @@ function statsLines(slot) {
       'nothing can kill a farm - sappers only demolish towers'];
   }
   const tw = CFG.TOWERS[t];
+  if (t === 'amber') {
+    return ['deals NO damage - enemies in range crawl at '
+      + Math.round(tw.slow[lvl] * 100) + '% speed (a level slows harder)',
+      'range ' + tw.range + ' - snares assassins too; slows never stack',
+      Math.round(CFG.TOWER_HP * k) + 'hp - sappers demolish it at '
+      + CFG.UNITS.sapper.vsTower + ' dps'];
+  }
   if (tw) {
     const dmg = r1(tw.dmg * k);
     return [dmg + ' dmg every ' + tw.cooldown + 's (' + r1(dmg / tw.cooldown) + ' dps)'
@@ -339,10 +347,11 @@ function statsLines(slot) {
 const STAT_LABELS = {
   income: ['income', 'g/s'], dmg: ['dmg', ''], dps: ['dps', ''],
   range: ['range', ''], splash: ['splash', 'px'], hp: ['building hp', ''],
+  slow: ['slows to', '% speed'],
   every: ['breeds every', 's'], unitHp: ['unit hp', ''],
   unitDps: ['unit dps', ''], unitSpd: ['unit speed', ''],
 };
-const LOWER_BETTER = ['every'];
+const LOWER_BETTER = ['every', 'slow'];
 
 function keyStats(type, lvl) {
   const k = Math.pow(CFG.LVL_POWER, lvl - 1);
@@ -350,8 +359,11 @@ function keyStats(type, lvl) {
   if (type === 'farm') o.income = CFG.FARM_INCOME[lvl];
   const tw = CFG.TOWERS[type];
   if (tw) {
-    o.dmg = r1(tw.dmg * k);
-    o.dps = r1(tw.dmg * k / tw.cooldown);
+    if (tw.dmg) {
+      o.dmg = r1(tw.dmg * k);
+      o.dps = r1(tw.dmg * k / tw.cooldown);
+    }
+    if (tw.slow) o.slow = Math.round(tw.slow[lvl] * 100);
     o.range = tw.range;
     if (tw.splash) o.splash = tw.splash;
     o.hp = Math.round(CFG.TOWER_HP * k);
@@ -659,6 +671,11 @@ function drawAnt(u, time) {
   const mx = mustering ? Math.sin(time * 1.7 + u.seed * 3) * 3 : 0;
   const my = mustering ? Math.cos(time * 1.3 + u.seed * 2) * 2 : 0;
   ctx.translate(u.x + mx, u.y + my);
+  // resin snare: a slowed ant wades through an amber sheen
+  if (u.sf && u.sf < 1) {
+    ctx.fillStyle = 'rgba(232,176,64,0.28)';
+    ctx.beginPath(); ctx.ellipse(0, 0, u.r * 2.3, u.r * 1.8, 0, 0, 7); ctx.fill();
+  }
   ctx.strokeStyle = body;
   ctx.lineWidth = 1;
   const biting = u.state === 'siege' || u.fx;
@@ -793,7 +810,7 @@ function drawSlot(slot, side, idx, time) {
   } else {
     // tower family: stone mound base
     const g = ctx.createRadialGradient(slot.x, slot.y - 8, 3, slot.x, slot.y, 20);
-    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890' }[slot.type];
+    const top = { tower: '#b8b0a0', sharp: '#c8bca8', spit: '#b0a890', amber: '#c8ac74' }[slot.type];
     g.addColorStop(0, top);
     g.addColorStop(1, '#6e685c');
     ctx.fillStyle = g;
@@ -812,6 +829,13 @@ function drawSlot(slot, side, idx, time) {
       for (const dx of [-8, 0, 8]) {
         ctx.beginPath(); ctx.arc(slot.x + dx, slot.y - 6, 3.2, 0, 7); ctx.fill();
       }
+    } else if (slot.type === 'amber') {
+      // a glistening resin bead, slowly pulsing - the snare never shoots
+      const pulse = 0.75 + 0.25 * Math.sin(time * 2.2 + slot.x);
+      ctx.fillStyle = 'rgba(232,176,64,' + pulse + ')';
+      ctx.beginPath(); ctx.ellipse(slot.x, slot.y - 9, 5.5, 7, 0, 0, 7); ctx.fill();
+      ctx.fillStyle = 'rgba(255,236,170,' + pulse + ')';
+      ctx.beginPath(); ctx.arc(slot.x - 1.5, slot.y - 12, 1.8, 0, 7); ctx.fill();
     }
   }
 

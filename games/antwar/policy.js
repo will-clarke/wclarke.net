@@ -31,6 +31,7 @@ const PARAM_SPEC = {
   mixSapper:     [0, 1, false],    // ...sappers demolish enemy towers
   sharpTrig:     [1, 9, true],     // sharp once foe soldier-broods >= N (9=never)
   spitTrig:      [1, 9, true],     // spitter once foe worker-hatcheries >= N (9=never)
+  amberTrig:     [1, 9, true],     // amber (slow) once foe offence buildings >= N (9=never)
   upgW:          [0.2, 2, false],  // upgrades vs new builds
   lvlW:          [0, 2, false],    // appetite for levelling buildings
 };
@@ -146,6 +147,13 @@ function makeController(rawParams, opts) {
       if (foeWorkerB >= P.spitTrig && sim.count(S, side, 'spit') < 2) {
         cands.push({ score: P.wDef * P.upgW * 1.2, a: { kind: 'build', slot: baseTower, type: 'spit' } });
       }
+      // amber deals no damage - only propose it while another tower would
+      // still stand after the conversion (a lone snare guards nothing),
+      // and score it BELOW the damage specs: a snare multiplies shooters,
+      // it must never displace the shooter it would multiply
+      if (foeOff >= P.amberTrig && def >= 2 && sim.count(S, side, 'amber') < 1) {
+        cands.push({ score: P.wDef * P.upgW * 1.05, a: { kind: 'build', slot: baseTower, type: 'amber' } });
+      }
     }
 
     // hatchery specialisation toward the mix (largest share deficit first).
@@ -206,7 +214,7 @@ const PERSONAS = {
       wEco: 0.8, wDef: 1, wOff: 2.6,
       farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1, reactGhost: 1,
       farmLvl: 2, mixWorker: 1, mixSoldier: 0.35, mixAssassin: 0, mixSapper: 0.15,
-      sharpTrig: 2, spitTrig: 3, upgW: 0.9, lvlW: 0.6,
+      sharpTrig: 2, spitTrig: 3, amberTrig: 9, upgW: 0.9, lvlW: 0.6,
     },
   },
   tussock: {
@@ -221,7 +229,7 @@ const PERSONAS = {
       wEco: 1.7, wDef: 2.4, wOff: 1.2,
       farmTarget: 4, hatchTarget: 4, towersBase: 3, towersPer100s: 1.8, reactDef: 1, reactGhost: 2,
       farmLvl: 2, mixWorker: 0.1, mixSoldier: 1, mixAssassin: 0, mixSapper: 0.05,
-      sharpTrig: 2, spitTrig: 1, upgW: 1.4, lvlW: 1.2,
+      sharpTrig: 2, spitTrig: 1, amberTrig: 9, upgW: 1.4, lvlW: 1.2,
     },
   },
   bloom: {
@@ -233,8 +241,8 @@ const PERSONAS = {
       // built late can't cover everything. Thin walls keep rush > bloom.
       wEco: 2.6, wDef: 0.9, wOff: 1.5,
       farmTarget: 4, hatchTarget: 5, towersBase: 1, towersPer100s: 0.5, reactDef: 1, reactGhost: 1,
-      farmLvl: 3, mixWorker: 0.2, mixSoldier: 1, mixAssassin: 0.6, mixSapper: 0.4,
-      sharpTrig: 3, spitTrig: 5, upgW: 1.2, lvlW: 1.6,
+      farmLvl: 3, mixWorker: 0.2, mixSoldier: 1, mixAssassin: 0.8, mixSapper: 0.6,
+      sharpTrig: 3, spitTrig: 5, amberTrig: 3, upgW: 1.2, lvlW: 1.6,
     },
   },
 };
@@ -245,19 +253,19 @@ const ARCHETYPES = {
     wEco: 3, wDef: 0.3, wOff: 0.6,
     farmTarget: 6, hatchTarget: 2, towersBase: 0, towersPer100s: 0, reactDef: 0, reactGhost: 0,
     farmLvl: 3, mixWorker: 0.2, mixSoldier: 1, mixAssassin: 0, mixSapper: 0.2,
-    sharpTrig: 9, spitTrig: 9, upgW: 1, lvlW: 2,
+    sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 1, lvlW: 2,
   },
   wallDef: {
     wEco: 0.4, wDef: 3, wOff: 0.4,
     farmTarget: 1, hatchTarget: 1, towersBase: 4, towersPer100s: 2, reactDef: 2, reactGhost: 2,
     farmLvl: 1, mixWorker: 0.2, mixSoldier: 1, mixAssassin: 0, mixSapper: 0,
-    sharpTrig: 1, spitTrig: 2, upgW: 1.5, lvlW: 1.2,
+    sharpTrig: 1, spitTrig: 2, amberTrig: 2, upgW: 1.5, lvlW: 1.2,
   },
   allInHatch: {
     wEco: 0.3, wDef: 0.3, wOff: 3,
     farmTarget: 0, hatchTarget: 6, towersBase: 0, towersPer100s: 0, reactDef: 0, reactGhost: 0,
     farmLvl: 1, mixWorker: 1, mixSoldier: 0.3, mixAssassin: 0, mixSapper: 0,
-    sharpTrig: 9, spitTrig: 9, upgW: 0.6, lvlW: 0.3,
+    sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 0.6, lvlW: 0.3,
   },
   // sanity probe: sappers as the whole plan. Should crack turtles but lose
   // to soldiers (they eat sappers in the clash) - if it dominates the
@@ -266,7 +274,7 @@ const ARCHETYPES = {
     wEco: 0.6, wDef: 0.5, wOff: 3,
     farmTarget: 1, hatchTarget: 5, towersBase: 1, towersPer100s: 0, reactDef: 0, reactGhost: 0,
     farmLvl: 1, mixWorker: 0.2, mixSoldier: 0.2, mixAssassin: 0, mixSapper: 1,
-    sharpTrig: 9, spitTrig: 9, upgW: 1, lvlW: 0.8,
+    sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 1, lvlW: 0.8,
   },
   // v1.0 sanity probe: assassins as the whole plan, sappers opening the
   // wall for them. Should beat army-heavy tower-light builds and lose to
@@ -275,21 +283,22 @@ const ARCHETYPES = {
     wEco: 1.5, wDef: 0.6, wOff: 2.4,
     farmTarget: 2, hatchTarget: 5, towersBase: 1, towersPer100s: 0.3, reactDef: 0, reactGhost: 0,
     farmLvl: 2, mixWorker: 0.1, mixSoldier: 0.2, mixAssassin: 1, mixSapper: 0.4,
-    sharpTrig: 9, spitTrig: 9, upgW: 1, lvlW: 0.8,
+    sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 1, lvlW: 0.8,
   },
-  // the evolved + hardened champion: round 1 evolved vs the field, an
-  // exploit run found a 0.50 near-counter, round 2 folded that counter
-  // into the pool - v2 beats the whole field, the round-1 champion AND
-  // the counter at 1.00. Balanced reactive macro: lvl-2 farms into a
-  // pure soldier line, two opening towers plus hard reactions, instant
-  // specialists, max upgrade appetite. Doubles as the campaign endboss
-  // and as the "strong player" reference when grading the ladder.
+  // the evolved + hardened champion (v1.2, three rounds: each round's
+  // exploit counter joined the next round's breeding pool). Eco into
+  // sapper+assassin attrition with reactive walls and sharps - it beats
+  // the whole field, both prior champions and both counters on fresh
+  // spread seeds, and it buys one amber against floods. Runs at the
+  // DEFAULT think cadence everywhere: 0.5s thinking is measurably worse
+  // for it (intent-flipping starves its savings). Doubles as the campaign
+  // endboss and the ladder's "strong player" reference.
   // Re-evolve + re-harden after any rules change.
   optimum: {
-    wEco: 1.75, wDef: 0.52, wOff: 1.3,
-    farmTarget: 4, hatchTarget: 4, towersBase: 2, towersPer100s: 0.75, reactDef: 2, reactGhost: 2,
-    farmLvl: 2, mixWorker: 0, mixSoldier: 1, mixAssassin: 0.04, mixSapper: 0,
-    sharpTrig: 1, spitTrig: 1, upgW: 2, lvlW: 0.26,
+    wEco: 2.52, wDef: 1.32, wOff: 0.2,
+    farmTarget: 3, hatchTarget: 3, towersBase: 0, towersPer100s: 0.91, reactDef: 1, reactGhost: 1,
+    farmLvl: 2, mixWorker: 0.03, mixSoldier: 0, mixAssassin: 0.63, mixSapper: 1,
+    sharpTrig: 2, spitTrig: 8, amberTrig: 6, upgW: 0.86, lvlW: 0.45,
   },
 };
 
@@ -321,7 +330,7 @@ const LEVELS = [
         wEco: 2.6, wDef: 0.5, wOff: 1,
         farmTarget: 4, hatchTarget: 2, towersBase: 0, towersPer100s: 0.2, reactDef: 0, reactGhost: 0,
         farmLvl: 2, mixWorker: 0.4, mixSoldier: 0.5, mixAssassin: 0, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 9, upgW: 1, lvlW: 0,
+        sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 1, lvlW: 0,
       },
     },
     setup: { moneyE: 110 },
@@ -338,7 +347,7 @@ const LEVELS = [
         wEco: 0.8, wDef: 0.6, wOff: 2.2,
         farmTarget: 1, hatchTarget: 4, towersBase: 0, towersPer100s: 0.3, reactDef: 0, reactGhost: 0,
         farmLvl: 1, mixWorker: 1, mixSoldier: 0.15, mixAssassin: 0, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 9, upgW: 0.8, lvlW: 0,
+        sharpTrig: 9, spitTrig: 9, amberTrig: 9, upgW: 0.8, lvlW: 0,
       },
     },
     setup: { moneyE: 165 },
@@ -355,7 +364,7 @@ const LEVELS = [
         wEco: 1, wDef: 2.2, wOff: 0.8,
         farmTarget: 2, hatchTarget: 1, towersBase: 2, towersPer100s: 0.6, reactDef: 1, reactGhost: 0,
         farmLvl: 1, mixWorker: 0.2, mixSoldier: 1, mixAssassin: 0, mixSapper: 0,
-        sharpTrig: 9, spitTrig: 3, upgW: 1, lvlW: 0.3,
+        sharpTrig: 9, spitTrig: 3, amberTrig: 9, upgW: 1, lvlW: 0.3,
       },
     },
     setup: { moneyE: 165 },
@@ -398,6 +407,7 @@ const LEVELS = [
     blurb: 'Farms first, then giant veteran soldiers with sapper escorts.',
     twist: 'A farm already stands, 240g banked. Crack the greed early.',
     hue: '#d88a50',
+    reward: { key: 'amber', label: 'AMBER TOWER', desc: 'No sting - a resin snare that SLOWS.' },
     ai: { thinkEvery: 1.1, params: null },
     setup: { moneyE: 240, prebuildE: [{ slot: 4, type: 'farm' }] },
   },
@@ -414,10 +424,11 @@ const LEVELS = [
     blurb: 'The tuner\'s champion: ten thousand simulated wars distilled.',
     twist: 'No head start. No handicap. Just better macro than you.',
     hue: '#ffd870',
-    // 0.5s think: the one honest knob left after "no head start, no
-    // handicap" - the champion simply reacts faster than the reference
-    // players it was graded against
-    ai: { thinkEvery: 0.5, params: null },   // filled from ARCHETYPES.optimum
+    // 0.8s think - the same cadence every reference player grades at.
+    // Faster is NOT stronger for this vector: at 0.5s it re-picks its
+    // intent so often it never saves up for the expensive builds and its
+    // own 0.8s self beats it ~1.0 both ways. Pure vector strength only.
+    ai: { thinkEvery: 0.8, params: null },   // filled from ARCHETYPES.optimum
     setup: null,
   },
 ];
