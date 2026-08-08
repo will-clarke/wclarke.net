@@ -107,6 +107,23 @@
     stroke-linejoin: round;
   }
   #undo { flex: 2; min-width: 96px; }
+  /* The two audio toggles live in the HUD, so they must shed every bit of the
+     chunky footer-button styling. */
+  .icon {
+    flex: 0 0 auto;
+    width: 34px;
+    height: 34px;
+    min-height: 0;
+    padding: 0;
+    border-color: transparent;
+    background: none;
+    color: var(--blue);
+  }
+  .icon:active { background: none; }
+  .icon svg { width: 19px; height: 19px; }
+  .icon.off { color: var(--dim); opacity: 0.6; }
+  .icon .slash { display: none; }
+  .icon.off .slash { display: inline; }
   button:active { background: #354162; }
   #undo.pulse { animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse {
@@ -167,6 +184,12 @@
     <span id="levelName">NEST</span>
     <span id="selves" hidden></span>
     <span id="moves">0</span>
+    <button id="sfxBtn" class="icon" aria-label="Sound effects">
+      <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12L7.5 14.5H4z"/><path d="M15.5 9.5a4 4 0 0 1 0 5"/><path class="slash" d="M3.5 3.5l17 17"/></svg>
+    </button>
+    <button id="musicBtn" class="icon" aria-label="Music">
+      <svg viewBox="0 0 24 24"><path d="M9 17.5V5.5l10-2v12"/><circle cx="6.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/><path class="slash" d="M3.5 3.5l17 17"/></svg>
+    </button>
   </header>
   <main id="stage">
     <canvas id="world"></canvas>
@@ -741,6 +764,7 @@ function loadProgress() {
       progress.best = raw.best || {};
       progress.unlocked = Math.min(LEVELS.length, Math.max(1, raw.unlocked | 0 || 1));
       progress.coached = raw.coached || {};
+      if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
 }
@@ -806,7 +830,7 @@ function openPicker() {
     note.textContent = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
     b.appendChild(document.createElement('br'));
     b.appendChild(note);
-    if (!locked) b.addEventListener('click', () => loadLevel(i));
+    if (!locked) b.addEventListener('click', () => { play('ui'); loadLevel(i); });
     grid.appendChild(b);
   });
   $('overlay').hidden = true;
@@ -955,6 +979,7 @@ function applyMove(dir) {
     bonkAt = performance.now();
     bonkVec = DIRS[dir];
     buzz(20);
+    play('bonk');
     return;
   }
   history.push(state);
@@ -978,6 +1003,7 @@ function applyMove(dir) {
   if (won) buzz([30, 50, 30]);
   else if (kinds.has('die') || kinds.has('merge')) buzz(40);
   else buzz(10);
+  moveSfx(r.events, kinds, won);
 
   if (won) {
     bloom = reducedMotion.matches ? null : { t0: performance.now(), p: 0 };
@@ -989,6 +1015,7 @@ function applyMove(dir) {
 
 function undo() {
   if (!history.length) return;
+  play('undo');
   state = history.pop();
   moves = Math.max(0, moves - 1);
   won = false;
@@ -998,6 +1025,7 @@ function undo() {
 }
 
 function reset() {
+  play('reset');
   if (history.length) state = history[0];
   history = [];
   moves = 0;
@@ -1471,6 +1499,434 @@ function frame(ts) {
   dirty = false;
 }
 
+// --- Audio ------------------------------------------------------------------
+// Everything here is synthesized on the spot: no assets, no fetch, file:// safe.
+// One context, built lazily on the first gesture because autoplay policy will
+// not let us make a sound before that. Two buses (sfx / music) share one small
+// synthetic room, so the squishy noises and the pad sound like they are in the
+// same place.
+
+const AC = window.AudioContext || window.webkitAudioContext;
+const ROOT = 146.83;                    // D3, and everything hangs off it
+const SCALE = [0, 3, 5, 7, 10];         // minor pentatonic: no wrong notes
+const CHORDS = [[0, 3, 7, 14], [-4, 0, 3, 7], [3, 7, 10, 14], [-5, 2, 5, 10]];
+const BASS = [-12, -4, -9, -5];
+const STEP = 30 / 68;                   // one eighth note at 68bpm, seconds
+const SFX_LEVEL = 0.5;
+const MUSIC_LEVEL = 0.17;               // well under the sfx, as specified
+
+// deg counts pentatonic steps from D3 and rolls over into the next octave.
+function scaleHz(deg) {
+  const o = Math.floor(deg / 5);
+  return ROOT * Math.pow(2, (SCALE[deg - o * 5] + 12 * o) / 12);
+}
+function semi(n) { return ROOT * Math.pow(2, n / 12); }
+
+let ac = null, acDead = false;
+let sfxBus, sfxWet, musicBus, musicWet, verb, noiseBuf, delay, padFilter;
+let audio = { sfx: 1, music: 1 };
+let musicTimer = null, musicStep = 0, musicNext = 0, lastPluck = -9;
+let stepDeg = 8;
+
+// A short synthetic room: exponentially decaying noise. Enough to make a plop
+// sound wet without smearing the pad.
+function roomIR(secs) {
+  const len = Math.floor(ac.sampleRate * secs);
+  const buf = ac.createBuffer(2, len, ac.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 3.4) * Math.min(1, i / 240);
+    }
+  }
+  return buf;
+}
+
+function ensureAudio() {
+  if (acDead || !AC) return false;
+  if (!ac) {
+    try { ac = new AC(); } catch (e) { acDead = true; return false; }
+
+    const out = ac.createDynamicsCompressor();
+    out.threshold.value = -12; out.knee.value = 18; out.ratio.value = 5;
+    out.attack.value = 0.005; out.release.value = 0.25;
+    out.connect(ac.destination);
+
+    verb = ac.createConvolver();
+    verb.buffer = roomIR(1.9);
+    const verbOut = ac.createGain();
+    verbOut.gain.value = 0.7;
+    verb.connect(verbOut); verbOut.connect(out);
+
+    // Each bus has a dry leg and its own send, so muting a bus mutes its tail
+    // too (the sends are fed by the voices, not by the bus).
+    sfxBus = ac.createGain(); sfxWet = ac.createGain();
+    musicBus = ac.createGain(); musicWet = ac.createGain();
+    sfxBus.connect(out); sfxWet.connect(verb);
+    musicBus.connect(out); musicWet.connect(verb);
+    sfxBus.gain.value = audio.sfx ? SFX_LEVEL : 0;
+    sfxWet.gain.value = audio.sfx ? 0.9 : 0;
+    musicBus.gain.value = 0.0001;   // faded in by startMusic
+    musicWet.gain.value = 0.9;
+
+    noiseBuf = ac.createBuffer(1, Math.floor(ac.sampleRate * 2), ac.sampleRate);
+    const nd = noiseBuf.getChannelData(0);
+    for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
+
+    // Plucks echo into a dotted-ish delay - most of the "chilled" is here.
+    delay = ac.createDelay(1);
+    delay.delayTime.value = STEP * 3;
+    const fb = ac.createGain(); fb.gain.value = 0.36;
+    const dlp = ac.createBiquadFilter();
+    dlp.type = 'lowpass'; dlp.frequency.value = 1600;
+    delay.connect(dlp); dlp.connect(fb); fb.connect(delay);
+    const dOut = ac.createGain(); dOut.gain.value = 0.5;
+    delay.connect(dOut); dOut.connect(musicBus); dOut.connect(musicWet);
+
+    // The pad breathes through one slow filter sweep, ~22s a cycle.
+    padFilter = ac.createBiquadFilter();
+    padFilter.type = 'lowpass'; padFilter.Q.value = 1.6;
+    padFilter.frequency.value = 620;
+    padFilter.connect(musicBus); padFilter.connect(musicWet);
+    const lfo = ac.createOscillator();
+    lfo.frequency.value = 0.045;
+    const lfoAmt = ac.createGain(); lfoAmt.gain.value = 360;
+    lfo.connect(lfoAmt); lfoAmt.connect(padFilter.frequency);
+    lfo.start();
+  }
+  if (ac.state === 'suspended') ac.resume();
+  return true;
+}
+
+// --- Voices -----------------------------------------------------------------
+
+function env(g, t, a, d, peak) {
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + a);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+}
+function route(node, wetAmt) {
+  node.connect(sfxBus);
+  const w = ac.createGain();
+  w.gain.value = wetAmt;
+  node.connect(w); w.connect(sfxWet);
+}
+
+// THE squish: a body tone whose pitch falls (or rises) fast through a resonant
+// lowpass, with a whisper of noise for wetness. Every tactile sound in this
+// game is a variation on this one.
+function squish(t, f0, f1, dur, gain, q, wet) {
+  const o = ac.createOscillator();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.8);
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass'; lp.Q.value = q;
+  lp.frequency.setValueAtTime(f0 * 4, t);
+  lp.frequency.exponentialRampToValueAtTime(Math.max(140, f1 * 2), t + dur);
+  const g = ac.createGain();
+  env(g, t, 0.006, dur, gain);
+  o.connect(lp); lp.connect(g); route(g, wet);
+  o.start(t); o.stop(t + dur + 0.1);
+}
+
+function noise(t, dur, type, f0, f1, q, gain, wet) {
+  const s = ac.createBufferSource();
+  s.buffer = noiseBuf; s.loop = true;
+  const bp = ac.createBiquadFilter();
+  bp.type = type; bp.Q.value = q;
+  bp.frequency.setValueAtTime(f0, t);
+  bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const g = ac.createGain();
+  env(g, t, 0.008, dur, gain);
+  s.connect(bp); bp.connect(g); route(g, wet);
+  s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.15);
+}
+
+// A bubble surfacing: the pitch snaps up in 20ms and settles.
+function pop(t, f, gain) {
+  const o = ac.createOscillator();
+  o.type = 'sine';
+  o.frequency.setValueAtTime(f * 0.45, t);
+  o.frequency.exponentialRampToValueAtTime(f, t + 0.022);
+  o.frequency.exponentialRampToValueAtTime(f * 0.82, t + 0.13);
+  const g = ac.createGain();
+  env(g, t, 0.004, 0.13, gain);
+  o.connect(g); route(g, 0.35);
+  o.start(t); o.stop(t + 0.22);
+}
+
+function bell(t, f, gain, dur, wet) {
+  const o = ac.createOscillator(); o.type = 'sine';
+  const o2 = ac.createOscillator(); o2.type = 'triangle';
+  o.frequency.value = f; o2.frequency.value = f * 2.005;
+  const g2 = ac.createGain(); g2.gain.value = 0.18;
+  const g = ac.createGain();
+  env(g, t, 0.01, dur, gain);
+  o.connect(g); o2.connect(g2); g2.connect(g); route(g, wet);
+  o.start(t); o2.start(t); o.stop(t + dur + 0.2); o2.stop(t + dur + 0.2);
+}
+
+const SFX = {
+  // The walk wanders up and down the pentatonic, so a long drag-to-walk reads
+  // as a phrase rather than a typewriter.
+  step(t) {
+    stepDeg += (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.25 ? 2 : 1);
+    stepDeg = Math.max(5, Math.min(12, stepDeg));
+    const f = scaleHz(stepDeg);
+    squish(t, f * 1.3, f, 0.1, 0.15, 6, 0.14);
+    noise(t, 0.045, 'bandpass', 2600, 1100, 1.4, 0.018, 0.12);
+  },
+  push(t) {
+    squish(t, 210, 112, 0.18, 0.22, 7, 0.18);
+    noise(t, 0.15, 'lowpass', 1300, 320, 1, 0.05, 0.14);   // the scrape
+  },
+  bonk(t) {
+    squish(t, 150, 60, 0.24, 0.3, 10, 0.22);               // rubbery, not a knock
+    noise(t, 0.055, 'lowpass', 700, 180, 0.8, 0.06, 0.1);
+  },
+  // Being pulled through the little world's door: pitch and filter both climb.
+  portalIn(t) {
+    squish(t, 190, 640, 0.17, 0.17, 9, 0.32);
+    noise(t, 0.19, 'bandpass', 480, 3200, 2.2, 0.05, 0.32);
+  },
+  // ...and coming back out of the far mouth, which is that in reverse plus the
+  // pop of a body reinflating.
+  portalOut(t) {
+    noise(t, 0.13, 'bandpass', 3000, 700, 2.2, 0.045, 0.32);
+    pop(t + 0.05, 660, 0.2);
+  },
+  // A pit swallowing a box: the pitch falls off a cliff, then a wet gulp.
+  sink(t) {
+    const o = ac.createOscillator();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(560, t);
+    o.frequency.exponentialRampToValueAtTime(78, t + 0.09);
+    const g = ac.createGain();
+    env(g, t, 0.005, 0.16, 0.34);
+    o.connect(g); route(g, 0.4);
+    o.start(t); o.stop(t + 0.3);
+    noise(t + 0.02, 0.13, 'lowpass', 900, 200, 1.2, 0.05, 0.4);
+  },
+  die(t) {
+    squish(t, 300, 92, 0.5, 0.18, 5, 0.6);
+    noise(t, 0.35, 'lowpass', 1400, 260, 0.9, 0.035, 0.5);
+  },
+  // Two selves becoming one: a fifth apart, sliding into unison.
+  merge(t) {
+    for (const r of [1, 1.5]) {
+      const o = ac.createOscillator();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(scaleHz(9) * r, t);
+      o.frequency.exponentialRampToValueAtTime(scaleHz(9) * 1.25, t + 0.26);
+      const g = ac.createGain();
+      env(g, t, 0.01, 0.3, 0.11);
+      o.connect(g); route(g, 0.45);
+      o.start(t); o.stop(t + 0.45);
+    }
+    pop(t + 0.26, 520, 0.14);
+  },
+  spawn(t) { pop(t, 590, 0.18); pop(t + 0.085, 880, 0.16); },
+  win(t) {
+    [7, 9, 11, 12, 14].forEach((deg, i) => {
+      bell(t + i * 0.11, scaleHz(deg), 0.16, 1.1 + i * 0.25, 0.7);
+    });
+    const o = ac.createOscillator();
+    o.type = 'sine'; o.frequency.value = semi(-12);
+    const g = ac.createGain();
+    env(g, t, 0.25, 1.9, 0.14);
+    o.connect(g); route(g, 0.5);
+    o.start(t); o.stop(t + 2.4);
+  },
+  undo(t) {
+    noise(t, 0.16, 'bandpass', 320, 1500, 2.4, 0.035, 0.25);   // sucked backwards
+    squish(t + 0.05, 160, 250, 0.12, 0.13, 8, 0.2);
+  },
+  reset(t) {
+    noise(t, 0.24, 'bandpass', 1800, 320, 2, 0.04, 0.3);
+    squish(t + 0.1, 260, 120, 0.18, 0.14, 6, 0.25);
+  },
+  ui(t) { squish(t, 520, 430, 0.06, 0.1, 4, 0.15); },
+};
+
+function play(name, off) {
+  if (!ac || !audio.sfx || ac.state !== 'running') return;
+  try { SFX[name](ac.currentTime + (off || 0)); } catch (e) { /* never block a move */ }
+}
+
+// One move can fire a whole cascade of events; these offsets stack them into a
+// little gesture instead of one mush at t=0, roughly tracking the animation.
+function moveSfx(events, kinds, win) {
+  if (!ac || !audio.sfx) return;
+  const portalIn = kinds.has('enter') || kinds.has('boxin');
+  const portalOut = kinds.has('exit') || kinds.has('boxout');
+  if (portalIn) play('portalIn');
+  if (portalOut) play('portalOut', portalIn ? 0.08 : 0);
+  if (!portalIn && !portalOut) play(kinds.has('push') ? 'push' : 'step');
+  if (kinds.has('merge')) play('merge', 0.03);
+  if (kinds.has('die')) play('die', 0.05);
+  if (kinds.has('sink')) play('sink', 0.06);
+  if (events.some(e => e.spawned)) play('spawn', 0.12);
+  if (win) play('win', 0.22);
+}
+
+// --- Music ------------------------------------------------------------------
+
+function padVoice(f, t, dur, gain) {
+  const o = ac.createOscillator(); o.type = 'sawtooth';
+  const o2 = ac.createOscillator(); o2.type = 'triangle';
+  o.frequency.value = f; o2.frequency.value = f * 1.005;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 2.2);
+  g.gain.setValueAtTime(gain, t + dur - 2.2);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); o2.connect(g); g.connect(padFilter);
+  o.start(t); o2.start(t); o.stop(t + dur + 0.1); o2.stop(t + dur + 0.1);
+  o2.onended = () => g.disconnect();
+}
+
+function pluckVoice(f, t, gain) {
+  const o = ac.createOscillator();
+  o.type = 'triangle';
+  o.frequency.setValueAtTime(f * 1.012, t);
+  o.frequency.exponentialRampToValueAtTime(f, t + 0.06);
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass'; lp.Q.value = 0.8;
+  lp.frequency.setValueAtTime(f * 6, t);
+  lp.frequency.exponentialRampToValueAtTime(f * 1.4, t + 0.7);
+  const g = ac.createGain();
+  env(g, t, 0.008, 1.1, gain);
+  o.connect(lp); lp.connect(g);
+  g.connect(musicBus); g.connect(musicWet);
+  const d = ac.createGain(); d.gain.value = 0.5;
+  g.connect(d); d.connect(delay);
+  o.start(t); o.stop(t + 1.4);
+  o.onended = () => g.disconnect();
+}
+
+// A breath of filtered air under the chord change. Barely audible on purpose.
+function washVoice(t, dur) {
+  const s = ac.createBufferSource();
+  s.buffer = noiseBuf; s.loop = true;
+  const bp = ac.createBiquadFilter();
+  bp.type = 'bandpass'; bp.Q.value = 2.4;
+  bp.frequency.setValueAtTime(420, t);
+  bp.frequency.exponentialRampToValueAtTime(1500, t + dur * 0.6);
+  bp.frequency.exponentialRampToValueAtTime(480, t + dur);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.03, t + dur * 0.45);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(bp); bp.connect(g); g.connect(musicBus); g.connect(musicWet);
+  s.start(t, Math.random() * 1.5); s.stop(t + dur + 0.1);
+  s.onended = () => g.disconnect();
+}
+
+function scheduleStep(i, t) {
+  const bar = Math.floor(i / 16);
+  if (i % 16 === 0) {
+    const c = CHORDS[bar % CHORDS.length];
+    for (const n of c) padVoice(semi(n), t, STEP * 16 + 1.4, 0.055);
+    const b = ac.createOscillator();
+    b.type = 'sine'; b.frequency.value = semi(BASS[bar % BASS.length]);
+    const bg = ac.createGain();
+    env(bg, t, 0.35, 3.2, 0.1);
+    b.connect(bg); bg.connect(musicBus);
+    b.start(t); b.stop(t + 4);
+    b.onended = () => bg.disconnect();
+    if (bar % 2 === 0) washVoice(t, STEP * 16);
+  }
+  // Sparse pentatonic pluck: leans onto the beat, never doubles up.
+  if (i - lastPluck >= 2 && Math.random() < (i % 2 === 0 ? 0.22 : 0.1)) {
+    lastPluck = i;
+    pluckVoice(scaleHz(7 + Math.floor(Math.random() * 8)), t, 0.07);
+  }
+}
+
+function musicPump() {
+  if (!ac || ac.state !== 'running') return;
+  // After a suspend the clock has moved on without us; do not burst-schedule
+  // the backlog, just pick up from now.
+  if (musicNext < ac.currentTime) musicNext = ac.currentTime + 0.05;
+  while (musicNext < ac.currentTime + 0.4) {
+    scheduleStep(musicStep++, musicNext);
+    musicNext += STEP;
+  }
+}
+
+// Both fades read the gain BEFORE cancelling: cancelScheduledValues can snap
+// back past a ramp that is mid-flight, and toggling off then straight on again
+// is exactly when that would click.
+function startMusic() {
+  if (!ac || musicTimer) return;
+  const t = ac.currentTime;
+  const now = Math.max(0.0001, musicBus.gain.value);
+  musicBus.gain.cancelScheduledValues(t);
+  musicBus.gain.setValueAtTime(now, t);
+  musicBus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, t + 3);
+  // Come back in on a chord, not halfway through one.
+  musicStep = Math.ceil(musicStep / 16) * 16;
+  musicNext = t + 0.12;
+  musicTimer = setInterval(musicPump, 90);
+  musicPump();
+}
+
+function stopMusic() {
+  if (!musicTimer) return;
+  clearInterval(musicTimer);
+  musicTimer = null;
+  const t = ac.currentTime;
+  const now = Math.max(0.0001, musicBus.gain.value);
+  musicBus.gain.cancelScheduledValues(t);
+  musicBus.gain.setValueAtTime(now, t);
+  musicBus.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+}
+
+// --- Audio wiring -----------------------------------------------------------
+
+function syncAudioBtns() {
+  $('sfxBtn').classList.toggle('off', !audio.sfx);
+  $('musicBtn').classList.toggle('off', !audio.music);
+}
+
+function setAudio(which, on) {
+  audio[which] = on ? 1 : 0;
+  progress.audio = { sfx: audio.sfx, music: audio.music };
+  saveProgress();
+  syncAudioBtns();
+  if (!ensureAudio()) return;
+  if (which === 'sfx') {
+    const t = ac.currentTime;
+    sfxBus.gain.setTargetAtTime(on ? SFX_LEVEL : 0, t, 0.02);
+    sfxWet.gain.setTargetAtTime(on ? 0.9 : 0, t, 0.02);
+    if (on) setTimeout(() => play('ui'), 60);
+  } else if (on) startMusic();
+  else stopMusic();
+}
+
+$('sfxBtn').addEventListener('click', () => setAudio('sfx', !audio.sfx));
+$('musicBtn').addEventListener('click', () => setAudio('music', !audio.music));
+
+// Nothing may make a sound before the first gesture, and trying to is what
+// throws in Safari. So: arm on the first one, whatever it was.
+let armed = false;
+function armAudio() {
+  if (armed) return;
+  armed = true;
+  if (!ensureAudio()) return;
+  if (audio.music) startMusic();
+}
+window.addEventListener('pointerdown', armAudio);
+window.addEventListener('keydown', armAudio);
+
+document.addEventListener('visibilitychange', () => {
+  if (!ac) return;
+  if (document.hidden) ac.suspend();
+  else if (audio.sfx || audio.music) ac.resume();
+});
+
 // --- Input ------------------------------------------------------------------
 
 const SWIPE = 24;
@@ -1515,14 +1971,15 @@ window.addEventListener('keydown', (e) => {
 
 $('undo').addEventListener('click', undo);
 $('reset').addEventListener('click', reset);
-$('levels').addEventListener('click', openPicker);
-$('pickerClose').addEventListener('click', () => { $('picker').hidden = true; });
-$('toLevels').addEventListener('click', openPicker);
-$('next').addEventListener('click', () => loadLevel(Math.min(levelIndex + 1, LEVELS.length - 1)));
+$('levels').addEventListener('click', () => { play('ui'); openPicker(); });
+$('pickerClose').addEventListener('click', () => { play('ui'); $('picker').hidden = true; });
+$('toLevels').addEventListener('click', () => { play('ui'); openPicker(); });
+$('next').addEventListener('click', () => { play('ui'); loadLevel(Math.min(levelIndex + 1, LEVELS.length - 1)); });
 $('replay').addEventListener('click', reset);
 window.addEventListener('resize', resize);
 
 loadProgress();
+syncAudioBtns();
 // Resume at the first unsolved level that is already unlocked.
 let start = 0;
 while (start < progress.unlocked - 1 && progress.best[start] !== undefined) start++;
