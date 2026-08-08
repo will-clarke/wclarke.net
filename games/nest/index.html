@@ -2,6 +2,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#1e2433">
 <title>NEST</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231e2433'/%3E%3Crect x='5.5' y='5.5' width='21' height='21' rx='2' fill='none' stroke='%233f9bf4' stroke-width='2.5'/%3E%3Crect x='11.5' y='11.5' width='9' height='9' rx='1.5' fill='none' stroke='%23a78bfa' stroke-width='2'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23ffc233'/%3E%3C/svg%3E">
 <style>
   :root {
     --ground: #1e2433;
@@ -242,7 +243,8 @@ const LEVELS = [
     '#..#..#',
     '#######',
   ]},
-  { name: 'Special Delivery', par: 9, stretch: false, requires: ['boxin', 'enter'], rows: [
+  // T15 re-bake: par 9 -> 8, the optimal now follows the posted box through.
+  { name: 'Special Delivery', par: 8, stretch: false, requires: ['boxin', 'enter'], rows: [
     '#####-##',
     '#@.#..*#',
     '#$.#...#',
@@ -271,10 +273,13 @@ const LEVELS = [
     '#.....#',
     '#######',
   ]},
+  // T15 tweak: (5,2) walled so the posted box cannot be chain-pushed off the
+  // N arrival - without it this level's optimal collapsed into Special
+  // Delivery's follow-through line and the choose-your-face TEACH died.
   { name: 'The Moat', par: 14, stretch: false, requires: ['boxin', 'enter'], rows: [
     '#####-##',
     '#..~..*#',
-    '#$.~...#',
+    '#$.~.#.#',
     '#N.~...-',
     '#@.~~~~#',
     '#......#',
@@ -299,13 +304,15 @@ const LEVELS = [
     '#..$.*#',
     '#######',
   ]},
-  // Solvable at par both by merging (ULDLLLU) and by herding two selves
-  // (ULLLLDU) - Will prefers the latter; both are load-bearing.
-  { name: 'Reunion', par: 7, stretch: true, requires: ['spawn'], rows: [
+  // T13 rebuild of Reunion: walk-merge is gone, so the herding dance IS the
+  // level. The spare is held against the (4,3) wall while the leader works;
+  // the (5,2) hostage punishes a careless final U, the (3,3) hostage
+  // punishes tailgating deeper than one cell.
+  { name: 'Hold Still', par: 7, stretch: true, requires: ['spawn'], rows: [
     '########',
     '#####.##',
     '##*..B##',
-    '##$BB.N#',
+    '##$B#.N#',
     '##....N#',
     '-.######',
     '#@######',
@@ -320,7 +327,10 @@ const LEVELS = [
     '#.....#',
     '###-###',
   ]},
-  { name: 'Nest', par: 21, stretch: true, requires: ['exit', 'spawn', 'sink', 'boxout'], rows: [
+  // T14 re-tag: with bodies filling pits, the optimal line burns a spawned
+  // self into the (6,2) pit instead of sacrificing a box - mint, spend, burn,
+  // now literal. Box-sink stays taught (and required) in Ashes.
+  { name: 'Nest', par: 14, stretch: true, requires: ['exit', 'spawn', 'fill', 'boxout'], rows: [
     '######-###',
     '###*##.#*#',
     '###N##~#N#',
@@ -466,14 +476,16 @@ function step(layout, state, dir) {
 
   const pendingEnter = [];
   const pendingExit = [];
+  const pendingFollow = [];
+  const pending = new Set(); // ids of clones whose move resolves in Phase B
 
   // PHASE A - grid moves.
   for (const c of order) {
     const dest = c.pos + delta;
-    if (thresholds.has(dest)) { pendingExit.push(c); continue; }
+    if (thresholds.has(dest)) { pendingExit.push(c); pending.add(c.id); continue; }
     const o = occ.get(dest);
     if (o === 'wall') continue;
-    if (o === 'block') { pendingEnter.push(c); continue; }
+    if (o === 'block') { pendingEnter.push(c); pending.add(c.id); continue; }
     if (o === 'box') {
       const bdest = dest + delta;
       if (thresholds.has(bdest)) {
@@ -518,15 +530,18 @@ function step(layout, state, dir) {
       continue;
     }
     if (typeof o === 'number') {
-      // Occupant did not move this tick (blocked or pending): merge into it.
-      events.push({ t: 'merge', at: dest, from: c.pos });
-      occ.delete(c.pos);
-      c.alive = false;
+      // Walking into a self never merges (merge is portal-only). If the
+      // occupant is itself waiting on a portal transfer, follow it in
+      // Phase B once it has actually vacated; a blocked self is a wall.
+      if (pending.has(o)) { pendingFollow.push(c); pending.add(c.id); }
       continue;
     }
     if (lavaOpen(dest)) {
+      // T14: the body fills the pit - cell becomes floor for everyone after.
       events.push({ t: 'step', from: c.pos, to: dest });
       events.push({ t: 'die', at: dest });
+      events.push({ t: 'fill', at: dest });
+      filled.add(dest);
       occ.delete(c.pos);
       c.alive = false;
       continue;
@@ -536,6 +551,7 @@ function step(layout, state, dir) {
 
   // PHASE B - portal transfers, against post-Phase-A occupancy.
   const enterArr = arrivalCell(layout, FACE[dir]);
+  const pushedTo = new Set(); // boxes already shoved once this phase stay put
   for (const c of pendingEnter) {
     if (!c.alive) continue;
     if (enterArr === null) continue; // no door on that side: stays put
@@ -546,7 +562,30 @@ function step(layout, state, dir) {
       events.push({ t: 'enter', from: c.pos, block, to: enterArr });
       continue;
     }
-    if (o === 'box' || o === 'wall' || o === 'block') continue; // stays put
+    if (o === 'box') {
+      // T15: the door is just floor - coming through it shoves the arrival
+      // box one cell onward (same direction: the entry face's inward normal
+      // IS the direction of travel). Shoving it into another block or out a
+      // door would move one box through two portals in a tick: blocked,
+      // recorded as an open question rather than improvised.
+      const bdest = enterArr + delta;
+      if (thresholds.has(bdest) || occ.has(bdest)) continue; // stays put
+      occ.delete(enterArr);
+      if (lavaOpen(bdest)) {
+        filled.add(bdest);
+        events.push({ t: 'sink', at: bdest });
+      } else {
+        occ.set(bdest, 'box');
+        pushedTo.add(bdest);
+        events.push({ t: 'push', from: enterArr, to: bdest });
+      }
+      events.push({ t: 'enter', from: c.pos, block, to: enterArr });
+      occ.delete(c.pos);
+      occ.set(enterArr, c.id);
+      c.pos = enterArr;
+      continue;
+    }
+    if (o === 'wall' || o === 'block') continue; // stays put
     if (typeof o === 'number') {
       events.push({ t: 'merge', at: enterArr, from: c.pos });
       occ.delete(c.pos);
@@ -557,6 +596,8 @@ function step(layout, state, dir) {
     occ.delete(c.pos);
     if (lavaOpen(enterArr)) {
       events.push({ t: 'die', at: enterArr });
+      events.push({ t: 'fill', at: enterArr });
+      filled.add(enterArr);
       c.alive = false;
       continue;
     }
@@ -572,7 +613,26 @@ function step(layout, state, dir) {
       const m = b + delta;
       if (thresholds.has(m)) continue;
       const om = occ.get(m);
-      if (om === 'wall' || om === 'block' || om === 'box') continue; // does not fire
+      if (om === 'wall' || om === 'block') continue; // does not fire
+      if (om === 'box') {
+        // T15: the exiting body pushes the mouth box one cell onward; if
+        // the box cannot move (or was already shoved this phase), the
+        // mouth does not fire. Into a block/threshold = two portals in one
+        // tick: blocked, open question. Fan-out mouths stay independent.
+        const bd = m + delta;
+        if (pushedTo.has(m) || thresholds.has(bd) || occ.has(bd)) continue;
+        occ.delete(m);
+        if (lavaOpen(bd)) {
+          filled.add(bd);
+          events.push({ t: 'sink', at: bd });
+        } else {
+          occ.set(bd, 'box');
+          pushedTo.add(bd);
+          events.push({ t: 'push', from: m, to: bd });
+        }
+        fired.push({ m, kind: 'free' });
+        continue;
+      }
       if (typeof om === 'number' && om !== c.id) fired.push({ m, kind: 'merge' });
       else if (lavaOpen(m)) fired.push({ m, kind: 'die' });
       else fired.push({ m, kind: 'free' }); // om === c.id: occ ignores c itself
@@ -588,6 +648,8 @@ function step(layout, state, dir) {
       events.push({ t: 'exit', from, to: f.m, spawned: k > 0 });
       if (f.kind === 'die') {
         events.push({ t: 'die', at: f.m });
+        events.push({ t: 'fill', at: f.m });
+        filled.add(f.m);
         return;
       }
       if (!c.alive) {
@@ -600,6 +662,16 @@ function step(layout, state, dir) {
         occ.set(f.m, n.id);
       }
     });
+  }
+
+  // Followers: clones that walked into a portal-pending self. Sweep order put
+  // each one after its leader, so chains march in a train. If the leader's
+  // transfer failed (or self-arrived), its cell is still taken: stay put.
+  for (const c of pendingFollow) {
+    if (!c.alive) continue;
+    const dest = c.pos + delta;
+    if (occ.has(dest)) continue;
+    moveClone(c, dest);
   }
 
   const outBoxes = [];
@@ -659,7 +731,7 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'nest-v2'; // v1 bests refer to the pre-square levels
+const SAVE_KEY = 'nest-v3'; // v2 bests predate the T13-T15 rule campaign
 let progress = { best: {}, unlocked: 1, coached: {} };
 
 function loadProgress() {
@@ -781,6 +853,11 @@ function buzz(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
+// Which face of a block a body pinches into, and which it grows back out of,
+// for a given direction of travel. Both are the door of the same name.
+const IN_FACE = { R: 'W', L: 'E', D: 'N', U: 'S' };
+const OUT_FACE = { R: 'E', L: 'W', D: 'S', U: 'N' };
+
 // Turn one tick's events into sprites that carry their own animation.
 // Sprites are tracked by the cell they currently occupy, so a chain like
 // step -> die or enter -> die lands on the same sprite.
@@ -806,7 +883,12 @@ function compileAnim(prev, events, dir) {
       case 'enter': case 'boxin': {
         const kind = ev.t === 'enter' ? 'clone' : 'box';
         const s = at(kind, ev.from);
-        if (s) { s.b = ev.block; s.fate = 'squeeze'; s.live = false; axis(s); }
+        // Pinch into the door mouth on the face we entered by, not the middle
+        // of the block: that mouth is where the little world's door is drawn.
+        if (s) {
+          s.b = ev.block; s.bxy = mouthXY(ev.block, IN_FACE[dir]);
+          s.fate = 'squeeze'; s.live = false; axis(s);
+        }
         // The copy threads in through the door face while the original
         // squeezes into the block - both halves of the same body.
         list.push(axis({
@@ -828,7 +910,11 @@ function compileAnim(prev, events, dir) {
             axis(s);
           }
         }
-        list.push(axis({ kind, a: ev.to - delta, b: ev.to, fate: null, birth: 'pop', live: true }));
+        // ...and grow back out of the mouth on the far face.
+        list.push(axis({
+          kind, a: ev.to - delta, b: ev.to, fate: null, birth: 'pop', live: true,
+          axy: mouthXY(ev.to - delta, OUT_FACE[dir]),
+        }));
         flashes.push({ at: ev.to, kind: 'out' });
         break;
       }
@@ -847,6 +933,12 @@ function compileAnim(prev, events, dir) {
       case 'sink': {
         const s = at('box', ev.at) || at('box', ev.at - delta);
         if (s) { s.b = ev.at; s.fate = 'sink'; s.live = false; }
+        sank.push(ev.at);
+        break;
+      }
+      case 'fill': {
+        // A body filled the pit: the die case already animates the fall,
+        // this just cools the cell over the same tween.
         sank.push(ev.at);
         break;
       }
@@ -960,16 +1052,48 @@ function resize() {
 function placeOuter() {
   const b = layout.blocks[0];
   if (b === undefined) { outer = null; return; }
-  const cssW = layout.w * CELL, cssH = layout.h * CELL;
-  const fit = CELL * (1 - BLOCK_INSET * 2);
-  const k = Math.min(fit / cssW, fit / cssH);
-  const s = 1 / k;
-  const dx = xOf(b) * CELL + CELL * BLOCK_INSET + (fit - cssW * k) / 2;
-  const dy = yOf(b) * CELL + CELL * BLOCK_INSET + (fit - cssH * k) / 2;
+  const m = miniGeom();
+  const s = 1 / m.k;
+  const dx = (xOf(b) + m.ox) * CELL, dy = (yOf(b) + m.oy) * CELL;
   outer = {
     x: board.offsetLeft - dx * s, y: board.offsetTop - dy * s,
-    w: cssW * s, h: cssH * s,
+    w: layout.w * CELL * s, h: layout.h * CELL * s,
   };
+}
+
+// Where the little world sits inside a nest-block cell, as fractions of the
+// cell (CELL cancels out, so this is resolution independent). Mini-cell
+// (mx, my) centres at ox + k * (mx + 0.5) along the cell.
+function miniGeom() {
+  const fit = 1 - BLOCK_INSET * 2;
+  const k = Math.min(fit / layout.w, fit / layout.h);
+  return {
+    k,
+    ox: BLOCK_INSET + (fit - layout.w * k) / 2,
+    oy: BLOCK_INSET + (fit - layout.h * k) / 2,
+  };
+}
+
+// How far along a block face (0..1) that side's door shows in the little world.
+// The frame gap, the door glow inside and the squeeze anchor all read this, so
+// by construction they land on the same point.
+function doorFrac(side) {
+  const d = layout.doors[side];
+  if (d === null) return 0.5;
+  const m = miniGeom();
+  return side === 'N' || side === 'S'
+    ? m.ox + m.k * (xOf(d) + 0.5)
+    : m.oy + m.k * (yOf(d) + 0.5);
+}
+
+// The door mouth on one face of a block cell, in sprite grid coords: the point
+// a body pinches into, and the point its copy grows out of.
+function mouthXY(block, side) {
+  const f = doorFrac(side), bx = xOf(block), by = yOf(block);
+  if (side === 'N') return [bx - 0.5 + f, by - 0.5];
+  if (side === 'S') return [bx - 0.5 + f, by + 0.5];
+  if (side === 'W') return [bx - 0.5, by - 0.5 + f];
+  return [bx + 0.5, by - 0.5 + f];
 }
 
 function roundRect(c, x, y, w, h, r) {
@@ -982,26 +1106,40 @@ function roundRect(c, x, y, w, h, r) {
   c.closePath();
 }
 
-function drawLava(c, x, y, i, time) {
-  const k = 0.55 + 0.22 * Math.sin(time / 380 + i) + 0.22 * Math.sin(time / 670 + i * 2.1);
-  c.fillStyle = '#d5402e';
-  c.fillRect(x, y, CELL, CELL);
-  const g = c.createRadialGradient(
-    x + CELL / 2, y + CELL / 2, CELL * 0.05,
-    x + CELL / 2, y + CELL / 2, CELL * 0.62);
-  g.addColorStop(0, 'rgba(255,190,110,' + (0.35 + 0.35 * k).toFixed(3) + ')');
-  g.addColorStop(0.55, 'rgba(240,110,60,' + (0.3 * k).toFixed(3) + ')');
-  g.addColorStop(1, 'rgba(150,40,20,0)');
+// T14: pits are chilled holes, not fire - a body or a box fills one into
+// floor. Static (no time pulse), so idle frames can skip repainting.
+function drawPit(c, x, y) {
+  const inset = CELL * 0.09;
+  const s = CELL - inset * 2;
+  const r = Math.max(2, CELL * 0.2);
+  roundRect(c, x + inset, y + inset, s, s, r);
+  c.fillStyle = '#0b0f1a';
+  c.fill();
+  // Inner shadow: deepest under the top lip, as if lit from above.
+  const g = c.createLinearGradient(0, y + inset, 0, y + inset + s);
+  g.addColorStop(0, 'rgba(0,0,0,0.8)');
+  g.addColorStop(0.55, 'rgba(0,0,0,0)');
   c.fillStyle = g;
-  c.fillRect(x, y, CELL, CELL);
+  roundRect(c, x + inset, y + inset, s, s, r);
+  c.fill();
+  // The far lip catches a sliver of light.
+  c.strokeStyle = 'rgba(147,160,189,0.16)';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.moveTo(x + inset + r, y + inset + s - 0.5);
+  c.lineTo(x + inset + s - r, y + inset + s - 0.5);
+  c.stroke();
 }
 
-function drawRock(c, x, y) {
-  c.fillStyle = '#4a423b';
+// A filled pit: flat slab, walkable, visibly once-a-hole.
+function drawSlab(c, x, y) {
+  c.fillStyle = '#2e3752';
   c.fillRect(x, y, CELL, CELL);
-  c.fillStyle = 'rgba(255,180,120,0.08)';
-  c.fillRect(x + CELL * 0.2, y + CELL * 0.3, CELL * 0.3, CELL * 0.16);
-  c.fillRect(x + CELL * 0.55, y + CELL * 0.6, CELL * 0.22, CELL * 0.12);
+  const inset = CELL * 0.09;
+  c.strokeStyle = 'rgba(11,15,26,0.55)';
+  c.lineWidth = 1;
+  roundRect(c, x + inset, y + inset, CELL - inset * 2, CELL - inset * 2, Math.max(2, CELL * 0.2));
+  c.stroke();
 }
 
 function drawTiles(c, time) {
@@ -1029,13 +1167,13 @@ function drawTiles(c, time) {
     c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
 
     if (layout.lava.has(i)) {
-      // A pit filled this tick cools down over the tween instead of snapping.
+      // A pit filled this tick fades to slab over the tween instead of snapping.
       const cooling = filled.has(i) && anim && anim.sank.indexOf(i) >= 0 ? anim.p : null;
-      if (!filled.has(i) || cooling !== null) drawLava(c, x, y, i, time);
+      if (!filled.has(i) || cooling !== null) drawPit(c, x, y);
       if (filled.has(i)) {
         c.save();
         if (cooling !== null) c.globalAlpha = cooling;
-        drawRock(c, x, y);
+        drawSlab(c, x, y);
         c.restore();
       }
     }
@@ -1067,7 +1205,9 @@ function drawTiles(c, time) {
 // itself shows which faces can be walked (or have a box pushed) into.
 function drawBlockFrame(c, x, y) {
   const lw = Math.max(1, CELL * 0.06);
-  const gap = CELL * 0.36;
+  // The gap IS the door cell at miniature scale, sat at the same fraction along
+  // the face as the door glow inside it.
+  const gap = Math.max(miniGeom().k * CELL, 3);
   const x0 = x + lw / 2, y0 = y + lw / 2;
   const x1 = x + CELL - lw / 2, y1 = y + CELL - lw / 2;
   c.save();
@@ -1076,22 +1216,25 @@ function drawBlockFrame(c, x, y) {
   c.shadowBlur = CELL * 0.22;
   c.lineWidth = lw;
   c.lineCap = 'round';
-  const edge = (ax, ay, bx, by, open) => {
+  // Every edge is passed low-to-high along its one varying axis.
+  const edge = (ax, ay, bx, by, side) => {
     c.beginPath();
-    if (open) {
-      const mx = (ax + bx) / 2, my = (ay + by) / 2;
-      const ux = Math.sign(bx - ax), uy = Math.sign(by - ay);
-      c.moveTo(ax, ay); c.lineTo(mx - ux * gap / 2, my - uy * gap / 2);
-      c.moveTo(mx + ux * gap / 2, my + uy * gap / 2); c.lineTo(bx, by);
-    } else {
+    if (layout.doors[side] === null) {
       c.moveTo(ax, ay); c.lineTo(bx, by);
+    } else {
+      const horiz = ay === by;
+      const lo = horiz ? ax : ay, hi = horiz ? bx : by;
+      const at = (horiz ? x : y) + doorFrac(side) * CELL;
+      const g0 = Math.max(lo, at - gap / 2), g1 = Math.min(hi, at + gap / 2);
+      if (g0 > lo) { c.moveTo(ax, ay); horiz ? c.lineTo(g0, ay) : c.lineTo(ax, g0); }
+      if (g1 < hi) { horiz ? c.moveTo(g1, ay) : c.moveTo(ax, g1); c.lineTo(bx, by); }
     }
     c.stroke();
   };
-  edge(x0, y0, x1, y0, layout.doors.N !== null);
-  edge(x1, y0, x1, y1, layout.doors.E !== null);
-  edge(x0, y1, x1, y1, layout.doors.S !== null);
-  edge(x0, y0, x0, y1, layout.doors.W !== null);
+  edge(x0, y0, x1, y0, 'N');
+  edge(x1, y0, x1, y1, 'E');
+  edge(x0, y1, x1, y1, 'S');
+  edge(x0, y0, x0, y1, 'W');
   c.restore();
 }
 
@@ -1111,11 +1254,9 @@ function drawBlock(c, i, inner) {
     g.addColorStop(1, '#241b4a');
     c.fillStyle = g;
     c.fillRect(x, y, CELL, CELL);
-    const inset = CELL * BLOCK_INSET;
-    const fitW = CELL - inset * 2, fitH = CELL - inset * 2;
-    const k = Math.min(fitW / inner.width, fitH / inner.height);
-    const dw = inner.width * k, dh = inner.height * k;
-    const dx = x + inset + (fitW - dw) / 2, dy = y + inset + (fitH - dh) / 2;
+    const m = miniGeom();
+    const dx = x + m.ox * CELL, dy = y + m.oy * CELL;
+    const dw = layout.w * m.k * CELL, dh = layout.h * m.k * CELL;
     c.drawImage(inner, dx, dy, dw, dh);
     c.strokeStyle = 'rgba(167,139,250,0.4)';
     c.lineWidth = 1;
@@ -1124,12 +1265,27 @@ function drawBlock(c, i, inner) {
   drawBlockFrame(c, x, y);
 }
 
+// The two halves of a pass-through share one tick: the body pinches away over
+// the front of it and the copy grows over the back, overlapping just enough to
+// read as one continuous motion rather than two things happening at once.
+const SQUEEZE_WIN = [0, 0.62];
+const POP_WIN = [0.45, 1];
+
 function drawSprite(c, s, p) {
+  const win = s.fate === 'squeeze' ? SQUEEZE_WIN
+    : s.birth === 'pop' && !s.fate ? POP_WIN : null;
+  if (win) p = Math.max(0, Math.min(1, (p - win[0]) / (win[1] - win[0])));
   const e = 1 - Math.pow(1 - p, 3);
+  // Back-in for the pinch: a short brace away from the door, then a rush into
+  // it. Everything else eases out.
+  const eb = p * p * (3 * p - 2);
   const ax = s.axy ? s.axy[0] : xOf(s.a), ay = s.axy ? s.axy[1] : yOf(s.a);
   const bx = s.bxy ? s.bxy[0] : xOf(s.b), by = s.bxy ? s.bxy[1] : yOf(s.b);
-  let x = lerp(ax, bx, e);
-  let y = lerp(ay, by, e);
+  // The brace is mostly squash: pulling the whole body back would slide it into
+  // whatever just shoved it, so damp the backwards part of the curve.
+  const ep = s.fate === 'squeeze' ? (eb < 0 ? eb * 0.45 : eb) : e;
+  let x = lerp(ax, bx, ep);
+  let y = lerp(ay, by, ep);
   let scale = 1, alpha = 1;
   // Extra scale along / across the direction of travel: bodies go through a
   // door long and thin, and come out the far side stretched.
@@ -1143,10 +1299,13 @@ function drawSprite(c, s, p) {
     across = 1 - 0.6 * st + 0.16 * sq;
   }
   if (s.fate === 'squeeze') {
-    scale *= 1 - 0.6 * e;
-    alpha *= 1 - 0.9 * e;
-    along *= 1 + e;
-    across *= 1 - 0.65 * e;
+    // brace = the anticipation part of the back-in curve: squash across the
+    // door before the needle. Gone by the time the pinch proper starts.
+    const pinch = Math.max(0, eb), brace = Math.max(0, -eb);
+    scale *= 1 - 0.6 * pinch;
+    alpha *= Math.max(0, 1 - 1.08 * pinch);
+    along *= 1 + pinch - 1.1 * brace;
+    across *= 1 - 0.65 * pinch + 1.5 * brace;
   }
   else if (s.fate === 'merge') { alpha *= 1 - Math.max(0, (e - 0.6) / 0.4); }
   else if (s.fate === 'die') { y += 0.3 * e; scale *= 1 - 0.8 * e; alpha *= 1 - e; }
@@ -1203,7 +1362,7 @@ function drawFlashes(c, time) {
     c.save();
     c.globalAlpha = (1 - p) * (portal ? 0.55 : 1);
     c.strokeStyle = portal ? 'rgba(167,139,250,0.95)'
-      : f.kind === 'merge' ? 'rgba(255,255,255,0.95)' : 'rgba(255,110,60,0.95)';
+      : f.kind === 'merge' ? 'rgba(255,255,255,0.95)' : 'rgba(147,160,189,0.95)';
     c.shadowColor = c.strokeStyle;
     c.shadowBlur = CELL * 0.3;
     c.lineWidth = Math.max(1, CELL * (portal ? 0.05 : 0.09));
@@ -1305,7 +1464,9 @@ function frame(ts) {
         'translate(' + (k * bonkVec[0]).toFixed(2) + 'px,' + (k * bonkVec[1]).toFixed(2) + 'px)';
     }
   }
-  if (!motion && !dirty && layout.lava.size === 0) return;
+  // Pits are static now (T14 killed the ember flicker), so an idle board
+  // never needs repainting.
+  if (!motion && !dirty) return;
   render(ts);
   dirty = false;
 }
@@ -1313,19 +1474,30 @@ function frame(ts) {
 // --- Input ------------------------------------------------------------------
 
 const SWIPE = 24;
+const REPEAT = 110;  // ms a drag must keep going before it walks another cell
 let down = null;
 
 stage.addEventListener('pointerdown', (e) => {
-  down = { x: e.clientX, y: e.clientY };
+  // First finger down owns the gesture; a second one must not move the origin.
+  if (!down) down = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp };
 });
-stage.addEventListener('pointerup', (e) => {
-  if (!down) return;
+// The move fires here, not on release: waiting for the finger to lift was the
+// lag. Listening on window (not stage) so a drag that wanders off the board
+// keeps reporting.
+window.addEventListener('pointermove', (e) => {
+  if (!down || e.pointerId !== down.id) return;
   const dx = e.clientX - down.x, dy = e.clientY - down.y;
-  down = null;
-  if (Math.max(Math.abs(dx), Math.abs(dy)) < SWIPE) return;
-  applyMove(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U'));
+  const ax = Math.abs(dx), ay = Math.abs(dy);
+  if (Math.max(ax, ay) < SWIPE) return;
+  // Then re-origin, so holding the drag walks cell by cell. The time gate is
+  // what stops one fast flick from counting as two moves.
+  if (down.fired && e.timeStamp - down.t < REPEAT) return;
+  applyMove(ax > ay ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U'));
+  down = { id: down.id, x: e.clientX, y: e.clientY, t: e.timeStamp, fired: true };
 });
-stage.addEventListener('pointercancel', () => { down = null; });
+const release = (e) => { if (down && e.pointerId === down.id) down = null; };
+window.addEventListener('pointerup', release);
+window.addEventListener('pointercancel', release);
 document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
 
 const KEYS = {
