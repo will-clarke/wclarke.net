@@ -52,7 +52,12 @@
     min-height: 0;
     touch-action: none;
   }
-  #board { display: block; }
+  /* The parent world sits behind the board, so the board needs a position too
+     or the absolute canvas would paint over it. width/height must be spelled
+     out: a canvas is a replaced element, so inset:0 alone would lay it out at
+     its intrinsic (device-pixel) size. */
+  #world { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  #board { display: block; position: relative; }
   #toast, #coach {
     position: absolute;
     bottom: 8px;
@@ -163,6 +168,7 @@
     <span id="moves">0</span>
   </header>
   <main id="stage">
+    <canvas id="world"></canvas>
     <canvas id="board"></canvas>
     <div id="coach" hidden></div>
     <div id="toast" hidden></div>
@@ -614,13 +620,19 @@ const $ = (id) => document.getElementById(id);
 const stage = $('stage');
 const board = $('board');
 const ctx = board.getContext('2d');
+const world = $('world');
+const wctx = world.getContext('2d');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const TWEEN = 100;   // ms per tick of animation
+const PORTAL = 180;  // ...but going through a door is worth watching
 const FLASH = 260;   // ms for merge rings and death flares
 const BLOOM = 800;   // ms for the win cascade
 const DEPTH = 3;     // feedback passes on top of the flat pass
+const BLOCK_INSET = 0.07;  // bezel around the little world, in cells
+const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
+const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
 
 let levelIndex = 0;
 let layout = null, state = null;
@@ -638,6 +650,12 @@ const bufB = document.createElement('canvas');
 let ctxA = bufA.getContext('2d');
 let ctxB = bufB.getContext('2d');
 let curBuf = bufA, altBuf = bufB;
+
+// One more buffer for the world OUTSIDE the board: the same level again, blown
+// up so our board lands exactly in one of its nest-block cells.
+const bufC = document.createElement('canvas');
+const ctxC = bufC.getContext('2d');
+let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
@@ -775,6 +793,8 @@ function compileAnim(prev, events, dir) {
   const flashes = [];
   const sank = [];
   const at = (kind, idx) => list.find(s => s.live && s.kind === kind && s.b === idx);
+  // Portal sprites squash and stretch along the direction they travelled.
+  const axis = (s) => { s.axis = dx !== 0 ? 'x' : 'y'; return s; };
 
   for (const ev of events) {
     switch (ev.t) {
@@ -786,18 +806,30 @@ function compileAnim(prev, events, dir) {
       case 'enter': case 'boxin': {
         const kind = ev.t === 'enter' ? 'clone' : 'box';
         const s = at(kind, ev.from);
-        if (s) { s.b = ev.block; s.fate = 'squeeze'; s.live = false; }
-        // The copy fades in at the door arrival while the original squeezes in.
-        list.push({ kind, a: ev.to, b: ev.to, fate: null, birth: 'pop', live: true });
+        if (s) { s.b = ev.block; s.fate = 'squeeze'; s.live = false; axis(s); }
+        // The copy threads in through the door face while the original
+        // squeezes into the block - both halves of the same body.
+        list.push(axis({
+          kind, a: ev.to, b: ev.to, fate: null, birth: 'pop', live: true,
+          axy: [xOf(ev.to) - dx * 0.5, yOf(ev.to) - dy * 0.5],
+        }));
+        flashes.push({ at: ev.block, kind: 'in' });
         break;
       }
       case 'exit': case 'boxout': {
         const kind = ev.t === 'exit' ? 'clone' : 'box';
         if (!ev.spawned) {
           const s = at(kind, ev.from);
-          if (s) { s.b = ev.from + delta; s.fate = 'squeeze'; s.live = false; }
+          // Walking off the edge: step past it in grid COORDS, since from+delta
+          // wraps onto the next row.
+          if (s) {
+            s.fate = 'squeeze'; s.live = false;
+            s.bxy = [xOf(ev.from) + dx, yOf(ev.from) + dy];
+            axis(s);
+          }
         }
-        list.push({ kind, a: ev.to - delta, b: ev.to, fate: null, birth: 'pop', live: true });
+        list.push(axis({ kind, a: ev.to - delta, b: ev.to, fate: null, birth: 'pop', live: true }));
+        flashes.push({ at: ev.to, kind: 'out' });
         break;
       }
       case 'merge': {
@@ -845,8 +877,9 @@ function applyMove(dir) {
     settle();
   } else {
     const { list, flashes, sank } = compileAnim(prev, r.events, dir);
+    const portal = ['enter', 'exit', 'boxin', 'boxout'].some(t => kinds.has(t));
     sprites = list;
-    anim = { t0: performance.now(), p: 0, flashes, sank };
+    anim = { t0: performance.now(), p: 0, dur: portal ? PORTAL : TWEEN, flashes, sank };
     syncHud();
   }
 
@@ -911,7 +944,32 @@ function resize() {
     cv.width = Math.round(cssW * DPR);
     cv.height = Math.round(cssH * DPR);
   }
+  bufC.width = Math.max(1, Math.round(cssW * DPR * OUTER_RES));
+  bufC.height = Math.max(1, Math.round(cssH * DPR * OUTER_RES));
+  world.width = Math.round(availW * DPR);
+  world.height = Math.round(availH * DPR);
+  placeOuter();
   dirty = true;
+}
+
+// Where to put the giant copy of this level so that our board lands exactly in
+// one of its nest-block cells. The scale falls out of drawBlock's own fit: if a
+// block cell shows the world at k, the parent showing US must be 1/k bigger.
+// With several blocks we live in the first one - a fixed choice, so the
+// backdrop does not swim about as clones come and go.
+function placeOuter() {
+  const b = layout.blocks[0];
+  if (b === undefined) { outer = null; return; }
+  const cssW = layout.w * CELL, cssH = layout.h * CELL;
+  const fit = CELL * (1 - BLOCK_INSET * 2);
+  const k = Math.min(fit / cssW, fit / cssH);
+  const s = 1 / k;
+  const dx = xOf(b) * CELL + CELL * BLOCK_INSET + (fit - cssW * k) / 2;
+  const dy = yOf(b) * CELL + CELL * BLOCK_INSET + (fit - cssH * k) / 2;
+  outer = {
+    x: board.offsetLeft - dx * s, y: board.offsetTop - dy * s,
+    w: cssW * s, h: cssH * s,
+  };
 }
 
 function roundRect(c, x, y, w, h, r) {
@@ -1053,7 +1111,7 @@ function drawBlock(c, i, inner) {
     g.addColorStop(1, '#241b4a');
     c.fillStyle = g;
     c.fillRect(x, y, CELL, CELL);
-    const inset = CELL * 0.07;
+    const inset = CELL * BLOCK_INSET;
     const fitW = CELL - inset * 2, fitH = CELL - inset * 2;
     const k = Math.min(fitW / inner.width, fitH / inner.height);
     const dw = inner.width * k, dh = inner.height * k;
@@ -1068,44 +1126,64 @@ function drawBlock(c, i, inner) {
 
 function drawSprite(c, s, p) {
   const e = 1 - Math.pow(1 - p, 3);
-  let x = lerp(xOf(s.a), xOf(s.b), e);
-  let y = lerp(yOf(s.a), yOf(s.b), e);
+  const ax = s.axy ? s.axy[0] : xOf(s.a), ay = s.axy ? s.axy[1] : yOf(s.a);
+  const bx = s.bxy ? s.bxy[0] : xOf(s.b), by = s.bxy ? s.bxy[1] : yOf(s.b);
+  let x = lerp(ax, bx, e);
+  let y = lerp(ay, by, e);
   let scale = 1, alpha = 1;
-  if (s.birth === 'pop') { scale = 0.3 + 0.7 * e; alpha = Math.min(1, e * 2.2); }
-  if (s.fate === 'squeeze') { scale *= 1 - 0.85 * e; alpha *= 1 - 0.9 * e; }
+  // Extra scale along / across the direction of travel: bodies go through a
+  // door long and thin, and come out the far side stretched.
+  let along = 1, across = 1;
+  if (s.birth === 'pop') {
+    scale = 0.34 + 0.66 * e;
+    alpha = Math.min(1, e * 2.4);
+    const st = Math.max(0, 1 - e * 1.45);                           // needle, gone by ~0.7
+    const sq = Math.max(0, Math.sin((e - 0.55) / 0.45 * Math.PI));  // squash on the tail
+    along = 1 + 0.85 * st - 0.16 * sq;
+    across = 1 - 0.6 * st + 0.16 * sq;
+  }
+  if (s.fate === 'squeeze') {
+    scale *= 1 - 0.6 * e;
+    alpha *= 1 - 0.9 * e;
+    along *= 1 + e;
+    across *= 1 - 0.65 * e;
+  }
   else if (s.fate === 'merge') { alpha *= 1 - Math.max(0, (e - 0.6) / 0.4); }
   else if (s.fate === 'die') { y += 0.3 * e; scale *= 1 - 0.8 * e; alpha *= 1 - e; }
   else if (s.fate === 'sink') { scale *= 1 - 0.7 * e; alpha *= 1 - 0.75 * e; }
   if (alpha <= 0.01) return;
 
   const pad = CELL * 0.15;
-  const size = (CELL - pad * 2) * scale;
+  const base = CELL - pad * 2;
+  const horiz = s.axis === 'x';
+  const sw = base * scale * (horiz ? along : across);
+  const sh = base * scale * (horiz ? across : along);
   const cx = x * CELL + CELL / 2;
   const cy = y * CELL + CELL / 2;
-  const r = Math.max(2, size * 0.26);
+  const r = Math.max(2, Math.min(sw, sh) * 0.26);
   c.save();
   c.globalAlpha = alpha;
   if (s.kind === 'clone') {
     c.shadowColor = 'rgba(63,155,244,0.5)';
     c.shadowBlur = CELL * 0.25;
     c.fillStyle = '#3f9bf4';
-    roundRect(c, cx - size / 2, cy - size / 2, size, size, r);
+    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
     c.fill();
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(255,255,255,0.6)';
-    roundRect(c, cx - size * 0.22, cy - size * 0.3, size * 0.44, size * 0.2, size * 0.09);
+    roundRect(c, cx - sw * 0.22, cy - sh * 0.3, sw * 0.44, sh * 0.2, Math.min(sw, sh) * 0.09);
     c.fill();
   } else {
     const onTarget = layout.targets.has(Math.round(y) * layout.w + Math.round(x));
     c.shadowColor = onTarget ? 'rgba(87,194,107,0.4)' : 'rgba(255,194,51,0.35)';
     c.shadowBlur = CELL * 0.2;
     c.fillStyle = onTarget ? '#57c26b' : '#ffc233';
-    roundRect(c, cx - size / 2, cy - size / 2, size, size, r);
+    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
     c.fill();
     c.shadowBlur = 0;
     c.strokeStyle = onTarget ? 'rgba(20,90,40,0.65)' : 'rgba(92,60,0,0.6)';
-    c.lineWidth = Math.max(1, size * 0.08);
-    roundRect(c, cx - size / 2, cy - size / 2, size, size, r);
+    c.lineWidth = Math.max(1, Math.min(sw, sh) * 0.08);
+    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
     c.stroke();
   }
   c.restore();
@@ -1118,14 +1196,19 @@ function drawFlashes(c, time) {
   for (const f of anim.flashes) {
     const cx = xOf(f.at) * CELL + CELL / 2;
     const cy = yOf(f.at) * CELL + CELL / 2;
+    // Portal rings collapse inward where a body went in and bloom outward
+    // where one came out; merge/death rings just expand.
+    const portal = f.kind === 'in' || f.kind === 'out';
+    const rad = f.kind === 'in' ? CELL * (0.74 - 0.42 * p) : CELL * (0.22 + 0.7 * p);
     c.save();
-    c.globalAlpha = 1 - p;
-    c.strokeStyle = f.kind === 'merge' ? 'rgba(255,255,255,0.95)' : 'rgba(255,110,60,0.95)';
+    c.globalAlpha = (1 - p) * (portal ? 0.55 : 1);
+    c.strokeStyle = portal ? 'rgba(167,139,250,0.95)'
+      : f.kind === 'merge' ? 'rgba(255,255,255,0.95)' : 'rgba(255,110,60,0.95)';
     c.shadowColor = c.strokeStyle;
     c.shadowBlur = CELL * 0.3;
-    c.lineWidth = Math.max(1, CELL * 0.09);
+    c.lineWidth = Math.max(1, CELL * (portal ? 0.05 : 0.09));
     c.beginPath();
-    c.arc(cx, cy, CELL * (0.22 + 0.7 * p), 0, Math.PI * 2);
+    c.arc(cx, cy, rad, 0, Math.PI * 2);
     c.stroke();
     c.restore();
   }
@@ -1145,14 +1228,42 @@ function drawBloom(c) {
   c.fillRect(0, 0, W, H);
 }
 
-function drawScene(c, time, inner) {
-  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+// bg = the parent pass: same world, but flashes and the win bloom stay home so
+// the backdrop never strobes.
+function drawScene(c, time, inner, bg, dpr) {
+  c.setTransform(dpr || DPR, 0, 0, dpr || DPR, 0, 0);
   drawTiles(c, time);
   for (const b of layout.blocks) drawBlock(c, b, inner);
   const p = anim ? anim.p : 1;
   for (const s of sprites) drawSprite(c, s, p);
+  if (bg) return;
   drawFlashes(c, time);
   drawBloom(c);
+}
+
+// One pass up instead of down: the same level again, huge and dim, with the
+// finished board blitted back into it - so it goes on forever both ways.
+function drawOuter(time) {
+  wctx.setTransform(1, 0, 0, 1, 0, 0);
+  wctx.clearRect(0, 0, world.width, world.height);
+  if (!outer) return;
+  drawScene(ctxC, time, curBuf, true, DPR * OUTER_RES);
+  const cssW = world.width / DPR, cssH = world.height / DPR;
+  wctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  wctx.globalAlpha = OUTER_DIM;
+  wctx.drawImage(bufC, outer.x, outer.y, outer.w, outer.h);
+  wctx.globalAlpha = 1;
+  // Erase the far field so only the cell we live in reads as a shape.
+  const cx = board.offsetLeft + layout.w * CELL / 2;
+  const cy = board.offsetTop + layout.h * CELL / 2;
+  const g = wctx.createRadialGradient(cx, cy, layout.w * CELL * 0.6,
+    cx, cy, Math.max(cssW, cssH) * 0.8);
+  g.addColorStop(0, 'rgba(0,0,0,0)');
+  g.addColorStop(1, 'rgba(0,0,0,1)');
+  wctx.globalCompositeOperation = 'destination-out';
+  wctx.fillStyle = g;
+  wctx.fillRect(0, 0, cssW, cssH);
+  wctx.globalCompositeOperation = 'source-over';
 }
 
 function render(time) {
@@ -1167,13 +1278,14 @@ function render(time) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, board.width, board.height);
   ctx.drawImage(curBuf, 0, 0);
+  drawOuter(time);
 }
 
 function frame(ts) {
   requestAnimationFrame(frame);
   let motion = false;
   if (anim) {
-    anim.p = Math.min(1, (ts - anim.t0) / TWEEN);
+    anim.p = Math.min(1, (ts - anim.t0) / anim.dur);
     const flashing = ts - anim.t0 < FLASH;
     if (anim.p >= 1 && !flashing) sprites = buildSprites();
     if (anim.p >= 1 && !flashing) anim = null;
