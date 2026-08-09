@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "nest",
+      "name": "Nest",
+      "accent": "#3f9bf4",
+      "tagline": "Sokoban that contains itself. One block on the board is a shrunken copy of the whole level - push it around, or step in through its door and you are back in the room you just left, one size down. Walk out through the outer wall instead and the level becomes a giant around you, with a second self already copying every move you make. Voids eat whatever you drop in them, boxes ride in and out of the nest with you, and every level has a par to beat."
+    },
+    {
       "slug": "hydra",
       "name": "Hydra",
       "accent": "#59f2a6",
