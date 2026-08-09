@@ -348,6 +348,9 @@ const DIRS = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] };
 // Direction of travel -> the door you arrive inside when entering a block,
 // and the door you leave through when walking outward.
 const FACE = { R: 'W', L: 'E', D: 'N', U: 'S' };
+// ...and the door on a moving block's LEADING face: what it advances over
+// crosses the window's boundary there (relative motion is the opposite dir).
+const LEAD = { R: 'E', L: 'W', D: 'S', U: 'N' };
 // Inward normal of each door side.
 const INWARD = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] };
 
@@ -600,6 +603,44 @@ function isWin(layout, state) {
   return true;
 }
 
+// T30 solver aid: cells a resting box can never leave. Every box move needs a
+// pusher behind it (a push, or an arrival/mouth shove coming through a door);
+// in a corner of two perpendicular REAL walls nothing can ever stand behind
+// the box - a pusher would be inside a wall - except a body arriving through
+// a door, so the doors' arrival cells stay live. Targets stay live because a
+// box parked there is doing its job. State-independent, so computed once.
+function deadCells(layout) {
+  const dead = new Set();
+  const live = new Set(layout.targets);
+  for (const side of ['N', 'S', 'W', 'E']) {
+    const a = arrivalCell(layout, side);
+    if (a !== null) live.add(a);
+  }
+  const wall = (i) => layout.walls.has(i);
+  for (let y = 1; y < layout.h - 1; y++) {
+    for (let x = 1; x < layout.w - 1; x++) {
+      const i = y * layout.w + x;
+      if (wall(i) || live.has(i)) continue;
+      if ((wall(i - layout.w) || wall(i + layout.w)) && (wall(i - 1) || wall(i + 1))) {
+        dead.add(i);
+      }
+    }
+  }
+  return dead;
+}
+
+// True when the state can no longer be won for want of movable boxes. Boxes
+// can MULTIPLY (boxout with 2+ windows), so the count check is only sound
+// while the block population cannot support duplication.
+function isDoomed(layout, dead, state) {
+  const need = layout.targets.size;
+  if (need === 0) return false;
+  let live = 0;
+  for (const b of state.boxes) if (!dead.has(b)) live++;
+  if (live === 0) return true; // dead boxes can't even be duplicated
+  return state.blocks.length < 2 && live < need;
+}
+
 // One tick. Pure: inputs are never mutated. Phase A resolves grid moves in
 // sweep order; Phase B resolves portal transfers against the settled board.
 function step(layout, state, dir) {
@@ -701,6 +742,22 @@ function step(layout, state, dir) {
         filled.add(arr);
         events.push({ t: 'blocksink', at: arr });
       } else occ.set(arr, 'block');
+      return true;
+    }
+    if (ob === 'box') {
+      // T27 (Will): resolve from the far end. A window advancing onto a box
+      // swallows it - the box crosses the window's boundary on the LEADING
+      // face (relative motion) and lands at that door's arrival cell - and
+      // the window takes its cell. Only if the box has no way in is the
+      // window truly pinned (and entering it becomes the fallback).
+      const arr = arrivalCell(layout, LEAD[dir]);
+      if (arr === null || arr === bdest || occ.has(arr)) return false;
+      occ.delete(bdest);
+      events.push({ t: 'boxin', from: bdest, block: bdest, to: arr, lead: true });
+      settleBox(arr);
+      occ.delete(pos);
+      occ.set(bdest, 'block');
+      events.push({ t: 'blockstep', from: pos, to: bdest });
       return true;
     }
     return false;
@@ -997,7 +1054,7 @@ const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plent
 let levelIndex = 0;  // index into LEVELS, or -1 while playtesting a draft
 let levelDef = null; // the live definition: a LEVELS entry, or an editor draft
 let layout = null, state = null;
-let history = [], moves = 0, won = false;
+let history = [], moves = 0, won = false, initial = null;
 let sprites = [];
 let anim = null;     // { t0, p, flashes: [{at, kind}] }
 let bloom = null;    // { t0, p }
@@ -1056,6 +1113,7 @@ function startLevel(def) {
   const parsed = parseLevel(def);
   layout = parsed.layout;
   state = parsed.state;
+  initial = state;
   history = [];
   moves = 0;
   won = false;
@@ -1205,15 +1263,18 @@ function compileAnim(prev, events, dir) {
         const s = at(kind, ev.from);
         // Pinch into the door mouth on the face we entered by, not the middle
         // of the block: that mouth is where the little world's door is drawn.
+        // A swallowed box (ev.lead) went in backwards - the window advanced
+        // over it - so its mouth and its copy's approach both flip sides.
         if (s) {
-          s.b = ev.block; s.bxy = mouthXY(ev.block, IN_FACE[dir]);
+          s.b = ev.block; s.bxy = mouthXY(ev.block, ev.lead ? OUT_FACE[dir] : IN_FACE[dir]);
           s.fate = 'squeeze'; s.live = false; axis(s);
         }
         // The copy threads in through the door face while the original
         // squeezes into the block - both halves of the same body.
+        const back = ev.lead ? -0.5 : 0.5;
         list.push(axis({
           kind, a: ev.to, b: ev.to, fate: null, birth: 'pop', live: true,
-          axy: [xOf(ev.to) - dx * 0.5, yOf(ev.to) - dy * 0.5],
+          axy: [xOf(ev.to) - dx * back, yOf(ev.to) - dy * back],
         }));
         flashes.push({ at: ev.block, kind: 'in' });
         break;
@@ -1321,7 +1382,7 @@ function applyMove(dir) {
     play('bonk');
     return false;
   }
-  history.push(state);
+  history.push({ state, moves });
   if (history.length > 1000) history.shift();
   const prev = state;
   state = r.state;
@@ -1353,12 +1414,16 @@ function applyMove(dir) {
   return true;
 }
 
+// History entries are { state, moves } snapshots, and a reset is just one
+// more entry - so undo after reset steps back to the board the reset threw
+// away, and keeps stepping back through the moves before it.
 function undo() {
   stopAuto();
   if (!history.length) return;
   play('undo');
-  state = history.pop();
-  moves = Math.max(0, moves - 1);
+  const h = history.pop();
+  state = h.state;
+  moves = h.moves;
   won = false;
   bloom = null;
   closeOverlays();
@@ -1367,9 +1432,11 @@ function undo() {
 
 function reset() {
   stopAuto();
+  if (state === initial) return; // nothing to throw away
   play('reset');
-  if (history.length) state = history[0];
-  history = [];
+  history.push({ state, moves });
+  if (history.length > 1000) history.shift();
+  state = initial;
   moves = 0;
   won = false;
   bloom = null;
@@ -1860,10 +1927,11 @@ function frame(ts) {
     motion = true;
   }
   if (bonkAt !== null) {
-    const p = (ts - bonkAt) / 220;
+    const p = (ts - bonkAt) / 180;
     if (p >= 1) { bonkAt = null; board.style.transform = ''; }
     else {
-      const k = Math.sin(p * Math.PI * 3) * (1 - p) * CELL * 0.22;
+      // T29: one soft nudge toward the wall, not a rattle.
+      const k = Math.sin(p * Math.PI * 2) * (1 - p) * CELL * 0.09;
       board.style.transform =
         'translate(' + (k * bonkVec[0]).toFixed(2) + 'px,' + (k * bonkVec[1]).toFixed(2) + 'px)';
     }
@@ -2310,7 +2378,7 @@ document.addEventListener('visibilitychange', () => {
 // clipboard.
 
 const DRAFT_KEY = 'nest-drafts';
-const ED_CAP = 200000;   // BFS states before we call it DNF
+const ED_CAP = 600000;   // BFS states before we call it DNF (T30: pruned, so deeper)
 const ED_MIN = 5, ED_MAX = 12;
 const PAL = [
   ['#', 'wall'], ['.', 'floor'], ['*', 'target'], ['~', 'pit'], ['N', 'block'],
@@ -2584,6 +2652,7 @@ function edSolve() {
   if (!v.ok) { edValidate(); return; }
   const token = ++edSearch;
   const { layout, state } = v;
+  const dead = deadCells(layout);
   const hash = (s) => s.clones.join(',') + '|' + s.boxes.join(',') + '|' +
     s.blocks.join(',') + '|' + s.filled.join(',');
   if (isWin(layout, state)) { edBanner('par 0 · already solved', 'good'); return; }
@@ -2622,6 +2691,9 @@ function edSolve() {
           edBanner('DNF · gave up after ' + seen.size.toLocaleString() + ' states', 'bad');
           return;
         }
+        // T30: a state whose boxes can no longer win is remembered (so we
+        // never re-derive it) but not expanded.
+        if (isDoomed(layout, dead, r.state)) continue;
         queue.push(r.state);
       }
       if (performance.now() > until) {
