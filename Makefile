@@ -57,7 +57,7 @@ SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
 .DEFAULT_GOAL := help
 
 ## sync: pull ../games, snapshot HEAD, build, and import into games/
-sync: pull snapshot build sync-games sync-built drop-snapshot
+sync: pull snapshot build sync-games sync-built drop-snapshot sitemap
 	@echo
 	@echo "== done. review + commit to deploy: =="
 	@git status --short
@@ -113,6 +113,10 @@ sync-built:
 sync-intuition:
 	@node tools/sync-intuition.mjs
 
+## sitemap: regenerate sitemap.txt from games.json, index.xml and content.js
+sitemap:
+	@node tools/gen-sitemap.mjs
+
 ## serve: preview the site locally at http://localhost:$(PORT)
 serve:
 	@echo "Serving wclarke.net at http://localhost:$(PORT)  (Ctrl-C to stop)"
@@ -123,4 +127,4 @@ help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
 .PHONY: sync pull snapshot drop-snapshot build sync-games sync-built \
-        sync-intuition serve help
+        sync-intuition sitemap serve help
