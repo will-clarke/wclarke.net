@@ -133,6 +133,7 @@
   .scrim {
     position: fixed;
     inset: 0;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -177,6 +178,88 @@
   .lv.locked b { color: var(--dim); }
   .lv.here { border-color: var(--blue); }
   #pickerClose { width: 100%; }
+  .lv .del { float: right; padding: 0 6px; color: var(--dim); font-size: 15px; }
+
+  /* --- Editor: a full screen of its own, under the scrims. -------------- */
+  #editor {
+    position: fixed;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--ground);
+    padding: calc(env(safe-area-inset-top) + 10px) 12px calc(env(safe-area-inset-bottom) + 10px);
+  }
+  #edHead { display: flex; align-items: center; gap: 8px; }
+  #edName {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #242c42;
+    color: var(--ink);
+    font: inherit;
+  }
+  /* min-height:0 or the flex child refuses to shrink below the canvas. */
+  #edWrap { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+  #edCanvas { touch-action: none; border-radius: 4px; }
+  #edBanner {
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #242c42;
+    color: var(--dim);
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  #edBanner.bad { color: #ffa0a0; border-color: #64394a; }
+  #edBanner.good { color: #8fe0a3; border-color: #35604a; }
+  #edPal { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  #edPal button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    min-height: 46px;
+    padding: 2px;
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+  #edPal b { font-size: 15px; color: var(--dim); letter-spacing: 0; }
+  #edPal button.on { border-color: var(--blue); background: #33406a; }
+  #edPal button.on b { color: var(--blue); }
+  .edRow { display: flex; gap: 8px; }
+  .edRow button { min-height: 46px; font-size: 12px; }
+  .edStep { flex: 0 0 46px; font-size: 19px; letter-spacing: 0; }
+  #edSize {
+    align-self: center;
+    flex: 0 0 auto;
+    min-width: 48px;
+    text-align: center;
+    color: var(--dim);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+  #edCode { flex: 1; display: flex; flex-direction: column; gap: 8px; min-height: 0; }
+  #edCode textarea {
+    flex: 1;
+    min-height: 116px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #1a2032;
+    color: var(--ink);
+    font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
+    resize: none;
+  }
+  /* In a column flex box the shared button{flex:1} grows HEIGHT, which would
+     make Import as tall as the box it reads from. */
+  #edImport { flex: 0 0 auto; }
 </style>
 
 <div id="app">
@@ -222,9 +305,34 @@
 
 <div id="picker" class="scrim" hidden>
   <div class="card">
-    <h2 class="cardTitle">Levels</h2>
+    <h2 id="pickerTitle" class="cardTitle">Levels</h2>
     <div id="grid"></div>
     <button id="pickerClose">Close</button>
+  </div>
+</div>
+
+<div id="editor" hidden>
+  <div id="edHead">
+    <input id="edName" maxlength="28" placeholder="Untitled" aria-label="Level name">
+    <button id="edDrafts" class="edStep" aria-label="Drafts">&#9776;</button>
+  </div>
+  <div id="edWrap"><canvas id="edCanvas"></canvas></div>
+  <div id="edCode" hidden>
+    <textarea id="edText" spellcheck="false" aria-label="Level code"></textarea>
+    <button id="edImport">Import from box</button>
+  </div>
+  <div id="edBanner"></div>
+  <div id="edPal"></div>
+  <div class="edRow">
+    <button id="edMinus" class="edStep" aria-label="Smaller">&minus;</button>
+    <span id="edSize">7&times;7</span>
+    <button id="edPlus" class="edStep" aria-label="Bigger">+</button>
+    <button id="edSolve">Solve</button>
+    <button id="edPlay">Play</button>
+  </div>
+  <div class="edRow">
+    <button id="edCodeBtn">Code</button>
+    <button id="edClose">Close</button>
   </div>
 </div>
 
@@ -729,7 +837,8 @@ const BLOCK_INSET = 0.07;  // bezel around the little world, in cells
 const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
 const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
 
-let levelIndex = 0;
+let levelIndex = 0;  // index into LEVELS, or -1 while playtesting a draft
+let levelDef = null; // the live definition: a LEVELS entry, or an editor draft
 let layout = null, state = null;
 let history = [], moves = 0, won = false;
 let sprites = [];
@@ -776,9 +885,15 @@ function xOf(i) { return i % layout.w; }
 function yOf(i) { return Math.floor(i / layout.w); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-function loadLevel(i) {
-  levelIndex = i;
-  const parsed = parseLevel(LEVELS[i]);
+function loadLevel(i) { levelIndex = i; startLevel(LEVELS[i]); }
+
+// An editor draft rides the same path but owns no slot in LEVELS, so
+// levelIndex goes to -1 and every progress write is gated on it.
+function playDraft(def) { levelIndex = -1; startLevel(def); }
+
+function startLevel(def) {
+  levelDef = def;
+  const parsed = parseLevel(def);
   layout = parsed.layout;
   state = parsed.state;
   history = [];
@@ -788,7 +903,8 @@ function loadLevel(i) {
   bloom = null;
   closeOverlays();
   hideToast();
-  showCoach(i);
+  showCoach(levelIndex);
+  $('levels').textContent = levelIndex < 0 ? 'Editor' : 'Levels';
   resize();
   settle();
 }
@@ -801,8 +917,12 @@ const COACH = {
   4: 'Doors go both ways',
 };
 
-function overlayOpen() { return !$('overlay').hidden || !$('picker').hidden; }
-function closeOverlays() { $('overlay').hidden = true; $('picker').hidden = true; }
+function overlayOpen() {
+  return !$('overlay').hidden || !$('picker').hidden || !$('editor').hidden;
+}
+function closeOverlays() {
+  $('overlay').hidden = true; $('picker').hidden = true; $('editor').hidden = true;
+}
 
 function showCoach(i) {
   const msg = COACH[i];
@@ -816,23 +936,35 @@ function dismissCoach() {
   saveProgress();
 }
 
+// One tile-maker for both lists: the level picker and the editor's drafts.
+function tile(num, title, note, onPick) {
+  const b = document.createElement('button');
+  b.className = 'lv';
+  b.innerHTML = '<b>' + num + '</b>';
+  b.appendChild(document.createTextNode(title));
+  b.appendChild(document.createElement('br'));
+  const small = document.createElement('small');
+  small.textContent = note;
+  b.appendChild(small);
+  if (onPick) b.addEventListener('click', onPick);
+  $('grid').appendChild(b);
+  return b;
+}
+
 function openPicker() {
   const grid = $('grid');
+  $('pickerTitle').textContent = 'Levels';
   grid.textContent = '';
   LEVELS.forEach((def, i) => {
     const locked = i >= progress.unlocked;
     const best = progress.best[i];
-    const b = document.createElement('button');
-    b.className = 'lv' + (locked ? ' locked' : '') + (i === levelIndex ? ' here' : '');
-    b.innerHTML = '<b>' + (i + 1) + '</b>';
-    b.appendChild(document.createTextNode(def.name));
-    const note = document.createElement('small');
-    note.textContent = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
-    b.appendChild(document.createElement('br'));
-    b.appendChild(note);
-    if (!locked) b.addEventListener('click', () => { play('ui'); loadLevel(i); });
-    grid.appendChild(b);
+    const note = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
+    const b = tile(i + 1, def.name, note,
+      locked ? null : () => { play('ui'); loadLevel(i); });
+    if (locked) b.classList.add('locked');
+    if (i === levelIndex) b.classList.add('here');
   });
+  tile('+', 'New level', 'editor', () => { play('ui'); openEditor(); });
   $('overlay').hidden = true;
   $('picker').hidden = false;
 }
@@ -845,7 +977,7 @@ function settle() {
 }
 
 function syncHud() {
-  const def = LEVELS[levelIndex];
+  const def = levelDef;
   $('levelName').textContent = def.name;
   $('moves').textContent = def.par ? moves + '/' + def.par : String(moves);
   const chip = $('selves');
@@ -1037,17 +1169,22 @@ function reset() {
 
 function showWin() {
   hideToast();
-  const def = LEVELS[levelIndex];
-  const prevBest = progress.best[levelIndex];
-  if (prevBest === undefined || moves < prevBest) progress.best[levelIndex] = moves;
-  progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS.length, levelIndex + 2));
-  saveProgress();
+  const def = levelDef;
+  const draft = levelIndex < 0;
+  if (!draft) {
+    const prevBest = progress.best[levelIndex];
+    if (prevBest === undefined || moves < prevBest) progress.best[levelIndex] = moves;
+    progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS.length, levelIndex + 2));
+    saveProgress();
+  }
 
   $('cardTitle').textContent = 'Solved';
   let body = 'in ' + moves + ' moves' + (def.par ? ' (par ' + def.par + ')' : '');
-  if (progress.best[levelIndex] < moves) body += ' · best ' + progress.best[levelIndex];
+  if (draft) body += ' · draft';
+  else if (progress.best[levelIndex] < moves) body += ' · best ' + progress.best[levelIndex];
   $('cardBody').textContent = body;
-  $('next').hidden = levelIndex >= LEVELS.length - 1;
+  $('next').hidden = draft || levelIndex >= LEVELS.length - 1;
+  $('toLevels').textContent = draft ? 'Editor' : 'Levels';
   $('overlay').hidden = false;
 }
 
@@ -1927,6 +2064,488 @@ document.addEventListener('visibilitychange', () => {
   else if (audio.sfx || audio.music) ac.resume();
 });
 
+// --- Editor -----------------------------------------------------------------
+// Sketch a level, check it, play it, paste it out. Drafts are plain
+// { name, rows } - the same shape LEVELS wants, minus the meta the game fills
+// in - so nothing has to be translated on the way to parseLevel or out to the
+// clipboard.
+
+const DRAFT_KEY = 'nest-drafts';
+const ED_CAP = 200000;   // BFS states before we call it DNF
+const ED_MIN = 5, ED_MAX = 12;
+const PAL = [
+  ['#', 'wall'], ['.', 'floor'], ['*', 'target'], ['~', 'pit'], ['N', 'block'],
+  ['@', 'self'], ['$', 'box'], ['B', 'box+tgt'], ['-', 'door'],
+];
+
+const edCv = $('edCanvas');
+const edCtx = edCv.getContext('2d');
+let drafts = [], draftIx = 0;
+let edTool = '#', edCell = 24, edStroke = false, edNote = '', edSaveTimer = null;
+let edSearch = 0;   // token: bumped whenever a running solve is made stale
+let preEdit = 0;    // the LEVELS index to drop back onto when the editor closes
+
+const ed = () => drafts[draftIx];
+
+function blankDraft(n) {
+  const rows = [];
+  for (let y = 0; y < n; y++) {
+    let r = '';
+    for (let x = 0; x < n; x++) r += (x === 0 || y === 0 || x === n - 1 || y === n - 1) ? '#' : '.';
+    rows.push(r);
+  }
+  return { name: '', rows };
+}
+
+// A draft only ever holds strings, so a corrupt blob is easy to spot and drop.
+function loadDrafts() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    if (Array.isArray(raw)) {
+      drafts = raw.filter(d => d && Array.isArray(d.rows) && d.rows.length >= ED_MIN)
+        .map(d => ({ name: String(d.name || ''), rows: d.rows.map(String) }));
+    }
+  } catch (e) { /* start fresh */ }
+  if (!drafts.length) drafts = [blankDraft(7)];
+}
+function saveDrafts() {
+  clearTimeout(edSaveTimer);
+  edSaveTimer = setTimeout(() => {
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify(drafts)); } catch (e) {}
+  }, 350);
+}
+
+// The one place a draft becomes a level def. stretch:true because an editor
+// has no business refusing a multi-block sketch.
+const draftDef = (d) => ({ name: d.name || 'Draft', par: 0, stretch: true, rows: d.rows });
+
+function edCheck() {
+  try {
+    const p = parseLevel(draftDef({ name: 'Draft', rows: ed().rows }));
+    return { ok: true, layout: p.layout, state: p.state };
+  } catch (e) {
+    return { ok: false, msg: String(e.message).replace(/^Draft: /, '') };
+  }
+}
+
+function edBanner(text, cls) {
+  const b = $('edBanner');
+  b.textContent = text;
+  b.className = cls || '';
+}
+
+// Live validity: the parser's own throw message IS the error text, so the
+// editor can never disagree with the game about what a level is. Every route
+// that changes the subject comes through here, which is why the search token
+// is bumped here too - a stale solve must never win the banner back.
+function edValidate() {
+  edSearch++;
+  if (edNote) { edBanner(edNote, 'bad'); return; }
+  const v = edCheck();
+  if (!v.ok) { edBanner(v.msg, 'bad'); return; }
+  const n = ed().rows.length;
+  const boxes = v.state.boxes.length, targets = v.layout.targets.size;
+  let msg = n + '×' + n + ' · ' + v.state.clones.length + ' self · ' +
+    boxes + ' box / ' + targets + ' target';
+  if (boxes < targets) msg += ' · needs more boxes';
+  edBanner(msg, boxes >= targets && targets > 0 ? 'good' : '');
+}
+
+function edTouch() {
+  saveDrafts();
+  edValidate();
+  edPaint();
+}
+
+// --- Editor painting --------------------------------------------------------
+
+function edResize() {
+  const wrap = $('edWrap'), n = ed().rows.length;
+  const avail = Math.min(wrap.clientWidth, wrap.clientHeight);
+  edCell = Math.max(12, Math.floor(avail / n));
+  const px = edCell * n;
+  edCv.style.width = px + 'px';
+  edCv.style.height = px + 'px';
+  edCv.width = Math.round(px * DPR);
+  edCv.height = Math.round(px * DPR);
+  edPaint();
+}
+
+// Flat, static, glyph-by-glyph - the game renderer needs a parsed layout and
+// half the point of an editor is drawing one that does not parse yet. Colours
+// are the game's, so a sketch reads as the thing it will become. drawPit is
+// borrowed by lending it CELL for the duration.
+function edPaint() {
+  const rows = ed().rows, n = rows.length, C = edCell, c = edCtx;
+  const savedCell = CELL;
+  CELL = C;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = '#1e2433';
+  c.fillRect(0, 0, n * C, n * C);
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
+    const ch = rows[y][x], px = x * C, py = y * C;
+    if (ch === '#') {
+      c.fillStyle = '#38466a';
+      c.fillRect(px, py, C, C);
+      c.fillStyle = 'rgba(255,255,255,0.13)';
+      c.fillRect(px, py, C, Math.max(1, C * 0.14));
+      c.strokeStyle = 'rgba(0,0,0,0.28)';
+      c.lineWidth = 1;
+      c.strokeRect(px + 0.5, py + 0.5, C - 1, C - 1);
+      continue;
+    }
+    c.fillStyle = '#232b40';
+    c.fillRect(px, py, C, C);
+    c.strokeStyle = 'rgba(255,255,255,0.035)';
+    c.lineWidth = 1;
+    c.strokeRect(px + 0.5, py + 0.5, C - 1, C - 1);
+
+    if (ch === '~') drawPit(c, px, py);
+    if (ch === '-') {
+      const g = c.createRadialGradient(px + C / 2, py + C / 2, 0, px + C / 2, py + C / 2, C * 0.9);
+      g.addColorStop(0, 'rgba(167,139,250,0.5)');
+      g.addColorStop(1, 'rgba(167,139,250,0)');
+      c.fillStyle = g;
+      c.fillRect(px - C / 2, py - C / 2, C * 2, C * 2);
+    }
+    if (ch === '*' || ch === 'B') {
+      c.save();
+      c.translate(px + C / 2, py + C / 2);
+      c.rotate(Math.PI / 4);
+      const s = C * 0.34;
+      c.strokeStyle = 'rgba(233,237,247,0.55)';
+      c.lineWidth = Math.max(1, C * 0.055);
+      c.strokeRect(-s / 2, -s / 2, s, s);
+      c.restore();
+    }
+    if (ch === 'N') {
+      const g = c.createLinearGradient(px, py, px, py + C);
+      g.addColorStop(0, '#4c3b8a');
+      g.addColorStop(1, '#2c2357');
+      c.fillStyle = g;
+      c.fillRect(px, py, C, C);
+      c.strokeStyle = 'rgba(167,139,250,0.95)';
+      c.lineWidth = Math.max(1, C * 0.06);
+      c.strokeRect(px + C * 0.05, py + C * 0.05, C * 0.9, C * 0.9);
+    }
+    if (ch === '@' || ch === '$' || ch === 'B') {
+      const pad = C * 0.15, s = C - pad * 2, r = Math.max(2, s * 0.26);
+      const clone = ch === '@';
+      c.fillStyle = clone ? '#3f9bf4' : ch === 'B' ? '#57c26b' : '#ffc233';
+      roundRect(c, px + pad, py + pad, s, s, r);
+      c.fill();
+      if (clone) {
+        c.fillStyle = 'rgba(255,255,255,0.6)';
+        roundRect(c, px + C / 2 - s * 0.22, py + C / 2 - s * 0.3, s * 0.44, s * 0.2, s * 0.09);
+        c.fill();
+      } else {
+        c.strokeStyle = ch === 'B' ? 'rgba(20,90,40,0.65)' : 'rgba(92,60,0,0.6)';
+        c.lineWidth = Math.max(1, s * 0.08);
+        roundRect(c, px + pad, py + pad, s, s, r);
+        c.stroke();
+      }
+    }
+  }
+  CELL = savedCell;
+}
+
+// --- Editor painting (the verb) ---------------------------------------------
+
+function edSet(x, y) {
+  const d = ed(), n = d.rows.length;
+  const ring = x === 0 || y === 0 || x === n - 1 || y === n - 1;
+  const g = edTool;
+  // The boundary ring is the level's shell: only wall or door live there, and
+  // a door has to sit on a face, not a corner. Refusing here (rather than
+  // letting the parser throw later) keeps the sketch always-parseable-ish.
+  if (ring && g !== '#' && g !== '-') { edNote = 'The edge is the shell: wall or door only'; edTouch(); return; }
+  if (!ring && g === '-') { edNote = 'Doors sit on the boundary ring'; edTouch(); return; }
+  if (g === '-' && (x === 0 || x === n - 1) && (y === 0 || y === n - 1)) {
+    edNote = 'No doors in the corners'; edTouch(); return;
+  }
+  edNote = '';
+  if (d.rows[y][x] === g) return;
+  const put = (px, py, ch) => {
+    d.rows[py] = d.rows[py].slice(0, px) + ch + d.rows[py].slice(px + 1);
+  };
+  // One door a side: painting a new one closes the old, which beats throwing
+  // "more than one N door" at someone who is clearly moving it.
+  if (g === '-') {
+    const side = y === 0 ? 'N' : y === n - 1 ? 'S' : x === 0 ? 'W' : 'E';
+    for (let k = 1; k < n - 1; k++) {
+      const [ox, oy] = side === 'N' ? [k, 0] : side === 'S' ? [k, n - 1]
+        : side === 'W' ? [0, k] : [n - 1, k];
+      if (d.rows[oy][ox] === '-') put(ox, oy, '#');
+    }
+  }
+  put(x, y, g);
+  edTouch();
+}
+
+function edAt(e) {
+  const r = edCv.getBoundingClientRect();
+  const x = Math.floor((e.clientX - r.left) / edCell);
+  const y = Math.floor((e.clientY - r.top) / edCell);
+  const n = ed().rows.length;
+  if (x >= 0 && y >= 0 && x < n && y < n) edSet(x, y);
+}
+
+edCv.addEventListener('pointerdown', (e) => {
+  edStroke = true;
+  edCv.setPointerCapture(e.pointerId);
+  edAt(e);
+});
+edCv.addEventListener('pointermove', (e) => { if (edStroke) edAt(e); });
+const edUp = () => { edStroke = false; };
+edCv.addEventListener('pointerup', edUp);
+edCv.addEventListener('pointercancel', edUp);
+
+// --- Size -------------------------------------------------------------------
+
+// Interior content survives a resize, and each door keeps its offset along its
+// own face (clamped inside the new ring) rather than being silently dropped.
+function edSetSize(n) {
+  const d = ed(), old = d.rows, m = old.length;
+  if (n < ED_MIN || n > ED_MAX || n === m) return;
+  const fresh = blankDraft(n).rows;
+  const lim = Math.min(m, n) - 1;
+  for (let y = 1; y < lim; y++) {
+    for (let x = 1; x < lim; x++) {
+      fresh[y] = fresh[y].slice(0, x) + old[y][x] + fresh[y].slice(x + 1);
+    }
+  }
+  for (const side of ['N', 'S', 'W', 'E']) {
+    for (let k = 1; k < m - 1; k++) {
+      const [ox, oy] = side === 'N' ? [k, 0] : side === 'S' ? [k, m - 1]
+        : side === 'W' ? [0, k] : [m - 1, k];
+      if (old[oy][ox] !== '-') continue;
+      const j = Math.min(n - 2, k);
+      const [nx, ny] = side === 'N' ? [j, 0] : side === 'S' ? [j, n - 1]
+        : side === 'W' ? [0, j] : [n - 1, j];
+      fresh[ny] = fresh[ny].slice(0, nx) + '-' + fresh[ny].slice(nx + 1);
+    }
+  }
+  d.rows = fresh;
+  edNote = '';
+  $('edSize').textContent = n + '×' + n;
+  edResize();
+  edTouch();
+}
+
+// --- Solve ------------------------------------------------------------------
+
+// solve.mjs's BFS, minus the fixtures and the reporting. Sliced into ~50ms
+// chunks rather than run flat out: a real level lands in the first chunk, and
+// a degenerate sketch that walks the whole cap counts up in the banner instead
+// of freezing the phone for ten seconds.
+function edSolve() {
+  const v = edCheck();
+  if (!v.ok) { edValidate(); return; }
+  const token = ++edSearch;
+  const { layout, state } = v;
+  const hash = (s) => s.clones.join(',') + '|' + s.boxes.join(',') + '|' + s.filled.join(',');
+  if (isWin(layout, state)) { edBanner('par 0 · already solved', 'good'); return; }
+  const seen = new Map([[hash(state), null]]);
+  const queue = [state];
+  let head = 0;
+  const path = (hn) => {
+    let p = '';
+    for (let cur = hn; seen.get(cur) !== null; ) {
+      const e = seen.get(cur);
+      p = e.mv + p;
+      cur = e.prev;
+    }
+    return p;
+  };
+
+  const pump = () => {
+    if (token !== edSearch) return;
+    const until = performance.now() + 50;
+    while (head < queue.length) {
+      const s = queue[head++], hs = hash(s);
+      for (const mv of ['U', 'D', 'L', 'R']) {
+        const r = step(layout, s, mv);
+        if (!r.changed) continue;
+        const hn = hash(r.state);
+        if (seen.has(hn)) continue;
+        seen.set(hn, { prev: hs, mv });
+        if (r.win) {
+          const p = path(hn);
+          edBanner('par ' + p.length + ' · ' + p, 'good');
+          return;
+        }
+        if (seen.size > ED_CAP) {
+          edBanner('DNF · gave up after ' + seen.size.toLocaleString() + ' states', 'bad');
+          return;
+        }
+        queue.push(r.state);
+      }
+      if (performance.now() > until) {
+        edBanner('solving… ' + seen.size.toLocaleString() + ' states', '');
+        setTimeout(pump, 0);
+        return;
+      }
+    }
+    edBanner('unsolvable · ' + seen.size.toLocaleString() + ' states searched', 'bad');
+  };
+
+  edBanner('solving…', '');
+  setTimeout(pump, 20);
+}
+
+// --- Code in, code out ------------------------------------------------------
+
+const b64u = (s) => btoa(unescape(encodeURIComponent(s)))
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+
+const isRow = (s) => s.length >= ED_MIN && !/[^#.*~N@$BP-]/.test(s);
+
+function edExport() {
+  const d = ed();
+  return (d.name || 'Untitled') + '\n' + d.rows.join('\n') +
+    '\n\nnest:' + b64u((d.name || 'Untitled') + '/' + d.rows.join('/'));
+}
+
+// Accepts either half of what edExport writes: the compact code wins if it is
+// there, otherwise anything that looks like a grid row is the grid and the
+// first line that does not is the name.
+function edImport(txt) {
+  let name = '', rows = [];
+  const code = txt.match(/nest:([A-Za-z0-9_-]+)/);
+  if (code) {
+    try {
+      const parts = unb64u(code[1]).split('/');
+      name = parts[0];
+      rows = parts.slice(1);
+    } catch (e) { edBanner('that code is not readable', 'bad'); return; }
+  } else {
+    const lines = txt.split('\n').map(s => s.trim()).filter(Boolean);
+    rows = lines.filter(isRow);
+    name = lines.find(s => !isRow(s)) || '';
+  }
+  const n = rows.length;
+  if (n < ED_MIN || n > ED_MAX) {
+    edBanner('need ' + ED_MIN + '–' + ED_MAX + ' rows, found ' + n, 'bad');
+    return;
+  }
+  if (rows.some(r => r.length !== n || !isRow(r))) {
+    edBanner('rows must all be ' + n + ' legal glyphs wide (levels are square)', 'bad');
+    return;
+  }
+  drafts.push({ name, rows });
+  draftIx = drafts.length - 1;
+  saveDrafts();
+  openEditor();   // ...which puts the grid back in front of the code box
+}
+
+// --- Editor shell -----------------------------------------------------------
+
+// Point the editor's chrome at whatever ed() is now - separate from opening it,
+// because deleting a slot has to re-aim the live editor UNDER the drafts list.
+function edSync() {
+  edNote = '';
+  $('edName').value = ed().name;
+  $('edSize').textContent = ed().rows.length + '×' + ed().rows.length;
+  for (const b of $('edPal').children) b.classList.toggle('on', b.dataset.g === edTool);
+  edResize();
+  edValidate();
+}
+
+function openEditor() {
+  if (levelIndex >= 0) preEdit = levelIndex;
+  closeOverlays();
+  $('editor').hidden = false;
+  $('edCode').hidden = true;
+  $('edWrap').hidden = false;
+  $('edCodeBtn').textContent = 'Code';
+  edSync();
+}
+
+function openDrafts() {
+  $('pickerTitle').textContent = 'Drafts';
+  $('grid').textContent = '';
+  drafts.forEach((d, i) => {
+    const b = tile(i + 1, d.name || 'Untitled', d.rows.length + '×' + d.rows.length,
+      () => { play('ui'); draftIx = i; openEditor(); });
+    if (i === draftIx) b.classList.add('here');
+    if (drafts.length < 2) return;
+    const x = document.createElement('span');
+    x.className = 'del';
+    x.textContent = '×';
+    // pointerdown, not click: the tile's own click must never also fire.
+    x.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      drafts.splice(i, 1);
+      draftIx = Math.min(draftIx, drafts.length - 1);
+      saveDrafts();
+      edSync();
+      openDrafts();
+    });
+    b.appendChild(x);
+  });
+  tile('+', 'New draft', 'blank 7×7', () => {
+    play('ui');
+    drafts.push(blankDraft(7));
+    draftIx = drafts.length - 1;
+    saveDrafts();
+    openEditor();
+  });
+  $('overlay').hidden = true;
+  $('picker').hidden = false;
+}
+
+$('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
+$('edDrafts').addEventListener('click', () => { play('ui'); openDrafts(); });
+$('edMinus').addEventListener('click', () => { play('ui'); edSetSize(ed().rows.length - 1); });
+$('edPlus').addEventListener('click', () => { play('ui'); edSetSize(ed().rows.length + 1); });
+$('edSolve').addEventListener('click', () => { play('ui'); edSolve(); });
+$('edPlay').addEventListener('click', () => {
+  const v = edCheck();
+  if (!v.ok) { edNote = ''; edValidate(); return; }
+  play('ui');
+  playDraft(draftDef(ed()));
+});
+// The code box is the grid in another notation, so it takes the grid's place
+// rather than stacking under it - on a short screen, stacking squeezed the
+// canvas to nothing.
+$('edCodeBtn').addEventListener('click', () => {
+  play('ui');
+  const open = $('edCode').hidden;
+  $('edCode').hidden = !open;
+  $('edWrap').hidden = open;
+  $('edCodeBtn').textContent = open ? 'Grid' : 'Code';
+  if (open) $('edText').value = edExport();
+  else edResize();
+});
+$('edText').addEventListener('focus', () => $('edText').select());
+$('edImport').addEventListener('click', () => { play('ui'); edImport($('edText').value); });
+$('edClose').addEventListener('click', () => {
+  play('ui');
+  $('editor').hidden = true;
+  // Leaving the editor onto a draft would strand you: the footer's only way
+  // out would be back into the editor. So closing puts a real level back.
+  if (levelIndex < 0) loadLevel(preEdit);
+  else dirty = true;
+  // Nor should Close leave #edit behind to reopen the editor on reload.
+  try { window.history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+});
+
+PAL.forEach(([g, label]) => {
+  const b = document.createElement('button');
+  b.dataset.g = g;
+  b.innerHTML = '<b></b>';
+  b.firstChild.textContent = g;
+  b.appendChild(document.createTextNode(label));
+  b.addEventListener('click', () => {
+    edTool = g;
+    play('ui');
+    for (const s of $('edPal').children) s.classList.toggle('on', s === b);
+  });
+  $('edPal').appendChild(b);
+});
+
 // --- Input ------------------------------------------------------------------
 
 const SWIPE = 24;
@@ -1961,6 +2580,8 @@ const KEYS = {
   w: 'U', s: 'D', a: 'L', d: 'R',
 };
 window.addEventListener('keydown', (e) => {
+  // The editor has real text fields; wasd there is typing, not walking.
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (KEYS[k]) { e.preventDefault(); applyMove(KEYS[k]); return; }
   if (k === 'Escape') closeOverlays();
@@ -1969,20 +2590,29 @@ window.addEventListener('keydown', (e) => {
   else if (k === 'r') reset();
 });
 
+// Both "Levels" buttons go back to wherever this level came from.
+const goBack = () => { play('ui'); if (levelIndex < 0) openEditor(); else openPicker(); };
+
 $('undo').addEventListener('click', undo);
 $('reset').addEventListener('click', reset);
-$('levels').addEventListener('click', () => { play('ui'); openPicker(); });
+$('levels').addEventListener('click', goBack);
+// Closing the drafts list just uncovers the editor it was opened from.
 $('pickerClose').addEventListener('click', () => { play('ui'); $('picker').hidden = true; });
-$('toLevels').addEventListener('click', () => { play('ui'); openPicker(); });
+$('toLevels').addEventListener('click', goBack);
 $('next').addEventListener('click', () => { play('ui'); loadLevel(Math.min(levelIndex + 1, LEVELS.length - 1)); });
 $('replay').addEventListener('click', reset);
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => {
+  resize();
+  if (!$('editor').hidden) edResize();
+});
 
 loadProgress();
+loadDrafts();
 syncAudioBtns();
 // Resume at the first unsolved level that is already unlocked.
 let start = 0;
 while (start < progress.unlocked - 1 && progress.best[start] !== undefined) start++;
 loadLevel(start);
+if (location.hash === '#edit') openEditor();
 requestAnimationFrame(frame);
 </script>
