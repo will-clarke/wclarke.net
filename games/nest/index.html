@@ -178,6 +178,17 @@
   .lv.locked { color: var(--dim); opacity: 0.5; }
   .lv.locked b { color: var(--dim); }
   .lv.here { border-color: var(--blue); }
+  .trackHead {
+    grid-column: 1 / -1;
+    margin-top: 8px;
+    text-align: left;
+    color: var(--violet);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .trackHead:first-child { margin-top: 0; }
+  .trackHead small { color: var(--dim); letter-spacing: 0.04em; text-transform: none; }
   #pickerClose { width: 100%; }
   .lv .del { float: right; padding: 0 6px; color: var(--dim); font-size: 15px; }
 
@@ -354,10 +365,13 @@ const LEAD = { R: 'E', L: 'W', D: 'S', U: 'N' };
 // Inward normal of each door side.
 const INWARD = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] };
 
-// T20 recut: every level re-verified under pushable blocks (T10), compressed
-// where the old cut had dead space, pars re-baked by BFS. Blocks that must be
-// entered (not pushed) are pinned by walls - push beats enter (A4).
-const LEVELS = [
+// T35: levels live in TRACKS now - the campaign keeps its teaching arc, and
+// guest/generated levels get shelves of their own instead of crowding it.
+// Progress is per track (ids are the save keys: do not reuse or rename them).
+// T20 recut: every campaign level re-verified under pushable blocks (T10),
+// compressed where the old cut had dead space, pars re-baked by BFS. Blocks
+// that must be entered (not pushed) are pinned by walls - push beats enter.
+const CAMPAIGN = [
   { name: 'First Steps', par: 2, stretch: false, requires: ['push'], rows: [
     '#####',
     '#.*.#',
@@ -523,6 +537,612 @@ const LEVELS = [
   ]},
 ];
 
+// Will's editor levels (2026-08-10 batch), pars baked under the T32 engine,
+// ordered easy-ish to hard-ish by par (search size breaks ties). No teaching
+// contract - these are puzzles, not lessons. Names are placeholders Will can
+// rename at will.
+const WORKSHOP = [
+  { name: 'Postage', par: 5, stretch: true, requires: [], rows: [
+    '#####',
+    '#@.$-',
+    '#N###',
+    '-..*#',
+    '#####',
+  ]},
+  { name: 'Chimneys', par: 5, stretch: true, requires: [], rows: [
+    '#####',
+    '#*#*#',
+    '#$#$#',
+    '#@$~#',
+    '#####',
+  ]},
+  { name: 'Trapdoor', par: 7, stretch: true, requires: [], rows: [
+    '###-#',
+    '#@$.#',
+    '#N$~#',
+    '-.~*-',
+    '###-#',
+  ]},
+  { name: 'Sidedoor', par: 8, stretch: true, requires: [], rows: [
+    '######',
+    '#@#..#',
+    '#.*.N-',
+    '#.#..#',
+    '-.$..#',
+    '######',
+  ]},
+  { name: 'Crossing', par: 9, stretch: true, requires: [], rows: [
+    '##-##',
+    '#.@.#',
+    '-.*$-',
+    '#.N.#',
+    '##-##',
+  ]},
+  { name: 'Keyhole', par: 10, stretch: true, requires: [], rows: [
+    '###-#',
+    '-.@.#',
+    '#.N$-',
+    '#*..#',
+    '#-###',
+  ]},
+  { name: 'Wings', par: 13, stretch: true, requires: [], rows: [
+    '#######',
+    '#*.*N*#',
+    '#.$.###',
+    '-.N@$.-',
+    '#...###',
+    '#*.*N*#',
+    '#######',
+  ]},
+  { name: 'Milk Run', par: 15, stretch: true, requires: [], rows: [
+    '#######',
+    '#@$.~.#',
+    '#####$#',
+    '#~$*#.#',
+    '#$###~#',
+    '#.~.$.#',
+    '#######',
+  ]},
+  { name: 'Pinwheel', par: 15, stretch: true, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#@..$#',
+    '#$.$*#',
+    '#*...#',
+    '######',
+  ]},
+  { name: 'Causeway', par: 16, stretch: true, requires: [], rows: [
+    '###-###',
+    '#@.N..#',
+    '#~~~~~#',
+    '-..N..-',
+    '#~~~~~#',
+    '#..$.*#',
+    '###-###',
+  ]},
+  { name: 'Spiral', par: 17, stretch: true, requires: [], rows: [
+    '#-#####',
+    '-*#..*#',
+    '##.*$.#',
+    '#.$N$.#',
+    '#..$.##',
+    '#.@.#*-',
+    '#####-#',
+  ]},
+  { name: 'Backdoor', par: 18, stretch: true, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#...$#',
+    '#$N@*#',
+    '#*.$.#',
+    '##-###',
+  ]},
+  { name: 'Compass', par: 18, stretch: true, requires: [], rows: [
+    '###-###',
+    '#N*...#',
+    '#.....#',
+    '#..@..#',
+    '-..##*-',
+    '#N.$.N#',
+    '###-###',
+  ]},
+  { name: 'Periscope', par: 23, stretch: true, requires: [], rows: [
+    '#####-#',
+    '#.$.#.#',
+    '#.*.#.#',
+    '#...#.#',
+    '##N#..#',
+    '-*$..@-',
+    '#######',
+  ]},
+  { name: 'Avalanche', par: 23, stretch: true, requires: [], rows: [
+    '#######',
+    '#@$...#',
+    '#$$$$.#',
+    '#~~~$.#',
+    '#~~~$.#',
+    '#*..~~#',
+    '#######',
+  ]},
+  { name: 'Island', par: 25, stretch: true, requires: [], rows: [
+    '####-####',
+    '#~~~~~~~#',
+    '#~~~~...#',
+    '#~~~~..N#',
+    '-*~$~.@.-',
+    '#~~~~..N#',
+    '#~~~~...#',
+    '#~~~~~~~#',
+    '####-####',
+  ]},
+  { name: 'Grindstone', par: 47, stretch: true, requires: [], rows: [
+    '#######',
+    '#$..$$#',
+    '#.@$..#',
+    '#*.$.*#',
+    '#*$#$*#',
+    '#.$...#',
+    '#######',
+  ]},
+];
+
+// T36: generator levels that survived the pruned BFS + portal-integrity
+// filter and a diversity pick over ~48k sketches. Ordered by par.
+const GENERATED = [
+  { name: 'Gen 1', par: 14, stretch: true, requires: [], rows: [
+    '#-#####',
+    '#.#####',
+    '#..*@~#',
+    '#..*$N#',
+    '#...$.#',
+    '#.~N.$#',
+    '##-####',
+  ]},
+  { name: 'Gen 2', par: 15, stretch: true, requires: [], rows: [
+    '#-#####',
+    '#.$N.##',
+    '#.N~..#',
+    '#..*..#',
+    '#.....-',
+    '#..@..#',
+    '#######',
+  ]},
+  { name: 'Gen 3', par: 15, stretch: true, requires: [], rows: [
+    '######',
+    '#..~.#',
+    '#..#.#',
+    '#N*N@#',
+    '#~$..#',
+    '####-#',
+  ]},
+  { name: 'Gen 4', par: 15, stretch: true, requires: [], rows: [
+    '#######',
+    '#.###.#',
+    '#...@N-',
+    '-...~.#',
+    '#...N*#',
+    '#...$.#',
+    '#######',
+  ]},
+  { name: 'Gen 5', par: 17, stretch: true, requires: [], rows: [
+    '#######',
+    '##~..##',
+    '#.$.*##',
+    '#N@..##',
+    '#.N.~##',
+    '#$...##',
+    '#-#####',
+  ]},
+  { name: 'Gen 6', par: 17, stretch: true, requires: [], rows: [
+    '###-###',
+    '#..*.*#',
+    '#@...$#',
+    '#N....#',
+    '#..##.#',
+    '#N$##.#',
+    '#######',
+  ]},
+  { name: 'Gen 7', par: 17, stretch: true, requires: [], rows: [
+    '#######',
+    '####..#',
+    '#.$#*.#',
+    '#.$@..-',
+    '#N.~..#',
+    '#..N.*#',
+    '#######',
+  ]},
+  { name: 'Gen 8', par: 17, stretch: true, requires: [], rows: [
+    '#-####',
+    '#~.N##',
+    '#..N$#',
+    '#.**.#',
+    '-$@.##',
+    '######',
+  ]},
+  { name: 'Gen 9', par: 18, stretch: true, requires: [], rows: [
+    '########',
+    '#.N..###',
+    '#....*##',
+    '#..@#*.#',
+    '#...#..-',
+    '#.N$#$~#',
+    '#.~.#..#',
+    '######-#',
+  ]},
+  { name: 'Gen 10', par: 18, stretch: true, requires: [], rows: [
+    '######',
+    '######',
+    '-**$*#',
+    '#@NN.#',
+    '#$$..#',
+    '##-###',
+  ]},
+  { name: 'Gen 11', par: 18, stretch: true, requires: [], rows: [
+    '######',
+    '-....#',
+    '##N..#',
+    '##N@.#',
+    '##.*$#',
+    '####-#',
+  ]},
+  { name: 'Gen 12', par: 18, stretch: true, requires: [], rows: [
+    '#######',
+    '#.$$..#',
+    '-N~...#',
+    '#..N.##',
+    '#....$#',
+    '#@.*..-',
+    '#######',
+  ]},
+  { name: 'Gen 13', par: 19, stretch: true, requires: [], rows: [
+    '#######',
+    '#$...N#',
+    '#~.N*@#',
+    '#..$.##',
+    '#...###',
+    '#.*$###',
+    '##-####',
+  ]},
+  { name: 'Gen 14', par: 19, stretch: true, requires: [], rows: [
+    '#######',
+    '#*$*.~-',
+    '#.....#',
+    '#NN.$.#',
+    '-*#~.$#',
+    '###..@#',
+    '#######',
+  ]},
+  { name: 'Gen 15', par: 20, stretch: true, requires: [], rows: [
+    '###-##',
+    '#....-',
+    '#.@~.#',
+    '#N$*N#',
+    '##.*$#',
+    '######',
+  ]},
+  { name: 'Gen 16', par: 20, stretch: true, requires: [], rows: [
+    '###-##',
+    '###.~#',
+    '#$.$*#',
+    '#.N.N#',
+    '#$@.*#',
+    '####-#',
+  ]},
+  { name: 'Gen 17', par: 20, stretch: true, requires: [], rows: [
+    '#####-#',
+    '#N@...-',
+    '###~$~#',
+    '#.#..*#',
+    '#N#$..#',
+    '#.*.###',
+    '#######',
+  ]},
+  { name: 'Gen 18', par: 21, stretch: true, requires: [], rows: [
+    '######',
+    '#@..##',
+    '#.*$##',
+    '-.N~##',
+    '#.N~.#',
+    '######',
+  ]},
+  { name: 'Gen 19', par: 22, stretch: true, requires: [], rows: [
+    '#-######',
+    '#.N....#',
+    '#@$....#',
+    '#..#####',
+    '#......#',
+    '#....~*#',
+    '#N.....#',
+    '####-###',
+  ]},
+  { name: 'Gen 20', par: 22, stretch: true, requires: [], rows: [
+    '##-####',
+    '#..$.*#',
+    '#.~...#',
+    '##...N#',
+    '#$..*.#',
+    '#.N.@~#',
+    '###-###',
+  ]},
+  { name: 'Gen 21', par: 22, stretch: true, requires: [], rows: [
+    '#-#####',
+    '#.#@N.#',
+    '#*#.#.#',
+    '#.#...#',
+    '#.#$#.#',
+    '#..$#N#',
+    '#####-#',
+  ]},
+  { name: 'Gen 22', par: 22, stretch: true, requires: [], rows: [
+    '########',
+    '-..#@..#',
+    '#N.#.$.#',
+    '#..#N..#',
+    '#.######',
+    '#.~....-',
+    '#*....~#',
+    '########',
+  ]},
+  { name: 'Gen 23', par: 22, stretch: true, requires: [], rows: [
+    '#######',
+    '#..*.N-',
+    '#..N..#',
+    '#$~.$##',
+    '#..@.~#',
+    '#..*###',
+    '#######',
+  ]},
+  { name: 'Gen 24', par: 22, stretch: true, requires: [], rows: [
+    '####-#',
+    '#...N#',
+    '##.$@#',
+    '###N.#',
+    '#*...#',
+    '##-###',
+  ]},
+  { name: 'Gen 25', par: 23, stretch: true, requires: [], rows: [
+    '######',
+    '#N..$#',
+    '#$@*##',
+    '#.#.N-',
+    '#.*.~#',
+    '####-#',
+  ]},
+  { name: 'Gen 26', par: 23, stretch: true, requires: [], rows: [
+    '###-###',
+    '#...###',
+    '#N....#',
+    '#N.@.~#',
+    '#*...$#',
+    '#.....#',
+    '#######',
+  ]},
+  { name: 'Gen 27', par: 23, stretch: true, requires: [], rows: [
+    '###-##',
+    '#.**~#',
+    '#.$N$#',
+    '##.$@#',
+    '###N*#',
+    '###-##',
+  ]},
+  { name: 'Gen 28', par: 23, stretch: true, requires: [], rows: [
+    '#####-#',
+    '#.N#.N#',
+    '#$..*.#',
+    '#.~...#',
+    '#~.@$.#',
+    '#.#####',
+    '#-#####',
+  ]},
+  { name: 'Gen 29', par: 24, stretch: true, requires: [], rows: [
+    '##-#####',
+    '#..N...#',
+    '#......#',
+    '#.....~-',
+    '#N*....#',
+    '#...#.$#',
+    '#...#.@#',
+    '########',
+  ]},
+  { name: 'Gen 30', par: 24, stretch: true, requires: [], rows: [
+    '####-##',
+    '#.$$*.#',
+    '#...N.#',
+    '#N..@##',
+    '##.*.##',
+    '#...###',
+    '#######',
+  ]},
+  { name: 'Gen 31', par: 26, stretch: true, requires: [], rows: [
+    '######',
+    '#..*$#',
+    '#..$.#',
+    '-.NN@#',
+    '#*#..#',
+    '####-#',
+  ]},
+  { name: 'Gen 32', par: 27, stretch: true, requires: [], rows: [
+    '#######',
+    '#..N#.#',
+    '-..##.#',
+    '#...N*#',
+    '#$....#',
+    '#.$$@.#',
+    '####-##',
+  ]},
+  { name: 'Gen 33', par: 28, stretch: true, requires: [], rows: [
+    '####-#',
+    '#N$$*#',
+    '#$@..#',
+    '#N*..#',
+    '#*#..#',
+    '###-##',
+  ]},
+  { name: 'Gen 34', par: 28, stretch: true, requires: [], rows: [
+    '######',
+    '#$$.~#',
+    '#@N.##',
+    '#...*-',
+    '-..N.#',
+    '######',
+  ]},
+  { name: 'Gen 35', par: 28, stretch: true, requires: [], rows: [
+    '#######',
+    '#...$.#',
+    '-@.#.*#',
+    '##.#N$#',
+    '##..*N-',
+    '##.*$.#',
+    '#######',
+  ]},
+  { name: 'Gen 36', par: 29, stretch: true, requires: [], rows: [
+    '###-###',
+    '#.$...#',
+    '#N...N#',
+    '#@~.*.-',
+    '#.~#*.#',
+    '#.##$##',
+    '#######',
+  ]},
+  { name: 'Gen 37', par: 29, stretch: true, requires: [], rows: [
+    '######-#',
+    '#...#.N#',
+    '#...#.$#',
+    '######.#',
+    '#@..#..#',
+    '#*....$#',
+    '#N.....#',
+    '########',
+  ]},
+  { name: 'Gen 38', par: 30, stretch: true, requires: [], rows: [
+    '######',
+    '#.N@.-',
+    '#$.*.#',
+    '#N.#.#',
+    '-*.#$#',
+    '######',
+  ]},
+  { name: 'Gen 39', par: 31, stretch: true, requires: [], rows: [
+    '########',
+    '#...N*.#',
+    '#$..$..#',
+    '#.###.*#',
+    '#...~..#',
+    '#.#..###',
+    '-~N...@#',
+    '##-#####',
+  ]},
+  { name: 'Gen 40', par: 32, stretch: true, requires: [], rows: [
+    '#######',
+    '#..N.*#',
+    '#..##.#',
+    '#.@...#',
+    '-$..~.#',
+    '#.$...#',
+    '####-##',
+  ]},
+  { name: 'Gen 41', par: 33, stretch: true, requires: [], rows: [
+    '#######',
+    '-$....#',
+    '#@..*.#',
+    '#N##N.#',
+    '#$.*..#',
+    '#.....#',
+    '#######',
+  ]},
+  { name: 'Gen 42', par: 33, stretch: true, requires: [], rows: [
+    '#-#####',
+    '#.$..@#',
+    '#..~..#',
+    '#.$$*##',
+    '#.#N..#',
+    '#.*..##',
+    '##-####',
+  ]},
+  { name: 'Gen 43', par: 34, stretch: true, requires: [], rows: [
+    '#-####',
+    '#$@N.#',
+    '#*.N.#',
+    '#....#',
+    '##$*.#',
+    '######',
+  ]},
+  { name: 'Gen 44', par: 36, stretch: true, requires: [], rows: [
+    '##-###',
+    '#.N.$#',
+    '#$N*$#',
+    '#.*#.#',
+    '##.@.#',
+    '##-###',
+  ]},
+  { name: 'Gen 45', par: 36, stretch: true, requires: [], rows: [
+    '###-####',
+    '#....*N#',
+    '#@##...#',
+    '#.N...$#',
+    '#...####',
+    '#......#',
+    '#.....$#',
+    '######-#',
+  ]},
+  { name: 'Gen 46', par: 37, stretch: true, requires: [], rows: [
+    '######',
+    '-*.###',
+    '#*...#',
+    '#N..$#',
+    '#.@.$-',
+    '######',
+  ]},
+  { name: 'Gen 47', par: 37, stretch: true, requires: [], rows: [
+    '###-####',
+    '-~.$...#',
+    '#*.....#',
+    '####.~*#',
+    '#.$@.N.#',
+    '#$.....#',
+    '#...####',
+    '########',
+  ]},
+  { name: 'Gen 48', par: 39, stretch: true, requires: [], rows: [
+    '########',
+    '#..@$..#',
+    '#..*...#',
+    '#.##N..#',
+    '-......#',
+    '#$..#..#',
+    '#...~.*#',
+    '########',
+  ]},
+  { name: 'Gen 49', par: 42, stretch: true, requires: [], rows: [
+    '#-######',
+    '#.#@...#',
+    '#.#..N.#',
+    '######.#',
+    '#*.$...#',
+    '#$..**.#',
+    '#.$.#..#',
+    '##-#####',
+  ]},
+  { name: 'Gen 50', par: 45, stretch: true, requires: [], rows: [
+    '###-####',
+    '#....$.#',
+    '#.*...$#',
+    '#.N.@..#',
+    '#*.....#',
+    '#....###',
+    '#.....N#',
+    '########',
+  ]},
+];
+
+const TRACKS = [
+  { id: 'c', name: 'Campaign', levels: CAMPAIGN },
+  { id: 'w', name: 'Workshop', levels: WORKSHOP },
+  { id: 'g', name: 'Generated', levels: GENERATED },
+];
+// The flat list survives for the dev harnesses (solve.mjs indexes into it).
+const LEVELS = TRACKS.flatMap(t => t.levels);
+
 // Interior cell just inside a door threshold; null if that side has no door.
 function arrivalCell(layout, side) {
   const t = layout.doors[side];
@@ -672,7 +1292,9 @@ function step(layout, state, dir) {
   const events = [];
   const moveClone = (c, to) => {
     events.push({ t: 'step', from: c.pos, to });
-    occ.delete(c.pos);
+    // T32: the push this move resolves may have landed something on the cell
+    // the clone is vacating - only remove the entry if it is still the clone.
+    if (occ.get(c.pos) === c.id) occ.delete(c.pos);
     occ.set(to, c.id);
     c.pos = to;
   };
@@ -778,11 +1400,18 @@ function step(layout, state, dir) {
     if (o === 'wall') continue;
     if (o === 'block') {
       // T10 (A4): push beats enter - you enter only when the block is pinned.
+      // T32: a pusher is in motion, so its own cell counts as vacated while
+      // its push resolves - a blockout mouth (or a swallowed box's arrival)
+      // may land exactly where the pusher is stepping out of.
+      occ.delete(c.pos);
       if (blockMove(dest)) { moveClone(c, dest); continue; }
+      occ.set(c.pos, c.id); // pinned: the clone never moved after all
       pendingEnter.push(c); pending.add(c.id); continue;
     }
     if (o === 'box') {
       const bdest = dest + delta;
+      occ.delete(c.pos); // T32: as above - every blocked path restores this
+      const stay = () => occ.set(c.pos, c.id);
       if (thresholds.has(bdest)) {
         // Box pushed out through a door: fires at every free block mouth.
         const fired = [];
@@ -791,7 +1420,7 @@ function step(layout, state, dir) {
           if (thresholds.has(m) || occ.get(m) !== undefined) continue;
           fired.push(m);
         }
-        if (fired.length === 0) continue; // blocked
+        if (fired.length === 0) { stay(); continue; } // blocked
         occ.delete(dest);
         fired.forEach((m, k) => {
           events.push({ t: 'boxout', from: dest, to: m, spawned: k > 0 });
@@ -812,14 +1441,14 @@ function step(layout, state, dir) {
           continue;
         }
         const arr = arrivalCell(layout, FACE[dir]);
-        if (arr === null || occ.has(arr)) continue; // no matching door, or arrival taken
+        if (arr === null || occ.has(arr)) { stay(); continue; } // no matching door, or arrival taken
         occ.delete(dest);
         events.push({ t: 'boxin', from: dest, block: bdest, to: arr });
         settleBox(arr);
         moveClone(c, dest);
         continue;
       }
-      if (ob !== undefined) continue; // wall, box or clone: blocked, no multi-push
+      if (ob !== undefined) { stay(); continue; } // wall, box or clone: blocked, no multi-push
       if (lavaOpen(bdest)) {
         occ.delete(dest);
         filled.add(bdest);
@@ -913,7 +1542,7 @@ function step(layout, state, dir) {
     }
     if (o === 'wall') continue; // stays put
     if (typeof o === 'number') {
-      events.push({ t: 'merge', at: enterArr, from: c.pos });
+      events.push({ t: 'merge', at: enterArr, from: c.pos, via: 'enter' });
       occ.delete(c.pos);
       c.alive = false;
       continue;
@@ -986,7 +1615,7 @@ function step(layout, state, dir) {
     c.alive = false;
     fired.forEach((f, k) => {
       if (f.kind === 'merge') {
-        events.push({ t: 'merge', at: f.m, from });
+        events.push({ t: 'merge', at: f.m, from, via: 'exit' });
         return;
       }
       events.push({ t: 'exit', from, to: f.m, spawned: k > 0 });
@@ -1051,8 +1680,9 @@ const BLOCK_INSET = 0.07;  // bezel around the little world, in cells
 const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
 const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
 
-let levelIndex = 0;  // index into LEVELS, or -1 while playtesting a draft
-let levelDef = null; // the live definition: a LEVELS entry, or an editor draft
+let trackIndex = 0;  // index into TRACKS...
+let levelIndex = 0;  // ...and into its levels, or -1 while playtesting a draft
+let levelDef = null; // the live definition: a track entry, or an editor draft
 let layout = null, state = null;
 let history = [], moves = 0, won = false, initial = null;
 let sprites = [];
@@ -1079,15 +1709,28 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'nest-v5'; // v4 bests predate T24 (windows wrap, A5 removed)
-let progress = { best: {}, unlocked: 1, coached: {} };
+const SAVE_KEY = 'nest-v6'; // v6 = tracks (T35): best keyed 'trackId:i', unlocked per track
+let progress = { best: {}, unlocked: {}, coached: {} };
+
+const bestKey = (t, i) => TRACKS[t].id + ':' + i;
+const unlockedIn = (t) =>
+  Math.min(TRACKS[t].levels.length, Math.max(1, progress.unlocked[TRACKS[t].id] | 0 || 1));
 
 function loadProgress() {
   try {
-    const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!raw) {
+      // Migrate a flat pre-tracks save: those indices were all campaign.
+      const v5 = JSON.parse(localStorage.getItem('nest-v5') || 'null');
+      if (v5 && typeof v5 === 'object') {
+        raw = { best: {}, unlocked: { c: v5.unlocked | 0 || 1 },
+          coached: v5.coached || {}, audio: v5.audio };
+        for (const k in (v5.best || {})) raw.best['c:' + k] = v5.best[k];
+      }
+    }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
-      progress.unlocked = Math.min(LEVELS.length, Math.max(1, raw.unlocked | 0 || 1));
+      progress.unlocked = (raw.unlocked && typeof raw.unlocked === 'object') ? raw.unlocked : {};
       progress.coached = raw.coached || {};
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
@@ -1101,7 +1744,7 @@ function xOf(i) { return i % layout.w; }
 function yOf(i) { return Math.floor(i / layout.w); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-function loadLevel(i) { levelIndex = i; startLevel(LEVELS[i]); }
+function loadLevel(t, i) { trackIndex = t; levelIndex = i; startLevel(TRACKS[t].levels[i]); }
 
 // An editor draft rides the same path but owns no slot in LEVELS, so
 // levelIndex goes to -1 and every progress write is gated on it.
@@ -1144,7 +1787,8 @@ function closeOverlays() {
 }
 
 function showCoach(i) {
-  const msg = COACH[i];
+  // Coach marks belong to the campaign's teaching arc only.
+  const msg = trackIndex === 0 && i >= 0 ? COACH[i] : undefined;
   $('coach').hidden = !msg || !!progress.coached[i];
   if (msg) $('coach').textContent = msg;
 }
@@ -1174,18 +1818,33 @@ function openPicker() {
   const grid = $('grid');
   $('pickerTitle').textContent = 'Levels';
   grid.textContent = '';
-  LEVELS.forEach((def, i) => {
-    const locked = i >= progress.unlocked;
-    const best = progress.best[i];
-    const note = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
-    const b = tile(i + 1, def.name, note,
-      locked ? null : () => { play('ui'); loadLevel(i); });
-    if (locked) b.classList.add('locked');
-    if (i === levelIndex) b.classList.add('here');
+  let here = null;
+  TRACKS.forEach((tr, t) => {
+    if (!tr.levels.length) return;
+    const solved = tr.levels.filter((_, i) => progress.best[bestKey(t, i)] !== undefined).length;
+    const head = document.createElement('div');
+    head.className = 'trackHead';
+    head.textContent = tr.name + ' ';
+    const count = document.createElement('small');
+    count.textContent = solved + '/' + tr.levels.length;
+    head.appendChild(count);
+    grid.appendChild(head);
+    const unlocked = unlockedIn(t);
+    tr.levels.forEach((def, i) => {
+      const locked = i >= unlocked;
+      const best = progress.best[bestKey(t, i)];
+      const note = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
+      const b = tile(i + 1, def.name, note,
+        locked ? null : () => { play('ui'); loadLevel(t, i); });
+      if (locked) b.classList.add('locked');
+      if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
+    });
   });
   tile('+', 'New level', 'editor', () => { play('ui'); openEditor(); });
   $('overlay').hidden = true;
   $('picker').hidden = false;
+  // Three tracks make a long list: land the view on where you are.
+  if (here) here.scrollIntoView({ block: 'center' });
 }
 
 // Drop any animation and show the current state exactly.
@@ -1300,8 +1959,29 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'merge': {
+        // T33: merges only exist as portal arrivals (A6), so they animate
+        // like one - the original squeezes into the door it went through and
+        // a copy pops out at the survivor's cell, converging into it. The
+        // old handling slid the body flat across the whole board, which read
+        // as jank whenever the door was far from the survivor, and left
+        // multi-mouth merges visibly out of unison.
         const s = at('clone', ev.from);
-        if (s) { s.b = ev.at; s.fate = 'merge'; s.live = false; }
+        if (s) {
+          s.fate = 'squeeze'; s.live = false;
+          if (ev.via === 'enter') {
+            s.b = ev.from + delta;
+            s.bxy = mouthXY(ev.from + delta, IN_FACE[dir]);
+          } else {
+            s.bxy = [xOf(ev.from) + dx, yOf(ev.from) + dy];
+          }
+          axis(s);
+        }
+        list.push(axis({
+          kind: 'clone', a: ev.at, b: ev.at, fate: 'merge', birth: 'pop', live: false,
+          axy: ev.via === 'enter'
+            ? [xOf(ev.at) - dx * 0.5, yOf(ev.at) - dy * 0.5]
+            : mouthXY(ev.at - delta, OUT_FACE[dir]),
+        }));
         flashes.push({ at: ev.at, kind: 'merge' });
         break;
       }
@@ -1394,7 +2074,7 @@ function applyMove(dir) {
     settle();
   } else {
     const { list, flashes, sank } = compileAnim(prev, r.events, dir);
-    const portal = ['enter', 'exit', 'boxin', 'boxout', 'blockin', 'blockout'].some(t => kinds.has(t));
+    const portal = ['enter', 'exit', 'boxin', 'boxout', 'blockin', 'blockout', 'merge'].some(t => kinds.has(t));
     sprites = list;
     anim = { t0: performance.now(), p: 0, dur: portal ? PORTAL : TWEEN, flashes, sank };
     syncHud();
@@ -1407,8 +2087,8 @@ function applyMove(dir) {
 
   if (won) {
     bloom = reducedMotion.matches ? null : { t0: performance.now(), p: 0 };
-    const at = levelIndex;
-    setTimeout(() => { if (won && levelIndex === at) showWin(); },
+    const at = levelIndex, atTrack = trackIndex;
+    setTimeout(() => { if (won && levelIndex === at && trackIndex === atTrack) showWin(); },
       reducedMotion.matches ? 0 : BLOOM * 0.55);
   }
   return true;
@@ -1449,18 +2129,23 @@ function showWin() {
   const def = levelDef;
   const draft = levelIndex < 0;
   if (!draft) {
-    const prevBest = progress.best[levelIndex];
-    if (prevBest === undefined || moves < prevBest) progress.best[levelIndex] = moves;
-    progress.unlocked = Math.max(progress.unlocked, Math.min(LEVELS.length, levelIndex + 2));
+    const key = bestKey(trackIndex, levelIndex);
+    const prevBest = progress.best[key];
+    if (prevBest === undefined || moves < prevBest) progress.best[key] = moves;
+    const id = TRACKS[trackIndex].id;
+    progress.unlocked[id] = Math.max(unlockedIn(trackIndex),
+      Math.min(TRACKS[trackIndex].levels.length, levelIndex + 2));
     saveProgress();
   }
 
   $('cardTitle').textContent = 'Solved';
   let body = 'in ' + moves + ' moves' + (def.par ? ' (par ' + def.par + ')' : '');
   if (draft) body += ' · draft';
-  else if (progress.best[levelIndex] < moves) body += ' · best ' + progress.best[levelIndex];
+  else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
+    body += ' · best ' + progress.best[bestKey(trackIndex, levelIndex)];
+  }
   $('cardBody').textContent = body;
-  $('next').hidden = draft || levelIndex >= LEVELS.length - 1;
+  $('next').hidden = draft || levelIndex >= TRACKS[trackIndex].levels.length - 1;
   $('toLevels').textContent = draft ? 'Editor' : 'Levels';
   $('overlay').hidden = false;
 }
@@ -1586,10 +2271,23 @@ function drawSlab(c, x, y) {
   c.stroke();
 }
 
-function drawTiles(c, time) {
+// T34: the tile layer only changes when a move lands (a pit fills) or the
+// board is re-laid-out, so it bakes once into tileCache and every pass of
+// every frame blits it - it was costing a full grid of fills, strokes and
+// gradients per pass. The door glow's idle pulse went static in the bake:
+// idle frames never repainted anyway, so it only ever pulsed mid-move.
+const tileCache = document.createElement('canvas');
+const tileCtx = tileCache.getContext('2d');
+let tileLayout = null, tileKey = '';
+
+function buildTileCache() {
   const { w, h } = layout;
   const filled = new Set(state.filled);
   const doorSet = new Set(Object.values(layout.doors).filter(v => v !== null));
+  tileCache.width = Math.max(1, Math.round(w * CELL * DPR));
+  tileCache.height = Math.max(1, Math.round(h * CELL * DPR));
+  const c = tileCtx;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.fillStyle = '#f3ecdf';
   c.fillRect(0, 0, w * CELL, h * CELL);
   for (let i = 0; i < w * h; i++) {
@@ -1604,29 +2302,17 @@ function drawTiles(c, time) {
       c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
       continue;
     }
-    c.fillStyle = '#ece4d3';
-    c.fillRect(x, y, CELL, CELL);
-    c.strokeStyle = 'rgba(92,80,60,0.06)';
-    c.lineWidth = 1;
-    c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
+    drawFloorCell(c, x, y);
 
     if (layout.lava.has(i)) {
-      // A pit filled this tick fades to slab over the tween instead of snapping.
-      const cooling = filled.has(i) && anim && anim.sank.indexOf(i) >= 0 ? anim.p : null;
-      if (!filled.has(i) || cooling !== null) drawPit(c, x, y);
-      if (filled.has(i)) {
-        c.save();
-        if (cooling !== null) c.globalAlpha = cooling;
-        drawSlab(c, x, y);
-        c.restore();
-      }
+      if (!filled.has(i)) drawPit(c, x, y);
+      else drawSlab(c, x, y);
     }
 
     if (doorSet.has(i)) {
-      const k = 0.4 + 0.12 * Math.sin(time / 520 + i);
       const g = c.createRadialGradient(
         x + CELL / 2, y + CELL / 2, 0, x + CELL / 2, y + CELL / 2, CELL * 0.9);
-      g.addColorStop(0, 'rgba(154,134,203,' + k.toFixed(3) + ')');
+      g.addColorStop(0, 'rgba(154,134,203,0.45)');
       g.addColorStop(1, 'rgba(154,134,203,0)');
       c.fillStyle = g;
       c.fillRect(x - CELL / 2, y - CELL / 2, CELL * 2, CELL * 2);
@@ -1640,6 +2326,39 @@ function drawTiles(c, time) {
       c.strokeStyle = 'rgba(74,67,54,0.42)';
       c.lineWidth = Math.max(1, CELL * 0.055);
       c.strokeRect(-s / 2, -s / 2, s, s);
+      c.restore();
+    }
+  }
+}
+
+function drawFloorCell(c, x, y) {
+  c.fillStyle = '#ece4d3';
+  c.fillRect(x, y, CELL, CELL);
+  c.strokeStyle = 'rgba(92,80,60,0.06)';
+  c.lineWidth = 1;
+  c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
+}
+
+function drawTiles(c) {
+  const key = CELL + '|' + state.filled.join(',');
+  if (tileLayout !== layout || tileKey !== key) {
+    tileLayout = layout;
+    tileKey = key;
+    buildTileCache();
+  }
+  c.drawImage(tileCache, 0, 0, layout.w * CELL, layout.h * CELL);
+  // A pit filled this tick fades to slab over the tween instead of snapping -
+  // the cache holds the settled slab, so mid-tween those few cells redraw live.
+  if (anim && anim.p < 1 && anim.sank.length) {
+    const filled = new Set(state.filled);
+    for (const i of anim.sank) {
+      if (!filled.has(i)) continue;
+      const x = xOf(i) * CELL, y = yOf(i) * CELL;
+      drawFloorCell(c, x, y);
+      drawPit(c, x, y);
+      c.save();
+      c.globalAlpha = anim.p;
+      drawSlab(c, x, y);
       c.restore();
     }
   }
@@ -1682,30 +2401,63 @@ function drawBlockFrame(c, x, y) {
   c.restore();
 }
 
-// inner = the previous pass's board, blitted in as the little world.
-function drawBlockAt(c, x, y, inner) {
-  if (!inner) {
-    const g = c.createLinearGradient(x, y, x, y + CELL);
-    g.addColorStop(0, '#cfc2ea');
-    g.addColorStop(1, '#b2a2d8');
-    c.fillStyle = g;
-    c.fillRect(x, y, CELL, CELL);
-  } else {
-    // Bezel first, then the whole little world (square, exact fit) inside it.
-    const g = c.createLinearGradient(x, y, x, y + CELL);
-    g.addColorStop(0, '#d7ccee');
-    g.addColorStop(1, '#bcaede');
-    c.fillStyle = g;
-    c.fillRect(x, y, CELL, CELL);
+// T34: the window chrome - bezel, solid fill, inner border and the shadowed
+// door-gap frame - bakes into three cached layers per (layout, cell size).
+// The shadowBlur strokes were being repainted per block, per pass, per frame;
+// now the live picture is the only per-frame drawImage left in a block cell.
+let shellCache = { layout: null, cell: 0 };
+
+function blockShell() {
+  if (shellCache.layout !== layout || shellCache.cell !== CELL) {
+    shellCache = { layout, cell: CELL, pad: Math.ceil(CELL * 0.3) };
+    const size = Math.round((CELL + shellCache.pad * 2) * DPR);
+    const make = () => {
+      const cv = document.createElement('canvas');
+      cv.width = size; cv.height = size;
+      const c = cv.getContext('2d');
+      c.setTransform(DPR, 0, 0, DPR, 0, 0);
+      c.translate(shellCache.pad, shellCache.pad);
+      return [cv, c];
+    };
+    const grad = (c, c0, c1) => {
+      const g = c.createLinearGradient(0, 0, 0, CELL);
+      g.addColorStop(0, c0);
+      g.addColorStop(1, c1);
+      c.fillStyle = g;
+      c.fillRect(0, 0, CELL, CELL);
+    };
+    let [cv, c] = make();          // no inner picture: solid violet + frame
+    grad(c, '#cfc2ea', '#b2a2d8');
+    drawBlockFrame(c, 0, 0);
+    shellCache.solid = cv;
+    [cv, c] = make();              // bezel the little world sits on
+    grad(c, '#d7ccee', '#bcaede');
+    shellCache.bezel = cv;
+    [cv, c] = make();              // inner border + frame, drawn OVER the picture
     const m = miniGeom();
-    const dx = x + m.ox * CELL, dy = y + m.oy * CELL;
     const dw = layout.w * m.k * CELL, dh = layout.h * m.k * CELL;
-    c.drawImage(inner, dx, dy, dw, dh);
     c.strokeStyle = 'rgba(154,134,203,0.5)';
     c.lineWidth = 1;
-    c.strokeRect(dx - 0.5, dy - 0.5, dw + 1, dh + 1);
+    c.strokeRect(m.ox * CELL - 0.5, m.oy * CELL - 0.5, dw + 1, dh + 1);
+    drawBlockFrame(c, 0, 0);
+    shellCache.frame = cv;
   }
-  drawBlockFrame(c, x, y);
+  return shellCache;
+}
+
+// inner = the previous pass's board, blitted in as the little world.
+function drawBlockAt(c, x, y, inner) {
+  const sh = blockShell();
+  const px = x - sh.pad, py = y - sh.pad, ps = CELL + sh.pad * 2;
+  if (!inner) {
+    c.drawImage(sh.solid, px, py, ps, ps);
+    return;
+  }
+  c.drawImage(sh.bezel, px, py, ps, ps);
+  const m = miniGeom();
+  c.drawImage(inner, x + m.ox * CELL, y + m.oy * CELL,
+    layout.w * m.k * CELL, layout.h * m.k * CELL);
+  c.drawImage(sh.frame, px, py, ps, ps);
 }
 
 // The two halves of a pass-through share one tick: the body pinches away over
@@ -1779,45 +2531,72 @@ function drawSprite(c, s, p) {
   else if (s.fate === 'sink') { scale *= 1 - 0.7 * e; alpha *= 1 - 0.75 * e; }
   if (alpha <= 0.01) return;
 
-  const pad = CELL * 0.15;
-  const base = CELL - pad * 2;
   const horiz = s.axis === 'x';
-  const sw = base * scale * (horiz ? along : across);
-  const sh = base * scale * (horiz ? across : along);
+  const kx = scale * (horiz ? along : across);
+  const ky = scale * (horiz ? across : along);
   const cx = x * CELL + CELL / 2;
   const cy = y * CELL + CELL / 2;
-  const r = Math.max(2, Math.min(sw, sh) * 0.26);
-  c.save();
+  const onTarget = s.kind !== 'clone' &&
+    layout.targets.has(Math.round(y) * layout.w + Math.round(x));
+  const img = spriteImg(s.kind === 'clone' ? 'clone' : onTarget ? 'boxOn' : 'box');
+  const half = CELL * (0.5 + SPRITE_PAD);
   c.globalAlpha = alpha;
-  if (s.kind === 'clone') {
+  c.drawImage(img, cx - half * kx, cy - half * ky, half * 2 * kx, half * 2 * ky);
+  c.globalAlpha = 1;
+}
+
+// T34: clone and box bodies pre-render once per cell size - their shadowBlur
+// fills were the single biggest per-frame cost on a busy board (every sprite,
+// every feedback pass, every frame). Squash / needle / pop deforms scale the
+// cached image instead; the corner radii distort imperceptibly for the
+// 100-180ms a deform lasts.
+const SPRITE_PAD = 0.45; // cells of margin baked around the body for its glow
+let spriteCache = { cell: 0 };
+
+function spriteImg(kind) {
+  if (spriteCache.cell !== CELL) spriteCache = { cell: CELL };
+  if (spriteCache[kind]) return spriteCache[kind];
+  const pad = CELL * SPRITE_PAD;
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = Math.ceil((CELL + pad * 2) * DPR);
+  const c = cv.getContext('2d');
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const base = CELL * 0.7;
+  const cx = pad + CELL / 2, cy = pad + CELL / 2;
+  const r = Math.max(2, base * 0.26);
+  if (kind === 'clone') {
     c.shadowColor = 'rgba(122,174,222,0.45)';
     c.shadowBlur = CELL * 0.14;
     c.fillStyle = '#7aaede';
-    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
+    roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.fill();
     c.shadowBlur = 0;
     c.fillStyle = 'rgba(255,255,255,0.75)';
-    roundRect(c, cx - sw * 0.22, cy - sh * 0.3, sw * 0.44, sh * 0.2, Math.min(sw, sh) * 0.09);
+    roundRect(c, cx - base * 0.22, cy - base * 0.3, base * 0.44, base * 0.2, base * 0.09);
     c.fill();
   } else {
-    const onTarget = layout.targets.has(Math.round(y) * layout.w + Math.round(x));
-    c.shadowColor = onTarget ? 'rgba(147,196,147,0.4)' : 'rgba(233,188,96,0.4)';
+    const on = kind === 'boxOn';
+    c.shadowColor = on ? 'rgba(147,196,147,0.4)' : 'rgba(233,188,96,0.4)';
     c.shadowBlur = CELL * 0.12;
-    c.fillStyle = onTarget ? '#93c493' : '#e9bc60';
-    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
+    c.fillStyle = on ? '#93c493' : '#e9bc60';
+    roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.fill();
     c.shadowBlur = 0;
-    c.strokeStyle = onTarget ? 'rgba(58,110,58,0.5)' : 'rgba(146,103,26,0.5)';
-    c.lineWidth = Math.max(1, Math.min(sw, sh) * 0.08);
-    roundRect(c, cx - sw / 2, cy - sh / 2, sw, sh, r);
+    c.strokeStyle = on ? 'rgba(58,110,58,0.5)' : 'rgba(146,103,26,0.5)';
+    c.lineWidth = Math.max(1, base * 0.08);
+    roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.stroke();
   }
-  c.restore();
+  spriteCache[kind] = cv;
+  return cv;
 }
 
 function drawFlashes(c, time) {
   if (!anim) return;
-  const p = Math.min(1, (time - anim.t0) / FLASH);
+  // Clamped from below too: a rAF timestamp can lag the performance.now()
+  // that stamped t0 in the input handler, and a negative p flips the ring
+  // radius negative (IndexSizeError).
+  const p = Math.max(0, Math.min(1, (time - anim.t0) / FLASH));
   if (p >= 1) return;
   for (const f of anim.flashes) {
     const cx = xOf(f.at) * CELL + CELL / 2;
@@ -1858,7 +2637,7 @@ function drawBloom(c) {
 // the backdrop never strobes.
 function drawScene(c, time, inner, bg, dpr) {
   c.setTransform(dpr || DPR, 0, 0, dpr || DPR, 0, 0);
-  drawTiles(c, time);
+  drawTiles(c);
   const p = anim ? anim.p : 1;
   // Blocks first: everything else walks over (and through) them.
   for (const s of sprites) if (s.kind === 'block') drawBlockSprite(c, s, p, inner);
@@ -1893,11 +2672,21 @@ function drawOuter(time) {
   wctx.globalCompositeOperation = 'source-over';
 }
 
+// T34: how many feedback passes are worth drawing - one per level of nesting
+// that still lands on a visible pixel (~half a device pixel per mini cell).
+// A 7x7 board at phone size needs 2, not 3; a board with no windows needs 0.
+function fbDepth() {
+  if (!sprites.some(s => s.kind === 'block')) return 0;
+  const n = Math.floor(Math.log(CELL * DPR * 2) / Math.log(1 / miniGeom().k));
+  return Math.max(1, Math.min(DEPTH, n));
+}
+
 function render(time) {
-  // Pass 0 flat, then DEPTH feedback passes: each one blits the previous
+  // Pass 0 flat, then feedback passes: each one blits the previous
   // board into every nest block, so the picture nests into itself.
   drawScene(ctxA, time, null);
-  for (let i = 0; i < DEPTH; i++) {
+  const passes = fbDepth();
+  for (let i = 0; i < passes; i++) {
     drawScene(ctxB, time, curBuf);
     [curBuf, altBuf] = [altBuf, curBuf];
     [ctxA, ctxB] = [ctxB, ctxA];
@@ -1912,7 +2701,7 @@ function frame(ts) {
   requestAnimationFrame(frame);
   let motion = false;
   if (anim) {
-    anim.p = Math.min(1, (ts - anim.t0) / anim.dur);
+    anim.p = Math.max(0, Math.min(1, (ts - anim.t0) / anim.dur));
     const flashing = ts - anim.t0 < FLASH;
     if (anim.p >= 1 && !flashing) sprites = buildSprites();
     if (anim.p >= 1 && !flashing) anim = null;
@@ -2391,7 +3180,7 @@ let drafts = [], draftIx = 0;
 let edTool = '#', edCell = 24, edStroke = false, edNote = '', edSaveTimer = null;
 let edSearch = 0;   // token: bumped whenever a running solve is made stale
 let edSolution = null; // { key, moves } from the last successful Solve
-let preEdit = 0;    // the LEVELS index to drop back onto when the editor closes
+let preEdit = [0, 0]; // the [track, level] to drop back onto when the editor closes
 
 const ed = () => drafts[draftIx];
 
@@ -2769,7 +3558,7 @@ function edSync() {
 }
 
 function openEditor() {
-  if (levelIndex >= 0) preEdit = levelIndex;
+  if (levelIndex >= 0) preEdit = [trackIndex, levelIndex];
   closeOverlays();
   $('editor').hidden = false;
   $('edCode').hidden = true;
@@ -2861,7 +3650,7 @@ $('edClose').addEventListener('click', () => {
   $('editor').hidden = true;
   // Leaving the editor onto a draft would strand you: the footer's only way
   // out would be back into the editor. So closing puts a real level back.
-  if (levelIndex < 0) loadLevel(preEdit);
+  if (levelIndex < 0) loadLevel(preEdit[0], preEdit[1]);
   else dirty = true;
   // Nor should Close leave #edit behind to reopen the editor on reload.
   try { window.history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
@@ -2978,7 +3767,10 @@ $('levels').addEventListener('click', goBack);
 // Closing the drafts list just uncovers the editor it was opened from.
 $('pickerClose').addEventListener('click', () => { play('ui'); $('picker').hidden = true; });
 $('toLevels').addEventListener('click', goBack);
-$('next').addEventListener('click', () => { play('ui'); loadLevel(Math.min(levelIndex + 1, LEVELS.length - 1)); });
+$('next').addEventListener('click', () => {
+  play('ui');
+  loadLevel(trackIndex, Math.min(levelIndex + 1, TRACKS[trackIndex].levels.length - 1));
+});
 $('replay').addEventListener('click', reset);
 window.addEventListener('resize', () => {
   resize();
@@ -2988,10 +3780,10 @@ window.addEventListener('resize', () => {
 loadProgress();
 loadDrafts();
 syncAudioBtns();
-// Resume at the first unsolved level that is already unlocked.
+// Resume at the campaign's first unsolved level that is already unlocked.
 let start = 0;
-while (start < progress.unlocked - 1 && progress.best[start] !== undefined) start++;
-loadLevel(start);
+while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
+loadLevel(0, start);
 if (location.hash === '#edit') openEditor();
 requestAnimationFrame(frame);
 </script>
