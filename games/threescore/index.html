@@ -21,6 +21,8 @@
   @keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
   .age{color:var(--dim); letter-spacing:.35em; text-align:center; margin:2.2rem 0 1.6rem;
     font-size:.95rem;}
+  .slip{color:var(--gold); text-align:center; letter-spacing:.4em; font-size:.85rem;
+    margin:2.4rem 0 -1.4rem; animation:fadein 1.6s ease both;}
   .situation{font-size:1.25rem; line-height:1.55; margin:0 0 2rem; min-height:3em;}
   button{font:inherit; color:inherit; background:none; border:none; cursor:pointer;}
   .choice{display:block; width:100%; text-align:left; border:1px solid var(--stoneline);
@@ -47,8 +49,10 @@
   .stone.death .kicker{color:var(--death);}
   .stone h2{font-size:1.35rem; font-weight:normal; letter-spacing:.12em; margin:.2em 0 .8em;}
   .stone .epitaph{color:var(--dim); font-style:italic; letter-spacing:.08em; margin:0 0 1.2em;}
-  .stone .stats{margin:0 0 1.3em; font-size:1.05rem; letter-spacing:.18em;}
-  .stone .stats .off{opacity:.22;}
+  .stats{margin:0 0 1.3em; display:inline-block; text-align:left;}
+  .stats .srow{font-size:1rem; letter-spacing:.22em; line-height:1.6; white-space:nowrap;}
+  .stats .off{opacity:.22;}
+  .stats .lbl{color:var(--dim); font-size:.68rem; letter-spacing:.22em; padding-left:.9em;}
   .stone .summary{text-align:left; line-height:1.65; color:var(--ink); font-size:.98rem;}
   .newstone{color:var(--gold); text-align:center; letter-spacing:.25em; font-size:.85rem;
     margin:1.2rem 0 .4rem; animation:fadein 1.2s ease both;}
@@ -66,8 +70,6 @@
     color:var(--ink); display:flex; align-items:center; justify-content:center;}
   .tile.unfound{color:var(--faint); font-size:1rem;}
   .tile.death{border-color:#5a3d38;}
-  .fogrow{color:var(--faint); letter-spacing:.25em; font-size:.8rem; padding:.55rem 0;
-    border-bottom:1px dashed #22282a;}
   .disp{border:1px solid var(--stoneline); background:var(--bg2); border-radius:.4rem;
     padding:.9rem 1rem; margin:.8rem 0;}
   .disp .row{display:flex; align-items:center; justify-content:space-between;}
@@ -77,8 +79,10 @@
   .disp .adj button{width:2.6rem; height:2.6rem; border:1px solid var(--stoneline);
     border-radius:.4rem; font-size:1.3rem; color:var(--ink); margin-left:.45rem;}
   .disp .desc{color:var(--dim); font-size:.85rem; line-height:1.5; margin-top:.55rem;}
-  .pts{text-align:center; color:var(--gold); letter-spacing:.2em; font-size:.9rem;
-    margin:1.4rem 0 .4rem;}
+  .pts{text-align:center; color:var(--dim); letter-spacing:.2em; font-size:.8rem;
+    margin:1.6rem 0 .2rem;}
+  .quiet{display:block; width:100%; text-align:center; color:var(--dim); font-size:.85rem;
+    letter-spacing:.18em; text-decoration:underline; margin:1.4rem auto 0; padding:.5rem;}
   .foot{margin-top:2.5rem; text-align:center;}
   .foot button{color:var(--faint); font-size:.8rem; letter-spacing:.15em;
     text-decoration:underline; margin:0 .7rem;}
@@ -92,131 +96,694 @@
 <script>
 'use strict';
 
-/* ---------------- CONTENT: THE DEEP ---------------- */
+/* ================= CONTENT ================= */
+/* CONTENT-START (validate.mjs slices between these markers) */
+
+const CONTS = [
+  {k:"deep",    name:"THE DEEP"},
+  {k:"lock",    name:"THE LOCK"},
+  {k:"sky",     name:"THE SKY"},
+  {k:"night",   name:"THE NIGHT"},
+  {k:"ladder",  name:"THE LADDER"},
+  {k:"knife",   name:"THE KNIFE"},
+  {k:"kitchen", name:"THE KITCHEN"},
+  {k:"green",   name:"THE GREEN"},
+];
+const NODE_CONT = {dp:"deep", lk:"lock", sk:"sky", nt:"night", ld:"ladder", kn:"knife", kt:"kitchen", gr:"green"};
+
+/* ---- the trunk: three shared choices, then eight continents ---- */
 
 const NODES = {
   r7:{age:7, text:"His mum has his school bag packed by the door. The pond at the end of the garden is exactly one boy deep.",
-    choices:[{l:"Go to school", to:"fog_school"},{l:"Go to the pond", to:"p16"}]},
-  p16:{age:16, text:"Nell Hardy can hold her breath for three minutes, and swears there is a door at the bottom of the quarry lake. The astronomy club meets on Thursdays.",
-    choices:[{l:"Dive the quarry with Nell", to:"w24"},{l:"Sign up for the sky", to:"fog_sky"}]},
+    choices:[{l:"Go to school", to:"s16"},{l:"Go to the pond", to:"p16"}]},
+
+  p16:{age:16, text:"Alice Hardy can hold her breath for three minutes, and swears there is a door at the bottom of the quarry lake. The astronomy club meets on Thursdays, and Alice does not.",
+    choices:[{l:"Dive the quarry with Alice", to:"w24"},{l:"Thursdays, the sky", to:"k24"}]},
   w24:{age:24, text:"The commercial dive school costs every penny he has. The old lock-keeper is retiring, and the cottage comes with the job and a hundred years of stories.",
-    choices:[{l:"Pay for dive school", to:"n33"},{l:"Keep the lock", to:"fog_lock"}]},
-  n33:{age:33, text:"Saturation work pays triple, and he has a gift for the dark. Nell's letter says come home while there is a home to come to.",
-    choices:[{l:"One more season", to:"n42sea"},{l:"Go home", to:"n42home"}]},
-  n42sea:{age:42, text:"Year nine on the rig, and the news from shore has stopped making sense: something is spreading, and the company is offering lifetime contracts on the seabed habitat.",
-    choices:[{l:"Sign. Stay below", to:"n55ark"},{l:"Surface. Find Nell", to:"n55camp"}]},
-  n42home:{age:42, text:"Married, mortgaged, mostly happy. Then a drought pulls the quarry lake down thirty feet, and there it is, where Nell always said: a door, older than the flood, locked.",
-    choices:[{l:"Open it", to:"n55door"},{l:"Leave it be", to:"n55shut"}]},
-  n55ark:{age:55, text:"Thirteen years sealed below, and the habitat has become an ark: three hundred souls, a seed vault, tomatoes under lamps. Then the radio finds an orbital colony leaving for good, with room for the vault or for one man.",
-    choices:[{l:"Send the vault up", to:"n68sun"},{l:"Take the seat", to:"n68ship"}]},
-  n68sun:{age:68, text:"The first child born below has never once asked about the surface. Tonight she does: what was the sun like?",
+    choices:[{l:"Pay for dive school", to:"dp33"},{l:"Keep the lock", to:"lk33"}]},
+  k24:{age:24, text:"Two letters in one week: the space agency is taking candidates, and the blood bank needs a night man - it pays oddly well, in cash, and asks that he never bring a camera.",
+    choices:[{l:"Answer the agency", to:"sk33"},{l:"Work the nights", to:"nt33"}]},
+
+  s16:{age:16, text:"The careers teacher says London, in a voice that means it. Mum says nothing, loudly, and puts a second potato on his plate.",
+    choices:[{l:"Aim for the city", to:"a24"},{l:"Stay close to home", to:"e24"}]},
+  a24:{age:24, text:"Two offers: a numbered desk at Berrings, and driving for a man everyone calls the Chairman - no questions, twice the money.",
+    choices:[{l:"Take the desk", to:"ld33"},{l:"Drive for the Chairman", to:"kn33"}]},
+  e24:{age:24, text:"He marries Alice in June. The house is the question: the terrace two doors from Mum, or the cottage out past the cricket green.",
+    choices:[{l:"Two doors from Mum", to:"kt33"},{l:"The cottage by the green", to:"gr33"}]},
+
+  /* ---- THE DEEP: the pond, the rig, the rising sea, the door ---- */
+
+  dp33:{age:33, text:"Saturation work pays triple, and he has a gift for the dark. Alice's letter says come home while there is a home to come to.",
+    choices:[{l:"One more season", to:"dp42sea"},{l:"Go home", to:"dp42home"}]},
+  dp42sea:{age:42, text:"Year nine on the rig, and the sea has stopped pretending: a coast road gone every winter, and the company offering lifetime berths in the new seabed habitat.",
+    choices:[{l:"Sign. Stay below", to:"dp55ark"},{l:"Surface. Find Alice", to:"dp55camp"}]},
+  dp55ark:{age:55, text:"Thirteen years sealed below while the sea takes the maps, and the habitat has become an ark: three hundred souls, a seed vault, tomatoes under lamps. Then the last dry city radios, asking for the vault.",
+    choices:[{l:"Send the vault up", to:"dp68sun"},{l:"Keep it. Go deeper", to:"dp68trench"}]},
+  dp68sun:{age:68, text:"The first child born below has never once asked about the surface. Tonight she does: what was the sun like?",
     choices:[{l:"Tell her the truth", to:"deep_ark"},{l:"Make it better", to:"deep_liturgy"}]},
-  n68ship:{age:68, text:"The ark burns for Proxima, eighteen hundred years out. Cryo takes volunteers; the corridor gardens need a living keeper.",
-    choices:[{l:"Sleep", to:"deep_stowaway"},{l:"Keep the garden", to:"deep_gardener"}]},
-  n55camp:{age:55, text:"The surface is quiet in the wrong way. He finds Nell at the reservoir camp, running the fever ward with three books and no doctor, and a boat that could still take them both north, where it is clean.",
-    choices:[{l:"Stay and help", to:"n68camp"},{l:"Beg her to come north", to:"n68north"},
+  dp68trench:{age:68, text:"The ark cuts loose for the trench, where the drowned world cannot follow. The cold-sleep tanks take volunteers; the garden decks need a living keeper.",
+    choices:[{l:"Sleep", to:"deep_sleeper"},{l:"Keep the garden", to:"deep_gardener"}]},
+  dp55camp:{age:55, text:"The surface is water and rumour. He finds Alice at the high-ground camp, running the fever ward with three books and no doctor, and a boat that could still carry them both up into the dry hills.",
+    choices:[{l:"Stay and help", to:"dp68camp"},{l:"Beg her to leave", to:"dp68north"},
       {l:"Say the thing he practised on the walk", to:"deep_wedding", gate:{d:"heart", r:2}}]},
-  n68camp:{age:68, text:"The camp's last doctor dies in the third winter. Someone has to mix the medicine, and someone has to dig.",
+  dp68camp:{age:68, text:"The camp's last doctor dies in the third winter. Someone has to mix the medicine, and someone has to dig.",
     choices:[{l:"Learn the medicine", to:"deep_doctor"},{l:"Take the spade", to:"deep_sexton"}]},
-  n68north:{age:68, text:"She said no that dawn, and every dawn after. The last clean convoy north leaves in the spring.",
-    choices:[{l:"Go north without her", to:"deep_clean"},{l:"Stay, unforgiven", to:"deep_family"}]},
-  n55door:{age:55, text:"Behind the door, the village they drowned in 1921 is still mid-harvest-fair, lanterns bright under sixty feet of water, and the fiddler waves him in.",
-    choices:[{l:"Stay for one dance", to:"n68dance"},{l:"Go back up for Nell first", to:"n68fair"}]},
-  n68dance:{age:68, ageLabel:"42, STILL", text:"One dance. When he climbs out, the cars are the wrong shape and his phone belongs in a museum: forty years, gone in a single reel. Nell is eighty-two, and knows him before he is out of the water.",
+  dp68north:{age:68, text:"She said no that dawn, and every dawn after. The last convoy for the dry hills leaves in the spring.",
+    choices:[{l:"Go up without her", to:"deep_high"},{l:"Stay, unforgiven", to:"deep_family"}]},
+  dp42home:{age:42, text:"Married, mortgaged, mostly happy. Then a drought pulls the quarry lake down thirty feet, and there it is, where Alice always said: a door, older than the flood, locked.",
+    choices:[{l:"Open it", to:"dp55door"},{l:"Leave it be", to:"dp55shut"}]},
+  dp55door:{age:55, text:"Behind the door, the village they drowned in 1921 is still mid-harvest-fair, lanterns bright under sixty feet of water, and the fiddler waves him in.",
+    choices:[{l:"Stay for one dance", to:"dp68dance"},{l:"Go back up for Alice first", to:"dp68fair"}]},
+  dp68dance:{age:68, ageLabel:"42, STILL", slip:"FORTY YEARS PASS IN ONE REEL",
+    text:"One dance. When he climbs out, the cars are the wrong shape and his phone belongs in a museum. Alice is eighty-two, and knows him before he is out of the water.",
     choices:[{l:"Grow old with her anyway", to:"deep_younghusband"},{l:"Go back under", to:"deep_dancer"}]},
-  n68fair:{age:68, ageLabel:"NO AGE AT ALL", text:"Hand in hand at the fair, they are offered what everyone is offered: stay young down here forever, or carry one gift up into the dying light - a single honest hour with anyone already gone.",
+  dp68fair:{age:68, ageLabel:"NO AGE AT ALL",
+    text:"Hand in hand at the fair, they are offered what everyone is offered: stay young down here forever, or carry one gift up into the dying light - a single honest hour with anyone already gone.",
     choices:[{l:"Stay forever", to:"deep_forever"},{l:"Take the hour", to:"deep_hour"}]},
-  n55shut:{age:55, text:"He votes for the quiet life and mostly wins it. Then Danny rings: the firm is going under, and for the first time in his life his brother asks for help - the savings would cover it, or the boat Nell has dreamed of since the quarry.",
-    choices:[{l:"Bail Danny out", to:"n68danny"},{l:"Buy the boat", to:"n68boat"}]},
-  n68danny:{age:68, text:"Danny's firm - half his, now - tables one last project: drain the quarry and build executive homes, door and all.",
-    choices:[{l:"Sign", to:"deep_developer"},{l:"Vote no, money and all", to:"deep_custodian"}]},
-  n68boat:{age:68, text:"Nell names the boat The Three Minutes. The round-the-world window opens the same year his knees start filing complaints.",
+  dp55shut:{age:55, text:"He votes for the quiet life and mostly wins it. Then Danny rings, humble for the first time in his life: the savings would save the firm, or they would buy the boat Alice has wanted since the quarry.",
+    choices:[{l:"Bail Danny out", to:"dp68danny"},{l:"Buy the boat", to:"dp68boat"}]},
+  dp68danny:{age:68, text:"The rescue came with paperwork he never read. Danny's firm - half his, apparently - has bought the quarry, and the drained-lake estate is already on the drawing board, door and all.",
+    choices:[{l:"Sign. It is only water", to:"deep_developer"},{l:"Fight his own brother", to:"deep_custodian"}]},
+  dp68boat:{age:68, text:"Alice names the boat The Three Minutes. The round-the-world window opens the same year his knees start filing complaints.",
     choices:[{l:"Sail around the world", to:"deep_threeminutes"},{l:"Stay in home waters", to:"deep_harbour"}]},
 };
 
 const ENDINGS = {
-  deep_ark:{t:"THE ARK BELOW", e:"HE KEPT THE LIGHTS ON.", s:[4,1,1],
+  deep_ark:{t:"THE ARK BELOW", e:"HE KEPT THE LIGHTS ON.", s:[2,5,1],
     sum:"He told her the truth: the sun was ordinary, and nobody ever once thanked it. Three hundred souls became nine hundred under his watch, and they call him grandfather whether or not it is true. He dies at ninety-one, sealed away from a sky he never stopped missing, having kept every light on."},
-  deep_liturgy:{t:"BEDTIME STORIES FOR THE DROWNED WORLD", e:"IN THE BEGINNING, THE SUN WAS KIND.", s:[5,0,2],
-    sum:"He made it better: the sun a kind old king, the moon his patient wife, the plague a dragon the divers tricked. Two hundred years on, the habitat's children still sing the drowned liturgy at lights-down, and nobody remembers it was him. Every religion starts as somebody's bedtime story, told with love, to one frightened child."},
-  deep_stowaway:{t:"STOWAWAY CENTURIES", e:"ASK HIM ABOUT THE SEA.", s:[3,0,5],
-    sum:"Cryo, then Proxima: eighteen hundred years in the dark, dreamless. He wakes at planetfall as the only person alive who has stood in rain. The children of the ark queue for a decade to hold his hand and ask about the sea, and he answers every single one, and dies under a sun the wrong colour, missing the right one."},
-  deep_gardener:{t:"THE CORRIDOR GARDENER", e:"THERE ARE TOMATOES.", s:[4,0,2],
-    sum:"He never slept. Sixty years tending tomatoes in the spinning dark, feeding people bound for a world he will never see. His soil - built from nothing, teaspoon by patient teaspoon - feeds ten generations after him. They bury him in it, as he asked. There is no plaque. There are tomatoes."},
-  deep_doctor:{t:"DOCTOR OF THE RESERVOIR", e:"NOT A REAL DOCTOR.", s:[5,0,1],
-    sum:"Three books, no licence, nineteen winters. Between them, he and Nell lost forty-one souls and saved a camp of six hundred. Married at the water's edge by a priest who owed them both his life; everyone cried, mostly at the jokes. He was not a real doctor. Nobody, anywhere, has ever cared less about anything."},
-  deep_sexton:{t:"THE SEXTON", e:"HE REMEMBERED EVERY NAME.", s:[3,0,0],
-    sum:"Someone had to dig, so it was him: three hundred and eleven graves, each name said aloud at dusk whether anyone came or not. The camp lived because the dying were never alone and the living never had to do it. At the end, Nell held his hand and asked for the count. He had kept it exactly right."},
-  deep_clean:{t:"THE CLEAN COUNTRY", e:"SAFE.", s:[1,3,5],
-    sum:"The north was clean and stayed clean, and so did he: forty tidy years, a good house, no fevers, no Nell. Word came eventually that the camp had made it - that she had made it - without him. He lives to ninety-six, which is long enough to learn that safe and alive are different words."},
-  deep_family:{t:"FAMILY, IT SAYS", e:"FAMILY, IT SAYS.", s:[4,0,1],
+  deep_liturgy:{t:"BEDTIME STORIES FOR THE DROWNED WORLD", e:"IN THE BEGINNING, THE SUN WAS KIND.", s:[3,5,0],
+    sum:"He made it better: the sun a kind old king, the moon his patient wife, the flood a dragon the divers tricked. Two hundred years on, the ark's children still sing the drowned liturgy at lights-down, and nobody remembers it was him. Every religion starts as somebody's bedtime story, told with love, to one frightened child."},
+  deep_sleeper:{t:"THE SLEEPER IN THE TRENCH", e:"ASK HIM ABOUT THE OLD SEA.", s:[3,2,0],
+    sum:"Three hundred years cold in the dark while the ark rode out the drowned centuries. He wakes when it surfaces into a world gone green again, the only man alive who remembers the old coast. The children queue for years to hold his hand and ask about the sea that ate the world, and he tells every one of them the important part: it was beautiful first."},
+  deep_gardener:{t:"THE CORRIDOR GARDENER", e:"THERE ARE TOMATOES.", s:[3,5,0],
+    sum:"He never slept, and he never surfaced. Sixty years tending the garden decks of an ark crawling the deep, feeding people bound for a future he would not see. His soil - built from nothing, teaspoon by patient teaspoon - feeds ten generations after him. They bury him in it, as he asked. There is no plaque. There are tomatoes."},
+  deep_doctor:{t:"DOCTOR OF THE HIGH-GROUND CAMP", e:"NOT A REAL DOCTOR.", s:[4,5,0],
+    sum:"Three books, no licence, nineteen winters. Between them, he and Alice lost forty-one souls and saved a camp of six hundred. Married at the water's edge by a priest who owed them both his life; everyone cried, mostly at the jokes. He was not a real doctor. Nobody, anywhere, has ever cared less about anything."},
+  deep_sexton:{t:"THE SEXTON", e:"HE REMEMBERED EVERY NAME.", s:[1,5,0],
+    sum:"Someone had to dig, so it was him: three hundred and eleven graves, each name said aloud at dusk whether anyone came or not. The camp lived because the dying were never alone and the living never had to do it. At the end, Alice held his hand and asked for the count. He had kept it exactly right."},
+  deep_wedding:{t:"THE WEDDING AT THE WORLD'S END", e:"THE TIMING WAS PERFECT.", s:[5,4,0],
+    sum:"He said it, fever ward and all, and she laughed at the timing and said yes before he had finished. Married that Sunday in the boat shed: paper flowers, quinine punch, six hundred guests with nothing else to celebrate. The old doctor swore morale did more that winter than the medicine. They get twenty-two years, and every one counts double."},
+  deep_high:{t:"THE HIGH COUNTRY", e:"SAFE.", s:[1,1,3],
+    sum:"The hills were dry, and so, for the first year, was he. A good house, a clean well, no fevers, no Alice - and a bottle that arrived as medicine and stayed as furniture. Word came up eventually that the camp had made it, that she had made it, without him. He lives to ninety-six, which is long enough to learn that safe and alive are different words."},
+  deep_family:{t:"FAMILY, IT SAYS", e:"FAMILY, IT SAYS.", s:[2,4,0],
     sum:"She never forgave the asking, and he never asked again; he just stayed - wards, woodpiles, water runs - for thirty years. They never married. At her funeral, the order of service lists him as family, which is the only word she ever used for it, and more than he ever felt he was owed."},
-  deep_wedding:{t:"THE WEDDING AT THE WORLD'S END", e:"THE TIMING WAS PERFECT.", s:[5,0,2],
-    sum:"He said it, fever camp and all, and she laughed at the timing and said yes before he had finished. Married that Sunday in the boat shed: paper flowers, quinine punch, six hundred guests with nothing else to celebrate. The old doctor swore morale did more that winter than the medicine. They get twenty-two years, and every one counts double."},
-  deep_younghusband:{t:"THE YOUNG HUSBAND", e:"LATE, BUT HE CAME BACK.", s:[4,1,3],
+  deep_younghusband:{t:"THE YOUNG HUSBAND", e:"LATE, BUT HE CAME BACK.", s:[4,2,1],
     sum:"He came out of the lake forty years late and still forty-two; she was eighty-two and refused to waste a minute of it being angry. Eight years, one scandalised village, one wedding where he was mistaken for the groom's son. Afterwards he tends her grave and his garden, a young man growing slowly into the oldest story the village has."},
-  deep_dancer:{t:"THE DANCER UNDER THE LAKE", e:"GONE DANCING.", s:[3,0,5],
+  deep_dancer:{t:"THE DANCER UNDER THE LAKE", e:"GONE DANCING.", s:[5,1,0],
     sum:"He went back under, where it is always the harvest fair and the fiddler never tires. On still nights, swimmers hear it. Mothers tell it to children who will not sleep: be good, or be wonderful, and the lake might take you dancing. He is not dead, not old, and not entirely remembered. He is having the time of his life."},
-  deep_forever:{t:"FOREVER AT THE FAIR", e:"THEY LEFT TOGETHER, EVENTUALLY.", s:[3,0,5],
+  deep_forever:{t:"FOREVER AT THE FAIR", e:"THEY LEFT TOGETHER, EVENTUALLY.", s:[4,1,0],
     sum:"They stayed. Young forever, at a fair that never ends - and forever, it turns out, is the one dance you cannot sit out. Around year two hundred, every song memorised, they look at each other, set down their cups, and walk hand in hand past the last lantern into the deep dark water, curious at last about the only thing left."},
-  deep_hour:{t:"ONE HONEST HOUR", e:"HE'D DONE ALRIGHT, APPARENTLY.", s:[5,1,3],
-    sum:"They carried the hour back into the ordinary light, and he saved it the way you save the last of anything. At ninety, Nell two winters gone, he finally spends it: an hour at the kitchen table with his dad, dead sixty years, to ask if he did alright. He did, apparently. His dad always knew he would."},
-  deep_developer:{t:"THE DEVELOPER", e:"HE BUILT ON IT.", s:[1,5,3],
-    sum:"The executive homes sold well; the marina, better. He is the richest man the town has ever produced, and cannot explain why he leaves every fair early, or why the smell of pondweed in the new car park stops him dead. Nell finds him out there once, at night, ear to the tarmac. Neither of them ever says anything."},
-  deep_custodian:{t:"THE CUSTODIAN", e:"SOMETHING DOWN THERE OWES HIM.", s:[4,0,4],
-    sum:"The no costs him every penny the yes would have paid. He keeps the lake instead: warden, unpaid, thirty years of mown banks and chased-off surveyors. Nell says he guards it like a grave. Like an egg, he says. The door never once opens for him, but some evenings the water hums a reel he almost, almost knows."},
-  deep_threeminutes:{t:"THE THREE MINUTES", e:"SHE COULD HOLD HER BREATH FOR THREE MINUTES.", s:[5,1,4],
-    sum:"Knees be damned, they went: four years, thirty ports, two storms that should have ended it. Nell dies at the helm off the Azores at seventy-nine, mid-laugh, exactly as threatened, and he sails her home alone and slowly, flying every flag they had collected. The town keeps the boat. The boat keeps the name."},
-  deep_harbour:{t:"HARBOUR LIGHTS", e:"LOOK HOW BIG IT GOT.", s:[5,2,5],
+  deep_hour:{t:"ONE HONEST HOUR", e:"HE'D DONE ALRIGHT, APPARENTLY.", s:[5,2,1],
+    sum:"They carried the hour back into the ordinary light, and he saved it the way you save the last of anything. At ninety, Alice two winters gone, he finally spends it: an hour at the kitchen table with his dad, dead sixty years, to ask if he did alright. He did, apparently. His dad always knew he would."},
+  deep_developer:{t:"THE DEVELOPER", e:"HE BUILT ON IT.", s:[1,1,5],
+    sum:"The executive homes sold well; the marina, better. He is the richest man the town has ever produced, and cannot explain why he leaves every fair early, or why the smell of pondweed in the new car park stops him dead. Alice finds him out there once, at night, ear to the tarmac. Neither of them ever says anything."},
+  deep_custodian:{t:"THE CUSTODIAN", e:"SOMETHING DOWN THERE OWES HIM.", s:[2,3,0],
+    sum:"The case against his own brother costs every penny the yes would have paid, and wins. Danny never speaks to him again; Mum sets two tables at Christmas, ten feet apart. He keeps the lake - warden, unpaid, thirty years of mown banks and chased-off surveyors. The door never opens for him, but some evenings the water hums a reel he almost, almost knows."},
+  deep_threeminutes:{t:"THE THREE MINUTES", e:"SHE COULD HOLD HER BREATH FOR THREE MINUTES.", s:[5,2,1],
+    sum:"Knees be damned, they went: four years, thirty ports, two storms that should have ended it. Alice dies at the helm off the Azores at seventy-nine, mid-laugh, exactly as threatened, and he sails her home alone and slowly, flying every flag they had collected. The town keeps the boat. The boat keeps the name."},
+  deep_harbour:{t:"HARBOUR LIGHTS", e:"LOOK HOW BIG IT GOT.", s:[5,4,2],
     sum:"They never leave the bay, and never once run out of it. He teaches every child in town to sail, including, in time, three generations of Danny's lot. Fifty years of small water and coming home before dark to the same lit window. On the last evening she asks if he ever minded the size of it. Look how big it got, he says."},
 };
 
-const DEEP_ORDER = ["deep_ark","deep_liturgy","deep_stowaway","deep_gardener","deep_doctor",
-  "deep_sexton","deep_wedding","deep_clean","deep_family","deep_younghusband","deep_dancer",
-  "deep_forever","deep_hour","deep_developer","deep_custodian","deep_threeminutes","deep_harbour"];
+/* @@CONTINENTS - further continents are appended below this line */
+
+/* ---- THE LOCK: the cut, the shilling, the small god of the pound ---- */
+
+Object.assign(NODES, {
+  lk33:{age:33, text:"The lock is his now, and the hundred years of stories with it. Twice a year Alice Hardy comes through on a boat called Persistence, trading crockery and news, and this year she asks if he wants to come along.",
+    choices:[{l:"Go with the boat", to:"lk42t"},{l:"Keep the lock", to:"lk42k"}]},
+  lk42t:{age:42, text:"Nine years on the cut, and the lorries are winning: wharves closing, cargoes thinning, the Persistence's engine older than both of them. A man at Braunston offers real money to carry boxes - nights only, no manifest.",
+    choices:[{l:"Carry the boxes", to:"lk55box"},{l:"Honest cargo or none", to:"lk55last"}]},
+  lk55box:{age:55, text:"The night runs buy a new engine and ask no questions, until the wet spring a crate splits: medicine, stamped with the county hospital's mark, and the buyers are not gentle people.",
+    choices:[{l:"Keep carrying", to:"lk68run"},{l:"Sink the lot in the pound", to:"lk68sink"}]},
+  lk68run:{age:68, text:"Twenty years the cut's quiet freight lord, Alice long since put ashore with no explanation she'd accept. Now a young waterways officer with a familiar stubbornness is one ledger away from all of it.",
+    choices:[{l:"Retire clean. Let the trade die", to:"lock_grey"},{l:"Hand him the ledger, every page", to:"lock_ledger"}]},
+  lk68sink:{age:68, text:"He sank the crates and said so. That winter the Persistence burns at her moorings - and only the Braunston man knew where she wintered.",
+    choices:[{l:"Rebuild her, plank by plank", to:"lock_persistence"},{l:"Let her go. Keep Alice", to:"lock_ashore"}]},
+  lk55last:{age:55, text:"The last regular cargo on the whole cut is lime juice to Boxmoor, and this is its final year. Alice wants to try passengers instead: day-trippers, teas, a gramophone.",
+    choices:[{l:"Carry the last cargo, properly", to:"lk68cargo"},{l:"Teas and a gramophone", to:"lk68trips"}]},
+  lk68cargo:{age:68, text:"They carry the final commercial load in canal history, photographed by museum men at every bridge. The waterways board offers him a heritage desk; the alternative is boating empty, for nothing, forever.",
+    choices:[{l:"Take the heritage desk", to:"lock_museum"},{l:"Boat empty anyway", to:"lock_empty"}]},
+  lk68trips:{age:68, text:"Forty summers of teas and day-trippers later, Alice is eighty and wants one last run: the whole network, every mile, and the doctor has used the word madness.",
+    choices:[{l:"Go anyway", to:"lock_lastrun"},{l:"Winter her gently at home", to:"lock_teas"}]},
+  lk42k:{age:42, text:"Alice waves from the stern and is gone. That winter the ledger teaches him the lock's real terms: one shilling into the pound above lock nine, every year - and in a hundred years, nobody has ever drowned on this mile.",
+    choices:[{l:"Pay it, and never ask", to:"lk55god"},{l:"Sit up and see what takes it", to:"lk55ask"}]},
+  lk55god:{age:55, text:"Thirty years of shillings, and his mile is where the barge children learn to swim. Then the letter: the locks are to be electrified, the keepers phased out, and there is no line in any budget for a shilling.",
+    choices:[{l:"Fight the trust", to:"lk68fight"},{l:"Let the job go. Keep paying", to:"lk68coin"}]},
+  lk68fight:{age:68, text:"He wins: heritage status, hand-worked forever. But the fight made the mile famous, and the pound above lock nine has opinions about crowds.",
+    choices:[{l:"Keep it famous, keep it funded", to:"lock_famous"},{l:"Let the fame die back", to:"lock_hush"}]},
+  lk68coin:{age:68, text:"Unpaid keeper of one coin, decades now, and this winter his chest tells him it is the last. There is no successor, and the shilling does not pay itself.",
+    choices:[{l:"Advertise in the parish magazine", to:"lock_successor"},{l:"Take the last one down himself", to:"lock_shilling"}]},
+  lk55ask:{age:55, text:"He skips a year and sits up three nights with a lantern. What surfaces on the third looks at him the way he looks at minnows, puts the lantern out without touching it, and leaves one dry question in his head: what does HE take, for watching his mile?",
+    choices:[{l:"Pay double, apologise", to:"lk68gifts"},{l:"Tell the trust surveyor everything", to:"lk68tell"},
+      {l:"Answer it honestly", to:"lock_seen", gate:{d:"wonder", r:2}}]},
+  lk68gifts:{age:68, text:"Mollified, the pound begins leaving things on the cottage step: coins older than the canal, a brooch older than coins. The museum man's voice shakes on the telephone.",
+    choices:[{l:"Sell the gifts", to:"lock_hoard"},{l:"Give every one back", to:"lock_grace"}]},
+  lk68tell:{age:68, text:"The surveyor drains the pound to look. Mud, bicycles, and a century of shillings in one neat stack. The trust calls it superstition, refills it with ordinary water, and his mile starts drowning people like anywhere else.",
+    choices:[{l:"Stand watch anyway", to:"lock_vigil"},{l:"Leave the cut for good", to:"lock_landman"}]},
+});
+
+Object.assign(ENDINGS, {
+  lock_grey:{t:"THE GREY CARGO", e:"NO MANIFEST.", s:[1,0,4],
+    sum:"He retires the wealthiest boatman since the coal years, and nobody can say how. The money buys a house he rattles in and a funeral nobody enjoys. Alice, ashore forty years, sends no flowers - just a tiller pin, returned. The young officer closes the file unsolved, and is right, for the rest of his life, about who it was."},
+  lock_ledger:{t:"THE LEDGER", e:"IT IS ALL IN THERE.", s:[2,3,0],
+    sum:"He hands over twenty years of names, his own at the top. Three years in an open prison, where he teaches half the wing to splice rope; the buyers go down for longer. Alice visits on the last Sunday of every month and never once asks why. It is the only cargo he ever carried that got lighter as it went."},
+  lock_persistence:{t:"PERSISTENCE", e:"SHE FLOATS.", s:[3,2,0],
+    sum:"Fourteen years, one plank at a time, in a dry dock he rents by lambing work. The men who burned her are dead or old when she takes the water again, him seventy and Alice laughing at the tiller. On the maiden run every lock on the mile stands open for them, and no keeper anywhere will admit to having set it so."},
+  lock_ashore:{t:"TWO ROOMS ASHORE", e:"THE KETTLE, THE WINDOW, THE BOATS GOING BY.", s:[2,2,1],
+    sum:"He chose her over the boat, and she never asked him to, which is the part they don't discuss. A chandler's shop, two rooms above it, thirty gentle years. But every boat that passes the window pulls both their heads round mid-sentence, and neither ever finishes the sentence, and both of them know exactly where the other one is."},
+  lock_museum:{t:"THE HERITAGE MAN", e:"HE FILLED IN THE FORMS.", s:[2,4,2],
+    sum:"Twenty years of committees he despises, minutes he falsifies only slightly, and tea he describes as an insult to boats. Three hundred miles of canal survive the motorway men because one man in a bad suit could out-bore any engineer alive. Children fish, today, in water that exists because he stayed awake in meetings."},
+  lock_empty:{t:"THE EMPTY BOAT", e:"CARGO: NONE. DESTINATION: ONWARD.", s:[4,1,0],
+    sum:"Thirty years boating nothing, nowhere, on schedule. Lock-keepers set the mile for him unasked; anglers nod as if to a heron. He becomes the cut's own ghost while still alive, the man every towpath child has waved to and no two towns can name. When the boat is found empty at Braunston, going nowhere, on time, it seems less like a death than a change of crew."},
+  lock_lastrun:{t:"THE FULL NETWORK", e:"HE MADE THE SUMMIT.", s:[5,2,0],
+    sum:"Every navigable mile, at eighty and seventy-nine, against medical advice and the calendar. He dies at the tiller at the top of the Foxton flight, boat full of borrowed grandchildren cheering the summit pound, which is, Alice tells the coroner, precisely how he had it planned. She steers home alone, perfectly, flags up."},
+  lock_teas:{t:"TEAS ON THE PERSISTENCE", e:"THE URN WAS ALWAYS ON.", s:[4,2,1],
+    sum:"He winters her gently, and she lets him think it was his idea. The tea boat outlives the trade, the trust, and most of its regulars: honeymooners come back with grandchildren, and every christening on the cut somehow ends up aboard. She goes first, mid-season. He runs it four more years, because the urn was on, and people were coming."},
+  lock_famous:{t:"LOCK NINE, AS SEEN ON TV", e:"THE GIFT SHOP IS TO THE LEFT.", s:[3,3,3],
+    sum:"The documentary runs three series; he plays the gruff keeper so well he forgets it is a performance. The mile is saved, funded, laminated. The shilling goes in annually on camera, to music. Nobody drowns, so the arrangement holds - but on still mornings he stands at the pound before the crews arrive and apologises, quietly, for the noise."},
+  lock_hush:{t:"THE QUIET MILE", e:"NOBODY EVER DROWNED HERE.", s:[3,4,0],
+    sum:"He lets the cameras drift away, loses the funding, keeps the hush. The mile goes back to herons and the odd fisherman who could swear someone walked the towpath behind him, friendly. A hundred and sixty years now, and no stone in any churchyard for anyone the pound has taken. It is the only record he ever cared about, and it is clean."},
+  lock_successor:{t:"SITUATIONS VACANT", e:"WANTED: ONE KEEPER. SHILLING PROVIDED.", s:[3,4,0],
+    sum:"The parish magazine runs it between the jumble sale and the bell fund, and he gets one reply: a barge child he taught to swim, forty now, who read it and heard it. He has a season to hand over a ledger, a kettle, and one annual appointment at the pound. He dies mid-March. The shilling goes in on Lady Day, on time, and every year after."},
+  lock_shilling:{t:"THE LAST SHILLING", e:"PAID IN FULL.", s:[2,4,0],
+    sum:"He walks the coin down himself, into the water, and is not found. The mile's record holds. Years on, keepers who never met him leave a shilling on the third lock beam and find it gone by morning; swimmers straying near the weir feel themselves turned, firmly, kindly, shoreward. The pound trained up a successor after all. It had been watching him for years."},
+  lock_hoard:{t:"THE HOARD FROM THE POUND", e:"FINDERS, KEEPERS.", s:[1,0,4],
+    sum:"The museum pays handsomely and names a case after him. The gifts stop that morning. The following August, on his mile, a boy goes under by the weir and stays under, the first in a hundred and thirty years, and the inquest calls it a tragic accident because the inquest doesn't know what he knows. He keeps the case's little brass plaque in a drawer, face down, until he dies."},
+  lock_grace:{t:"GIVEN BACK", e:"EVEN.", s:[4,4,0],
+    sum:"Every coin, every brooch, carried back down and returned to the water with apologies. The pound and the keeper grow old in mutual courtesy after that: he mends its banks, it minds his swimmers, and neither presumes again. The morning of his funeral the pound lies mirror-still, and laid out on the towpath, dry and neat, is everything he ever gave back."},
+  lock_vigil:{t:"THE VIGIL AT LOCK NINE", e:"IT CAME BACK FOR HIM.", s:[2,3,0],
+    sum:"Thirty years watching a drained and ordinary pound, insisting to anyone with a rod that it will come back. The trust humours him; the village calls him the heron. He dies in the cottage on a night of no recorded rain, and by morning the pound is full - brimming, cold, older-looking than the water either side - and the mile never drowns anyone again."},
+  lock_landman:{t:"DRY LAND", e:"HE KEPT A BOWL OF WATER ON THE SILL.", s:[2,1,2],
+    sum:"He takes a job in a builders' merchants and is good at it, which is the worst part. A tidy semi, a pension, a marriage that is fine. He is never once able to explain the bowl of water he keeps on the windowsill, refilled daily for forty years, or why he salutes it on his way out, or why, near the end, he starts leaving a shilling in it on Lady Day."},
+  lock_seen:{t:"HE SAW IT ONCE", e:"ALMOST GOT IT.", s:[5,3,0],
+    sum:"I take the stories, he says, which is honest, and honesty turns out to be the rarest coin of all. So it rises and shows him everything, once, for about a minute. He spends the next fifty years painting it from memory, failing, and the failures hang in three national collections under the title Study of Water. Only he and the water know how far off they are."},
+});
+/* ---- THE SKY: the agency, the seat, the voice on the loop ---- */
+
+Object.assign(NODES, {
+  sk33:{age:33, text:"Eight years of centrifuges and Russian verbs come down to two names for one seat: his, and Fletcher's, whose wife is due in March. The selection board asks, off the record, whether there is anything about either candidate they should know.",
+    choices:[{l:"Mention March", to:"sk42fly"},{l:"Say nothing", to:"sk42ground"}]},
+  sk42fly:{age:42, text:"Fletcher is grounded 'for family reasons' and never told why; the March baby is walking by the time he flies his second mission. Now a retired board member is writing a memoir, and a draft chapter called THE SEAT is circulating.",
+    choices:[{l:"Get the chapter killed", to:"sk55hush"},{l:"Let it print", to:"sk55print"}]},
+  sk55hush:{age:55, text:"The chapter dies quietly, the way these things can be arranged, and he flies the lunar winter-over as second to commander A. Hardy. Six months of night, two people, one habitat - and one evening Alice asks, conversationally, whatever happened to that chapter.",
+    choices:[{l:"Tell her all of it", to:"sk68confess"},{l:"Lie, to the last person on the moon", to:"sk68lie"}]},
+  sk68confess:{age:68, text:"She is quiet for one full day. Then: the mission needs its second, so they will finish the winter-over properly - and when they splash down there will be a debrief, and he will decide what it hears.",
+    choices:[{l:"Put it on the record", to:"sky_daylight"},{l:"Retire before it convenes", to:"sky_quiet"}]},
+  sk68lie:{age:68, text:"He lies, and she nods, and he understands too late that she read the chapter years ago. The base is decommissioned at winter's end: one seat home. Alice says she is staying with the beacon; the Earth is very blue tonight.",
+    choices:[{l:"Stay with her", to:"sky_beacon"},{l:"Go home to the blue one", to:"sky_blueone"}]},
+  sk55print:{age:55, text:"The chapter runs with his name spelled right. The agency offers the standard door - resign for health reasons, pension intact - or there is the hearing: public, under oath, everything.",
+    choices:[{l:"Resign quietly", to:"sk68resign"},{l:"Take the hearing", to:"sk68hearing"}]},
+  sk68hearing:{age:68, text:"Under oath he tells it all: the March baby, the whisper, the seat. The papers are unkind; the astronauts, oddly, are not. Afterwards the academy asks him to teach selection ethics, and a launch firm offers ten times the salary to consult.",
+    choices:[{l:"Teach", to:"sky_academy"},{l:"Consult", to:"sky_consult"}]},
+  sk68resign:{age:68, text:"Pension, silence, a garden with a radio in it. Thirty years of launches from a deckchair, and now the programme's fortieth-anniversary gala has invited everyone, footnotes included.",
+    choices:[{l:"Go to the gala", to:"sky_gala"},{l:"Stay in the garden", to:"sky_garden"}]},
+  sk42ground:{age:42, text:"He says nothing. Fletcher flies, and names the March baby after the rocket. The agency keeps him: backup for everything, prime for nothing, and the steadiest headset voice the control room has ever heard.",
+    choices:[{l:"Stay on flight rotation", to:"sk55rotation"},{l:"Take the console for good", to:"sk55voice"}]},
+  sk55rotation:{age:55, text:"Eleven years a backup. Then the Mars boost stage fails in orbit with three aboard, and the rescue needs a pilot who knows the old stack. He has flown it four hundred times - every one of them in the simulator.",
+    choices:[{l:"Fly the rescue", to:"sk68rescue"},{l:"Put Alice's name forward", to:"sk68alice"},
+      {l:"Fly the direct burn nobody has flown", to:"sky_first", gate:{d:"luck", r:3}}]},
+  sk68rescue:{age:68, text:"Four hundred and one. He brings all three home with fuel to spare, the world's oldest rookie, and the world would quite like to own him for a while.",
+    choices:[{l:"The parade circuit", to:"sky_rookie"},{l:"Back on console Monday", to:"sky_monday"}]},
+  sk68alice:{age:68, text:"Alice flies it on his recommendation and his simulator notes, and makes it by exactly the margin the notes bought her. On the podium she says his name, and the agency, embarrassed, offers him the courtesy flight it has owed him for thirty years: one orbit.",
+    choices:[{l:"Take the orbit", to:"sky_orbit"},{l:"Give the seat to Fletcher's daughter", to:"sky_seat"}]},
+  sk55voice:{age:55, text:"Twenty years the voice: first thing every crew hears at wake-up, last at lights-out. Now the first Mars crew has one request - him, on console, all thirty months - and the doctors note, in writing, that the desk will see him past seventy.",
+    choices:[{l:"All thirty months", to:"sk68mars"},{l:"Train a replacement instead", to:"sk68replace"}]},
+  sk68mars:{age:68, text:"Month nineteen, the blackout: six hours, a dying radio, and a landing talked down through static by a seventy-one-year-old who has slept at the console since Tuesday. The crew of Mars Two have made the same request.",
+    choices:[{l:"Once more", to:"sky_thevoice"},{l:"Sign off while his voice holds", to:"sky_signoff"}]},
+  sk68replace:{age:68, text:"He picks the trainee nobody else picked - the one whose stammer disappears the instant the channel opens - and gives her everything. At the Mars landing, the room offers him the final approach, for history's sake.",
+    choices:[{l:"Take the final approach", to:"sky_onemore"},{l:"The gallery. It is her landing", to:"sky_gallery"}]},
+});
+
+Object.assign(ENDINGS, {
+  sky_daylight:{t:"THE DEBRIEF", e:"HE PUT IT ON THE RECORD.", s:[3,4,0],
+    sum:"He tells the debrief everything, into a microphone, wearing the medal they cannot take back. Grounded for life, and the strange thing is the relief. The academy builds a course around the transcript; Fletcher, sixty now, attends the first lecture and shakes his hand at the door. Alice flies twice more, and requests him - grounded, honest - as her capcom both times."},
+  sky_quiet:{t:"SPLASHDOWN", e:"NO COMMENT.", s:[2,1,2],
+    sum:"He retires the week before the debrief convenes, for health reasons that are, in fairness, real by then. No interviews, ever: forty years of no comment, a bungalow far from any coast, the medal face-down in a drawer under the spare fuses. Alice sends a card every Christmas signed only GO FOR LAUNCH, and he can never decide whether it is kindness or sentence."},
+  sky_beacon:{t:"KEEPERS OF THE BEACON", e:"STILL ON.", s:[3,4,0],
+    sum:"They stay: two old liars and one navigation beacon, tending a light for ships that barely need it. In the third year, under earthlight, he finally says all of it, to the only person left it matters to, and she says I know, I always knew, check the fuel cell. Twenty more years. The beacon never once goes dark, and neither, after that, does the habitat."},
+  sky_blueone:{t:"THE BLUE ONE", e:"HE LOOKED UP A LOT.", s:[4,1,1],
+    sum:"He grows old on a planet Alice isn't on. Every full moon he goes out to the garden and waves - you cannot see the beacon by eye, but forty years of knowing her says she waves back. Some of the waves are apologies. The one thing he never told anyone, she took to the moon with her, which is, he decides, the safest place anything has ever been kept."},
+  sky_academy:{t:"THE CAUTIONARY TALE", e:"EXHIBIT A, RETIRED.", s:[3,5,0],
+    sum:"Thirty years teaching selection ethics with himself as the worked example: the final lecture of every candidate class is called The Seat, and nobody talks on the way out. Four hundred astronauts fly knowing exactly what a whisper costs. He is never invited to launches, and goes anyway, at the back, by the fence, where the teaching is."},
+  sky_consult:{t:"TEN TIMES THE SALARY", e:"HE BUILT THE THING HE COULDN'T RIDE.", s:[2,2,4],
+    sum:"The firm's rockets fly beautifully, and he is paid like a man with no history. He buys Mum a house she refuses to move into, funds a scholarship he is too ashamed to put his name on, and stands at the perimeter fence for every launch he engineered, counting down under his breath with the loudspeakers. It is nearly enough. It is never enough."},
+  sky_gala:{t:"TABLE NINE", e:"TABLE NINE.", s:[3,2,1],
+    sum:"He goes. They seat the footnote at the back with the caterers' cousins, and he is fine with it - and then Alice, four missions, a crater named after her, crosses the entire banquet hall trailing two chairs' worth of protocol officers, and sits at table nine all night. Nobody photographs it. Both of them prefer it that way."},
+  sky_garden:{t:"THE MAN IN THE GARDEN", e:"GO FOR LAUNCH.", s:[3,1,1],
+    sum:"He never goes back; the garden goes up with him instead. Every launch for thirty years: deckchair, radio, tomatoes unwatered from T-minus ten. The neighbours set their clocks by him. When the first Mars crew lifts off he is ninety, and on flight day two - Alice's doing - mission control reads his name in the wake-up call, to three sleeping astronauts and one listening garden."},
+  sky_rookie:{t:"THE OLDEST ROOKIE", e:"FOUR HUNDRED AND ONE.", s:[4,3,2],
+    sum:"One flight, at fifty-seven, and it happened to be the one the whole world watched. He does the parades, the chat shows, the stamp, and in every single interview names the simulator technicians until the networks give up cutting it out. The three he brought home have dinner with him every year on the anniversary, and always, pointedly, let him drive."},
+  sky_monday:{t:"BACK ON MONDAY", e:"AND THEN HE CAME BACK TO WORK.", s:[4,4,0],
+    sum:"He flies once, saves three, and is on console at six the following Monday, headset on, voice level, as if the sky owes him nothing and vice versa. He refuses the medal twice - the sim flew it, he says - and accepts, instead, a parking space. Rookies are shown his spot before they are shown the rockets. That is the whole memorial, and it is enough."},
+  sky_orbit:{t:"SIXTEEN SUNRISES", e:"SIXTEEN SUNRISES.", s:[5,2,0],
+    sum:"One orbit, ninety-three minutes, forty years late, and he is professional for exactly none of it. Sixteen sunrises, and he cries at all sixteen, narrating throughout on a hot mike he has honestly forgotten about - which is how the listening world learns what the Atlantic looks like to a man who waited a lifetime to see it once. Nobody at the agency ever mentions the mike."},
+  sky_seat:{t:"PASS IT ON", e:"THE SEAT WAS NEVER THE POINT.", s:[4,5,0],
+    sum:"He gives the orbit to Fletcher's daughter - the March baby, a pilot now, her father's calm and her own reasons. He watches from the console he knows best with Fletcher beside him, and somewhere over the Indian Ocean she radios down two words her father taught her: seat's taken. It is the only flight in programme history logged with two pilots' names against one seat."},
+  sky_thevoice:{t:"THE VOICE", e:"SAY AGAIN. OVER.", s:[3,5,0],
+    sum:"He does Mars Two as well, and dies at the console at seventy-nine, between the evening weather and lights-out, mid-sentence, on channel. The crew, forty million miles out, hold the wake on the open loop, and every tracking station on Earth stands by in silence. Control rooms still keep the quiet minute at shift change. Nobody explains it to visitors with a steady voice."},
+  sky_signoff:{t:"YOU ARE GO", e:"YOU ARE GO.", s:[4,3,1],
+    sum:"He signs off after Mars One while the voice still holds, and retires to bees and a strategically unlisted telephone number that every crew office in the world somehow has. The tradition outlives him by decades: the night before launch, each crew makes one call, and an old man - later a recording, later still a memory passed between commanders - tells them they are go."},
+  sky_onemore:{t:"FINAL APPROACH", e:"HANDOVER CLEAN.", s:[4,3,0],
+    sum:"One last shift, hands steady, static thick, the first boots on Mars talked down by the oldest voice in the room. Then, live on the loop, with the planet still cheering: this is capcom, going off headset. He lifts it off, settles it onto the trainee he chose, and walks out through a control room standing to applaud a handover. He never wears one again. He never needs to."},
+  sky_gallery:{t:"THE GALLERY", e:"IT WAS HER LANDING.", s:[4,4,0],
+    sum:"He watches the Mars landing from the public gallery, in a visitor's badge, Mum's old kitchen radio switched off in his lap. The trainee he chose talks them down without a wasted syllable, the stammer nowhere in a thousand miles of it. At touchdown the whole gallery turns to him - word had got round - and he points through the glass at her. The console she used bears his name now, at her insistence."},
+  sky_first:{t:"THE DIRECT BURN", e:"IT WORKED, DIDN'T IT.", s:[5,2,1],
+    sum:"The fast trajectory has never been flown, because the margins only close if nothing goes wrong. Nothing goes wrong. He reaches the stranded crew nine hours before the maths says is possible, and three agencies' worth of horrified engineers spend a decade renaming the manoeuvre after him while he insists, in every debrief, that he flew it by feel. The textbook diagram includes, at his request, a small drawing of a goose."},
+});
+
+/* ---- THE NIGHT: the blood bank, pest control, the long contract ---- */
+
+Object.assign(NODES, {
+  nt33:{age:33, text:"Nine years on nights, and he knows the rules: deliveries are never signed for, the fridge marked B is not opened, and Mr Sallow, who runs the bank, casts no reflection in the foyer glass and has, frankly, extraordinary skin. Tonight a woman with a steel case introduces herself as pest control.",
+    choices:[{l:"Tell her everything", to:"nt42hunt"},{l:"Warn Mr Sallow", to:"nt42cover"},
+      {l:"Ask Mr Sallow about his skincare routine", to:"night_skincare", gate:{d:"wonder", r:2}}]},
+  nt42hunt:{age:42, text:"Alice Hardy hunts the old ones the way other people fix boilers: vans, invoices, no drama. Nine years as her local man - holy water in washer-fluid bottles, receipts in triplicate - and now head office offers to make it official: a partnership, or she goes north alone after something big.",
+    choices:[{l:"Partner. Hardy & Him", to:"nt55firm"},{l:"Mind the town while she goes", to:"nt55town"}]},
+  nt55firm:{age:55, text:"The thing under the viaduct is older than the town and has eaten politely for a century: one commuter a year, always somebody unmourned. It offers terms - it stops, permanently, if the firm retires. Alice's way is fire, and no guarantees.",
+    choices:[{l:"Take the deal", to:"nt68deal"},{l:"Fire", to:"nt68fire"}]},
+  nt68deal:{age:68, text:"Thirteen quiet years of retirement, and every anniversary a card: STILL PECKISH. REGARDS. This year, no card.",
+    choices:[{l:"Go and check, old as they are", to:"night_lastjob"},{l:"Let the young firm handle it", to:"night_pension"}]},
+  nt68fire:{age:68, text:"The burn works. Its last reach catches Alice: a wound that will not close, only slow. The old books offer one treatment, and Mr Sallow, retired now, still has the teeth for it.",
+    choices:[{l:"Ask Sallow to turn her", to:"night_turned"},{l:"Hold her hand through the year she has", to:"night_year"}]},
+  nt55town:{age:55, text:"She goes north and the postcards stop in the second winter. Meanwhile the town's quiet arrangement is fraying: the bank keeps the peace by keeping the old ones fed, and the new hospital trust wants the building for a car park.",
+    choices:[{l:"Defend the blood bank", to:"nt68bank"},{l:"Go north and find her", to:"nt68north"}]},
+  nt68bank:{age:68, text:"He wins - four planning committees, ninety-one objections, one unexplained fainting of a quantity surveyor. Mr Sallow, grateful, offers what he offers once a century: the long contract, and everything that comes with it.",
+    choices:[{l:"Sign the long contract", to:"night_contract"},{l:"Decline. Somebody should retire", to:"night_daylight"}]},
+  nt68north:{age:68, text:"North is further than the map said. He finds Alice at seventy, still hunting the one that took her sister in 1963 - old now, tired, and writing to her twice a year offering to surrender, if she will let it see the sea one last time.",
+    choices:[{l:"Help her kill it", to:"night_whitewhale"},{l:"Talk her into the surrender", to:"night_surrender"}]},
+  nt42cover:{age:42, text:"He warns Mr Sallow, who says thank you, twice, which those who know him agree is unprecedented. Alice's van leaves town empty. After that the ledgers open to him - names, dates, arrangements back to the plague years - and a salary with a silence built in.",
+    choices:[{l:"Keep the books, keep quiet", to:"nt55books"},{l:"Sell names to both sides", to:"nt55double"}]},
+  nt55books:{age:55, text:"Twenty years the night economy's book-keeper: discreet, indispensable, paid in property. Now Mr Sallow announces his retirement - even the old ones get tired - and names him to run the bank, the first living manager in four centuries. Mosskin, who has waited two hundred years, is not pleased.",
+    choices:[{l:"Take the bank", to:"nt68manager"},{l:"Step aside for Mosskin", to:"nt68mosskin"}]},
+  nt68manager:{age:68, text:"The bank under him is efficient, profitable, and colder than he meant it to be; he understands now why the old ones drink. His heart has begun keeping approximate time, and the board notes, respectfully, that management could be continued. Indefinitely.",
+    choices:[{l:"Continue", to:"night_forever"},{l:"End on time", to:"night_ontime"}]},
+  nt68mosskin:{age:68, text:"Mosskin, patient two hundred years, is patient no longer, and grateful in the old style: the retirement gift is one question, answered truly, by the oldest thing in the county.",
+    choices:[{l:"Ask what happens after", to:"night_answer"},{l:"Ask nothing. Shake its hand", to:"night_handshake"}]},
+  nt55double:{age:55, text:"Ten years selling names both ways: hunters get the feral ones, Sallow gets the careless hunters, and he gets paid twice for the same address. Then Alice comes back to town carrying a list of every tip-off ever sold. It is in his handwriting.",
+    choices:[{l:"Run, with the money", to:"nt68run"},{l:"Sit down and confess", to:"nt68sit"}]},
+  nt68run:{age:68, text:"The money runs to a warm coast where nothing old ever settles, and he is tanned, comfortable, and checks the shadows of strangers out of a habit he will never lose. Then one letter, forwarded four times: COME AND SAY IT TO MY FACE.",
+    choices:[{l:"Go", to:"night_face"},{l:"Burn the letter", to:"night_burn"}]},
+  nt68sit:{age:68, text:"He confesses the lot, and Alice - fair to the end - turns him over to both jurisdictions and lets him choose which sentence to serve first, knowing he will only live to serve one.",
+    choices:[{l:"The old ones' sentence", to:"night_sentence"},{l:"The human courts", to:"night_fraud"}]},
+});
+
+Object.assign(ENDINGS, {
+  night_lastjob:{t:"THE LAST CALL-OUT", e:"IT JUST WANTED SOMEONE TO SIT WITH.", s:[4,3,0],
+    sum:"Two pensioners, one van, the old viaduct. It had kept the deal to the letter; it simply hadn't wanted to say the other thing in writing. They sit with it until dawn, which is all it asked, and walk out older and lighter. The last card arrives a week later, posted before: THANK YOU. NOTHING OWING. They frame it over the fireplace, and tell visitors it's from a satisfied customer."},
+  night_pension:{t:"HARDY & PARTNER, RETIRED", e:"RETIRED. MOSTLY.", s:[3,3,1],
+    sum:"They send the young firm and stay home, which is what retired means, and consult by telephone from twin deckchairs, which is what mostly means. The apprentice rings every Friday, the washing line is rigged with holy water, and once a year something old and courteous leaves parsnips on the step. Nobody in the trade ever quite believes they've stopped, correctly."},
+  night_turned:{t:"WHAT HE ASKED FOR HER", e:"HE COULDN'T LOSE HER. SO HE DID.", s:[1,1,1],
+    sum:"She was unconscious, so he answered for her, and Sallow - who warned him twice - did it kindly. Alice wakes cured, changed, and cold about one thing only: it was hers to refuse. She works the continent's night cities for sixty years and sends unsigned postcards, each one a small forgiveness that never quite completes. He grows old at the window, leaving it unlatched, just in case."},
+  night_year:{t:"HARDY'S, HOW CAN WE HELP", e:"HARDY'S. HOW CAN WE HELP.", s:[3,4,0],
+    sum:"The year she has, they spend closing every open file in the cabinet: eleven hauntings, two nests, one apology owed since 1971. She dies at dawn on the morning the last file closes, on time, like an invoice. He keeps the office phone connected for thirty years and answers it the same way every night, and the town's strange things learn to ring first and behave, mostly."},
+  night_contract:{t:"THE LONG CONTRACT", e:"PERMANENT STAFF.", s:[2,3,3],
+    sum:"He signs, and the small print is exactly as advertised: the thirst is manageable, the board meetings are not. Three centuries of night administration stretch ahead like a well-lit corridor, and he is good at it, which is the trouble. Every fifty years he takes one evening off, walks to the pond at the end of a garden that is no longer there, and stands where the water was."},
+  night_daylight:{t:"THE DAY MAN", e:"TRUSTED BY BOTH SIDES OF MIDNIGHT.", s:[4,4,0],
+    sum:"He declines forever politely, and spends forty mortal years as the night economy's daylight face: signing for deliveries, calming planning officers, standing best man at weddings where half the party casts no reflection. He dies old and much visited, and the funeral is held, by unanimous request, at midnight - the church full, the candles lit, and every umbrella in the county on standby for dawn."},
+  night_whitewhale:{t:"THE OLD FEUD", e:"THEY GOT IT. IT GOT THEM FIRST, YEARS AGO.", s:[2,2,0],
+    sum:"Three more years of pursuit, and they finish it on a beach at dawn, by the book, ash on the tide. Victory tastes of salt and nothing much. Her sister stays exactly as gone as before, which is the lesson revenge always teaches and nobody ever books in advance. They marry anyway, two retired hunters comparing scars, kind to each other in the way of people who have both lost the same war."},
+  night_surrender:{t:"THE SEA AT LAST", e:"EVEN THE OLD ONES GET TIRED.", s:[4,3,0],
+    sum:"He talks her into terms, and at dawn the three of them stand on the wet sand while it takes its coat off, thanks her - by her sister's name, gently, getting it right - and walks into the sunrise sea like a man going home. Alice weeps for everything at once. They retire to that coast, and every year on the morning, the tide leaves the sand printed with footprints going out."},
+  night_forever:{t:"MANAGEMENT, IN PERPETUITY", e:"THE BANK ALWAYS NEEDS HIM.", s:[1,2,5],
+    sum:"He continues. The bank prospers under him for two hundred years and counting: mergers, centuries, quarterly forever. The thirst is nothing; the appetite for the numbers is the thing that owns him now, and he knows it the way a man knows the door he didn't take. Every keeper of the accounts before him lasted a century then walked into the sun. He has begun, lately, to admire their nerve."},
+  night_ontime:{t:"DIED ON TIME", e:"THE ONLY MANAGER WHO EVER LEFT.", s:[3,3,2],
+    sum:"He declines in writing, retires at seventy-two, and dies at seventy-four in an armchair, mortal as a bus timetable. The funeral is at midnight and the turnout unprecedented: every old thing in six counties, baffled and moved, come to look at the man who was offered forever and preferred an ending. Mosskin gives the eulogy. It is four minutes long and has been quoted at night funerals ever since."},
+  night_answer:{t:"THE ANSWER", e:"HE KNEW SOMETHING.", s:[3,2,1],
+    sum:"He asks what happens after, and the oldest thing in the county tells him, plainly, the way you'd give directions. He never repeats it. He simply stops hurrying, permanently, in a way doctors find suspicious and vicars find annoying. Twenty unbothered years. His last words, said with the tone of a man finally getting a joke: oh - THAT'S why. The vicar has never forgiven him."},
+  night_handshake:{t:"THE HANDSHAKE", e:"HE DIDN'T NEED TO KNOW.", s:[4,3,1],
+    sum:"He shakes its hand instead, which no one has thought to do in nine hundred years, and the old ones conclude he is the most sensible human on record. Retirement is quiet and well-attended: midnight callers with card games and centuries of gossip, parsnips on the step, a standing invitation he never uses and treasures anyway. He dies mid-hand, holding, the visitors swear, absolutely nothing worth having."},
+  night_face:{t:"A COMPLETE ACCOUNT", e:"IN THE END, A COMPLETE ACCOUNT.", s:[2,3,0],
+    sum:"He goes, and says it to her face at a hospice window, all of it, both ledgers. Alice, dying, makes him write it down - every name, every price - and posts copies to the young firms of both trades before she lets him say sorry. He spends his last years testifying to tribunals mortal and otherwise, the only man ever subpoenaed by candlelight. It is not forgiveness. It is better bookkeeping, which from her was the same thing."},
+  night_burn:{t:"THE TAN", e:"NO REFLECTION EITHER, IN THE END.", s:[1,0,5],
+    sum:"He burns the letter and keeps the coast, the villa, the tan. It is a long, warm, well-fed thirty years, and at the end of it the funeral is attended by a lawyer, a housekeeper paid to the hour, and nobody else. The local paper misspells his name. One wreath arrives unsigned, from something old that remembered him fondly - which is, all things considered, the worst part."},
+  night_sentence:{t:"A CENTURY OF SMALL HOURS", e:"DEBT PAID, WITH INTEREST.", s:[2,4,0],
+    sum:"The old ones' court sentences him to the bank: night porter, unpaid, until the debt sleeps. He serves thirty years of small hours - polite to every monster, punctual as frost - and somewhere in the middle it stops being punishment and becomes, embarrassingly, a calling. The night he dies, the doors bolt themselves at dusk and will not open, and the bank, for one night in its long history, closes out of respect."},
+  night_fraud:{t:"TWENTY-SIX COUNTS", e:"THE NOVELS WERE NON-FICTION.", s:[3,1,1],
+    sum:"The human courts manage fraud, false invoicing and one count of impersonating a pest controller, and the gothic career ends in the most ordinary prison in England. His cellmate doesn't believe a word, so he writes it all down as fiction: eleven novels from cell D14, beloved, bestselling, and reviewed everywhere as wildly overimaginative. Every word is true. The royalties go to Alice's firm, anonymously, forever."},
+  night_skincare:{t:"SKINCARE ROUTINE, ETERNAL", e:"STAKED, RELIEVED.", s:[2,1,4],
+    sum:"He asks, and Mr Sallow, delighted - nobody ever asks - answers at length, over centuries. Compound interest is astonishing when you have forever; so is boredom. Alice hunts him for forty years with increasing professionalism, and he finds he looks forward to her visits like birthdays. Eventually he leaves the crypt door unlocked. She does it kindly, as a colleague, and keeps his skincare notes."},
+});
+
+/* ---- THE LADDER: Hargreaves, the envelopes, the painted pension ---- */
+
+Object.assign(NODES, {
+  ld33:{age:33, text:"Hargreaves presents his work to the board. He does it well, actually.",
+    choices:[{l:"Say nothing", to:"ld42quiet"},{l:"Say everything", to:"ld42loud"},
+      {l:"Do nothing. Sometimes for years", to:"ladder_longgame", gate:{d:"calm", r:3}}]},
+  ld42quiet:{age:42, text:"Ten years of saying nothing have been noticed and rewarded: Hargreaves's protégé, corner-adjacent office, a mortgage with a gym in it. Now the merger's due diligence has found what he found years ago - the pension fund is a painting of a pension fund.",
+    choices:[{l:"Keep it painted", to:"ld55paint"},{l:"Take it to the regulator", to:"ld55whistle"}]},
+  ld55paint:{age:55, text:"Chairman-in-waiting at fifty-five, sleeping four chemical hours a night, reading market reports at Mum's kitchen table on Christmas morning. She takes the report out of his hands and asks her only question: is it making him happy. The honest window is about four seconds.",
+    choices:[{l:"Lie to Mum", to:"ld68top"},{l:"Use the four seconds", to:"ld68honest"}]},
+  ld68top:{age:68, text:"Chairman at fifty-nine. The envelopes are couriered now, the marriage is a calendar entry, and the firm names the atrium after him while he can still attend. The doctor is direct: the heart has eighteen months of this in it, and the board would prefer a succession plan to a survivor.",
+    choices:[{l:"Die at the desk", to:"ladder_atrium"},{l:"Eighteen months of living instead", to:"ladder_eighteen"}]},
+  ld68honest:{age:68, text:"He says no, out loud, in his mother's kitchen, and the word works like a fire door. Stepping down costs him the chairmanship; the envelopes cost one grim quiet year that nobody at the firm ever hears about. At sixty-eight, two invitations: the business school, or Alice Hardy's scrappy firm, which needs a middle manager who has seen the whole mountain.",
+    choices:[{l:"Teach what it cost", to:"ladder_professor"},{l:"A team of nine and home by five", to:"ladder_middle"}]},
+  ld55whistle:{age:55, text:"He takes the painting to the regulator at fifty-one, the age at which men are most expensive to believe. The lawyers call it a misunderstanding; his badge stops working during lunch; Hargreaves, wounded, gives interviews about loyalty.",
+    choices:[{l:"Testify, full glare", to:"ld68testify"},{l:"Settle, sign the silence", to:"ld68settle"}]},
+  ld68testify:{age:68, text:"Three years of tribunals, and he wins nearly everything: the fund restored, eleven thousand pensions real again, and himself unemployable within two hundred miles. The pensioners' association, average age eighty-one, offers him a job running their office, above a bakery in Rotherham.",
+    choices:[{l:"The office above the bakery", to:"ladder_bakery"},{l:"Write the book instead", to:"ladder_book"}]},
+  ld68settle:{age:68, text:"The settlement is generous the way a muzzle is generous: silent by contract, rich enough to hear the silence at night. The case collapsed without him, and the fund quietly refilled anyway - Hargreaves, spooked, made it real to make it boring. The shareholders' meeting is Tuesday, and NDAs have acoustics there.",
+    choices:[{l:"Keep the deal", to:"ladder_silence"},{l:"Point of order", to:"ladder_break"}]},
+  ld42loud:{age:42, text:"He says everything, in the meeting, with slides. It is career suicide, beautifully formatted: fired by Friday, blacklisted by June. In July, Alice Hardy - two years above him at school, now running a rival from a unit over a tyre depot - offers him a desk and no promises.",
+    choices:[{l:"Join Alice's firm", to:"ld55rival"},{l:"Start his own, spite-shaped", to:"ld55own"}]},
+  ld55rival:{age:55, text:"Fifteen honest years, and the tyre-depot firm is eating Berrings alive. Alice, CEO, hands him the decision she says he has earned: Berrings, wounded, can be bought - staff, pension hole, Hargreaves and all.",
+    choices:[{l:"Buy it. Fix it", to:"ld68buy"},{l:"Let the market have it", to:"ld68let"}]},
+  ld68buy:{age:68, text:"The takeover lands him in his old building as the new management. Hargreaves, sixty-eight now and small behind an enormous desk, is on the redundancy list in front of him, alphabetical, nothing personal.",
+    choices:[{l:"Retire him with full honours", to:"ladder_honours"},{l:"Offer him a junior desk", to:"ladder_juniordesk"}]},
+  ld68let:{age:68, text:"Berrings dies in the market with eleven thousand pensions in the rubble, and the win tastes of carpet. Alice runs the rescue sums twice and hands them over: her firm can absorb the staff, or the pension fund. Not both.",
+    choices:[{l:"Save the staff", to:"ladder_staff"},{l:"Save the pensions", to:"ladder_pensions"}]},
+  ld55own:{age:55, text:"The spite startup sells one product - the thing Hargreaves stole, done properly - and it works embarrassingly well. At fifty-five, rich and vindicated, he stands at his own summer party and hears his young head of product presenting a junior's work as his own.",
+    choices:[{l:"Say nothing. It's how business works", to:"ld68mirror"},{l:"Stop the room. Credit the junior", to:"ld68credit"}]},
+  ld68mirror:{age:68, text:"The nothing compounds: the head of product rises on borrowed work, the juniors learn the real syllabus, and the firm built out of being robbed becomes a machine for robbery with better branding. His own face smiles from the recruitment page.",
+    choices:[{l:"Take the money and sail", to:"ladder_exit"},{l:"Tear it out from the chairman's seat", to:"ladder_teardown"}]},
+  ld68credit:{age:68, text:"He stops the room mid-slide and hands the deck to the junior whose work it is; the head of product resigns by text before pudding. The story does the rounds, and every ambitious thief in the industry quietly crosses the firm off their list, which proves to be the finest hiring filter ever built.",
+    choices:[{l:"Hand her the firm, retire", to:"ladder_handover"},{l:"One last buy: Berrings, and the old floor", to:"ladder_return"}]},
+});
+
+Object.assign(ENDINGS, {
+  ladder_atrium:{t:"THE ATRIUM", e:"HE WAS VERY PRODUCTIVE.", s:[1,1,5],
+    sum:"They named the atrium after him while he could still attend, and he died above it four years later, at the desk, at night, mid-forecast. Hargreaves retired rich and outlived him, which was not the plan. The peanut is still in the desk drawer, unsaved. Nobody comes up to the top floor unless they have a meeting, and nobody ever has a meeting there now."},
+  ladder_eighteen:{t:"EIGHTEEN MONTHS", e:"RESIGNED, EFFECTIVE IMMEDIATELY.", s:[4,2,4],
+    sum:"He resigns live on the results call, mid-sentence, with a small laugh the analysts replay for years. The eighteen months hold twenty: grandchildren's names learned properly, cold-water swimming, one enormous dog. His resting pulse and the firm's share price pass each other going opposite directions, and he sends the doctor a postcard from month twenty that says, in full: STILL HERE."},
+  ladder_professor:{t:"THE GUEST LECTURE", e:"ASK HIM WHAT IT COST.", s:[3,4,1],
+    sum:"The business school gives him one slot a term, and the lecture - What The Envelopes Cost - becomes the only one nobody skips. No slides: a man at a lectern itemising his own decade like an expenses claim. Twice a year, someone in the third row quietly cancels a Monday meeting that would have gone a different way, which is more than most professorships ever move."},
+  ladder_middle:{t:"MIDDLE MANAGEMENT", e:"HE LEFT AT FIVE.", s:[4,2,2],
+    sum:"A team of nine at Alice's firm, and he is the most dangerous man in the building, because he has already had everything and cannot be threatened with any of it. He blocks nonsense upward, absorbs blame downward, leaves at five, and coaches the under-elevens. Three of his nine end up running companies, and all three ring him first when it gets loud."},
+  ladder_bakery:{t:"THE OFFICE ABOVE THE BAKERY", e:"ELEVEN THOUSAND AND COUNTING.", s:[4,5,0],
+    sum:"Twenty years above the bakery, chasing stolen pensions for anyone who writes in, paid in bus-pass money and warm loaves. The wall holds four hundred thank-you letters and one framed writ he considers a compliment. He dies at his desk like a chairman, smelling of bread, mid-letter to a fund manager who is, the letter notes, about to have a very bad month."},
+  ladder_book:{t:"FULL DISCLOSURE", e:"NAMES NAMED, INCLUDING HIS OWN.", s:[3,3,2],
+    sum:"The book names everyone, and the chapter that costs him the libel cases is the one about himself: what he knew at thirty-three, and the decade he spent knowing it. Hargreaves sues, wins a comma, loses the point. The paperback goes on the reading list of every accountancy course in the country - always the same chapter, always his own."},
+  ladder_silence:{t:"TERMS AGREED", e:"HE COULD HAVE SAID. HE DIDN'T.", s:[2,1,4],
+    sum:"He keeps the deal. The money is real: fees paid, weddings funded, a lake view. The silence is real too, and it sits with him at every one of those weddings like an uninvited plus-one. At his funeral, six pensioners attend uninvited, having long since worked out exactly what his settlement bought and what it cost them. They are perfectly polite. That is the eulogy."},
+  ladder_break:{t:"POINT OF ORDER", e:"POINT OF ORDER.", s:[3,4,0],
+    sum:"Year twelve, agenda item nine, he stands up with the folder and reads all of it into the minutes, which are privileged, which his lawyer confirmed by midnight text the night before. The clawback takes every penny of the settlement. The pensioners pay his costs by whip-round - thirty thousand, mostly in coins and stamps - and the cheque presentation photo hangs in eleven working men's clubs."},
+  ladder_honours:{t:"FULL HONOURS", e:"HE COULD AFFORD IT, IN EVERY SENSE.", s:[4,4,2],
+    sum:"He retires the man who robbed him with a speech, a pension, and a clock, and watches thirty years of armour fall off Hargreaves in a car park in front of the bins. The firm digests Berrings without a single tribunal. Hargreaves writes to him every Christmas until he dies - long, unnecessary, increasingly honest letters - and he answers every one, which is the actual honour."},
+  ladder_juniordesk:{t:"THE JUNIOR DESK", e:"BEST HIRE HE EVER MADE.", s:[3,3,3],
+    sum:"Hargreaves at sixty-eight, at a junior desk, turns out to be brilliant when he isn't stealing: patient, exact, savage in a good cause. The two of them become the firm's strangest and best double act, and nobody under forty believes the history. Hargreaves dies at seventy-nine, a proud employee of the man he wronged, and leaves him, in the will, one apology, notarised."},
+  ladder_staff:{t:"EVERYBODY IN", e:"ROOM WAS MADE.", s:[3,4,1],
+    sum:"Nine hundred people, including four who once cleared his desk into a bin bag, absorbed in one impossible quarter: desks in corridors, payroll by heroism, the tyre depot's kettle running like a power station. The pension scandal follows Hargreaves to court instead, where it belongs. Canteen legend says the boss knows every name of the nine hundred. Canteen legend is right."},
+  ladder_pensions:{t:"THE FUND", e:"THE MATHS WAS THE KIND PART.", s:[2,4,1],
+    sum:"He saves the pensions and watches nine hundred people carry boxes into the rain, some of them twice in one career because of the same rotten fund. The arithmetic was right; he checks it for the rest of his life anyway. Every Friday for eleven years he is at the job club with a contacts book, quietly, until the last name on his list is placed. Then he stops going, and misses it."},
+  ladder_exit:{t:"FOUNDER EMERITUS", e:"IT'S HOW BUSINESS WORKS.", s:[1,0,5],
+    sum:"He sails, literally: a boat with a crew, a face on a recruitment page, a fortune with his name on it and a culture with his fingerprints on it. Young people he has never met repeat his sayings stripped of everything he meant. Some nights, moored somewhere warm, he dreams of a pond exactly one boy deep, and wakes unable to say which choice he is regretting, which is all of them."},
+  ladder_teardown:{t:"THE MEMO", e:"READ THE MEMO.", s:[3,4,1],
+    sum:"Fourteen pages, circulated to all staff, titled We Are Hargreaves Now. He fires his best earner, promotes the robbed, and puts juniors' names first on everything, and profits dip for exactly nine quarters while the industry watches with popcorn. Then the graduates start choosing them first. The memo is taught now. He is the only chairman in history whose masterpiece is an apology."},
+  ladder_handover:{t:"THE DECK PASSES", e:"CREDIT WHERE DUE.", s:[4,4,2],
+    sum:"He hands the firm to the junior whose deck he rescued, and she is better than him within five years, which he announces annually with the satisfaction of a gardener. Retirement is a shed, a wood lathe, and a phone that mostly doesn't ring because things mostly work. At her first results day she ends the call the way he ended his last one: crediting, by name, someone two floors down."},
+  ladder_return:{t:"A JUNIOR SAT HERE", e:"A JUNIOR SAT HERE.", s:[3,3,4],
+    sum:"His last acquisition is Berrings itself, bought old and cheap, walked through slowly, floor by floor, alone, one Sunday. The desk he sat at when he was thirty-three is still there. He has it moved to the lobby and bolted down, with a plaque - A JUNIOR SAT HERE. LISTEN TO THEM. - and a rule that every board meeting starts beside it, standing. The building is worth less than the plaque."},
+  ladder_longgame:{t:"THE LONG GAME", e:"HE WAS PLAYING A DIFFERENT GAME.", s:[3,3,5],
+    sum:"He says nothing for forty years, on purpose, with a patience that unnerves lie detectors. Hargreaves rises, plateaus, shrinks, retires, dies; four chairmen come and go like weather. He is appointed at seventy, geologically inevitable, and spends one glorious year fixing everything he spent four decades watching break, from notes. Then he retires. The peanut was in the drawer the whole time, saved."},
+});
+
+/* ---- THE KNIFE: the Chairman, Perry, the ledger, the van ---- */
+
+Object.assign(NODES, {
+  kn33:{age:33, text:"Nine years driving, never once asking, and the Chairman has noticed both. The promotion is real money and a real desk - and Mum, who stopped asking what he does, has started setting his place at the table the way you set one for someone visiting from prison.",
+    choices:[{l:"Take the desk upstairs", to:"kn42in"},{l:"Stay just the driver", to:"kn42edge"}]},
+  kn42in:{age:42, text:"The desk teaches him the whole shape of it: the laundries, the councillors, the quiet dock. Then Perry - the nervous, friendly accountant who supports a hopeless football club - starts talking to someone, and the Chairman asks him, without adjectives, to make the problem disappear.",
+    choices:[{l:"Make it disappear", to:"kn55murder"},{l:"Warn Perry to run", to:"kn55warn"}]},
+  kn55murder:{age:55, text:"Perry disappears. He was thorough, so it holds; he is human, so it doesn't. Thirteen years on, the firm is half his, Perry's hopeless football club got a mysterious new stand, and a detective inspector called Hardy has started attending his charity dinners, smiling.",
+    choices:[{l:"Keep her close", to:"kn68charm"},{l:"Prepare the long exit", to:"kn68exit"},
+      {l:"Turn himself in tomorrow, no deals", to:"knife_alldays", gate:{d:"grit", r:2}}]},
+  kn68charm:{age:68, text:"Two years of dinners, and Alice Hardy is the best company he has ever kept, which is the cruellest thing the job has ever done to him: she is here for Perry, and he knows, and she knows he knows. The night the warrant is signed - he can tell from her shoulders - she gives him one clean hour, for reasons she never files.",
+    choices:[{l:"Run", to:"knife_run"},{l:"Stay. Pour two glasses. Tell it all", to:"knife_glasses"}]},
+  kn68exit:{age:68, text:"The exit is Swiss and perfect: clean money, new name, a vineyard. Then, on the last morning, Danny - who laundered exactly one envelope in his life, once, as a favour - is arrested as the firm's fall guy, and the Chairman's message reaches the airport before he does: brothers happen.",
+    choices:[{l:"Take the fall himself", to:"knife_swap"},{l:"Let Danny take it. Fly", to:"knife_vineyard"}]},
+  kn55warn:{age:55, text:"Perry runs - family, season ticket and all - on a warning that could only have come from one desk. The Chairman's arithmetic is slow but exact, and eleven months later the invitation arrives: a drive to the coast, just the two of them, like the old days.",
+    choices:[{l:"Get in the car", to:"kn68car"},{l:"Go to Alice Hardy first", to:"kn68alice"}]},
+  kn68car:{age:68, text:"The drive is quiet. At the sea wall the Chairman, old now, asks his one question - would he do it again, knowing - and, hearing yes, makes the old kind of offer: the firm after him, to run as he sees fit, or his life and nothing else, starting from this beach.",
+    choices:[{l:"Take the firm", to:"knife_heir"},{l:"Take the beach", to:"knife_walk"}]},
+  kn68alice:{age:68, text:"Detective Inspector Hardy reads his statement twice and gives it to him straight: witness protection is real, and so is the price - Mum, Danny, the town, every face he knows, permanently, tonight.",
+    choices:[{l:"Testify. Vanish", to:"knife_witness"},{l:"Withdraw it. Take his chances", to:"knife_chances"}]},
+  kn42edge:{age:42, text:"Twenty years just the driver: eyes front, radio low, the safest hands in an unsafe trade. Now the Chairman is old, the nephews are coming up modern and careless, and the firm is about to get much worse.",
+    choices:[{l:"Retire out clean", to:"kn55out"},{l:"One last drive: the retirement plan", to:"kn55lastjob"}]},
+  kn55out:{age:55, text:"Out is a small word for it: a taxi licence, a flat over the rank, and the trade's long memory idling outside at closing time. The nephews' new firm wants the one thing he still owns - the routes in his head - and Alice Hardy wants the same thing for the other side.",
+    choices:[{l:"Give the routes to Alice", to:"kn68routes"},{l:"Give nothing to nobody", to:"kn68nothing"}]},
+  kn68routes:{age:68, text:"The routes convict half the new firm, and the other half knows a taxi when it sees one. Alice offers him the programme, a new name, distance. He is seventy-one and tired of new names for things.",
+    choices:[{l:"Move somewhere green", to:"knife_green"},{l:"Stay on the rank, visible", to:"knife_rank"}]},
+  kn68nothing:{age:68, text:"He gives nothing to nobody, which both sides mistake for a side. The nephews burn the rank on a Tuesday; Alice arrests them by Friday; and the town, counting one gutted taxi and no cooperative witnesses in any direction, concludes he is either the most dangerous man in it or the most honest.",
+    choices:[{l:"Rebuild the rank", to:"knife_rebuild"},{l:"Danny's spare room. Let it all go", to:"knife_spare"}]},
+  kn55lastjob:{age:55, text:"The retirement plan is a van, a ferry booking, and the Chairman's whole quiet fortune in bearer bonds, driven to the coast by the only man he trusts. Halfway there, the radio says the Chairman died an hour ago in his chair. Two living people know what is in the van, and the other one is the widow.",
+    choices:[{l:"Deliver it to the widow", to:"kn68widow"},{l:"The van keeps driving", to:"kn68keep"}]},
+  kn68widow:{age:68, text:"The widow counts it twice, all of it, across the kind of kitchen the money never reached. Then she hands over the envelope the Chairman left with his name on it. Not money: the ledger, and one line - BURN IT OR USE IT. HE'LL KNOW WHICH HE IS.",
+    choices:[{l:"Burn it", to:"knife_burn"},{l:"Use it", to:"knife_use"}]},
+  kn68keep:{age:68, text:"France is easy with a van full of someone else's fortune, and the villa is magnificent. Then the Christmas card arrives, at an address he never gave a living soul: WE KNOW WHERE YOU PARKED IT. HAPPY CHRISTMAS. NOTHING OWING.",
+    choices:[{l:"Drive it all back", to:"knife_prodigal"},{l:"Keep it. Live watched", to:"knife_watched"}]},
+});
+
+Object.assign(ENDINGS, {
+  knife_run:{t:"THE HOUR", e:"HE TOOK THE HOUR.", s:[1,0,3],
+    sum:"He takes the hour and it lasts thirty years, in a country with no treaty and good weather, checking door handles until the day he dies. The football club receives an anonymous donation every August, exact and regular as grief. Alice retires with one unsolved case and never tells anyone that she solved it at a dinner table years ago, over the fish, and let it go."},
+  knife_glasses:{t:"TWO GLASSES", e:"HE POURED, AND TOLD IT ALL.", s:[2,3,0],
+    sum:"He stays, pours two glasses, and gives her everything: the how, the why, and the where, which is the part Perry's family has needed for thirteen years. The trial is short. Perry's widow gets a grave to visit; the hopeless club observes a minute's silence for its accountant at last. Alice visits the prison twice a year until the end. Neither glass, that first night, was ever finished."},
+  knife_swap:{t:"BROTHERS HAPPEN", e:"BROTHERS HAPPEN.", s:[2,4,0],
+    sum:"He walks into the station with the ledger as dowry and trades himself for Danny before lunch. The Chairman's firm comes down around the trial like scaffolding in a gale. Twenty-two years: Danny visits every month with Mum's parkin and increasingly good chess, and never once asks why, because he worked it out on the first drive home, and had to park twice to see the road."},
+  knife_vineyard:{t:"THE VINEYARD", e:"HE DRANK HIS OWN LABEL.", s:[1,0,5],
+    sum:"Danny serves nine years quietly, the way he does everything. The vineyard wins modest awards; the new name fits like good shoes; Mum dies believing her younger son travels for work. The only post he keeps is the card that comes the week Danny gets out: I KNOW. MUM DOESN'T. LEAVE IT THAT WAY. He is buried under the bought name, between strangers, in soil he owned and never once trusted."},
+  knife_heir:{t:"THE QUIET CHAIRMAN", e:"EVERYTHING ABOVE BOARD, EVENTUALLY.", s:[2,2,5],
+    sum:"He inherits the firm and spends twenty years winding it legitimate so slowly that nobody can name the year it happened: taxis, storage, actual laundry. Half the old faces despise him and none can say why out loud, which he counts as a management technique. He dies a legitimate businessman with a clean tax history, which was, he reflected near the end, the longest con either of them ever ran."},
+  knife_walk:{t:"THE SEA WALL", e:"HE WALKED BACK ALONG THE BEACH.", s:[3,1,0],
+    sum:"He takes the beach. Fifty-five, no pension, no firm, no enemies worth the petrol - a van-driving job, an allotment, a rented room that holds everything he owns with space left over. He sleeps like a child for the first time since he was one. Sometimes a long car slows beside him on the front, respectfully, and moves on. He has stopped noticing, which is the whole of what he won."},
+  knife_witness:{t:"MR SOMEBODY ELSE", e:"HE MISSED EVERYONE, ALWAYS.", s:[2,4,1],
+    sum:"His evidence takes the Chairman and eleven others, and takes his own name with them. Thirty years as a mild man with a shallow past in a far town: quiz nights, a bowls club, a story that is two sentences deep. He watches Mum's funeral from a car across the cemetery, with a handler passing tissues. The town he saved never learns his name, which was, on the bad nights, the entire point."},
+  knife_chances:{t:"LOCAL BUSINESSMAN, 61", e:"NOBODY SAW ANYTHING.", s:[1,1,2],
+    sum:"He withdraws the statement and gets fifteen good years for it: a chip shop with Danny, cricket teas, a van at the harbour. Then one ordinary Thursday morning the long car finally stops. The town gives evidence with one voice: nobody saw anything, nobody knows anything - which is not fear, Alice understands, reading the transcripts. It is the town closing around one of its own, too late."},
+  knife_green:{t:"GOOD SIGHTLINES", e:"GOOD SIGHTLINES, AT LAST.", s:[3,2,1],
+    sum:"Somewhere green, with a long drive and a hedge maze he plants half for fun and half from professional habit. He grows plums, wins a village show, and is adored by neighbours who believe he was in haulage, which is, he points out to himself, technically true. Alice visits once a year, retired now, for chess and news of the old faces, and they never once say any of it out loud."},
+  knife_rank:{t:"FIRST ON THE RANK", e:"EVERYONE KNEW HIS CAB.", s:[3,4,0],
+    sum:"He stays visible on purpose: first taxi on the rank for twenty more years, nurses ride free on nights, and every fare gets there by the route the meter likes least. The new firms never touch him - too many people watching, and all of them watching deliberately. His funeral cortege is a procession of taxis a mile long, meters off, and the rank stands empty for one hour, by agreement."},
+  knife_rebuild:{t:"NEUTRAL GROUND", e:"NEUTRAL GROUND.", s:[3,3,1],
+    sum:"He rebuilds the rank in brick, with a kettle, and runs it for twenty years as the one square of the town where everything gets left outside. Coppers and old faces queue for the same cabs, in the same rain, under a sign he paints himself: EVERYBODY RIDES. When he dies, both trades attend the funeral in shifts they negotiate without being asked to, which is his actual monument."},
+  knife_spare:{t:"DANNY'S SPARE ROOM", e:"COMPLETELY FORGOTTEN, THANK GOD.", s:[3,2,0],
+    sum:"He lets it all go at seventy: Danny's spare room, the big chair by the window, the school run for Danny's grandchildren twice a week in a car nobody would look at twice. The trade forgets him completely within five years, which he discovers, to his enormous surprise, is the prize. His last decade contains crosswords, gravy, arguments about the bypass, and nothing else at all."},
+  knife_burn:{t:"THE FIRE AT THE ALLOTMENT", e:"HE KNEW WHICH HE WAS.", s:[4,3,0],
+    sum:"He burns it in the allotment brazier on a wet Sunday: forty careers of leverage, page by page, turning first-growth councillors and terrified magistrates into smoke over the runner beans. He tells nobody, ever, so nobody ever learns how briefly unsafe they all were. The widow sends him the Chairman's watch by registered post. It keeps perfect time and he wears it to funerals only."},
+  knife_use:{t:"THE LEDGER YEARS", e:"EVERYONE PAID ON TIME.", s:[2,1,4],
+    sum:"He never commits another crime; he simply invoices. A quiet word here, a pension contribution there, and the trade pays him a courteous percentage for thirty years to keep the ledger asleep. He calls it his annuity and gives half away anonymously, and the arithmetic never balances no matter how carefully he gives, and he knows exactly why, and keeps invoicing anyway."},
+  knife_prodigal:{t:"THE VAN COMES BACK", e:"RETURNED IN FULL, MINUS PETROL.", s:[3,2,0],
+    sum:"Four years of magnificent misery - it turns out he cannot enjoyably spend a stolen penny, which is a terrible thing to learn about yourself in a villa. He drives it all back, every bond, and the widow counts it twice, says nothing, and hires him as her driver, which is both the punchline and the mercy. He drives her to bingo every Thursday for fifteen years, and she never once tips."},
+  knife_watched:{t:"NOTHING OWING", e:"HAPPY CHRISTMAS. NOTHING OWING.", s:[2,0,5],
+    sum:"He keeps it, and the cards keep coming, one a year, always knowing slightly too much: the new car, the operation, the name of the dog. He never determines whether it is mercy or a leash, which is of course the design. He lives magnificently and sleeps in instalments, and is buried under the bought name with, per his will, a headstone facing the road, so he can see who's coming."},
+  knife_alldays:{t:"EVERY DAY OF IT", e:"EVERY DAY OF IT.", s:[3,4,0],
+    sum:"He walks in the next morning and pleads guilty to all of it, refusing every deal his silence could buy, naming no one but himself. Twenty-six years, served in full, out at eighty-one. He teaches reading inside for two decades. In year twenty, Perry's son - grown, married, needing it - visits to ask why, and the answer takes four hours, and the young man leaves lighter than he came."},
+});
+
+/* ---- THE KITCHEN: the shop, the brothers, Thursdays, the rule ---- */
+
+Object.assign(NODES, {
+  kt33:{age:33, text:"Two doors from Mum, three kids in four years, and Dad's old shop half his, half Danny's - the arrangement Dad thought would keep them close. Danny wants to borrow big: a second premises, his name over both doors. The books say maybe. His gut says no.",
+    choices:[{l:"Back Danny's expansion", to:"kt42expand"},{l:"Vote no, with the books", to:"kt42no"}]},
+  kt42expand:{age:42, text:"The expansion works for six giddy years, then eats itself: two shops, four staff, and the brothers not speaking over whose signature is on the second lease. At home, Alice has stopped asking about the shop, and the wedding photographer - who never really left town, or her orbit - develops her film for free now.",
+    choices:[{l:"Shut the second shop. Go home", to:"kt55home"},{l:"Fight Danny for the business", to:"kt55war"}]},
+  kt55home:{age:55, text:"The second shop goes, the debt stays, and the marriage - repaired slowly, at kitchen-table interest rates - holds. Then Danny's shop fails too, and at Mum's seventieth, in front of the trifle, he asks for the money the family has saved.",
+    choices:[{l:"Lend it, again", to:"kt68again"},{l:"No - and the whole why, at the table", to:"kt68table"}]},
+  kt68again:{age:68, text:"The loan vanishes the way the others did, and Danny with it: twenty years of silence with two streets between them, Mum carrying Sunday plates from one house to the other like a ceasefire. Then Danny calls. First time in twenty years. It rings and rings.",
+    choices:[{l:"Answer", to:"kitchen_answer"},{l:"Let it ring", to:"kitchen_ring"},
+      {l:"Go round instead. Knock", to:"kitchen_brothers", gate:{d:"heart", r:2}}]},
+  kt68table:{age:68, text:"The no stands for thirty years: Danny calls it war, Mum takes sides by refusing to, and the trifle is never spoken of. But the savings held - kids launched, roof sound, Venice at fifty as promised. Now Danny's daughter is at the door: her wedding needs its family whole, once.",
+    choices:[{l:"Go, and mend it there", to:"kitchen_wedding"},{l:"Send a gift and his regrets", to:"kitchen_regrets"}]},
+  kt55war:{age:55, text:"He wins the shops and loses the rest: Danny emigrates with a one-way ticket and a speech nobody films, Alice and the photographer are a town fact by Easter, and the divorce papers list, under irreconcilable, the single word: shops.",
+    choices:[{l:"The club. The chair. Company", to:"kt68drink"},{l:"Build the empire alone", to:"kt68empire"}]},
+  kt68drink:{age:68, text:"The club knows his chair. Somewhere between the third and the fourth he is charming; after the sixth, the kids stop bringing the grandchildren, and tell him why, kindly, twice a year, for a decade.",
+    choices:[{l:"The morning he pours it away", to:"kitchen_chip"},{l:"The chair keeps him", to:"kitchen_chair"}]},
+  kt68empire:{age:68, text:"Four shops become fourteen become a name on delivery vans. He owns half the streets Danny and Alice walked away from, and eats standing up in a show kitchen nobody cooks in. Now the photographer's retrospective opens in town: forty years of everyone's weddings. Including, famously, his.",
+    choices:[{l:"Go to the exhibition", to:"kitchen_photo"},{l:"Buy the building. Cancel it", to:"kitchen_cancel"}]},
+  kt42no:{age:42, text:"The no keeps the shop small and the brothers workable, and it is his own head that wanders: the new pharmacist does the crossword the same wrong way he does, and Thursdays have started mattering.",
+    choices:[{l:"Thursdays stop. Tell Alice everything", to:"kt55confess"},{l:"Thursdays continue", to:"kt55affair"}]},
+  kt55confess:{age:55, text:"The confession - of a thing that never quite happened, the hardest kind - bought a month of solo crosswords, then the rule that saved them: nothing unsaid at the table, ever. Thirteen years of the rule, and now Alice says her own unsaid thing: she never once liked this town, and there is a cottage by the sea in a savings book he has never seen.",
+    choices:[{l:"Sell up. The sea", to:"kt68seaside"},{l:"Not yet. The shop needs a year", to:"kt68wait"}]},
+  kt68seaside:{age:68, text:"A cottage with a ludicrous view; the shop sold to a man who repaints it wrong. The savings book's first entry turns out to be the week they married. And there is a second page: a list, in her hand, titled BEFORE WE GO - forty years of small wishes, numbered.",
+    choices:[{l:"Do the list, in order", to:"kitchen_list"},{l:"Burn the list. Just live", to:"kitchen_gulls"}]},
+  kt68wait:{age:68, text:"One more year turns out to be a coin with only one side: the shop needs him, then the daughter does, then his knees do. Alice turns seventy-five with the book unspent, and puts one last thing on the table, per the rule: she is going to the sea - with him, or first.",
+    choices:[{l:"Go now, mid-sentence", to:"kitchen_midsentence"},{l:"The year wins again", to:"kitchen_lastyear"}]},
+  kt55affair:{age:55, text:"Thursdays continue for three years, then surface the way these things do: a crossword in the wrong handwriting, folded into a coat pocket, found by Alice, in front of Mum.",
+    choices:[{l:"Beg to stay", to:"kt68beg"},{l:"Go to the pharmacist", to:"kt68go"}]},
+  kt68beg:{age:68, text:"She lets him stay, which is not the same as forgiveness: separate sides of everything for a decade, then a slow, unglamorous re-courtship conducted mostly through the washing-up rota. Now the ruby wedding looms, and the kids want to throw the works.",
+    choices:[{l:"The big party, and the speech he owes", to:"kitchen_ruby"},{l:"Renew the vows quietly, just them", to:"kitchen_vows"}]},
+  kt68go:{age:68, text:"He goes, and it is real - awkward, midlife, real - and costs the full town rate: the kids take years to visit, Mum sets his Sunday place anyway for the rest of her life, and Alice, at the one wedding they both attend, wishes him well and means it, which is worse.",
+    choices:[{l:"Build the second life properly", to:"kitchen_second"},{l:"It doesn't take. Go back and ask", to:"kitchen_back"}]},
+});
+
+Object.assign(ENDINGS, {
+  kitchen_answer:{t:"THE PHONE AT NINE O'CLOCK", e:"HE ANSWERED.", s:[4,4,0],
+    sum:"Danny, from a hospital corridor, frightened and sorry in no particular order. Three years is what they get, and they spend it like men who know the exchange rate: fishing badly, arguing about the bypass, repainting the shop sign with both names on it for no commercial reason whatsoever. At the funeral he tells the trifle story, and the whole church laughs, and Mum's photo on the coffin seems pleased."},
+  kitchen_ring:{t:"IT RANG AND RANG", e:"ONE MISSED CALL.", s:[1,2,1],
+    sum:"He lets it ring, on principle, and the principle keeps him company for six weeks, which is how long Danny had left. There is a voicemail. He never plays it. He keeps the phone in the dresser drawer, charged, for twenty years - through three house moves and two new phones of his own - and tells nobody why, and everybody knows why, and nobody in the family ever lets a phone ring out again."},
+  kitchen_brothers:{t:"BROTHERS", e:"TWO DOORS DOWN, IN THE END.", s:[5,4,0],
+    sum:"He puts the ringing phone in his pocket and walks the two streets, and Danny opens the door still holding his, mid-ring, and neither of them ever finds out what the call was going to say instead. Hospital, then remission, then eleven years neither brother was owed: fences fixed at midnight, one shared allotment, two old men outside the shop arguing about whose name goes first. Mum's plates stay home. Everyone comes to her."},
+  kitchen_wedding:{t:"THE TABLE PLAN", e:"SEATED TOGETHER, ON PURPOSE.", s:[4,3,1],
+    sum:"The niece's table plan is a declaration of war disguised as stationery: the two old men, side by side, no exits. Soup is silent. The main course produces one sentence each. Then somebody's toddler detonates the profiterole tower over Danny's suit, and both brothers are suddenly laughing the exact same laugh, and thirty years fall off the pair of them between dessert and the band. They dance, separately, badly, at the same wedding, which is everything the bride wanted."},
+  kitchen_regrets:{t:"THE GIFT TABLE", e:"HE SENT SOMETHING LOVELY.", s:[2,2,2],
+    sum:"The gift is generous and the absence is total, and both are noted. He watches the photos arrive on a phone screen at his own kitchen table while Alice is at the dancing. The niece names her first boy Daniel; the second, two years later, gets his name - an open door he somehow never walks through, though he learns the bus route to their town by heart, in case."},
+  kitchen_chip:{t:"ONE DAY AT A TIME", e:"ONE DAY AT A TIME.", s:[3,3,0],
+    sum:"The morning it goes down the sink is unremarkable, which is how the real ones happen. Meetings above the bookies, tea-urn duty, five years of Tuesdays; the amends list is long and he does it in person, in order, including Danny, by airmail, twice. He attends one graduation sober and cries from the second row, and the grandchild in the gown waves at HIM, specifically, which is the whole of what the last five years were for."},
+  kitchen_chair:{t:"LAST ORDERS", e:"LAST ORDERS.", s:[1,1,0],
+    sum:"The chair keeps him, as chairs do: same view of the fruit machine, same barmaid half-mothering him for twenty years, same joke at the same time every night, word for word. The kids ring on birthdays; the club is patient. He dies at seventy-one between the fifth and the sixth, and the club keeps the chair empty for a month, which is the only eulogy, and more than most get in there."},
+  kitchen_photo:{t:"THE EXHIBITION", e:"HE BOUGHT ONE PRINT.", s:[2,2,4],
+    sum:"He goes on the quiet Tuesday, and there they all are on the walls: the town's weddings, forty years of them, his own included - Alice laughing, Danny best-manning, himself twenty-four and sure. The photographer, old now, shakes his hand without malice and says she was happiest in the contact sheets nobody printed. He buys one print - not of her; of Danny and him, mid-toast - and hangs it in shop number one, where the tills can see it."},
+  kitchen_cancel:{t:"SOLD OUT", e:"NO PHOTOGRAPHS EXIST.", s:[1,0,5],
+    sum:"He buys the building, cancels the show, and locks forty years of the town's weddings - everyone's, not just his - in a warehouse with his name on the deed. The town works out what happened within a fortnight and never forgives it: his vans get keyed for a decade, and three generations of brides learn his name as a curse. He dies the richest man on fourteen high streets, and no recent photograph of him exists for the paper to print."},
+  kitchen_list:{t:"BEFORE WE GO", e:"ITEM 61: DONE.", s:[5,3,1],
+    sum:"Sixty wishes, done in order, no skipping: dawn at the stones, a hot-air balloon (she screams, delighted, the entire time), item 34 just says CHIPS, TWICE and they honour it weekly. They see a whale that is probably a dolphin, and vote, two to nothing, whale. At the bottom, in newer ink and his handwriting, item 61: OUTLIVE THE LIST. They do. By years. It is framed in the kitchen where the rule was made."},
+  kitchen_gulls:{t:"JUST THE VIEW, THANKS", e:"NO PLANS SURVIVED.", s:[4,2,1],
+    sum:"She burns it herself, in the end, on the beach, laughing - forty years of wishes surrendered to the actual sea. What replaces the list is nothing: unscheduled years of gulls, naps, chips when they feel like it, and the particular luxury of a Tuesday with no number on it. The kids find the ashes story baffling until they visit, stand at the window for a minute, and stop asking."},
+  kitchen_midsentence:{t:"GONE BY FRIDAY", e:"GONE BY FRIDAY.", s:[4,2,1],
+    sum:"He stands up mid-sentence - his own sentence, about stock-taking - and rings the estate agent from the hall while Alice listens at the kitchen door with her hand over her mouth. Gone by Friday, scandalising everyone. Six years by the sea is what they get, which is fewer than the book had paid for, and neither of them ever counts it that way. The shop's new owner keeps finding lists everywhere."},
+  kitchen_lastyear:{t:"ONE MORE YEAR", e:"THERE WAS ALWAYS ONE MORE YEAR.", s:[1,2,2],
+    sum:"The year wins again, and then wins nine more times, the way years do when they're allowed. She dies at seventy-five with the savings book unspent in the dresser, and the rule of the table dies with her, because the last unsaid thing was his. He moves to the cottage alone that winter, finally, and keeps two chairs at the window, and is seen there every evening at the hour the tide turns, apologising to the view."},
+  kitchen_ruby:{t:"THE SPEECH", e:"HE SAID IT IN FRONT OF EVERYONE.", s:[4,3,1],
+    sum:"The works: a marquee, a band, four kinds of trifle by unspoken family law. The speech he owes her is honest in front of a hundred and forty people - Thursdays included, named as what they were - and you can hear the marquee decide, collectively, to breathe again when Alice stands up, crosses the floor, and finishes his last sentence for him, correctly. Mum, ninety-six, starts the applause with her stick."},
+  kitchen_vows:{t:"TWO WITNESSES", e:"MARRIED TWICE. SAME WOMAN.", s:[4,2,0],
+    sum:"A registry office on a wet Thursday - Thursdays owed them one - with two witnesses recruited off the street: a traffic warden on her break and a bride from the eleven-thirty slot, still in her dress, delighted. Chips on the sea wall after, out of the paper, no speech. The kids find the certificate years later, sorting the house, dated forty years after the first one, and sit down on the stairs with it."},
+  kitchen_second:{t:"HAPPY, ELSEWHERE", e:"HAPPY, ELSEWHERE.", s:[3,2,2],
+    sum:"The second life takes: a smaller town, a chemist's above the shop, crosswords done the same wrong way for thirty years. It is real happiness with one asterisk that never comes off - the Sunday place at Mum's table, set for him weekly until she dies, never filled and never cleared. He is a good husband the second time in all the ways he wasn't the first, and only ever says so to the dog."},
+  kitchen_back:{t:"THE KNOCK", e:"SHE SAID NO, KINDLY.", s:[1,2,1],
+    sum:"The second life doesn't take - some things are ballast, it turns out, not cargo - and at seventy he walks the old street and knocks. Alice answers, makes tea, hears him out, and says no: kindly, completely, with a hand on his shoulder at the door. He lodges over the shop he once half-owned and is, the neighbours agree, no trouble at all. Both marriages sit behind him like rooms he can hear but not enter."},
+});
+
+/* ---- THE GREEN: the band, the works, the sweet pea, the bells ---- */
+
+Object.assign(NODES, {
+  gr33:{age:33, text:"The works takes him on like it took his dad, and the colliery band, one cornet short since Whitsun, has heard he owns a trumpet. He is good. Not brilliant. Good.",
+    choices:[{l:"Practise until it stops being fun", to:"gr42band"},{l:"Keep it Sunday-sized", to:"gr42town"}]},
+  gr42band:{age:42, text:"Nine years of Tuesday practice and Whit marches, and the band is a second family with better arguments. Now the Nationals: the band has qualified for the Albert Hall, the same week Alice is due with their fourth.",
+    choices:[{l:"The Albert Hall", to:"gr55hall"},{l:"The maternity ward", to:"gr55ward"}]},
+  gr55hall:{age:55, text:"Third in the nation, and local radio still plays the recording every Whitsun. The fourth child, born while the cornets tuned, is thirteen now and cool about it in a way that costs him. This Friday brings two letters: the band needs a conductor, and the works needs a foreman.",
+    choices:[{l:"Conduct", to:"gr68conduct"},{l:"The foreman's job", to:"gr68foreman"}]},
+  gr68conduct:{age:68, text:"Twenty years on the rostrum: three more Nationals, a generation taught to read music in a hut with a paraffin heater. Now the works is closing, and the band - the town's heart in a uniform - is offered survival money to become the COLLIERY HERITAGE EXPERIENCE BRASS: sponsored, relocated, sanitised.",
+    choices:[{l:"Take the sponsor's money", to:"green_heritage"},{l:"Stay a town band, broke", to:"green_townband"}]},
+  gr68foreman:{age:68, text:"Foreman through the hard years, and now the buyout: it would set the grandkids up forever, and it would close the floor he has swept since he was nineteen.",
+    choices:[{l:"Sign", to:"green_sign"},{l:"Tear it up", to:"green_tear"}]},
+  gr55ward:{age:55, text:"He misses the Albert Hall for the maternity ward and hears the result on a corridor radio, holding his daughter, both of them crying for different reasons. Years on, the cornet mostly sleeps in its case - until the music teacher quits, and the school's brass programme, forty kids and no budget, lands on whoever will have it.",
+    choices:[{l:"Take the forty kids", to:"gr68kids"},{l:"His own four first", to:"gr68own"}]},
+  gr68kids:{age:68, text:"Thirty years of forty kids at a time: every child in town who wanted an instrument got one, out of skips and rummage sales and his own pocket. Three went professional; one conducts in Vienna; all of them come back for the Whit march. Now the council wants to give him the freedom of the town, with a ceremony.",
+    choices:[{l:"Accept the ceremony", to:"green_freedom"},{l:"Dodge it. There's a lesson at four", to:"green_lesson"}]},
+  gr68own:{age:68, text:"The programme dies, and the four kids get the cornet years instead: kitchen concerts, terrible trios, and one daughter who is - there is no other word for it - brilliant. At sixteen she wins a conservatoire audition, and the fees are the car plus the greenhouse plus everything.",
+    choices:[{l:"Sell it all. Send her", to:"green_send"},{l:"Stay solvent. She'll find a way", to:"green_solvent"}]},
+  gr42town:{age:42, text:"The trumpet stays fun, the works stays steady, and the green stays the green: cricket teas, the allotment, the bells learned out of curiosity one wet autumn. Then the flood year: one March night the river takes the bottom pitch, the allotments, and the bell-tower fund.",
+    choices:[{l:"Rebuild the allotments", to:"gr55allot"},{l:"Restore the bells", to:"gr55bells"},
+      {l:"Hold the riverbank. Himself. All night", to:"green_localman", gate:{d:"grit", r:2}}]},
+  gr55allot:{age:55, text:"Three years of barrowing silt and the allotments come back better: forty plots, a pump, a shed empire. Then the county show notices his soil, and so does Pearson the seed merchant, whose chequebook wants the one thing that grows there and nowhere else: the yellow sweet pea that turned up by itself the year after the flood.",
+    choices:[{l:"Sell Pearson the sweet pea", to:"gr68pea"},{l:"Give the seed to anyone who asks", to:"gr68free"}]},
+  gr68pea:{age:68, text:"Pearson's catalogue calls it GOLDEN WONDER and the cheque is the largest thing that has ever happened to the kitchen table. The question is what the money is for.",
+    choices:[{l:"Endow the allotments forever", to:"green_endow"},{l:"The world cruise Alice deserves", to:"green_cruise"}]},
+  gr68free:{age:68, text:"He gives the seed to anyone who asks, which by year ten is everyone: the yellow pea climbs every fence in three counties, unpatented, unowned, and Pearson's lawyers have confirmed, with audible pain, that nothing can be done. Now the horticultural society wants to give it a proper name.",
+    choices:[{l:"Let them name it after him", to:"green_named"},{l:"It's Alice's name or nothing", to:"green_alicename"}]},
+  gr55bells:{age:55, text:"The bells come back one by one, recast from the flood-cracked originals, and he learns the numbers: a change-ringer's mind under a foreman's cap. Now the tower captain is retiring, and the band of ringers - average age seventy-one - will fold without new blood nobody has found.",
+    choices:[{l:"Captain the tower. Recruit or die", to:"gr68tower"},{l:"Let the bells sleep after one last ring", to:"gr68last"}]},
+  gr68tower:{age:68, text:"Fifteen years' captain: he recruits from the skate park with chips and open tower nights, and the average age drops forty years while the noise complaints stay exactly the same. The young band is good now - good enough for the full peal, three hours and eighteen minutes, unrung since the flood.",
+    choices:[{l:"Ring the peal himself, at eighty", to:"green_peal"},{l:"Call it from the bench. Let them ring", to:"green_bench"}]},
+  gr68last:{age:68, text:"The bells will sleep, then - but not before one full evening: every ringer the tower ever had, back for a final ring, the whole green standing out in the dusk to hear it. Afterwards, the question of the keys.",
+    choices:[{l:"Keep the keys", to:"green_keys"},{l:"Give them up. Let the tower go", to:"green_swifts"}]},
+});
+
+Object.assign(ENDINGS, {
+  green_heritage:{t:"THE HERITAGE EXPERIENCE", e:"NOTE-PERFECT, TWICE DAILY.", s:[2,2,3],
+    sum:"The sponsor's money saves every job in the band and costs everything the band was for: coach parties, twice-daily sets, a gift shop selling the Whit march on CD. The playing is note-perfect and embalmed, and he conducts it to the end, in the sponsored uniform, knowing the exact price of survival because he signed the receipt. On the last page of his score, in pencil, in his hand: WE USED TO PLAY THIS OUTSIDE."},
+  green_townband:{t:"SCRAP BRASS", e:"THE BAND PLAYED ON, UNPAID.", s:[4,4,0],
+    sum:"Broke and alive: instruments patched with plumbing solder, subs waived forever, uniforms from three different decades on any given Sunday. They play the works' closing day in the rain, and every strike, wedding and funeral after, free, by principle. The band outlives the works by forty years and counting. The paraffin hut is still there. So is the arguing, which was always half the music."},
+  green_sign:{t:"THE SIGNATURE", e:"IT WOULD HAVE CLOSED ANYWAY.", s:[2,1,4],
+    sum:"He signs, and the money does everything promised: four grandchildren launched, mortgage-free, into lives the town can no longer offer, because the town half-empties within five years of the gates shutting. He tells himself the closing was coming regardless, which may even be true, and mows the verge outside the empty works every fortnight, unpaid, unasked, for the rest of his life. Nobody ever mentions it to him. Everybody sees."},
+  green_tear:{t:"NINE MORE YEARS", e:"NINE MORE YEARS.", s:[3,4,0],
+    sum:"He tears it up at the table, in front of the lawyers, slowly, so it can't be mistaken for temper. The works limps on nine more years - long enough for a generation of kids to finish school, for the retraining scheme, for the town to land soft instead of hard. It closes anyway; everything does. But everyone over fifty in that town can tell you exactly what nine years cost him, and exactly whose retirement bought it."},
+  green_freedom:{t:"FREEDOM OF THE TOWN", e:"EVERY CHILD GOT AN INSTRUMENT.", s:[4,5,0],
+    sum:"He accepts, under protest, in his good suit. What he doesn't know is the second half: the one who conducts in Vienna has flown home quietly and assembled, outside the town hall, three hundred former pupils with three hundred instruments, massed and tuned. They play the Whit march. He makes it eight bars before the cornet has to come down so he can see. The freedom of the town turns out to mean the town, freely, all at once."},
+  green_lesson:{t:"THE FOUR O'CLOCK LESSON", e:"HE HAD A LESSON AT FOUR.", s:[3,5,0],
+    sum:"He dodges his own ceremony because Tuesday is beginners' day, and the beginner in question is seven and finally nearly has B flat. The council awards the freedom of the town in absentia, to the biggest laugh the chamber has ever recorded. The kid at the four o'clock lesson grows up telling the story - the mayor waiting, the scroll on the table, and the old man at the school saying: posture first, honours after."},
+  green_send:{t:"THE AUDITION", e:"PRINCIPAL TRUMPET'S DAD.", s:[4,3,0],
+    sum:"The car goes, the greenhouse goes, the cornet - his own - goes last and hurts most. She goes. Principal trumpet by thirty, and every programme biography ever printed says taught by her father, because she writes it in herself and refuses all edits. He attends in the seats she buys, still growing tomatoes in buckets where the greenhouse was, and tells the neighbours it was a fair trade. It was. Everyone knows it was."},
+  green_solvent:{t:"SECOND-HAND VALVES", e:"SHE FOUND A WAY.", s:[2,2,1],
+    sum:"She finds a way, because that kind does: seven extra years of it, night shifts and borrowed instruments and a scholarship on the third try. She makes it anyway, at thirty, and something guarded has entered her playing and her Christmases both. At the debut she thanks everyone who believed it was possible, and the pause before everyone is very small, and he hears all of it, from row K, in his good suit."},
+  green_endow:{t:"PLOT 12", e:"RENT: NOTHING. FOREVER.", s:[3,4,1],
+    sum:"The cheque endows the lot: forty plots rent-free in perpetuity, a repaired pump, children's beds by the gate with the good soil. His own plot 12 is worked until the last spring and then, by unspoken committee, kept exactly as he left it - fork upright in the second bed, twine on the nail - which is how allotments do statues. The yellow pea climbs the gate every June, on schedule, for free."},
+  green_cruise:{t:"THE GOLDEN WONDER", e:"IT GREW EVERYWHERE, IN THE END.", s:[4,2,3],
+    sum:"The cruise is five months and Alice unclenches visibly at every port; there is a photograph of her laughing in Valparaíso that the grandchildren will fight over. The pea, meanwhile, conquers the nation's fences from Pearson's catalogue at a mark-up he tries not to compute. In every port, Alice presses one bloom in the atlas - it travels in her hand luggage, alive, illegally - so the whole world's pages hold a bit of the allotment."},
+  green_named:{t:"THE YELLOW PEA", e:"SEE ALSO: EVERY FENCE IN THE COUNTY.", s:[4,4,0],
+    sum:"They name it after him, and he is magnificently embarrassed for the remainder of his natural life: seed packets with his surname on, radio gardeners pronouncing it wrong, a rockery question in a pub quiz. It grows anywhere, wants nothing, and refuses to be bred out of its yellowness, all of which the village agrees is fitting. His obituary is one sentence long, and the photograph is of a fence."},
+  green_alicename:{t:"ALICE'S CLIMBER", e:"ASK FOR IT BY NAME.", s:[5,3,0],
+    sum:"Alice's name or nothing, so it's Alice's name, and she pretends fury for a decade while planting it at the gate, the porch, and the graves of three friends. After she goes, the strangest thing: the following June, every fence on the street blooms yellow the same week, coordinated by nobody, seeds passed hand to hand all winter without a word to him. He walks the street once, hat off, the whole length."},
+  green_peal:{t:"THE FULL PEAL", e:"3 HOURS, 18 MINUTES. ONE TYPO.", s:[5,3,0],
+    sum:"He rings it himself at eighty, three hours and eighteen minutes on the tenor, and comes down the spiral stairs lighter than he went up, which is not how stairs work and he says so. The peal board goes up with his name misspelled, and he forbids the correction on the grounds that it's funnier, and that anyone who was there knows, and that bells don't read. Ringers touch the typo for luck now. It's going shiny."},
+  green_bench:{t:"HE CALLED THE CHANGES", e:"HE CALLED THE CHANGES.", s:[4,4,0],
+    sum:"He calls it from the bench and lets the young band ring: three hours of teenagers he pulled off a skate park executing eighteenth-century mathematics without a wobble, while he sits with the tea and the numbers, conducting with one finger. His name goes on the peal board as CONDUCTOR, which, the tower agrees, outranks. He teaches from that bench to the end, and the bench is named, and the name is just HIS BENCH."},
+  green_keys:{t:"ONE BELL, ON THE HARD NIGHTS", e:"ONE BELL, ON THE HARD NIGHTS.", s:[3,2,0],
+    sum:"He keeps the keys, and the tower keeps his counsel. For twenty years, on the town's hard nights - a death on the bypass, a lost child found at dawn, the works' last shift - a single bell rings once, late, unexplained, and the town sleeps better for it. Everyone knows. Nobody says. When he dies the keys pass to someone the town never identifies either, because some jobs are done properly or not at all."},
+  green_swifts:{t:"THE SWIFTS GOT THE TOWER", e:"THE SWIFTS GOT THE TOWER.", s:[2,3,1],
+    sum:"He gives up the keys, and the bells go to the museum, where children are encouraged to whack a practice bell with a mallet, joyfully, all day, which he decides after one visit is also ringing. The empty tower goes to the swifts: three hundred of them every June, screaming round the belfry at dusk. The vicar calls it a different kind of peal. He sits on the green most summer evenings, listening to it."},
+  green_localman:{t:"LOCAL MAN", e:"HE WAS AROUND SOMEWHERE.", s:[5,4,0],
+    sum:"He could bend girders and hear heartbeats through walls, and he held the riverbank alone from midnight to first light, which the town put down to sandbags. He used it, all his life, to open jars, find lost cats, and once, quietly, to hold up a collapsing school gym until everyone was out. The town never worked out why nothing bad ever happened there. He was never anywhere else."},
+});
+
+/* @@END-CONTINENTS */
 
 const DEATHS = [
-  {id:"d_goose", t:"THE GOOSE", e:"THE GOOSE IS STILL OUT THERE.", min:7, max:24, s:[2,0,5],
+  {id:"d_goose", t:"THE GOOSE", e:"THE GOOSE IS STILL OUT THERE.", min:7, max:24, s:[2,0,0],
     dodge:"The goose reconsiders.",
     sum:"Nobody believes how it happened. The witnesses cannot finish the story without sitting down. The goose was never caught."},
-  {id:"d_peanut", t:"THE PEANUT", e:"HE SAVED IT FOR LATER.", min:16, max:76, s:[3,1,5],
+  {id:"d_peanut", t:"THE PEANUT", e:"HE SAVED IT FOR LATER.", min:16, max:76, s:[3,0,1],
     dodge:"Not the peanut. Not today.",
     sum:"It was the peanut. It was always going to be the peanut."},
-  {id:"d_piano", t:"THE PIANO", e:"FORTISSIMO.", min:24, max:76, s:[2,2,4],
+  {id:"d_piano", t:"THE PIANO", e:"FORTISSIMO.", min:24, max:76, s:[2,1,2],
     dodge:"The piano misses.",
     sum:"Grand, Edwardian, uninsured, and quiet right up until it wasn't. He heard it whistle."},
-  {id:"d_van", t:"MIND THE VAN", e:"MIND THE VAN.", min:33, max:60, s:[3,1,3],
-    dodge:"The van swerves. The flake does not survive.",
-    sum:"Thirty years at crush depth without a scratch. The harbour ice-cream van never even saw him. The flake, miraculously, survived."},
-  {id:"d_vend", t:"THE VENDING MACHINE", e:"HE SHOOK IT. IT SHOOK BACK.", min:24, max:55, s:[2,0,4],
+  {id:"d_vend", t:"THE VENDING MACHINE", e:"HE SHOOK IT. IT SHOOK BACK.", min:24, max:55, s:[2,0,0],
     dodge:"The machine, this once, lets it slide.",
     sum:"It had taken his money for twenty years. He shook it. It shook back."},
-  {id:"d_sleep", t:"IN HIS SLEEP, ANNOYINGLY", e:"NOT LIKE THIS.", min:60, max:76, s:[4,2,5],
+  {id:"d_sleep", t:"IN HIS SLEEP, ANNOYINGLY", e:"NOT LIKE THIS.", min:60, max:76, s:[4,1,2],
     dodge:"He wakes up, furious, alive.",
-    sum:"He survived the sea, the goose and the ice-cream van, and died warm in bed, mid-dream, absolutely furious about it."},
+    sum:"He survived everything the world aimed at him, and died warm in bed, mid-dream, absolutely furious about it."},
+  {id:"d_van", t:"MIND THE VAN", e:"MIND THE VAN.", min:33, max:68, cont:"deep", s:[3,1,2],
+    dodge:"The van swerves. The flake does not survive.",
+    sum:"Thirty years at crush depth without a scratch. The harbour ice-cream van never even saw him. The flake, miraculously, survived."},
+  {id:"d_bends", t:"THE BENDS", e:"HE CAME UP TOO FAST.", min:24, max:55, cont:"deep", s:[2,1,2],
+    dodge:"The chamber holds. The bubbles change their mind.",
+    sum:"Thirty metres in thirty seconds, for a bet he cannot even remember making. The textbook has a whole chapter on why not. He is in the next edition."},
+  {id:"d_weir", t:"THE WEIR", e:"THE CUT KEEPS ITS OWN.", min:24, max:68, cont:"lock", s:[2,2,0],
+    dodge:"Something lifts him clear. Nobody sees what.",
+    sum:"A hundred years of stories on this canal, and half of them end at the weir. His makes it a round number. The small god of the pound above lock nine was, all witnesses agree, looking the other way that morning."},
+  {id:"d_centrifuge", t:"THE CENTRIFUGE", e:"ROUND AND ROUND.", min:33, max:68, cont:"sky", s:[3,1,1],
+    dodge:"The technician, back from lunch, apologising, hits stop.",
+    sum:"Nine g for science, ten for the programme, eleven because the technician was at lunch. The plaque in the training hall is tasteful, and, fittingly, slightly blurred."},
+  {id:"d_wings", t:"SOMETHING WITH WINGS", e:"IT WAS NOT A BAT.", min:33, max:68, cont:"night", s:[2,1,1],
+    dodge:"It reconsiders, out of professional courtesy.",
+    sum:"The night shift teaches you not to look up, and for nineteen years he didn't. The one time he did, the witnesses could only agree on what it wasn't."},
+  {id:"d_numbers", t:"THE QUARTERLY NUMBERS", e:"SEE ATTACHED.", min:33, max:60, cont:"ladder", s:[1,1,4],
+    dodge:"The intern knows CPR. HR takes the credit.",
+    sum:"Found at eleven at night with the forecast open and his tie still perfectly straight. The company sends a wreath shaped like the logo and fills the desk by Thursday. The numbers, everyone agrees, were good."},
+  {id:"d_business", t:"COST OF DOING BUSINESS", e:"HE KNEW THE RULES.", min:24, max:55, cont:"knife", s:[1,0,3],
+    dodge:"The gun jams. The Chairman calls it an omen.",
+    sum:"It wasn't personal, the man said, which was true, and didn't help. The Chairman sent flowers to the funeral and a car for the widow, and never once said his name again. Business absorbed the loss."},
+  {id:"d_volauvent", t:"SEVENTY-TWO VOL-AU-VENTS", e:"IT WAS A LOVELY SPREAD.", min:33, max:68, cont:"kitchen", s:[3,1,1],
+    dodge:"Danny, of all people, knows the manoeuvre.",
+    sum:"A christening, a buffet, an argument at exactly the wrong mouthful. The ambulance crew were kind, the vol-au-vents were finished anyway, and the family still cannot discuss it without someone laughing and someone leaving the room."},
+  {id:"d_roller", t:"THE HEAVY ROLLER", e:"THE PITCH WAS PERFECT ON SATURDAY.", min:42, max:76, cont:"green", s:[3,2,0],
+    dodge:"It stops an inch short, ticking.",
+    sum:"Forty years of telling the committee someone would go under that thing if they didn't fix the brake. The minutes of the next meeting record a short silence, a vote of thanks, and the purchase, at last, of a new roller."},
 ];
 const DEATH_BY_ID = Object.fromEntries(DEATHS.map(d=>[d.id,d]));
-
-const FOG = {
-  fog_school:"Danny went this way, and half the world with him. It is not written yet.",
-  fog_sky:"The telescope, the night shift, the blood bank, the moon. All still in the fog.",
-  fog_lock:"The canal keeps its hundred years of stories a little longer. Not written yet.",
-};
-
-const FOG_CONTINENTS = ["THE GREEN","THE KITCHEN","THE LADDER","THE KNIFE","THE SKY","THE NIGHT","THE LOCK"];
 
 const DISPS = {
   luck:{name:"LUCK", max:3, blurb:"The universe owes him one.",
     ranks:["Fate rolls against him every decade.","Fate rolls half as hard.",
       "Half as hard, and one dodge per life.","Fate gives up entirely."]},
   heart:{name:"HEART", max:2, blurb:"He says the thing.",
-    ranks:["Some doors stay quiet.","Hidden HEART doors show their words.",
-      "And they open."]},
+    ranks:["Some doors stay quiet.","Hidden HEART doors show their words.","And they open."]},
+  grit:{name:"GRIT", max:2, blurb:"He keeps going.",
+    ranks:["Some doors stay shut.","Hidden GRIT doors show their words.","And they open."]},
+  wonder:{name:"WONDER", max:2, blurb:"He sees the strange thing.",
+    ranks:["The strange thing goes unseen.","Hidden WONDER doors show their words.","And they open."]},
+  calm:{name:"CALM", max:3, blurb:"He can wait.",
+    ranks:["He fidgets.","He can wait a while.","The CALM door shows its words.","And it opens."]},
 };
 
-/* ---------------- STATE ---------------- */
+/* CONTENT-END */
 
-const KEY = "threescore-v1";
+/* ================= STATE ================= */
+
+const KEY = "threescore-v2";
 let save = loadSave();
 let life = null;
 
@@ -225,40 +792,49 @@ function loadSave(){
     const s = JSON.parse(localStorage.getItem(KEY));
     if(s && s.found && s.deaths && s.spend) return s;
   }catch(e){}
-  return {found:{}, deaths:{}, lives:0, spend:{luck:0, heart:0}};
+  return {found:{}, deaths:{}, lives:0, spend:{luck:0, heart:0, grit:0, wonder:0, calm:0}};
 }
 function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(save)); }catch(e){} }
 
 function points(){ return Object.keys(save.found).length + Object.keys(save.deaths).length; }
-function spent(){ return save.spend.luck + save.spend.heart; }
-function totalStones(){ return DEEP_ORDER.length + DEATHS.length; }
+function spent(){ return Object.values(save.spend).reduce((a,b)=>a+b,0); }
+function totalStones(){ return Object.keys(ENDINGS).length + DEATHS.length; }
 function stonesFound(){ return points(); }
+function contOf(id){
+  const us = id.indexOf("_");
+  if(us > 0 && CONTS.some(c=>c.k===id.slice(0,us))) return id.slice(0,us);
+  return NODE_CONT[id.slice(0,2)] || null;
+}
+function contOrder(k){ return Object.keys(ENDINGS).filter(id=>id.startsWith(k+"_")); }
 
 const subtreeMemo = {};
 function subtree(id){
   if(subtreeMemo[id]) return subtreeMemo[id];
   let out;
   if(ENDINGS[id]) out = [id];
-  else if(FOG[id]) out = [];
   else out = NODES[id].choices.flatMap(c=>subtree(c.to));
   subtreeMemo[id] = out;
   return out;
 }
 
-/* ---------------- ENGINE ---------------- */
+/* ================= ENGINE ================= */
 
 const app = document.getElementById("app");
 function render(html){ app.innerHTML = '<div class="fade">'+html+'</div>'; window.scrollTo(0,0); }
 function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
 
-function statBar(glyph, n){
-  let h = "";
+function statRow(glyph, n, lbl){
+  let h = '<div class="srow">';
   for(let i=0;i<5;i++) h += '<span class="'+(i<n?"":"off")+'">'+glyph+'</span>';
-  return h;
+  return h+'<span class="lbl">'+lbl+'</span></div>';
 }
 function statsHTML(s){
-  return '<div class="stats">'+statBar("♥",s[0])+' &nbsp; '+statBar("£",s[1])
-    +' &nbsp; '+statBar("⧗",s[2])+'</div>';
+  return '<div class="stats">'+statRow("♥",s[0],"JOY")+statRow("✦",s[1],"WORTH")
+    +statRow("£",s[2],"GOLD")+'</div>';
+}
+function gyLink(){
+  return '<button class="quiet" onclick="showGraveyard()">the graveyard &middot; '
+    +stonesFound()+' of '+totalStones()+' stones</button>';
 }
 
 function showTitle(){
@@ -266,9 +842,9 @@ function showTitle(){
     '<div style="margin-top:14dvh; text-align:center;">'+
     '<h1>threescore</h1>'+
     '<p class="tagline" style="text-align:center;">a life in seven choices</p>'+
-    '<p class="tagline" style="text-align:center;">He gets seventy years, give or take.<br>You get as many as you need.</p>'+
+    '<p class="tagline" style="text-align:center;">He gets seventy years, give or take.<br>He remembers none of it. You remember all of it.</p>'+
     '<button class="bigbtn primary" onclick="startBirth()">LIVE</button>'+
-    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD &nbsp;<span style="color:var(--dim)">'+stonesFound()+' / '+totalStones()+'</span></button>'+
+    gyLink()+
     '</div>');
 }
 
@@ -279,9 +855,10 @@ function startBirth(){
 
 function renderBirth(){
   const rem = points() - spent();
-  let h = '<div class="age">BEFORE BIRTH</div>'+
-    '<p class="tagline">Spend the stones he has earned. Dispositions are a lens on the same soul: respec is free, every life.</p>'+
-    '<div class="pts">'+rem+' UNSPENT STONE'+(rem===1?"":"S")+'</div>';
+  let h = '<div class="age">BETWEEN LIVES</div>'+
+    '<p class="tagline">The man forgets. The soul keeps what it has learned, and chooses what he will be able to see this time round.</p>'+
+    '<button class="bigbtn primary" onclick="startLife()">AGAIN</button>'+
+    '<div class="pts">'+rem+' STONE'+(rem===1?"":"S")+' UNSPENT &middot; RESPEC IS FREE</div>';
   for(const k of Object.keys(DISPS)){
     const d = DISPS[k], v = save.spend[k];
     let pips = "";
@@ -295,8 +872,8 @@ function renderBirth(){
       '</span></div>'+
       '<div class="desc"><i>'+d.blurb+'</i><br>'+esc(d.ranks[v])+'</div></div>';
   }
-  h += '<button class="bigbtn primary" onclick="startLife()">BE BORN</button>'+
-       '<button class="bigbtn" onclick="showTitle()">BACK</button>';
+  h += '<button class="bigbtn" onclick="startLife()">AGAIN</button>'+
+       '<button class="quiet" onclick="showTitle()">back</button>';
   render(h);
 }
 
@@ -312,13 +889,15 @@ function adj(k, delta){
 
 function startLife(){
   save.lives++; persist();
-  life = {node:"r7", luck:save.spend.luck, heart:save.spend.heart, dodged:false};
+  life = {node:"r7", dodged:false};
+  for(const k of Object.keys(DISPS)) life[k] = save.spend[k];
   renderNode();
 }
 
 function renderNode(){
   const n = NODES[life.node];
-  let h = '<div class="age">─&nbsp; '+(n.ageLabel||n.age)+' &nbsp;─</div>'+
+  let h = (n.slip ? '<div class="slip">'+esc(n.slip)+'</div>' : '')+
+    '<div class="age">─&nbsp; '+(n.ageLabel||n.age)+' &nbsp;─</div>'+
     '<p class="situation">'+esc(n.text)+'</p>';
   n.choices.forEach((c,i)=>{
     if(c.gate){
@@ -331,13 +910,9 @@ function renderNode(){
       }
     }
     const st = subtree(c.to);
-    let chip;
-    if(st.length===0) chip = "fog";
-    else{
-      const f = st.filter(id=>save.found[id]).length;
-      chip = (f===st.length) ? "✓ "+f+"/"+st.length : f+"/"+st.length;
-    }
-    const done = st.length>0 && st.every(id=>save.found[id]);
+    const f = st.filter(id=>save.found[id]).length;
+    const chip = (f===st.length) ? "✓ "+f+"/"+st.length : f+"/"+st.length;
+    const done = st.every(id=>save.found[id]);
     h += '<button class="choice'+(done?" done":"")+'" onclick="choose('+i+')">'+
       '<span class="chip">'+chip+'</span>'+esc(c.l)+'</button>';
   });
@@ -350,7 +925,7 @@ function choose(i){
   if(c.gate && life[c.gate.d] < c.gate.r) return;
   const rate = [0.12, 0.06, 0.06, 0][life.luck];
   if(Math.random() < rate){
-    const v = pickDeath(n.age);
+    const v = pickDeath(n.age, contOf(life.node));
     if(v){
       if(life.luck===2 && !life.dodged){
         life.dodged = true;
@@ -364,13 +939,12 @@ function choose(i){
 
 function advance(to){
   if(ENDINGS[to]) return showEnding(to);
-  if(FOG[to]) return showFog(to);
   life.node = to;
   renderNode();
 }
 
-function pickDeath(age){
-  const pool = DEATHS.filter(d=>age>=d.min && age<=d.max);
+function pickDeath(age, cont){
+  const pool = DEATHS.filter(d=>age>=d.min && age<=d.max && (!d.cont || d.cont===cont));
   if(!pool.length) return null;
   const fresh = pool.filter(d=>!save.deaths[d.id]);
   const from = fresh.length ? fresh : pool;
@@ -394,15 +968,18 @@ function cardHTML(kind, o, opts){
     '</div>';
 }
 
+function endScreen(card, isNew){
+  render(card+
+    (isNew ? '<div class="newstone">✚ A NEW STONE IN THE GRAVEYARD</div>' : '')+
+    '<button class="bigbtn primary" onclick="startBirth()">AGAIN</button>'+
+    gyLink());
+}
+
 function showEnding(id){
   const isNew = !save.found[id];
   if(isNew){ save.found[id]=true; persist(); }
   life = null;
-  render(cardHTML("ending", ENDINGS[id])+
-    (isNew ? '<div class="newstone">✚ A NEW STONE IN THE GRAVEYARD</div>' : '')+
-    '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES</div>'+
-    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
-    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD</button>');
+  endScreen(cardHTML("ending", ENDINGS[id]), isNew);
 }
 
 function showDeath(v, nodeAge){
@@ -410,39 +987,30 @@ function showDeath(v, nodeAge){
   const isNew = !save.deaths[v.id];
   if(isNew){ save.deaths[v.id]=true; persist(); }
   life = null;
-  render(cardHTML("death", v, {age:Math.min(age, 76)})+
-    (isNew ? '<div class="newstone">✚ A NEW STONE IN THE GRAVEYARD</div>' : '')+
-    '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES</div>'+
-    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
-    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD</button>');
-}
-
-function showFog(id){
-  life = null;
-  render('<div class="stone"><div class="kicker">THE FOG</div>'+
-    '<div class="summary" style="text-align:center;">'+esc(FOG[id])+'</div></div>'+
-    '<p class="tagline" style="text-align:center;">Seven of eight continents sleep in the fog. This slice charts THE DEEP: the pond, the quarry, the dive school.</p>'+
-    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
-    '<button class="bigbtn" onclick="showTitle()">TITLE</button>');
+  endScreen(cardHTML("death", v, {age:Math.min(age, 76)}), isNew);
 }
 
 function showGraveyard(){
   let h = '<h1 style="font-size:1.4rem; text-align:center; letter-spacing:.3em; margin-top:1rem;">THE GRAVEYARD</h1>'+
     '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES &middot; '+save.lives+' LIVES</div>'+
-    '<div class="gy"><h2>THE DEEP</h2><div class="grid">';
-  DEEP_ORDER.forEach(id=>{
-    if(save.found[id]) h += '<button class="tile" onclick="peek(\'e:'+id+'\')">'+esc(ENDINGS[id].t)+'</button>';
-    else h += '<div class="tile unfound">?</div>';
+    '<div class="gy">';
+  CONTS.forEach(c=>{
+    const order = contOrder(c.k);
+    const f = order.filter(id=>save.found[id]).length;
+    h += '<h2>'+c.name+' &middot; '+f+'/'+order.length+'</h2><div class="grid">';
+    order.forEach(id=>{
+      if(save.found[id]) h += '<button class="tile" onclick="peek(\'e:'+id+'\')">'+esc(ENDINGS[id].t)+'</button>';
+      else h += '<div class="tile unfound">?</div>';
+    });
+    h += '</div>';
   });
-  h += '</div><h2>SUDDEN</h2><div class="grid">';
+  h += '<h2>SUDDEN &middot; '+Object.keys(save.deaths).length+'/'+DEATHS.length+'</h2><div class="grid">';
   DEATHS.forEach(d=>{
     if(save.deaths[d.id]) h += '<button class="tile death" onclick="peek(\'d:'+d.id+'\')">'+esc(d.t)+'</button>';
     else h += '<div class="tile death unfound">?</div>';
   });
-  h += '</div><h2>IN THE FOG</h2>';
-  FOG_CONTINENTS.forEach(n=>{ h += '<div class="fogrow">'+n+'</div>'; });
-  h += '</div><button class="bigbtn primary" style="margin-top:2rem;" onclick="startBirth()">LIVE</button>'+
-    '<button class="bigbtn" onclick="showTitle()">TITLE</button>'+
+  h += '</div></div><button class="bigbtn primary" style="margin-top:2rem;" onclick="startBirth()">AGAIN</button>'+
+    '<button class="quiet" onclick="showTitle()">title</button>'+
     '<div class="foot"><button onclick="wipe()">erase everything</button></div>';
   render(h);
 }
