@@ -28,6 +28,7 @@ https://wclarke.net/games/seed/
 https://wclarke.net/games/shipshape/
 https://wclarke.net/games/slime-teleports/
 https://wclarke.net/games/terminus/
+https://wclarke.net/games/threescore/
 https://wclarke.net/games/tile/
 https://wclarke.net/games/trine/
 https://wclarke.net/games/worm-division/

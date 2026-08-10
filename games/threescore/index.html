@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>threescore</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪦</text></svg>">
+<style>
+  :root{
+    --bg:#101416; --bg2:#171d20; --ink:#e6dfc8; --dim:#8a8574; --faint:#4a4a40;
+    --accent:#5fd3c4; --gold:#d8b95c; --death:#c86a5a; --stone:#232a2d; --stoneline:#39423f;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:Georgia,'Iowan Old Style','Times New Roman',serif; font-size:17px;}
+  body{min-height:100dvh;}
+  #app{max-width:34rem; margin:0 auto; padding:1.2rem 1.1rem 3rem;
+    padding-top:calc(1.2rem + env(safe-area-inset-top));}
+  h1{font-size:2.4rem; font-weight:normal; letter-spacing:.06em; margin:.2em 0 .1em;}
+  .fade{animation:fadein .6s ease both;}
+  @keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  .age{color:var(--dim); letter-spacing:.35em; text-align:center; margin:2.2rem 0 1.6rem;
+    font-size:.95rem;}
+  .situation{font-size:1.25rem; line-height:1.55; margin:0 0 2rem; min-height:3em;}
+  button{font:inherit; color:inherit; background:none; border:none; cursor:pointer;}
+  .choice{display:block; width:100%; text-align:left; border:1px solid var(--stoneline);
+    background:var(--bg2); border-radius:.4rem; padding:.9rem 1rem; margin:.7rem 0;
+    font-size:1.06rem; line-height:1.4; position:relative;}
+  .choice:active{background:#1f2629;}
+  .choice .chip{float:right; color:var(--dim); font-size:.8rem; margin-left:.8rem;
+    letter-spacing:.05em; padding-top:.15em;}
+  .choice.done .chip{color:var(--accent);}
+  .choice.locked{color:var(--faint); border-style:dashed; cursor:default;}
+  .choice.locked .req{color:var(--dim); font-size:.8rem; letter-spacing:.1em;}
+  .bigbtn{display:block; width:100%; border:1px solid var(--stoneline); background:var(--bg2);
+    border-radius:.4rem; padding:1rem; margin:.8rem 0; font-size:1.1rem; letter-spacing:.15em;
+    text-align:center;}
+  .bigbtn:active{background:#1f2629;}
+  .bigbtn.primary{border-color:var(--accent); color:var(--accent);}
+  .tagline{color:var(--dim); line-height:1.6; margin:0 0 2.2rem;}
+  .stone{background:var(--stone); border:1px solid var(--stoneline);
+    border-radius:5rem 5rem .4rem .4rem; padding:2.2rem 1.4rem 1.6rem; text-align:center;
+    margin:1.5rem 0 1rem; animation:rise .8s ease both;}
+  @keyframes rise{from{opacity:0; transform:translateY(24px);} to{opacity:1; transform:none;}}
+  .stone.death{border-color:#5a3d38;}
+  .stone .kicker{color:var(--dim); font-size:.75rem; letter-spacing:.35em; margin-bottom:1rem;}
+  .stone.death .kicker{color:var(--death);}
+  .stone h2{font-size:1.35rem; font-weight:normal; letter-spacing:.12em; margin:.2em 0 .8em;}
+  .stone .epitaph{color:var(--dim); font-style:italic; letter-spacing:.08em; margin:0 0 1.2em;}
+  .stone .stats{margin:0 0 1.3em; font-size:1.05rem; letter-spacing:.18em;}
+  .stone .stats .off{opacity:.22;}
+  .stone .summary{text-align:left; line-height:1.65; color:var(--ink); font-size:.98rem;}
+  .newstone{color:var(--gold); text-align:center; letter-spacing:.25em; font-size:.85rem;
+    margin:1.2rem 0 .4rem; animation:fadein 1.2s ease both;}
+  .count{color:var(--dim); text-align:center; font-size:.8rem; letter-spacing:.15em;
+    margin-bottom:1.4rem;}
+  .dodge{min-height:70dvh; display:flex; align-items:center; justify-content:center;
+    text-align:center; font-style:italic; font-size:1.3rem; color:var(--accent);
+    line-height:1.6; padding:2rem 1rem;}
+  .gy h2{font-weight:normal; letter-spacing:.3em; font-size:.9rem; color:var(--dim);
+    margin:2rem 0 .8rem;}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:.55rem;}
+  .tile{background:var(--stone); border:1px solid var(--stoneline);
+    border-radius:1.6rem 1.6rem .3rem .3rem; min-height:4.6rem; padding:.9rem .5rem .5rem;
+    font-size:.62rem; letter-spacing:.06em; text-align:center; line-height:1.35;
+    color:var(--ink); display:flex; align-items:center; justify-content:center;}
+  .tile.unfound{color:var(--faint); font-size:1rem;}
+  .tile.death{border-color:#5a3d38;}
+  .fogrow{color:var(--faint); letter-spacing:.25em; font-size:.8rem; padding:.55rem 0;
+    border-bottom:1px dashed #22282a;}
+  .disp{border:1px solid var(--stoneline); background:var(--bg2); border-radius:.4rem;
+    padding:.9rem 1rem; margin:.8rem 0;}
+  .disp .row{display:flex; align-items:center; justify-content:space-between;}
+  .disp .name{letter-spacing:.25em; font-size:.95rem;}
+  .disp .pips{letter-spacing:.3em; color:var(--accent); font-size:1.05rem;}
+  .disp .pips .off{color:var(--faint);}
+  .disp .adj button{width:2.6rem; height:2.6rem; border:1px solid var(--stoneline);
+    border-radius:.4rem; font-size:1.3rem; color:var(--ink); margin-left:.45rem;}
+  .disp .desc{color:var(--dim); font-size:.85rem; line-height:1.5; margin-top:.55rem;}
+  .pts{text-align:center; color:var(--gold); letter-spacing:.2em; font-size:.9rem;
+    margin:1.4rem 0 .4rem;}
+  .foot{margin-top:2.5rem; text-align:center;}
+  .foot button{color:var(--faint); font-size:.8rem; letter-spacing:.15em;
+    text-decoration:underline; margin:0 .7rem;}
+  .overlay{position:fixed; inset:0; background:rgba(8,10,11,.88); display:flex;
+    align-items:center; justify-content:center; padding:1.2rem; z-index:9;}
+  .overlay .inner{max-width:32rem; width:100%; max-height:88dvh; overflow-y:auto;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+'use strict';
+
+/* ---------------- CONTENT: THE DEEP ---------------- */
+
+const NODES = {
+  r7:{age:7, text:"His mum has his school bag packed by the door. The pond at the end of the garden is exactly one boy deep.",
+    choices:[{l:"Go to school", to:"fog_school"},{l:"Go to the pond", to:"p16"}]},
+  p16:{age:16, text:"Nell Hardy can hold her breath for three minutes, and swears there is a door at the bottom of the quarry lake. The astronomy club meets on Thursdays.",
+    choices:[{l:"Dive the quarry with Nell", to:"w24"},{l:"Sign up for the sky", to:"fog_sky"}]},
+  w24:{age:24, text:"The commercial dive school costs every penny he has. The old lock-keeper is retiring, and the cottage comes with the job and a hundred years of stories.",
+    choices:[{l:"Pay for dive school", to:"n33"},{l:"Keep the lock", to:"fog_lock"}]},
+  n33:{age:33, text:"Saturation work pays triple, and he has a gift for the dark. Nell's letter says come home while there is a home to come to.",
+    choices:[{l:"One more season", to:"n42sea"},{l:"Go home", to:"n42home"}]},
+  n42sea:{age:42, text:"Year nine on the rig, and the news from shore has stopped making sense: something is spreading, and the company is offering lifetime contracts on the seabed habitat.",
+    choices:[{l:"Sign. Stay below", to:"n55ark"},{l:"Surface. Find Nell", to:"n55camp"}]},
+  n42home:{age:42, text:"Married, mortgaged, mostly happy. Then a drought pulls the quarry lake down thirty feet, and there it is, where Nell always said: a door, older than the flood, locked.",
+    choices:[{l:"Open it", to:"n55door"},{l:"Leave it be", to:"n55shut"}]},
+  n55ark:{age:55, text:"Thirteen years sealed below, and the habitat has become an ark: three hundred souls, a seed vault, tomatoes under lamps. Then the radio finds an orbital colony leaving for good, with room for the vault or for one man.",
+    choices:[{l:"Send the vault up", to:"n68sun"},{l:"Take the seat", to:"n68ship"}]},
+  n68sun:{age:68, text:"The first child born below has never once asked about the surface. Tonight she does: what was the sun like?",
+    choices:[{l:"Tell her the truth", to:"deep_ark"},{l:"Make it better", to:"deep_liturgy"}]},
+  n68ship:{age:68, text:"The ark burns for Proxima, eighteen hundred years out. Cryo takes volunteers; the corridor gardens need a living keeper.",
+    choices:[{l:"Sleep", to:"deep_stowaway"},{l:"Keep the garden", to:"deep_gardener"}]},
+  n55camp:{age:55, text:"The surface is quiet in the wrong way. He finds Nell at the reservoir camp, running the fever ward with three books and no doctor, and a boat that could still take them both north, where it is clean.",
+    choices:[{l:"Stay and help", to:"n68camp"},{l:"Beg her to come north", to:"n68north"},
+      {l:"Say the thing he practised on the walk", to:"deep_wedding", gate:{d:"heart", r:2}}]},
+  n68camp:{age:68, text:"The camp's last doctor dies in the third winter. Someone has to mix the medicine, and someone has to dig.",
+    choices:[{l:"Learn the medicine", to:"deep_doctor"},{l:"Take the spade", to:"deep_sexton"}]},
+  n68north:{age:68, text:"She said no that dawn, and every dawn after. The last clean convoy north leaves in the spring.",
+    choices:[{l:"Go north without her", to:"deep_clean"},{l:"Stay, unforgiven", to:"deep_family"}]},
+  n55door:{age:55, text:"Behind the door, the village they drowned in 1921 is still mid-harvest-fair, lanterns bright under sixty feet of water, and the fiddler waves him in.",
+    choices:[{l:"Stay for one dance", to:"n68dance"},{l:"Go back up for Nell first", to:"n68fair"}]},
+  n68dance:{age:68, ageLabel:"42, STILL", text:"One dance. When he climbs out, the cars are the wrong shape and his phone belongs in a museum: forty years, gone in a single reel. Nell is eighty-two, and knows him before he is out of the water.",
+    choices:[{l:"Grow old with her anyway", to:"deep_younghusband"},{l:"Go back under", to:"deep_dancer"}]},
+  n68fair:{age:68, ageLabel:"NO AGE AT ALL", text:"Hand in hand at the fair, they are offered what everyone is offered: stay young down here forever, or carry one gift up into the dying light - a single honest hour with anyone already gone.",
+    choices:[{l:"Stay forever", to:"deep_forever"},{l:"Take the hour", to:"deep_hour"}]},
+  n55shut:{age:55, text:"He votes for the quiet life and mostly wins it. Then Danny rings: the firm is going under, and for the first time in his life his brother asks for help - the savings would cover it, or the boat Nell has dreamed of since the quarry.",
+    choices:[{l:"Bail Danny out", to:"n68danny"},{l:"Buy the boat", to:"n68boat"}]},
+  n68danny:{age:68, text:"Danny's firm - half his, now - tables one last project: drain the quarry and build executive homes, door and all.",
+    choices:[{l:"Sign", to:"deep_developer"},{l:"Vote no, money and all", to:"deep_custodian"}]},
+  n68boat:{age:68, text:"Nell names the boat The Three Minutes. The round-the-world window opens the same year his knees start filing complaints.",
+    choices:[{l:"Sail around the world", to:"deep_threeminutes"},{l:"Stay in home waters", to:"deep_harbour"}]},
+};
+
+const ENDINGS = {
+  deep_ark:{t:"THE ARK BELOW", e:"HE KEPT THE LIGHTS ON.", s:[4,1,1],
+    sum:"He told her the truth: the sun was ordinary, and nobody ever once thanked it. Three hundred souls became nine hundred under his watch, and they call him grandfather whether or not it is true. He dies at ninety-one, sealed away from a sky he never stopped missing, having kept every light on."},
+  deep_liturgy:{t:"BEDTIME STORIES FOR THE DROWNED WORLD", e:"IN THE BEGINNING, THE SUN WAS KIND.", s:[5,0,2],
+    sum:"He made it better: the sun a kind old king, the moon his patient wife, the plague a dragon the divers tricked. Two hundred years on, the habitat's children still sing the drowned liturgy at lights-down, and nobody remembers it was him. Every religion starts as somebody's bedtime story, told with love, to one frightened child."},
+  deep_stowaway:{t:"STOWAWAY CENTURIES", e:"ASK HIM ABOUT THE SEA.", s:[3,0,5],
+    sum:"Cryo, then Proxima: eighteen hundred years in the dark, dreamless. He wakes at planetfall as the only person alive who has stood in rain. The children of the ark queue for a decade to hold his hand and ask about the sea, and he answers every single one, and dies under a sun the wrong colour, missing the right one."},
+  deep_gardener:{t:"THE CORRIDOR GARDENER", e:"THERE ARE TOMATOES.", s:[4,0,2],
+    sum:"He never slept. Sixty years tending tomatoes in the spinning dark, feeding people bound for a world he will never see. His soil - built from nothing, teaspoon by patient teaspoon - feeds ten generations after him. They bury him in it, as he asked. There is no plaque. There are tomatoes."},
+  deep_doctor:{t:"DOCTOR OF THE RESERVOIR", e:"NOT A REAL DOCTOR.", s:[5,0,1],
+    sum:"Three books, no licence, nineteen winters. Between them, he and Nell lost forty-one souls and saved a camp of six hundred. Married at the water's edge by a priest who owed them both his life; everyone cried, mostly at the jokes. He was not a real doctor. Nobody, anywhere, has ever cared less about anything."},
+  deep_sexton:{t:"THE SEXTON", e:"HE REMEMBERED EVERY NAME.", s:[3,0,0],
+    sum:"Someone had to dig, so it was him: three hundred and eleven graves, each name said aloud at dusk whether anyone came or not. The camp lived because the dying were never alone and the living never had to do it. At the end, Nell held his hand and asked for the count. He had kept it exactly right."},
+  deep_clean:{t:"THE CLEAN COUNTRY", e:"SAFE.", s:[1,3,5],
+    sum:"The north was clean and stayed clean, and so did he: forty tidy years, a good house, no fevers, no Nell. Word came eventually that the camp had made it - that she had made it - without him. He lives to ninety-six, which is long enough to learn that safe and alive are different words."},
+  deep_family:{t:"FAMILY, IT SAYS", e:"FAMILY, IT SAYS.", s:[4,0,1],
+    sum:"She never forgave the asking, and he never asked again; he just stayed - wards, woodpiles, water runs - for thirty years. They never married. At her funeral, the order of service lists him as family, which is the only word she ever used for it, and more than he ever felt he was owed."},
+  deep_wedding:{t:"THE WEDDING AT THE WORLD'S END", e:"THE TIMING WAS PERFECT.", s:[5,0,2],
+    sum:"He said it, fever camp and all, and she laughed at the timing and said yes before he had finished. Married that Sunday in the boat shed: paper flowers, quinine punch, six hundred guests with nothing else to celebrate. The old doctor swore morale did more that winter than the medicine. They get twenty-two years, and every one counts double."},
+  deep_younghusband:{t:"THE YOUNG HUSBAND", e:"LATE, BUT HE CAME BACK.", s:[4,1,3],
+    sum:"He came out of the lake forty years late and still forty-two; she was eighty-two and refused to waste a minute of it being angry. Eight years, one scandalised village, one wedding where he was mistaken for the groom's son. Afterwards he tends her grave and his garden, a young man growing slowly into the oldest story the village has."},
+  deep_dancer:{t:"THE DANCER UNDER THE LAKE", e:"GONE DANCING.", s:[3,0,5],
+    sum:"He went back under, where it is always the harvest fair and the fiddler never tires. On still nights, swimmers hear it. Mothers tell it to children who will not sleep: be good, or be wonderful, and the lake might take you dancing. He is not dead, not old, and not entirely remembered. He is having the time of his life."},
+  deep_forever:{t:"FOREVER AT THE FAIR", e:"THEY LEFT TOGETHER, EVENTUALLY.", s:[3,0,5],
+    sum:"They stayed. Young forever, at a fair that never ends - and forever, it turns out, is the one dance you cannot sit out. Around year two hundred, every song memorised, they look at each other, set down their cups, and walk hand in hand past the last lantern into the deep dark water, curious at last about the only thing left."},
+  deep_hour:{t:"ONE HONEST HOUR", e:"HE'D DONE ALRIGHT, APPARENTLY.", s:[5,1,3],
+    sum:"They carried the hour back into the ordinary light, and he saved it the way you save the last of anything. At ninety, Nell two winters gone, he finally spends it: an hour at the kitchen table with his dad, dead sixty years, to ask if he did alright. He did, apparently. His dad always knew he would."},
+  deep_developer:{t:"THE DEVELOPER", e:"HE BUILT ON IT.", s:[1,5,3],
+    sum:"The executive homes sold well; the marina, better. He is the richest man the town has ever produced, and cannot explain why he leaves every fair early, or why the smell of pondweed in the new car park stops him dead. Nell finds him out there once, at night, ear to the tarmac. Neither of them ever says anything."},
+  deep_custodian:{t:"THE CUSTODIAN", e:"SOMETHING DOWN THERE OWES HIM.", s:[4,0,4],
+    sum:"The no costs him every penny the yes would have paid. He keeps the lake instead: warden, unpaid, thirty years of mown banks and chased-off surveyors. Nell says he guards it like a grave. Like an egg, he says. The door never once opens for him, but some evenings the water hums a reel he almost, almost knows."},
+  deep_threeminutes:{t:"THE THREE MINUTES", e:"SHE COULD HOLD HER BREATH FOR THREE MINUTES.", s:[5,1,4],
+    sum:"Knees be damned, they went: four years, thirty ports, two storms that should have ended it. Nell dies at the helm off the Azores at seventy-nine, mid-laugh, exactly as threatened, and he sails her home alone and slowly, flying every flag they had collected. The town keeps the boat. The boat keeps the name."},
+  deep_harbour:{t:"HARBOUR LIGHTS", e:"LOOK HOW BIG IT GOT.", s:[5,2,5],
+    sum:"They never leave the bay, and never once run out of it. He teaches every child in town to sail, including, in time, three generations of Danny's lot. Fifty years of small water and coming home before dark to the same lit window. On the last evening she asks if he ever minded the size of it. Look how big it got, he says."},
+};
+
+const DEEP_ORDER = ["deep_ark","deep_liturgy","deep_stowaway","deep_gardener","deep_doctor",
+  "deep_sexton","deep_wedding","deep_clean","deep_family","deep_younghusband","deep_dancer",
+  "deep_forever","deep_hour","deep_developer","deep_custodian","deep_threeminutes","deep_harbour"];
+
+const DEATHS = [
+  {id:"d_goose", t:"THE GOOSE", e:"THE GOOSE IS STILL OUT THERE.", min:7, max:24, s:[2,0,5],
+    dodge:"The goose reconsiders.",
+    sum:"Nobody believes how it happened. The witnesses cannot finish the story without sitting down. The goose was never caught."},
+  {id:"d_peanut", t:"THE PEANUT", e:"HE SAVED IT FOR LATER.", min:16, max:76, s:[3,1,5],
+    dodge:"Not the peanut. Not today.",
+    sum:"It was the peanut. It was always going to be the peanut."},
+  {id:"d_piano", t:"THE PIANO", e:"FORTISSIMO.", min:24, max:76, s:[2,2,4],
+    dodge:"The piano misses.",
+    sum:"Grand, Edwardian, uninsured, and quiet right up until it wasn't. He heard it whistle."},
+  {id:"d_van", t:"MIND THE VAN", e:"MIND THE VAN.", min:33, max:60, s:[3,1,3],
+    dodge:"The van swerves. The flake does not survive.",
+    sum:"Thirty years at crush depth without a scratch. The harbour ice-cream van never even saw him. The flake, miraculously, survived."},
+  {id:"d_vend", t:"THE VENDING MACHINE", e:"HE SHOOK IT. IT SHOOK BACK.", min:24, max:55, s:[2,0,4],
+    dodge:"The machine, this once, lets it slide.",
+    sum:"It had taken his money for twenty years. He shook it. It shook back."},
+  {id:"d_sleep", t:"IN HIS SLEEP, ANNOYINGLY", e:"NOT LIKE THIS.", min:60, max:76, s:[4,2,5],
+    dodge:"He wakes up, furious, alive.",
+    sum:"He survived the sea, the goose and the ice-cream van, and died warm in bed, mid-dream, absolutely furious about it."},
+];
+const DEATH_BY_ID = Object.fromEntries(DEATHS.map(d=>[d.id,d]));
+
+const FOG = {
+  fog_school:"Danny went this way, and half the world with him. It is not written yet.",
+  fog_sky:"The telescope, the night shift, the blood bank, the moon. All still in the fog.",
+  fog_lock:"The canal keeps its hundred years of stories a little longer. Not written yet.",
+};
+
+const FOG_CONTINENTS = ["THE GREEN","THE KITCHEN","THE LADDER","THE KNIFE","THE SKY","THE NIGHT","THE LOCK"];
+
+const DISPS = {
+  luck:{name:"LUCK", max:3, blurb:"The universe owes him one.",
+    ranks:["Fate rolls against him every decade.","Fate rolls half as hard.",
+      "Half as hard, and one dodge per life.","Fate gives up entirely."]},
+  heart:{name:"HEART", max:2, blurb:"He says the thing.",
+    ranks:["Some doors stay quiet.","Hidden HEART doors show their words.",
+      "And they open."]},
+};
+
+/* ---------------- STATE ---------------- */
+
+const KEY = "threescore-v1";
+let save = loadSave();
+let life = null;
+
+function loadSave(){
+  try{
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if(s && s.found && s.deaths && s.spend) return s;
+  }catch(e){}
+  return {found:{}, deaths:{}, lives:0, spend:{luck:0, heart:0}};
+}
+function persist(){ try{ localStorage.setItem(KEY, JSON.stringify(save)); }catch(e){} }
+
+function points(){ return Object.keys(save.found).length + Object.keys(save.deaths).length; }
+function spent(){ return save.spend.luck + save.spend.heart; }
+function totalStones(){ return DEEP_ORDER.length + DEATHS.length; }
+function stonesFound(){ return points(); }
+
+const subtreeMemo = {};
+function subtree(id){
+  if(subtreeMemo[id]) return subtreeMemo[id];
+  let out;
+  if(ENDINGS[id]) out = [id];
+  else if(FOG[id]) out = [];
+  else out = NODES[id].choices.flatMap(c=>subtree(c.to));
+  subtreeMemo[id] = out;
+  return out;
+}
+
+/* ---------------- ENGINE ---------------- */
+
+const app = document.getElementById("app");
+function render(html){ app.innerHTML = '<div class="fade">'+html+'</div>'; window.scrollTo(0,0); }
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;"); }
+
+function statBar(glyph, n){
+  let h = "";
+  for(let i=0;i<5;i++) h += '<span class="'+(i<n?"":"off")+'">'+glyph+'</span>';
+  return h;
+}
+function statsHTML(s){
+  return '<div class="stats">'+statBar("♥",s[0])+' &nbsp; '+statBar("£",s[1])
+    +' &nbsp; '+statBar("⧗",s[2])+'</div>';
+}
+
+function showTitle(){
+  render(
+    '<div style="margin-top:14dvh; text-align:center;">'+
+    '<h1>threescore</h1>'+
+    '<p class="tagline" style="text-align:center;">a life in seven choices</p>'+
+    '<p class="tagline" style="text-align:center;">He gets seventy years, give or take.<br>You get as many as you need.</p>'+
+    '<button class="bigbtn primary" onclick="startBirth()">LIVE</button>'+
+    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD &nbsp;<span style="color:var(--dim)">'+stonesFound()+' / '+totalStones()+'</span></button>'+
+    '</div>');
+}
+
+function startBirth(){
+  if(points()===0){ startLife(); return; }
+  renderBirth();
+}
+
+function renderBirth(){
+  const rem = points() - spent();
+  let h = '<div class="age">BEFORE BIRTH</div>'+
+    '<p class="tagline">Spend the stones he has earned. Dispositions are a lens on the same soul: respec is free, every life.</p>'+
+    '<div class="pts">'+rem+' UNSPENT STONE'+(rem===1?"":"S")+'</div>';
+  for(const k of Object.keys(DISPS)){
+    const d = DISPS[k], v = save.spend[k];
+    let pips = "";
+    for(let i=0;i<d.max;i++) pips += '<span class="'+(i<v?"":"off")+'">●</span>';
+    h += '<div class="disp"><div class="row">'+
+      '<span class="name">'+d.name+'</span>'+
+      '<span class="pips">'+pips+'</span>'+
+      '<span class="adj">'+
+      '<button onclick="adj(\''+k+'\',-1)">−</button>'+
+      '<button onclick="adj(\''+k+'\',1)">+</button>'+
+      '</span></div>'+
+      '<div class="desc"><i>'+d.blurb+'</i><br>'+esc(d.ranks[v])+'</div></div>';
+  }
+  h += '<button class="bigbtn primary" onclick="startLife()">BE BORN</button>'+
+       '<button class="bigbtn" onclick="showTitle()">BACK</button>';
+  render(h);
+}
+
+function adj(k, delta){
+  const d = DISPS[k];
+  const v = save.spend[k] + delta;
+  if(v<0 || v>d.max) return;
+  if(delta>0 && spent() >= points()) return;
+  save.spend[k] = v;
+  persist();
+  renderBirth();
+}
+
+function startLife(){
+  save.lives++; persist();
+  life = {node:"r7", luck:save.spend.luck, heart:save.spend.heart, dodged:false};
+  renderNode();
+}
+
+function renderNode(){
+  const n = NODES[life.node];
+  let h = '<div class="age">─&nbsp; '+(n.ageLabel||n.age)+' &nbsp;─</div>'+
+    '<p class="situation">'+esc(n.text)+'</p>';
+  n.choices.forEach((c,i)=>{
+    if(c.gate){
+      const have = life[c.gate.d];
+      if(have < c.gate.r){
+        const label = (have >= c.gate.r-1) ? esc(c.l) : "? ? ?";
+        h += '<button class="choice locked">'+label+
+          ' &nbsp;<span class="req">takes '+DISPS[c.gate.d].name+' '+c.gate.r+'</span></button>';
+        return;
+      }
+    }
+    const st = subtree(c.to);
+    let chip;
+    if(st.length===0) chip = "fog";
+    else{
+      const f = st.filter(id=>save.found[id]).length;
+      chip = (f===st.length) ? "✓ "+f+"/"+st.length : f+"/"+st.length;
+    }
+    const done = st.length>0 && st.every(id=>save.found[id]);
+    h += '<button class="choice'+(done?" done":"")+'" onclick="choose('+i+')">'+
+      '<span class="chip">'+chip+'</span>'+esc(c.l)+'</button>';
+  });
+  render(h);
+}
+
+function choose(i){
+  const n = NODES[life.node];
+  const c = n.choices[i];
+  if(c.gate && life[c.gate.d] < c.gate.r) return;
+  const rate = [0.12, 0.06, 0.06, 0][life.luck];
+  if(Math.random() < rate){
+    const v = pickDeath(n.age);
+    if(v){
+      if(life.luck===2 && !life.dodged){
+        life.dodged = true;
+        return showDodge(v, c.to);
+      }
+      return showDeath(v, n.age);
+    }
+  }
+  advance(c.to);
+}
+
+function advance(to){
+  if(ENDINGS[to]) return showEnding(to);
+  if(FOG[to]) return showFog(to);
+  life.node = to;
+  renderNode();
+}
+
+function pickDeath(age){
+  const pool = DEATHS.filter(d=>age>=d.min && age<=d.max);
+  if(!pool.length) return null;
+  const fresh = pool.filter(d=>!save.deaths[d.id]);
+  const from = fresh.length ? fresh : pool;
+  return from[Math.floor(Math.random()*from.length)];
+}
+
+function showDodge(v, to){
+  render('<div class="dodge" onclick="advance(\''+to+'\')">'+esc(v.dodge)+
+    '<br><br><span style="font-size:.8rem; color:var(--dim); letter-spacing:.2em;">TAP</span></div>');
+  setTimeout(()=>{ if(life) advance(to); }, 2200);
+}
+
+function cardHTML(kind, o, opts){
+  opts = opts||{};
+  return '<div class="stone'+(kind==="death"?" death":"")+'">'+
+    '<div class="kicker">'+(kind==="death" ? "SUDDEN &middot; AGED "+opts.age : "HERE LIES A LIFE")+'</div>'+
+    '<h2>'+esc(o.t)+'</h2>'+
+    '<div class="epitaph">&ldquo;'+esc(o.e)+'&rdquo;</div>'+
+    statsHTML(o.s)+
+    '<div class="summary">'+esc(o.sum)+'</div>'+
+    '</div>';
+}
+
+function showEnding(id){
+  const isNew = !save.found[id];
+  if(isNew){ save.found[id]=true; persist(); }
+  life = null;
+  render(cardHTML("ending", ENDINGS[id])+
+    (isNew ? '<div class="newstone">✚ A NEW STONE IN THE GRAVEYARD</div>' : '')+
+    '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES</div>'+
+    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
+    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD</button>');
+}
+
+function showDeath(v, nodeAge){
+  const age = nodeAge + 1 + Math.floor(Math.random()*8);
+  const isNew = !save.deaths[v.id];
+  if(isNew){ save.deaths[v.id]=true; persist(); }
+  life = null;
+  render(cardHTML("death", v, {age:Math.min(age, 76)})+
+    (isNew ? '<div class="newstone">✚ A NEW STONE IN THE GRAVEYARD</div>' : '')+
+    '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES</div>'+
+    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
+    '<button class="bigbtn" onclick="showGraveyard()">THE GRAVEYARD</button>');
+}
+
+function showFog(id){
+  life = null;
+  render('<div class="stone"><div class="kicker">THE FOG</div>'+
+    '<div class="summary" style="text-align:center;">'+esc(FOG[id])+'</div></div>'+
+    '<p class="tagline" style="text-align:center;">Seven of eight continents sleep in the fog. This slice charts THE DEEP: the pond, the quarry, the dive school.</p>'+
+    '<button class="bigbtn primary" onclick="startBirth()">LIVE AGAIN</button>'+
+    '<button class="bigbtn" onclick="showTitle()">TITLE</button>');
+}
+
+function showGraveyard(){
+  let h = '<h1 style="font-size:1.4rem; text-align:center; letter-spacing:.3em; margin-top:1rem;">THE GRAVEYARD</h1>'+
+    '<div class="count">'+stonesFound()+' OF '+totalStones()+' STONES &middot; '+save.lives+' LIVES</div>'+
+    '<div class="gy"><h2>THE DEEP</h2><div class="grid">';
+  DEEP_ORDER.forEach(id=>{
+    if(save.found[id]) h += '<button class="tile" onclick="peek(\'e:'+id+'\')">'+esc(ENDINGS[id].t)+'</button>';
+    else h += '<div class="tile unfound">?</div>';
+  });
+  h += '</div><h2>SUDDEN</h2><div class="grid">';
+  DEATHS.forEach(d=>{
+    if(save.deaths[d.id]) h += '<button class="tile death" onclick="peek(\'d:'+d.id+'\')">'+esc(d.t)+'</button>';
+    else h += '<div class="tile death unfound">?</div>';
+  });
+  h += '</div><h2>IN THE FOG</h2>';
+  FOG_CONTINENTS.forEach(n=>{ h += '<div class="fogrow">'+n+'</div>'; });
+  h += '</div><button class="bigbtn primary" style="margin-top:2rem;" onclick="startBirth()">LIVE</button>'+
+    '<button class="bigbtn" onclick="showTitle()">TITLE</button>'+
+    '<div class="foot"><button onclick="wipe()">erase everything</button></div>';
+  render(h);
+}
+
+function peek(ref){
+  const kind = ref[0]==="d" ? "death" : "ending";
+  const id = ref.slice(2);
+  const o = kind==="death" ? DEATH_BY_ID[id] : ENDINGS[id];
+  const div = document.createElement("div");
+  div.className = "overlay";
+  div.innerHTML = '<div class="inner">'+cardHTML(kind, o, {age:"?"})+'</div>';
+  div.onclick = ()=>div.remove();
+  document.body.appendChild(div);
+}
+
+function wipe(){
+  if(!confirm("Erase the whole graveyard? Every stone, every life.")) return;
+  localStorage.removeItem(KEY);
+  save = loadSave();
+  showTitle();
+}
+
+showTitle();
+</script>
+</body>
+</html>
