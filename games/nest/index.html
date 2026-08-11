@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#f3ecdf">
-<title>NEST</title>
+<title>Mini Levels</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f3ecdf'/%3E%3Crect x='5.5' y='5.5' width='21' height='21' rx='2' fill='none' stroke='%235f95c9' stroke-width='2.5'/%3E%3Crect x='11.5' y='11.5' width='9' height='9' rx='1.5' fill='none' stroke='%239a86cb' stroke-width='2'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23d9a94e'/%3E%3C/svg%3E">
 <style>
   /* T22 pastel pass: warm linen ground, dusty pastels, soft everything. */
@@ -126,6 +126,9 @@
   .icon .slash { display: none; }
   .icon.off .slash { display: inline; }
   button:active { background: #dfd4bd; }
+  /* The one forward action on a card sits rightmost and reads loudest. */
+  .primary { border-color: var(--blue); background: var(--blue); color: #fbf8f1; }
+  .primary:active { background: #4d82b6; }
   #undo.pulse { animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse {
     0%, 100% { box-shadow: 0 0 0 rgba(95, 149, 201, 0); }
@@ -175,8 +178,6 @@
   }
   .lv b { display: block; color: var(--blue); font-size: 12px; letter-spacing: 0.1em; }
   .lv small { color: var(--dim); font-size: 11px; }
-  .lv.locked { color: var(--dim); opacity: 0.5; }
-  .lv.locked b { color: var(--dim); }
   .lv.here { border-color: var(--blue); }
   .trackHead {
     grid-column: 1 / -1;
@@ -276,9 +277,12 @@
 
 <div id="app">
   <header id="hud">
-    <span id="levelName">NEST</span>
+    <span id="levelName">MINI LEVELS</span>
     <span id="selves" hidden></span>
     <span id="moves">0</span>
+    <button id="editBtn" class="icon" aria-label="Open this level in the editor">
+      <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L16.7 4.1a2 2 0 0 1 2.9 0l.3.3a2 2 0 0 1 0 2.9L8.4 18.8z"/><path d="M14.5 6.3l3.2 3.2"/></svg>
+    </button>
     <button id="sfxBtn" class="icon" aria-label="Sound effects">
       <svg viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 6v12L7.5 14.5H4z"/><path d="M15.5 9.5a4 4 0 0 1 0 5"/><path class="slash" d="M3.5 3.5l17 17"/></svg>
     </button>
@@ -308,9 +312,9 @@
     <h2 id="cardTitle" class="cardTitle">Solved</h2>
     <p id="cardBody"></p>
     <div id="cardRow">
-      <button id="next">Next</button>
       <button id="replay">Replay</button>
       <button id="toLevels">Levels</button>
+      <button id="next" class="primary">Next</button>
     </div>
   </div>
 </div>
@@ -1677,6 +1681,7 @@ const FLASH = 260;   // ms for merge rings and death flares
 const BLOOM = 800;   // ms for the win cascade
 const DEPTH = 3;     // feedback passes on top of the flat pass
 const BLOCK_INSET = 0.07;  // bezel around the little world, in cells
+const PAD_FRAC = 0.38;     // T38: apron around the interior (frame + door mouths), in cells
 const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
 const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
 
@@ -1689,7 +1694,10 @@ let sprites = [];
 let anim = null;     // { t0, p, flashes: [{at, kind}] }
 let bloom = null;    // { t0, p }
 let bonkAt = null, bonkVec = [0, 0];
+let lastDir = 'D';   // where the amoeba's eyes rest between moves
+let lastMoveAt = 0;  // when it last moved (its wobble calms as it sits)
 let CELL = 24;
+let PAD = 9;         // px of apron; derived from CELL in resize()
 let dirty = true;
 let auto = null;     // timeout id while a solver replay is walking the board
 function stopAuto() { if (auto !== null) { clearTimeout(auto); auto = null; } }
@@ -1713,8 +1721,8 @@ const SAVE_KEY = 'nest-v6'; // v6 = tracks (T35): best keyed 'trackId:i', unlock
 let progress = { best: {}, unlocked: {}, coached: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
-const unlockedIn = (t) =>
-  Math.min(TRACKS[t].levels.length, Math.max(1, progress.unlocked[TRACKS[t].id] | 0 || 1));
+// T38 (Will): every level is open from the start - locks bought nothing here.
+const unlockedIn = (t) => TRACKS[t].levels.length;
 
 function loadProgress() {
   try {
@@ -1829,14 +1837,10 @@ function openPicker() {
     count.textContent = solved + '/' + tr.levels.length;
     head.appendChild(count);
     grid.appendChild(head);
-    const unlocked = unlockedIn(t);
     tr.levels.forEach((def, i) => {
-      const locked = i >= unlocked;
       const best = progress.best[bestKey(t, i)];
-      const note = locked ? '\u{1F512}' : best !== undefined ? 'best ' + best : 'unsolved';
-      const b = tile(i + 1, def.name, note,
-        locked ? null : () => { play('ui'); loadLevel(t, i); });
-      if (locked) b.classList.add('locked');
+      const note = best !== undefined ? 'best ' + best : 'unsolved';
+      const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
       if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
     });
   });
@@ -1906,19 +1910,29 @@ function compileAnim(prev, events, dir) {
   for (const i of prev.boxes) list.push({ kind: 'box', a: i, b: i, fate: null, birth: null, live: true });
   const flashes = [];
   const sank = [];
+  const pushedFrom = new Set(); // cells something was just shoved out of
   const at = (kind, idx) => list.find(s => s.live && s.kind === kind && s.b === idx);
   // Portal sprites squash and stretch along the direction they travelled.
   const axis = (s) => { s.axis = dx !== 0 ? 'x' : 'y'; return s; };
 
   for (const ev of events) {
     switch (ev.t) {
-      case 'step': case 'push': {
-        const s = at(ev.t === 'step' ? 'clone' : 'box', ev.from);
+      case 'push': {
+        const s = at('box', ev.from);
         if (s) s.b = ev.to;
+        pushedFrom.add(ev.from);
+        break;
+      }
+      case 'step': {
+        const s = at('clone', ev.from);
+        // T40: a step onto a cell something was shoved out of is a PUSH -
+        // the body animates as strain, not a free stride.
+        if (s) { s.b = ev.to; if (pushedFrom.has(ev.to)) s.pushing = true; }
         break;
       }
       case 'enter': case 'boxin': {
         const kind = ev.t === 'enter' ? 'clone' : 'box';
+        if (ev.t === 'boxin' && !ev.lead) pushedFrom.add(ev.from);
         const s = at(kind, ev.from);
         // Pinch into the door mouth on the face we entered by, not the middle
         // of the block: that mouth is where the little world's door is drawn.
@@ -1940,6 +1954,7 @@ function compileAnim(prev, events, dir) {
       }
       case 'exit': case 'boxout': {
         const kind = ev.t === 'exit' ? 'clone' : 'box';
+        if (ev.t === 'boxout') pushedFrom.add(ev.from);
         if (!ev.spawned) {
           const s = at(kind, ev.from);
           // Walking off the edge: step past it in grid COORDS, since from+delta
@@ -1994,6 +2009,7 @@ function compileAnim(prev, events, dir) {
       case 'sink': {
         const s = at('box', ev.at) || at('box', ev.at - delta);
         if (s) { s.b = ev.at; s.fate = 'sink'; s.live = false; }
+        pushedFrom.add(ev.at - delta);
         sank.push(ev.at);
         break;
       }
@@ -2006,6 +2022,7 @@ function compileAnim(prev, events, dir) {
       case 'blockstep': {
         const s = at('block', ev.from);
         if (s) s.b = ev.to;
+        pushedFrom.add(ev.from);
         break;
       }
       case 'blocksink': {
@@ -2017,6 +2034,7 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'blockout': {
+        pushedFrom.add(ev.from);
         if (!ev.spawned) {
           const s = at('block', ev.from);
           if (s) {
@@ -2034,6 +2052,7 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'blockin': {
+        pushedFrom.add(ev.from);
         const s = at('block', ev.from);
         if (s) {
           s.b = ev.block; s.bxy = mouthXY(ev.block, IN_FACE[dir]);
@@ -2064,6 +2083,8 @@ function applyMove(dir) {
   }
   history.push({ state, moves });
   if (history.length > 1000) history.shift();
+  lastDir = dir;
+  lastMoveAt = performance.now();
   const prev = state;
   state = r.state;
   moves++;
@@ -2132,9 +2153,6 @@ function showWin() {
     const key = bestKey(trackIndex, levelIndex);
     const prevBest = progress.best[key];
     if (prevBest === undefined || moves < prevBest) progress.best[key] = moves;
-    const id = TRACKS[trackIndex].id;
-    progress.unlocked[id] = Math.max(unlockedIn(trackIndex),
-      Math.min(TRACKS[trackIndex].levels.length, levelIndex + 2));
     saveProgress();
   }
 
@@ -2152,11 +2170,20 @@ function showWin() {
 
 // --- Renderer ---------------------------------------------------------------
 
+// T38 (Will): the boundary ring is not drawn any more - the interior gets the
+// pixels, and a slim apron around it carries the shell frame + door mouths.
+// The engine still owns the full grid; only the view is cropped.
+const viewW = () => (layout.w - 2) * CELL + PAD * 2;
+const viewH = () => (layout.h - 2) * CELL + PAD * 2;
+
 function resize() {
   const availW = stage.clientWidth;
   const availH = stage.clientHeight;
-  CELL = Math.max(10, Math.floor(Math.min(availW / layout.w, availH / layout.h)));
-  const cssW = layout.w * CELL, cssH = layout.h * CELL;
+  const iw = layout.w - 2, ih = layout.h - 2;
+  CELL = Math.max(10, Math.floor(Math.min(
+    availW / (iw + PAD_FRAC * 2), availH / (ih + PAD_FRAC * 2))));
+  PAD = Math.ceil(CELL * PAD_FRAC);
+  const cssW = viewW(), cssH = viewH();
   board.style.width = cssW + 'px';
   board.style.height = cssH + 'px';
   for (const cv of [board, bufA, bufB]) {
@@ -2183,23 +2210,27 @@ function placeOuter() {
   if (b === undefined) { outer = null; return; }
   const m = miniGeom();
   const s = 1 / m.k;
-  const dx = (xOf(b) + m.ox) * CELL, dy = (yOf(b) + m.oy) * CELL;
+  // Block cell (x,y) sits at PAD + (x-1)*CELL in the cropped view.
+  const dx = PAD + (xOf(b) - 1 + m.ox) * CELL, dy = PAD + (yOf(b) - 1 + m.oy) * CELL;
   outer = {
     x: board.offsetLeft - dx * s, y: board.offsetTop - dy * s,
-    w: layout.w * CELL * s, h: layout.h * CELL * s,
+    w: viewW() * s, h: viewH() * s,
   };
 }
 
 // Where the little world sits inside a nest-block cell, as fractions of the
-// cell (CELL cancels out, so this is resolution independent). Mini-cell
-// (mx, my) centres at ox + k * (mx + 0.5) along the cell.
+// cell. The picture being nested is the CROPPED view (interior + apron), so
+// the view is measured in cells: interior plus PAD/CELL of apron each side.
+// Interior cell x (layout coords) centres at ox + k * (pc + x - 1 + 0.5).
 function miniGeom() {
   const fit = 1 - BLOCK_INSET * 2;
-  const k = Math.min(fit / layout.w, fit / layout.h);
+  const pc = PAD / CELL;
+  const vw = layout.w - 2 + pc * 2, vh = layout.h - 2 + pc * 2;
+  const k = Math.min(fit / vw, fit / vh);
   return {
-    k,
-    ox: BLOCK_INSET + (fit - layout.w * k) / 2,
-    oy: BLOCK_INSET + (fit - layout.h * k) / 2,
+    k, pc, vw, vh,
+    ox: BLOCK_INSET + (fit - vw * k) / 2,
+    oy: BLOCK_INSET + (fit - vh * k) / 2,
   };
 }
 
@@ -2211,8 +2242,8 @@ function doorFrac(side) {
   if (d === null) return 0.5;
   const m = miniGeom();
   return side === 'N' || side === 'S'
-    ? m.ox + m.k * (xOf(d) + 0.5)
-    : m.oy + m.k * (yOf(d) + 0.5);
+    ? m.ox + m.k * (m.pc + xOf(d) - 0.5)
+    : m.oy + m.k * (m.pc + yOf(d) - 0.5);
 }
 
 // The door mouth on one face of a block cell, in sprite grid coords: the point
@@ -2283,7 +2314,6 @@ let tileLayout = null, tileKey = '';
 function buildTileCache() {
   const { w, h } = layout;
   const filled = new Set(state.filled);
-  const doorSet = new Set(Object.values(layout.doors).filter(v => v !== null));
   tileCache.width = Math.max(1, Math.round(w * CELL * DPR));
   tileCache.height = Math.max(1, Math.round(h * CELL * DPR));
   const c = tileCtx;
@@ -2291,31 +2321,16 @@ function buildTileCache() {
   c.fillStyle = '#f3ecdf';
   c.fillRect(0, 0, w * CELL, h * CELL);
   for (let i = 0; i < w * h; i++) {
-    const x = xOf(i) * CELL, y = yOf(i) * CELL;
-    if (layout.walls.has(i)) {
-      c.fillStyle = '#d5c8b0';
-      c.fillRect(x, y, CELL, CELL);
-      c.fillStyle = 'rgba(255,255,255,0.45)';
-      c.fillRect(x, y, CELL, Math.max(1, CELL * 0.14));
-      c.strokeStyle = 'rgba(120,104,78,0.22)';
-      c.lineWidth = 1;
-      c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
-      continue;
-    }
+    const gx = xOf(i), gy = yOf(i);
+    // T38: the ring is not stones any more - drawBoardFrame is the shell.
+    if (gx === 0 || gy === 0 || gx === w - 1 || gy === h - 1) continue;
+    const x = gx * CELL, y = gy * CELL;
+    if (layout.walls.has(i)) continue; // drawn merged, below
     drawFloorCell(c, x, y);
 
     if (layout.lava.has(i)) {
       if (!filled.has(i)) drawPit(c, x, y);
       else drawSlab(c, x, y);
-    }
-
-    if (doorSet.has(i)) {
-      const g = c.createRadialGradient(
-        x + CELL / 2, y + CELL / 2, 0, x + CELL / 2, y + CELL / 2, CELL * 0.9);
-      g.addColorStop(0, 'rgba(154,134,203,0.45)');
-      g.addColorStop(1, 'rgba(154,134,203,0)');
-      c.fillStyle = g;
-      c.fillRect(x - CELL / 2, y - CELL / 2, CELL * 2, CELL * 2);
     }
 
     if (layout.targets.has(i)) {
@@ -2329,6 +2344,140 @@ function buildTileCache() {
       c.restore();
     }
   }
+  const inWall = (x, y) =>
+    x > 0 && y > 0 && x < w - 1 && y < h - 1 && layout.walls.has(y * w + x);
+  drawWallMass(c, w, h, inWall);
+  drawBoardFrame(c);
+}
+
+// T39/T41 (Will): walls are one soft slab. Every cell and every concave
+// fillet goes into a SINGLE path filled once, so the silhouette is smooth
+// the whole way round - rounded outside corners, filleted inside corners,
+// no per-cell seams - and the one fill casts one clean shadow for depth.
+function drawWallMass(c, w, h, inWall) {
+  c.save();
+  c.beginPath();
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const nb = { L: inWall(x - 1, y), R: inWall(x + 1, y),
+        U: inWall(x, y - 1), D: inWall(x, y + 1) };
+      if (inWall(x, y)) wallShape(c, x * CELL, y * CELL, nb, CELL * 0.3);
+      else wallFillets(c, x * CELL, y * CELL, nb, CELL * 0.3);
+    }
+  }
+  c.fillStyle = '#cfc0a4';
+  c.shadowColor = 'rgba(110,95,70,0.3)';
+  c.shadowBlur = CELL * 0.16;
+  c.shadowOffsetY = CELL * 0.05;
+  c.fill();
+  c.restore();
+}
+function wallShape(c, x, y, nb, rad) {
+  const x1 = x + CELL, y1 = y + CELL;
+  const tl = nb.L || nb.U ? 0 : rad, tr = nb.R || nb.U ? 0 : rad;
+  const br = nb.R || nb.D ? 0 : rad, bl = nb.L || nb.D ? 0 : rad;
+  c.moveTo(x + tl, y);
+  c.arcTo(x1, y, x1, y1, tr);
+  c.arcTo(x1, y1, x, y1, br);
+  c.arcTo(x, y1, x, y, bl);
+  c.arcTo(x, y, x1, y, tl);
+  c.closePath();
+}
+// A floor cell cornered by two walls gets a quarter-curve of wall bridging
+// them, so inside corners are as smooth as outside ones.
+function wallFillets(c, x, y, nb, rf) {
+  const x1 = x + CELL, y1 = y + CELL;
+  if (nb.L && nb.U) {
+    c.moveTo(x, y + rf);
+    c.arc(x + rf, y + rf, rf, Math.PI, Math.PI * 1.5);
+    c.lineTo(x, y);
+    c.closePath();
+  }
+  if (nb.R && nb.U) {
+    c.moveTo(x1 - rf, y);
+    c.arc(x1 - rf, y + rf, rf, Math.PI * 1.5, Math.PI * 2);
+    c.lineTo(x1, y);
+    c.closePath();
+  }
+  if (nb.R && nb.D) {
+    c.moveTo(x1, y1 - rf);
+    c.arc(x1 - rf, y1 - rf, rf, 0, Math.PI * 0.5);
+    c.lineTo(x1, y1);
+    c.closePath();
+  }
+  if (nb.L && nb.D) {
+    c.moveTo(x + rf, y1);
+    c.arc(x + rf, y1 - rf, rf, Math.PI * 0.5, Math.PI);
+    c.lineTo(x, y1);
+    c.closePath();
+  }
+}
+
+// T38: the level's shell drawn the way a nest block draws its own edge - one
+// violet line broken open wherever there is a door, so board and block speak
+// the same language. Each door gets a glowing arch-mouth bulging out through
+// the gap, plus a spill of light onto the arrival cell inside.
+function drawBoardFrame(c) {
+  const { w, h } = layout;
+  const lw = Math.max(2, CELL * 0.09);
+  const gap = CELL * 0.9;
+  const x0 = CELL - lw / 2, y0 = CELL - lw / 2;
+  const x1 = (w - 1) * CELL + lw / 2, y1 = (h - 1) * CELL + lw / 2;
+  c.save();
+  c.strokeStyle = 'rgba(154,134,203,0.95)';
+  c.shadowColor = 'rgba(154,134,203,0.35)';
+  c.shadowBlur = CELL * 0.14;
+  c.lineWidth = lw;
+  c.lineCap = 'round';
+  const edge = (ax, ay, bx, by, side) => {
+    c.beginPath();
+    const d = layout.doors[side];
+    if (d === null) { c.moveTo(ax, ay); c.lineTo(bx, by); }
+    else {
+      const horiz = ay === by;
+      const at = (horiz ? xOf(d) : yOf(d)) * CELL + CELL / 2;
+      const lo = horiz ? ax : ay, hi = horiz ? bx : by;
+      const g0 = Math.max(lo, at - gap / 2), g1 = Math.min(hi, at + gap / 2);
+      if (g0 > lo) { c.moveTo(ax, ay); horiz ? c.lineTo(g0, ay) : c.lineTo(ax, g0); }
+      if (g1 < hi) { horiz ? c.moveTo(g1, ay) : c.moveTo(ax, g1); c.lineTo(bx, by); }
+    }
+    c.stroke();
+  };
+  edge(x0, y0, x1, y0, 'N');
+  edge(x1, y0, x1, y1, 'E');
+  edge(x0, y1, x1, y1, 'S');
+  edge(x0, y0, x0, y1, 'W');
+  c.restore();
+  for (const side of ['N', 'S', 'W', 'E']) drawDoorMouth(c, side);
+}
+
+function drawDoorMouth(c, side) {
+  const d = layout.doors[side];
+  if (d === null) return;
+  const { w, h } = layout;
+  const px = side === 'W' ? CELL : side === 'E' ? (w - 1) * CELL : xOf(d) * CELL + CELL / 2;
+  const py = side === 'N' ? CELL : side === 'S' ? (h - 1) * CELL : yOf(d) * CELL + CELL / 2;
+  // Light spilling inward marks where the door lets out.
+  const g = c.createRadialGradient(px, py, 0, px, py, CELL * 1.05);
+  g.addColorStop(0, 'rgba(154,134,203,0.5)');
+  g.addColorStop(1, 'rgba(154,134,203,0)');
+  c.fillStyle = g;
+  c.fillRect(px - CELL * 1.05, py - CELL * 1.05, CELL * 2.1, CELL * 2.1);
+  // The mouth: an archway bulging outward through the gap in the frame.
+  const a0 = side === 'N' ? Math.PI : side === 'S' ? 0 : side === 'W' ? Math.PI / 2 : -Math.PI / 2;
+  const r = Math.max(3, PAD * 0.62);
+  c.save();
+  c.fillStyle = 'rgba(154,134,203,0.3)';
+  c.strokeStyle = 'rgba(154,134,203,0.95)';
+  c.shadowColor = 'rgba(154,134,203,0.5)';
+  c.shadowBlur = CELL * 0.18;
+  c.lineWidth = Math.max(2, CELL * 0.09);
+  c.lineCap = 'round';
+  c.beginPath();
+  c.arc(px, py, r, a0, a0 + Math.PI);
+  c.fill();
+  c.stroke();
+  c.restore();
 }
 
 function drawFloorCell(c, x, y) {
@@ -2435,7 +2584,7 @@ function blockShell() {
     shellCache.bezel = cv;
     [cv, c] = make();              // inner border + frame, drawn OVER the picture
     const m = miniGeom();
-    const dw = layout.w * m.k * CELL, dh = layout.h * m.k * CELL;
+    const dw = m.vw * m.k * CELL, dh = m.vh * m.k * CELL;
     c.strokeStyle = 'rgba(154,134,203,0.5)';
     c.lineWidth = 1;
     c.strokeRect(m.ox * CELL - 0.5, m.oy * CELL - 0.5, dw + 1, dh + 1);
@@ -2456,7 +2605,7 @@ function drawBlockAt(c, x, y, inner) {
   c.drawImage(sh.bezel, px, py, ps, ps);
   const m = miniGeom();
   c.drawImage(inner, x + m.ox * CELL, y + m.oy * CELL,
-    layout.w * m.k * CELL, layout.h * m.k * CELL);
+    m.vw * m.k * CELL, m.vh * m.k * CELL);
   c.drawImage(sh.frame, px, py, ps, ps);
 }
 
@@ -2490,7 +2639,7 @@ function drawBlockSprite(c, s, p, inner) {
   c.restore();
 }
 
-function drawSprite(c, s, p) {
+function drawSprite(c, s, p, time) {
   const win = s.fate === 'squeeze' ? SQUEEZE_WIN
     : s.birth === 'pop' && !s.fate ? POP_WIN : null;
   if (win) p = Math.max(0, Math.min(1, (p - win[0]) / (win[1] - win[0])));
@@ -2532,16 +2681,114 @@ function drawSprite(c, s, p) {
   if (alpha <= 0.01) return;
 
   const horiz = s.axis === 'x';
-  const kx = scale * (horiz ? along : across);
-  const ky = scale * (horiz ? across : along);
+  let kx = scale * (horiz ? along : across);
+  let ky = scale * (horiz ? across : along);
   const cx = x * CELL + CELL / 2;
   const cy = y * CELL + CELL / 2;
-  const onTarget = s.kind !== 'clone' &&
-    layout.targets.has(Math.round(y) * layout.w + Math.round(x));
-  const img = spriteImg(s.kind === 'clone' ? 'clone' : onTarget ? 'boxOn' : 'box');
+  if (s.kind === 'clone') {
+    let ox = 0, oy = 0;
+    const mdx = bx - ax, mdy = by - ay;
+    if (!s.fate && !s.birth && (mdx || mdy)) {
+      // T40: the squelch. A push is one long squash against the load; a free
+      // step is gather -> stretch -> landing splat -> settle.
+      const st = s.pushing ? -0.24 * Math.sin(Math.PI * p) : 0.3 * squelch(p);
+      if (Math.abs(mdx) >= Math.abs(mdy)) { kx *= 1 + st; ky *= 1 - st * 0.6; }
+      else { ky *= 1 + st; kx *= 1 - st * 0.6; }
+    }
+    if (!reducedMotion.matches && bonkAt !== null && !s.fate && !s.birth) {
+      // Splat: every self flattens against the wall it just walked into.
+      const q = Math.min(1, Math.max(0, (time - bonkAt) / 180));
+      const k = Math.sin(q * Math.PI);
+      if (bonkVec[0]) { kx *= 1 - 0.32 * k; ky *= 1 + 0.26 * k; }
+      else { ky *= 1 - 0.32 * k; kx *= 1 + 0.26 * k; }
+      ox = bonkVec[0] * k * CELL * 0.12;
+      oy = bonkVec[1] * k * CELL * 0.12;
+    }
+    drawClone(c, s, cx + ox, cy + oy, kx, ky, alpha, time, mdx, mdy);
+    return;
+  }
+  const onTarget = layout.targets.has(Math.round(y) * layout.w + Math.round(x));
+  const img = spriteImg(onTarget ? 'boxOn' : 'box');
   const half = CELL * (0.5 + SPRITE_PAD);
   c.globalAlpha = alpha;
   c.drawImage(img, cx - half * kx, cy - half * ky, half * 2 * kx, half * 2 * ky);
+  c.globalAlpha = 1;
+}
+
+// The step squelch: a beat of gathering squash, a rush of stretch, a splat
+// on landing that settles to rest. Returns the along-axis deform (-1..1).
+function squelch(p) {
+  if (p < 0.2) return -0.55 * Math.sin(p / 0.2 * Math.PI / 2);
+  if (p < 0.55) return -0.55 + 1.55 * (1 - Math.cos((p - 0.2) / 0.35 * Math.PI)) / 2;
+  const q = (p - 0.55) / 0.45;
+  return Math.cos(q * Math.PI * 1.5) * (1 - q);
+}
+
+// T39 (Will): the player is an amoeba - a live blob whose rim ripples on two
+// slow sine waves (seeded per body, so twins never wobble in unison), with
+// eyes that look where it is going and blink every few seconds. Drawn as a
+// path per frame; the pricey shadowBlur glow stays a cached image underneath.
+function drawClone(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
+  const t = reducedMotion.matches ? 0 : (time || 0);
+  const seed = (s.a * 2.399) % (Math.PI * 2);
+  const R = CELL * 0.37;
+  // T40: lively right after a move, near-still once it has sat for a moment.
+  const act = 0.3 + 0.7 * Math.max(0, Math.min(1, 1 - (t - lastMoveAt - 400) / 600));
+  c.save();
+  c.translate(cx, cy);
+  c.scale(kx, ky);
+  const gs = CELL * (0.5 + SPRITE_PAD);
+  c.globalAlpha = alpha;
+  c.drawImage(spriteImg('glow'), -gs, -gs, gs * 2, gs * 2);
+  c.fillStyle = '#7aaede';
+  c.beginPath();
+  const N = 24;
+  for (let i = 0; i <= N; i++) {
+    const th = (i % N) / N * Math.PI * 2;
+    const wob = 1 + act * (0.05 * Math.sin(3 * th + t * 0.0023 + seed)
+      + 0.035 * Math.sin(5 * th - t * 0.0031 + seed * 1.7));
+    // A pinch of squircle: bias the radius out at the diagonals so it keeps a
+    // memory of the old square body without ever being one.
+    const sq = 1 + 0.12 * Math.pow(Math.abs(Math.sin(2 * th)), 1.5);
+    const rr = R * wob * sq;
+    i ? c.lineTo(Math.cos(th) * rr, Math.sin(th) * rr) : c.moveTo(rr, 0);
+  }
+  c.closePath();
+  c.fill();
+  // Eyes: track the direction of travel (or the last one, at rest).
+  let [lx, ly] = (mdx || mdy) ? [mdx, mdy] : DIRS[lastDir];
+  const ll = Math.hypot(lx, ly) || 1;
+  lx /= ll; ly /= ll;
+  const er = Math.max(1.5, R * 0.3);
+  const blink = !reducedMotion.matches && ((t * 0.001 + seed) % 3.8) < 0.15;
+  for (const sx of [-1, 1]) {
+    const ex = sx * R * 0.42, ey = -R * 0.2;
+    if (blink) {
+      c.strokeStyle = '#33506e';
+      c.lineWidth = Math.max(1, er * 0.4);
+      c.lineCap = 'round';
+      c.beginPath();
+      c.moveTo(ex - er * 0.7, ey);
+      c.lineTo(ex + er * 0.7, ey);
+      c.stroke();
+      continue;
+    }
+    c.fillStyle = '#fff';
+    c.beginPath();
+    c.arc(ex, ey, er, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = '#33506e';
+    c.beginPath();
+    c.arc(ex + lx * er * 0.36, ey + (ly * er * 0.36) + er * 0.1, er * 0.55, 0, Math.PI * 2);
+    c.fill();
+  }
+  c.strokeStyle = 'rgba(255,255,255,0.85)';
+  c.lineWidth = Math.max(1, R * 0.14);
+  c.lineCap = 'round';
+  c.beginPath();
+  c.arc(0, R * 0.18, R * 0.36, Math.PI * 0.2, Math.PI * 0.8);
+  c.stroke();
+  c.restore();
   c.globalAlpha = 1;
 }
 
@@ -2564,16 +2811,14 @@ function spriteImg(kind) {
   const base = CELL * 0.7;
   const cx = pad + CELL / 2, cy = pad + CELL / 2;
   const r = Math.max(2, base * 0.26);
-  if (kind === 'clone') {
-    c.shadowColor = 'rgba(122,174,222,0.45)';
-    c.shadowBlur = CELL * 0.14;
-    c.fillStyle = '#7aaede';
-    roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
-    c.fill();
-    c.shadowBlur = 0;
-    c.fillStyle = 'rgba(255,255,255,0.75)';
-    roundRect(c, cx - base * 0.22, cy - base * 0.3, base * 0.44, base * 0.2, base * 0.09);
-    c.fill();
+  if (kind === 'glow') {
+    // The amoeba's halo: baked once so the live body never pays shadowBlur.
+    const g = c.createRadialGradient(cx, cy, 0, cx, cy, pad + CELL / 2);
+    g.addColorStop(0, 'rgba(122,174,222,0.38)');
+    g.addColorStop(0.55, 'rgba(122,174,222,0.16)');
+    g.addColorStop(1, 'rgba(122,174,222,0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, CELL + pad * 2, CELL + pad * 2);
   } else {
     const on = kind === 'boxOn';
     c.shadowColor = on ? 'rgba(147,196,147,0.4)' : 'rgba(233,188,96,0.4)';
@@ -2637,11 +2882,14 @@ function drawBloom(c) {
 // the backdrop never strobes.
 function drawScene(c, time, inner, bg, dpr) {
   c.setTransform(dpr || DPR, 0, 0, dpr || DPR, 0, 0);
+  // Crop to the interior: layout cell (1,1) lands at (PAD, PAD). Everything
+  // below draws in full-layout coords, so sprites mid-door just slide off.
+  c.translate(PAD - CELL, PAD - CELL);
   drawTiles(c);
   const p = anim ? anim.p : 1;
   // Blocks first: everything else walks over (and through) them.
   for (const s of sprites) if (s.kind === 'block') drawBlockSprite(c, s, p, inner);
-  for (const s of sprites) if (s.kind !== 'block') drawSprite(c, s, p);
+  for (const s of sprites) if (s.kind !== 'block') drawSprite(c, s, p, time);
   if (bg) return;
   drawFlashes(c, time);
   drawBloom(c);
@@ -2660,9 +2908,9 @@ function drawOuter(time) {
   wctx.drawImage(bufC, outer.x, outer.y, outer.w, outer.h);
   wctx.globalAlpha = 1;
   // Erase the far field so only the cell we live in reads as a shape.
-  const cx = board.offsetLeft + layout.w * CELL / 2;
-  const cy = board.offsetTop + layout.h * CELL / 2;
-  const g = wctx.createRadialGradient(cx, cy, layout.w * CELL * 0.6,
+  const cx = board.offsetLeft + viewW() / 2;
+  const cy = board.offsetTop + viewH() / 2;
+  const g = wctx.createRadialGradient(cx, cy, viewW() * 0.6,
     cx, cy, Math.max(cssW, cssH) * 0.8);
   g.addColorStop(0, 'rgba(0,0,0,0)');
   g.addColorStop(1, 'rgba(0,0,0,1)');
@@ -2716,6 +2964,7 @@ function frame(ts) {
     motion = true;
   }
   if (bonkAt !== null) {
+    motion = true; // the blob is mid-splat, keep frames coming
     const p = (ts - bonkAt) / 180;
     if (p >= 1) { bonkAt = null; board.style.transform = ''; }
     else {
@@ -2725,12 +2974,17 @@ function frame(ts) {
         'translate(' + (k * bonkVec[0]).toFixed(2) + 'px,' + (k * bonkVec[1]).toFixed(2) + 'px)';
     }
   }
-  // Pits are static now (T14 killed the ember flicker), so an idle board
-  // never needs repainting.
-  if (!motion && !dirty) return;
+  // T39: the amoeba idles - breathe at ~30fps between moves so the wobble and
+  // the blinks stay alive, but skip it under reduced motion or a covered board.
+  if (!motion && !dirty) {
+    if (reducedMotion.matches || !state || !state.clones.length || overlayOpen()) return;
+    if (ts - lastBreath < 33) return;
+  }
+  lastBreath = ts;
   render(ts);
   dirty = false;
 }
+let lastBreath = 0;
 
 // --- Audio ------------------------------------------------------------------
 // Everything here is synthesized on the spot: no assets, no fetch, file:// safe.
@@ -3146,10 +3400,16 @@ $('musicBtn').addEventListener('click', () => setAudio('music', !audio.music));
 // throws in Safari. So: arm on the first one, whatever it was.
 let armed = false;
 function armAudio() {
-  if (armed) return;
-  armed = true;
-  if (!ensureAudio()) return;
-  if (audio.music) startMusic();
+  if (!armed) {
+    armed = true;
+    if (!ensureAudio()) return;
+    if (audio.music) startMusic();
+    return;
+  }
+  // Backgrounding can park (or on iOS, interrupt) the context, and the
+  // visibilitychange resume is not always honoured - so every later gesture
+  // nudges it back to life, keeping the sound true to the toggles.
+  if (ac && ac.state !== 'running' && (audio.sfx || audio.music)) ac.resume();
 }
 window.addEventListener('pointerdown', armAudio);
 window.addEventListener('keydown', armAudio);
@@ -3280,18 +3540,10 @@ function edPaint() {
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
   c.fillStyle = '#f3ecdf';
   c.fillRect(0, 0, n * C, n * C);
+  const isW = (x, y) => x >= 0 && y >= 0 && x < n && y < n && rows[y][x] === '#';
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const ch = rows[y][x], px = x * C, py = y * C;
-    if (ch === '#') {
-      c.fillStyle = '#d5c8b0';
-      c.fillRect(px, py, C, C);
-      c.fillStyle = 'rgba(255,255,255,0.45)';
-      c.fillRect(px, py, C, Math.max(1, C * 0.14));
-      c.strokeStyle = 'rgba(120,104,78,0.22)';
-      c.lineWidth = 1;
-      c.strokeRect(px + 0.5, py + 0.5, C - 1, C - 1);
-      continue;
-    }
+    if (ch === '#') continue; // the wall mass is drawn whole, after the loop
     c.fillStyle = '#ece4d3';
     c.fillRect(px, py, C, C);
     c.strokeStyle = 'rgba(92,80,60,0.06)';
@@ -3333,9 +3585,16 @@ function edPaint() {
       roundRect(c, px + pad, py + pad, s, s, r);
       c.fill();
       if (clone) {
-        c.fillStyle = 'rgba(255,255,255,0.75)';
-        roundRect(c, px + C / 2 - s * 0.22, py + C / 2 - s * 0.3, s * 0.44, s * 0.2, s * 0.09);
-        c.fill();
+        const er = Math.max(1, s * 0.15), ex = px + C / 2, ey = py + C / 2 - s * 0.1;
+        for (const sx of [-1, 1]) {
+          c.fillStyle = '#fff';
+          c.beginPath(); c.arc(ex + sx * s * 0.18, ey, er, 0, Math.PI * 2); c.fill();
+          c.fillStyle = '#33506e';
+          c.beginPath(); c.arc(ex + sx * s * 0.18, ey + er * 0.22, er * 0.55, 0, Math.PI * 2); c.fill();
+        }
+        c.strokeStyle = 'rgba(255,255,255,0.85)';
+        c.lineWidth = Math.max(1, s * 0.07);
+        c.beginPath(); c.arc(ex, py + C / 2 + s * 0.1, s * 0.18, Math.PI * 0.2, Math.PI * 0.8); c.stroke();
       } else {
         c.strokeStyle = ch === 'B' ? 'rgba(58,110,58,0.5)' : 'rgba(146,103,26,0.5)';
         c.lineWidth = Math.max(1, s * 0.08);
@@ -3344,6 +3603,7 @@ function edPaint() {
       }
     }
   }
+  drawWallMass(c, n, n, isW);
   CELL = savedCell;
 }
 
@@ -3741,7 +4001,10 @@ window.addEventListener('pointermove', (e) => {
 const release = (e) => { if (down && e.pointerId === down.id) down = null; };
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
-document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+// Kill pull-to-refresh etc. on the board only: the picker and the editor are
+// real scrollable UI, and a global preventDefault was eating their scroll.
+document.addEventListener('touchmove', (e) => { if (!overlayOpen()) e.preventDefault(); },
+  { passive: false });
 
 const KEYS = {
   ArrowUp: 'U', ArrowDown: 'D', ArrowLeft: 'L', ArrowRight: 'R',
@@ -3764,8 +4027,30 @@ const goBack = () => { play('ui'); if (levelIndex < 0) openEditor(); else openPi
 $('undo').addEventListener('click', undo);
 $('reset').addEventListener('click', reset);
 $('levels').addEventListener('click', goBack);
+// T38: crack the current level open in the editor - as a draft COPY, so Solve
+// and tinkering never touch the real level. Reopening reuses the same copy.
+$('editBtn').addEventListener('click', () => {
+  play('ui');
+  const def = levelDef;
+  const key = def.rows.join('/');
+  let i = drafts.findIndex(d => d.rows.join('/') === key);
+  if (i < 0) {
+    drafts.push({ name: def.name, rows: def.rows.slice() });
+    i = drafts.length - 1;
+    saveDrafts();
+  }
+  draftIx = i;
+  openEditor();
+});
 // Closing the drafts list just uncovers the editor it was opened from.
 $('pickerClose').addEventListener('click', () => { play('ui'); $('picker').hidden = true; });
+// Tapping the dimmed backdrop closes a card, same as its close button.
+$('picker').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) { play('ui'); $('picker').hidden = true; }
+});
+$('overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) $('overlay').hidden = true;
+});
 $('toLevels').addEventListener('click', goBack);
 $('next').addEventListener('click', () => {
   play('ui');
