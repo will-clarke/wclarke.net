@@ -29,10 +29,9 @@
   @keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
   .slip{color:var(--amber); text-align:center; letter-spacing:.38em; font-size:.8rem;
     margin:2.2rem 0 -1rem; animation:fadein 1.5s ease both;}
-  .situation{font-size:1.24rem; line-height:1.6; margin:2rem 0 1.8rem; min-height:3em;
-    white-space:pre-wrap; -webkit-user-select:none; user-select:none;}
-  .caret{display:inline-block; width:.5em; color:var(--amber); animation:blink 1s steps(1) infinite;}
-  @keyframes blink{50%{opacity:0;}}
+  .situation{font-size:1.24rem; line-height:1.6; margin:2rem 0 1.8rem;
+    white-space:pre-wrap; -webkit-user-select:none; user-select:none;
+    animation:fadein .45s ease both;}
   button{font:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0;
     touch-action:manipulation; -webkit-user-select:none; user-select:none;}
   .opts{margin-top:1.6rem;}
@@ -95,9 +94,12 @@
     margin:2rem 0 .8rem;}
   .shelf{display:grid; grid-template-columns:repeat(auto-fill,minmax(4.5rem,1fr)); gap:.45rem .5rem;}
   .slot{border-bottom:2px solid var(--plank); background:linear-gradient(#1d1613,#191311);
+    border-top:none; border-left:none; border-right:none;
     min-height:3.3rem; padding:.5rem .3rem .45rem; font-size:.58rem; letter-spacing:.05em;
-    text-align:center; line-height:1.35; color:var(--ink);
+    text-align:center; line-height:1.35; color:var(--ink); font-family:inherit;
     display:flex; align-items:center; justify-content:center;}
+  button.slot{cursor:pointer;}
+  button.slot:active{background:#241c17;}
   .slot.empty{color:var(--faint);}
   .foot{margin-top:2.6rem; text-align:center;}
   .foot button{color:var(--faint); font-size:.8rem; letter-spacing:.16em;
@@ -133,9 +135,17 @@ function canPass(gate){
   if (gate.anyOf) return gate.anyOf.some(canPass);
   for (const k of Object.keys(gate)){
     if (k === 'perks'){ if (!gate.perks.every(p => S.perks[p])) return false; }
+    else if (k === 'storyAny'){
+      if (!gate.storyAny.some(st => storyEndings(st).some(e => S.found[e]))) return false;
+    }
     else if ((S.attrs[k]||0) < gate[k]) return false;
   }
   return true;
+}
+/* a door's state on the morning: hidden until revealed, then locked or open */
+function doorState(d){
+  if (!canPass(d.reveal)) return 'hidden';
+  return (d.authored && canPass(d.gate)) ? 'open' : 'locked';
 }
 function gateLabel(gate){
   if (!gate) return '';
@@ -157,7 +167,12 @@ function endingsUnder(id){
 }
 function allFound(set){ for (const e of set) if (!S.found[e]) return false; return true; }
 function storyEndings(id){ return Object.keys(L.endings).filter(e => L.endings[e].story === id); }
-function unlockedDoorIds(){ return DOORS.filter(d => d.authored && canPass(d.gate)).map(d => d.id); }
+/* snapshot of every door's state, for the lit-glow when one improves */
+function doorStates(){
+  const m = {};
+  for (const d of DOORS) m[d.id] = doorState(d);
+  return m;
+}
 
 /* ================= rendering helpers ================= */
 
@@ -165,52 +180,30 @@ const app = document.getElementById('app');
 function el(html){ const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
 function clear(){ app.innerHTML = ''; window.scrollTo(0,0); }
 
-let typeTimer = null, typeAbort = null;
-function typewriter(node, text, instant, done){
-  clearInterval(typeTimer);
-  if (typeAbort){ typeAbort(); typeAbort = null; }
-  if (instant){ node.textContent = text; done(); return; }
-  let i = 0;
-  node.textContent = '';
-  const caret = el('<span class="caret">▏</span>');
-  node.appendChild(caret);
-  const skip = () => finish();
-  const finish = () => {
-    clearInterval(typeTimer);
-    document.removeEventListener('pointerdown', skip, true);
-    typeAbort = null;
-    node.textContent = text;
-    done();
-  };
-  typeAbort = () => document.removeEventListener('pointerdown', skip, true);
-  typeTimer = setInterval(() => {
-    i += 4; /* fast: a full sentence lands in ~a third of a second */
-    if (i >= text.length) return finish();
-    node.textContent = text.slice(0,i);
-    node.appendChild(caret);
-  }, 10);
-  /* tap anywhere to finish the typing - a phone thumb shouldn't have to aim */
-  setTimeout(() => document.addEventListener('pointerdown', skip, true), 80);
-}
+/* no typing animation (playtest law, 2026-08-11): text lands instantly, whole */
 
 /* ================= the morning (hub) ================= */
 
-let doorsAtLifeStart = unlockedDoorIds();
+const RANK = {hidden:0, locked:1, open:2};
+let doorsAtLifeStart = doorStates();
 
 function renderMorning(){
   clear();
-  const lit = unlockedDoorIds().filter(id => !doorsAtLifeStart.includes(id));
+  const states = doorStates();
   if (!S.deaths){
     app.appendChild(el('<h1 class="fade">afterlives</h1>'));
     app.appendChild(el('<p class="sub fade">one soul, many lives</p>'));
   }
   const sit = el('<p class="situation"></p>');
+  sit.textContent = L.morning.text;
   app.appendChild(sit);
-  const opts = el('<div class="opts" style="display:none"></div>');
+  const opts = el('<div class="opts"></div>');
   app.appendChild(opts);
 
   for (const d of DOORS){
-    const open = canPass(d.gate) && d.authored;
+    const st = states[d.id];
+    if (st === 'hidden') continue;
+    const open = st === 'open';
     const label = d.secret && !open ? '???' : d.door;
     const fin = d.authored && allFound(new Set(storyEndings(d.id)));
     const b = el('<button class="door"></button>');
@@ -227,9 +220,10 @@ function renderMorning(){
         b.classList.add('finished');
         b.prepend(el('<span class="chip">✓ nothing new here</span>'));
       }
-      if (lit.includes(d.id)) b.classList.add('lit');
       b.onclick = () => startLife(d);
     }
+    /* glow when a door has newly appeared or newly opened */
+    if (RANK[st] > RANK[doorsAtLifeStart[d.id] ?? 'hidden']) b.classList.add('lit');
     opts.appendChild(b);
   }
 
@@ -255,17 +249,12 @@ function renderMorning(){
   };
   foot.appendChild(reset);
   app.appendChild(foot);
-
-  typewriter(sit, L.morning.text, S.seen.__morning, () => {
-    S.seen.__morning = 1; save();
-    opts.style.display = '';
-  });
 }
 
 /* ================= a life ================= */
 
 function startLife(story){
-  doorsAtLifeStart = unlockedDoorIds();
+  doorsAtLifeStart = doorStates();
   playNode(story.start);
 }
 
@@ -274,8 +263,9 @@ function playNode(id){
   const n = L.nodes[id];
   if (n.slip) app.appendChild(el('<p class="slip">' + n.slip + '</p>'));
   const sit = el('<p class="situation"></p>');
+  sit.textContent = n.s;
   app.appendChild(sit);
-  const opts = el('<div class="opts" style="display:none"></div>');
+  const opts = el('<div class="opts"></div>');
   app.appendChild(opts);
 
   for (const o of n.opts){
@@ -298,11 +288,6 @@ function playNode(id){
     }
     opts.appendChild(b);
   }
-
-  typewriter(sit, n.s, S.seen[id], () => {
-    S.seen[id] = 1; save();
-    opts.style.display = '';
-  });
 }
 
 /* ================= an ending ================= */
@@ -312,12 +297,18 @@ function answerRow(key, val){
          '<span class="av">' + val + '</span></div>';
 }
 
-function showEnding(eid){
+function showEnding(eid, remember){
   clear();
   const e = L.endings[eid];
   const story = L.storylines.find(s => s.id === e.story);
-  const isNew = !S.found[eid];
+  const isNew = !remember && !S.found[eid];
   let keptBits = [];
+  if (remember && e.kept){
+    for (const k of Object.keys(e.kept)){
+      if (k === 'perks') e.kept.perks.forEach(p => keptBits.push(p.replace(/_/g,' ')));
+      else keptBits.push(k + ' ' + e.kept[k]);
+    }
+  }
   if (isNew){
     S.found[eid] = 1;
     S.deaths++;
@@ -333,7 +324,8 @@ function showEnding(eid){
   const card = el('<div class="card"></div>');
   card.appendChild(el('<div class="kicker">' + story.title + '</div>'));
   card.appendChild(el('<h2>' + e.title + '</h2>'));
-  if (!isNew) card.appendChild(el('<div class="again">you have been here before</div>'));
+  if (remember) card.appendChild(el('<div class="again">a life you lived, once</div>'));
+  else if (!isNew) card.appendChild(el('<div class="again">you have been here before</div>'));
   card.appendChild(el('<div class="answers">' +
     answerRow('WHAT IT FELT LIKE', e.felt) +
     answerRow('WHO IT MATTERED TO', e.mattered) +
@@ -346,8 +338,8 @@ function showEnding(eid){
   if (keptBits.length)
     app.appendChild(el('<div class="kept">WHAT THE SOUL KEPT: ' + keptBits.join(' · ') + '</div>'));
 
-  const btn = el('<button class="bigbtn primary">let go</button>');
-  btn.onclick = () => renderAfterlife(true);
+  const btn = el('<button class="bigbtn primary">' + (remember ? 'back to the shelf' : 'let go') + '</button>');
+  btn.onclick = () => renderAfterlife(!remember);
   app.appendChild(btn);
 }
 
@@ -391,8 +383,9 @@ function renderAfterlife(fromDeath){
     for (const eid of storyEndings(st.id)){
       const e = L.endings[eid];
       if (S.found[eid] && e.shelf){
-        const s = el('<div class="slot"></div>');
+        const s = el('<button class="slot"></button>');
         s.textContent = e.shelf;
+        s.onclick = () => showEnding(eid, true);
         shelf.appendChild(s);
       } else {
         shelf.appendChild(el('<div class="slot empty">·</div>'));

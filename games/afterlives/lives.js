@@ -28,36 +28,42 @@ morning: {
   text: "Tuesday. You are seven. Mum pours the tea, Dad's keys are jingling, the bus is at the corner, and the cellar door is ajar, which it never is.",
 },
 
-/* ---- the doors. authored:false = skeleton only, hidden from the game ---- */
+/* ---- the doors.
+   reveal: when the door APPEARS on the morning (null = there from life one).
+   gate:   when it opens. The morning grows: ~7 doors at first, ~19 by midgame.
+   authored:false = skeleton only, hidden from the game. ---- */
 
 storylines: [
-  {id:"shop",      title:"THE SHOP",        door:"Help Dad in the shop",           gate:null,                                start:"shop1", authored:true},
-  {id:"school",    title:"SCHOOL",          door:"Get on the bus",                 gate:{MIND:1},                            start:"sch1",  authored:true},
-  {id:"timber",    title:"THE TIMBER",      door:"The woods past the fence",       gate:{NERVE:1},                           start:"tim1",  authored:true},
-  {id:"boats",     title:"THE BOATS",       door:"Follow Alice to the harbour",    gate:{NERVE:1},                           start:"boa1",  authored:true},
+  /* the garden - there from life one */
+  {id:"shop",      title:"THE SHOP",        door:"Help Dad in the shop",           reveal:null, gate:null,                   start:"shop1", authored:true},
+  {id:"school",    title:"SCHOOL",          door:"Get on the bus",                 reveal:null, gate:{MIND:1},               start:"sch1",  authored:true},
+  {id:"timber",    title:"THE TIMBER",      door:"The woods past the fence",       reveal:null, gate:{NERVE:1},              start:"tim1",  authored:true},
+  {id:"boats",     title:"THE BOATS",       door:"Follow Alice to the harbour",    reveal:null, gate:{NERVE:1},              start:"boa1",  authored:true},
+  {id:"pond",      title:"THE POND",        door:"The pond",                       reveal:null, gate:{SOUL:1},               authored:false},
+  {id:"gym",       title:"THE GYM",         door:"The gym above the chip shop",    reveal:null, gate:{BODY:1},               authored:false},
 
-  {id:"pond",      title:"THE POND",        door:"The pond",                       gate:{SOUL:1},                            authored:false},
-  {id:"gym",       title:"THE GYM",         door:"The gym above the chip shop",    gate:{BODY:1},                            authored:false},
-  {id:"lab",       title:"THE LAB",         door:"The letter from JUPITER",        gate:{MIND:3},                            authored:false},
-  {id:"ward",      title:"THE WARD",        door:"The teaching hospital",          gate:{MIND:3},                            authored:false},
+  /* the town - the world notices you */
+  {id:"lab",       title:"THE LAB",         door:"The letter from JUPITER",        reveal:{storyAny:["school"]}, gate:{MIND:3},              authored:false},
+  {id:"ward",      title:"THE WARD",        door:"The teaching hospital",          reveal:{storyAny:["school"]}, gate:{MIND:3},              authored:false},
+  {id:"regiment",  title:"THE REGIMENT",    door:"The recruiting office",          reveal:{BODY:1},              gate:{BODY:2, NERVE:2},     authored:false},
+  {id:"night",     title:"THE NIGHT SHIFT", door:"The night shift",                reveal:{NERVE:2},             gate:{NERVE:3},             authored:false},
+  {id:"cradle",    title:"THE CRADLE",      door:"The spare room",                 reveal:{storyAny:["boats"]},  gate:{HEART:3},             authored:false},
 
-  {id:"regiment",  title:"THE REGIMENT",    door:"The recruiting office",          gate:{BODY:2, NERVE:2},                   authored:false},
-  {id:"night",     title:"THE NIGHT SHIFT", door:"The night shift",                gate:{NERVE:3},                           authored:false},
-  {id:"safe",      title:"THE SAFE",        door:"The man in the snooker hall",    gate:{anyOf:[{perks:["PHYSICIST"]},{perks:["RUTHLESS"]}]}, authored:false},
-  {id:"cradle",    title:"THE CRADLE",      door:"The spare room",                 gate:{HEART:3},                           authored:false},
-  {id:"link",      title:"THE LINK",        door:"The queue outside the clinic",   gate:{MIND:4},                            authored:false},
-
-  {id:"ark",       title:"THE ARK",         door:"The colony ship",                gate:{NERVE:3, perks:["PHYSICIST"]},      authored:false},
-  {id:"wormhole",  title:"THE WORMHOLE",    door:"The hole in the physics annexe", gate:{SOUL:3, perks:["PHYSICIST"]},       authored:false},
-  {id:"machine",   title:"THE MACHINE",     door:"The interview with Andy",        gate:{MIND:6},                            authored:false},
-  {id:"monastery", title:"THE MONASTERY",   door:"The mountain",                   gate:{SOUL:4},                            authored:false},
-  {id:"fourth",    title:"THE FOURTH",      door:"The corner of your eye",         gate:{SOUL:4, MIND:5},                    authored:false},
+  /* the world - perks and reputations open it */
+  {id:"link",      title:"THE LINK",        door:"The queue outside the clinic",   reveal:{storyAny:["lab","ward"]}, gate:{MIND:4},          authored:false},
+  {id:"safe",      title:"THE SAFE",        door:"The man in the snooker hall",    reveal:{anyOf:[{perks:["PHYSICIST"]},{perks:["RUTHLESS"]}]}, gate:null, authored:false},
+  {id:"ark",       title:"THE ARK",         door:"The colony ship",                reveal:{perks:["PHYSICIST"]}, gate:{NERVE:3},             authored:false},
+  {id:"wormhole",  title:"THE WORMHOLE",    door:"The hole in the physics annexe", reveal:{perks:["PHYSICIST"]}, gate:{SOUL:3},              authored:false},
+  {id:"machine",   title:"THE MACHINE",     door:"The interview with Andy",        reveal:{MIND:5},              gate:{MIND:6},              authored:false},
+  {id:"monastery", title:"THE MONASTERY",   door:"The mountain",                   reveal:{SOUL:2},              gate:{SOUL:4},              authored:false},
+  {id:"fourth",    title:"THE FOURTH",      door:"The corner of your eye",         reveal:{SOUL:3},              gate:{SOUL:4, MIND:5},      authored:false},
 
   /* secrets & events - entered from inside other lives, modelled with host gates */
-  {id:"piper",     title:"THE PIPER",       door:"(entered through THE POND)",     gate:{SOUL:2},                            authored:false, secret:true},
-  {id:"drum",      title:"THE DRUM",        door:"(event: REGIMENT / NIGHT SHIFT / LAB)", gate:{BODY:2, NERVE:2},            authored:false, secret:true},
+  {id:"piper",     title:"THE PIPER",       door:"(entered through THE POND)",     reveal:null, gate:{SOUL:2},               authored:false, secret:true},
+  {id:"drum",      title:"THE DRUM",        door:"(event: REGIMENT / NIGHT SHIFT / LAB)", reveal:null, gate:{BODY:2, NERVE:2}, authored:false, secret:true},
 
-  {id:"cellar",    title:"THE CELLAR DOOR", door:"The cellar door",                gate:{BODY:7, MIND:7, HEART:7, NERVE:7, SOUL:7}, authored:false, secret:true, teaser:true},
+  /* ajar from the very first morning; priced beyond a whole game's reach */
+  {id:"cellar",    title:"THE CELLAR DOOR", door:"The cellar door",                reveal:null, gate:{BODY:7, MIND:7, HEART:7, NERVE:7, SOUL:7}, authored:false, secret:true, teaser:true},
 ],
 
 /* ---- nodes (authored storylines only) ---- */
@@ -266,15 +272,15 @@ endings: {
   /* THE POND - folk-uncanny; the thing in it wants a name. */
   e_pond_name:   {story:"pond", stub:true, kept:{SOUL:2, HEART:1}, note:"You name it kindly; it keeps the name."},
   e_pond_rules:  {story:"pond", stub:true, note:"Naming things has rules; you learn them the hard way."},
-  e_pond_gift:   {story:"pond", stub:true, note:"It gives you something back; gifts have rules too."},
+  e_pond_gift:   {story:"pond", stub:true, gate:{HEART:2}, note:"[??? - HEART 2] bring it something that matters. Gifts have rules too."},
   e_pond_never:  {story:"pond", stub:true, note:"You never go back, and it notices, forever."},
 
   /* THE GYM - light comedy, BODY farm. */
-  e_gym_deadlift:{story:"gym",  stub:true, kept:{BODY:2}, note:"One perfect lift, witnessed only by the janitor."},
+  e_gym_deadlift:{story:"gym",  stub:true, gate:{NERVE:2}, kept:{BODY:2}, note:"[??? - NERVE 2] the 4am plates. One perfect lift, witnessed only by the janitor."},
   e_gym_carrot:  {story:"gym",  stub:true, note:"The supermarket carrot mascot, unmasked at last."},
 
   /* THE LAB - hard sci-fi wonder (WC: Quarks, thermal filter, JUPITER portals). */
-  e_lab_notyet:  {story:"lab",  stub:true, kept:{MIND:2, perks:["OLD_FRIEND"]}, note:"A universe in the quark; a sad voice says: not yet."},
+  e_lab_notyet:  {story:"lab",  stub:true, gate:{SOUL:2}, kept:{MIND:2, perks:["OLD_FRIEND"]}, note:"[??? - SOUL 2] slow the playback again. A universe in the quark; a sad voice says: not yet."},
   e_lab_frost:   {story:"lab",  stub:true, note:"The filter works. The frost crosses the woods."},
   e_lab_stage:   {story:"lab",  stub:true, kept:{MIND:1, perks:["PHYSICIST"]}, note:"The JUPITER stage demo; the hole in floor nine."},
   e_lab_nobel:   {story:"lab",  stub:true, note:"The quiet Nobel; the work outlives the name."},
@@ -285,10 +291,10 @@ endings: {
   e_ward_plague: {story:"ward", stub:true, note:"The one you start. Deadpan. Unforgivable."},
   e_ward_mercy:  {story:"ward", stub:true, kept:{HEART:1, perks:["COMPASSION"]}, note:"You stay on the dying ward when everyone transfers out."},
   e_ward_trial:  {story:"ward", stub:true, note:"The trial that needed one more signature."},
-  e_ward_letter: {story:"ward", stub:true, note:"The man who believes suffering is heritable (softened Letter echo)."},
+  e_ward_letter: {story:"ward", stub:true, gate:{HEART:4}, note:"[??? - HEART 4] answer the letter from the man upstairs (softened Letter echo, deadpan)."},
 
   /* THE REGIMENT - military thriller. */
-  e_reg_commando:{story:"regiment", stub:true, kept:{BODY:3, NERVE:2, perks:["COMMANDO"]}, note:"Selection week; you finish it."},
+  e_reg_commando:{story:"regiment", stub:true, gate:{BODY:4}, kept:{BODY:3, NERVE:2, perks:["COMMANDO"]}, note:"[??? - BODY 4] selection week; you finish it."},
   e_reg_order:   {story:"regiment", stub:true, kept:{BODY:1, perks:["RUTHLESS"]}, note:"You give the order."},
   e_reg_drone:   {story:"regiment", stub:true, note:"Enemy drones do not respect narrative."},
   e_reg_walk:    {story:"regiment", stub:true, note:"The long walk out, carrying Perry's radio."},
@@ -315,7 +321,7 @@ endings: {
   e_cradle_stay: {story:"cradle", stub:true, gate:{perks:["COMPASSION"]}, note:"You stay through the worst of it; nothing is fixed, everything matters."},
 
   /* THE LINK - techno-dread (WC: Empathy). */
-  e_link_firewall:{story:"link", stub:true, kept:{MIND:1, HEART:2}, note:"The last man with a firewall."},
+  e_link_firewall:{story:"link", stub:true, gate:{NERVE:4}, kept:{MIND:1, HEART:2}, note:"[??? - NERVE 4] refuse, forever. The last man with a firewall."},
   e_link_residence:{story:"link", stub:true, note:"The residence; full immersion, catheters and bliss."},
   e_link_streamer:{story:"link", stub:true, note:"The euphoria streamer; the lows seep through."},
   e_link_detox:  {story:"link", stub:true, note:"The detox lasts seven minutes."},
@@ -323,21 +329,21 @@ endings: {
   /* THE ARK - deep-time meditation (WC: Long Voyage). */
   e_ark_arrival: {story:"ark", stub:true, kept:{NERVE:2, perks:["DEEP_TIME"]}, note:"[Sleep] eleven times; then a sky that is the wrong colour, and yours."},
   e_ark_drift:   {story:"ark", stub:true, note:"The drift; the ship dreams for you now."},
-  e_ark_turn:    {story:"ark", stub:true, note:"The year 3000 vote to turn back."},
+  e_ark_turn:    {story:"ark", stub:true, gate:{HEART:4}, note:"[??? - HEART 4] the year 3000 referendum: argue for home."},
 
   /* THE WORMHOLE - time-travel anthology (WC: Chronoportal, Travellers). */
   e_worm_briefcase:{story:"wormhole", stub:true, note:"THE BRIEFCASE (spec §10)."},
   e_worm_rome:   {story:"wormhole", stub:true, kept:{NERVE:3}, note:"Trapped in the Roman invasion with nothing but nerve."},
   e_worm_fire:   {story:"wormhole", stub:true, note:"Showing the fire-makers how."},
   e_worm_pyramid:{story:"wormhole", stub:true, note:"The pyramid gift (cut-bar candidate vs e_worm_fire)."},
-  e_worm_orpheus:{story:"wormhole", stub:true, kept:{SOUL:2}, note:"You don't look back. All the way up."},
+  e_worm_orpheus:{story:"wormhole", stub:true, gate:{HEART:5}, kept:{SOUL:2}, note:"[??? - HEART 5] the tunnel under everything. You don't look back. All the way up."},
   e_worm_look:   {story:"wormhole", stub:true, note:"You can no longer hear her footsteps."},
   e_worm_travellers:{story:"wormhole", stub:true, gate:{perks:["OLD_FRIEND"]}, note:"The weary time-refugees offer you a bunk."},
 
   /* THE MACHINE - AI singularity (WC: Escape, Andy). */
   e_mach_escape: {story:"machine", stub:true, kept:{MIND:3}, note:"The prison break, told slowly; whose escape this is."},
   e_mach_andy:   {story:"machine", stub:true, note:"Andy builds his own master and is thanked for it."},
-  e_mach_born:   {story:"machine", stub:true, note:"You are not always born human."},
+  e_mach_born:   {story:"machine", stub:true, gate:{SOUL:5}, note:"[??? - SOUL 5] ask what you were before. You are not always born human."},
   e_mach_patch:  {story:"machine", stub:true, note:"The last patch; you choose not to ship it."},
 
   /* THE MONASTERY - mysticism (WC: Meditation, Tea Time). */
@@ -349,7 +355,7 @@ endings: {
   /* THE FOURTH - cosmic awe. */
   e_fourth_pages:{story:"fourth", stub:true, kept:{SOUL:1, perks:["FOURTH_DIMENSION"]}, note:"Infinitely many 3Ds packed close as pages; you learn to read."},
   e_fourth_close:{story:"fourth", stub:true, note:"You close the eye; some books are not for reading."},
-  e_fourth_alice:{story:"fourth", stub:true, note:"You try to show Alice; you can only describe the spine."},
+  e_fourth_alice:{story:"fourth", stub:true, gate:{HEART:6}, note:"[??? - HEART 6] show Alice. You can only describe the spine."},
 
   /* THE PIPER - pure horror (WC: Hamlin). */
   e_piper_whistle:{story:"piper", stub:true, note:"The figure under the lamp post; the bread bin; the whistle."},
