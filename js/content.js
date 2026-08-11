@@ -394,13 +394,13 @@ const PLAYED = [
 
 // games will actually rates; the rest of games.json lands in the
 // 'unfinished concepts' sub-room at the games room's centre cell
-const DECENT_SLUGS = ['afterlives', 'nest', 'hydra', 'mirror', 'tile', 'shipshape', 'loom', 'drip', 'allotmatic',
+const DECENT_SLUGS = ['afterlives', 'mini-level', 'hydra', 'mirror', 'tile', 'shipshape', 'loom', 'drip', 'allotmatic',
   'antwar', 'antwar-factions'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
   drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉',
   hydra: '🐉', allotmatic: '🥕', trine: '🔺', kaleid: '❋', antwar: '⚔', 'antwar-factions': '🛡', ants: '🐜',
-  nest: '🪆', threescore: '🪦', afterlives: '🚪' };
+  'mini-level': '🪆', threescore: '🪦', afterlives: '🚪' };
 const PINNED_GAMES = [
   { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/', accent: '#ff9a3a',
     blurb: 'a little factory: emitters, colourers, portals, fans. build it, press play, watch it be wrong, rewind. 30 levels.' },

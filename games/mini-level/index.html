@@ -1382,7 +1382,7 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'nest-v7'; // v7 = T42 rules re-bake: campaign bests survive,
+const SAVE_KEY = 'mini-level-v7'; // v7 = T42 rules re-bake: campaign bests survive,
 // workshop/generated bests dropped (levels recut/reordered under the new rules)
 let progress = { best: {}, unlocked: {}, coached: {} };
 
@@ -1393,6 +1393,10 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!raw) {
+      // Same save under the old name: this was 'Nest' before the rename.
+      raw = JSON.parse(localStorage.getItem('nest-v7') || 'null');
+    }
     if (!raw) {
       // Migrate a v6 save: T42 changed the rules, so only campaign bests
       // still describe the same puzzles (workshop was recut/reordered and
@@ -3096,7 +3100,7 @@ document.addEventListener('visibilitychange', () => {
 // in - so nothing has to be translated on the way to parseLevel or out to the
 // clipboard.
 
-const DRAFT_KEY = 'nest-drafts';
+const DRAFT_KEY = 'mini-level-drafts';
 const ED_CAP = 600000;   // BFS states before we call it DNF (T30: pruned, so deeper)
 const ED_MIN = 5, ED_MAX = 12;
 const PAL = [
@@ -3127,7 +3131,9 @@ function blankDraft(n) {
 // A draft only ever holds strings, so a corrupt blob is easy to spot and drop.
 function loadDrafts() {
   try {
-    const raw = JSON.parse(localStorage.getItem(DRAFT_KEY) || 'null');
+    // falls back to the pre-rename key so old drafts survive
+    const raw = JSON.parse(localStorage.getItem(DRAFT_KEY) ||
+      localStorage.getItem('nest-drafts') || 'null');
     if (Array.isArray(raw)) {
       drafts = raw.filter(d => d && Array.isArray(d.rows) && d.rows.length >= ED_MIN)
         .map(d => ({ name: String(d.name || ''), rows: d.rows.map(String) }));
@@ -3439,7 +3445,7 @@ const isRow = (s) => s.length >= ED_MIN && !/[^#.*~N@$BP-]/.test(s);
 function edExport() {
   const d = ed();
   return (d.name || 'Untitled') + '\n' + d.rows.join('\n') +
-    '\n\nnest:' + b64u((d.name || 'Untitled') + '/' + d.rows.join('/'));
+    '\n\nmini-level:' + b64u((d.name || 'Untitled') + '/' + d.rows.join('/'));
 }
 
 // Accepts either half of what edExport writes: the compact code wins if it is
@@ -3447,7 +3453,8 @@ function edExport() {
 // first line that does not is the name.
 function edImport(txt) {
   let name = '', rows = [];
-  const code = txt.match(/nest:([A-Za-z0-9_-]+)/);
+  // 'nest:' is the pre-rename prefix - codes pasted around still parse
+  const code = txt.match(/(?:mini-level|nest):([A-Za-z0-9_-]+)/);
   if (code) {
     try {
       const parts = unb64u(code[1]).split('/');

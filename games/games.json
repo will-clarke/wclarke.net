@@ -13,7 +13,7 @@
       "tagline": "A life in seven choices. One decision per decade, then a gravestone: sudden geese, drowned harvest fairs, small gods in canal pounds, blood banks with excellent skin. Eight worlds, 150 hand-carved endings; the graveyard fills as you live again, and the stones you earn buy the luck and heart to open doors fate kept shut. He gets seventy years, give or take. You get as many as you need."
     },
     {
-      "slug": "nest",
+      "slug": "mini-level",
       "name": "Mini Levels",
       "accent": "#3f9bf4",
       "tagline": "Sokoban that contains itself. One block on the board is a shrunken copy of the whole level - push it around, or step in through its door and you are back in the room you just left, one size down. Walk out through the outer wall instead and the level becomes a giant around you, with a second self already copying every move you make. Voids eat whatever you drop in them, boxes ride in and out of the nest with you, and every level has a par to beat."
