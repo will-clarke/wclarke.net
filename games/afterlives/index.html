@@ -66,10 +66,6 @@
   .arow .ak{color:var(--dim); font-size:.68rem; letter-spacing:.14em; white-space:nowrap;
     flex:0 0 9.2em; text-align:right; padding-top:.15em;}
   .arow .av{color:var(--ink); font-style:italic; font-size:.95rem;}
-  .verdictq{color:var(--dim); text-align:center; font-style:italic; margin:1.7rem 0 .2rem;
-    font-size:.95rem; animation:fadein 1.4s ease both;}
-  .vrow{display:flex; gap:.7rem;}
-  .vrow .bigbtn{flex:1;}
   .card .sum{line-height:1.65; font-size:.98rem; margin-bottom:1.3em;}
   .card .carved{color:var(--dim); text-align:center; letter-spacing:.22em; font-size:.82rem;
     margin-bottom:1.2em;}
@@ -103,7 +99,6 @@
     text-align:center; line-height:1.35; color:var(--ink);
     display:flex; align-items:center; justify-content:center;}
   .slot.empty{color:var(--faint);}
-  .slot.yes{border-bottom-color:var(--amber);}
   .foot{margin-top:2.6rem; text-align:center;}
   .foot button{color:var(--faint); font-size:.8rem; letter-spacing:.16em;
     text-decoration:underline; margin:0 .8rem; padding:.5rem 0;}
@@ -119,16 +114,17 @@
 
 const SAVE_KEY = 'afterlives-v1';
 const L = AFTERLIVES;
-const AUTHORED = L.storylines.filter(s => s.authored);
-const DOORS = L.storylines.filter(s => s.authored || s.teaser);
+/* every non-secret door is on the morning from life one - the wall of locks IS the
+   game's promise. secrets (piper, drum) are entered from inside other lives. */
+const DOORS = L.storylines.filter(s => !s.secret || s.teaser);
 
 let S = load();
 function load(){
   try{
     const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
-    if (raw && raw.found) return Object.assign({found:{}, attrs:{}, perks:{}, seen:{}, judge:{}, deaths:0}, raw);
+    if (raw && raw.found) return Object.assign({found:{}, attrs:{}, perks:{}, seen:{}, deaths:0}, raw);
   }catch(e){}
-  return {found:{}, attrs:{}, perks:{}, seen:{}, judge:{}, deaths:0};
+  return {found:{}, attrs:{}, perks:{}, seen:{}, deaths:0};
 }
 function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
 
@@ -161,7 +157,7 @@ function endingsUnder(id){
 }
 function allFound(set){ for (const e of set) if (!S.found[e]) return false; return true; }
 function storyEndings(id){ return Object.keys(L.endings).filter(e => L.endings[e].story === id); }
-function unlockedDoorIds(){ return DOORS.filter(d => canPass(d.gate)).map(d => d.id); }
+function unlockedDoorIds(){ return DOORS.filter(d => d.authored && canPass(d.gate)).map(d => d.id); }
 
 /* ================= rendering helpers ================= */
 
@@ -188,11 +184,11 @@ function typewriter(node, text, instant, done){
   };
   typeAbort = () => document.removeEventListener('pointerdown', skip, true);
   typeTimer = setInterval(() => {
-    i++;
+    i += 4; /* fast: a full sentence lands in ~a third of a second */
     if (i >= text.length) return finish();
     node.textContent = text.slice(0,i);
     node.appendChild(caret);
-  }, 16);
+  }, 10);
   /* tap anywhere to finish the typing - a phone thumb shouldn't have to aim */
   setTimeout(() => document.addEventListener('pointerdown', skip, true), 80);
 }
@@ -214,7 +210,7 @@ function renderMorning(){
   app.appendChild(opts);
 
   for (const d of DOORS){
-    const open = canPass(d.gate);
+    const open = canPass(d.gate) && d.authored;
     const label = d.secret && !open ? '???' : d.door;
     const fin = d.authored && allFound(new Set(storyEndings(d.id)));
     const b = el('<button class="door"></button>');
@@ -223,7 +219,7 @@ function renderMorning(){
       b.classList.add('locked');
       if (!d.secret){
         const chip = el('<span class="chip"></span>');
-        chip.textContent = gateLabel(d.gate);
+        chip.textContent = canPass(d.gate) ? 'stuck - unwritten, yet' : gateLabel(d.gate);
         b.prepend(chip);
       }
     } else {
@@ -286,7 +282,8 @@ function playNode(id){
     const open = canPass(o.gate);
     if (o.hidden && !open) continue;
     const b = el('<button class="door"></button>');
-    b.textContent = o.l;
+    /* locked options inside a life are masked: the price is carved, the verb is not */
+    b.textContent = open ? o.l : '???';
     if (!open){
       b.classList.add('locked');
       const chip = el('<span class="chip"></span>');
@@ -349,15 +346,9 @@ function showEnding(eid){
   if (keptBits.length)
     app.appendChild(el('<div class="kept">WHAT THE SOUL KEPT: ' + keptBits.join(' · ') + '</div>'));
 
-  /* the only judge of a life is you - letting go requires answering */
-  app.appendChild(el('<div class="verdictq">would you live it again?</div>'));
-  const row = el('<div class="vrow"></div>');
-  const yes = el('<button class="bigbtn primary">again</button>');
-  const no = el('<button class="bigbtn primary">once was enough</button>');
-  yes.onclick = () => { S.judge[eid] = 1; save(); renderAfterlife(true); };
-  no.onclick  = () => { S.judge[eid] = 0; save(); renderAfterlife(true); };
-  row.appendChild(yes); row.appendChild(no);
-  app.appendChild(row);
+  const btn = el('<button class="bigbtn primary">let go</button>');
+  btn.onclick = () => renderAfterlife(true);
+  app.appendChild(btn);
 }
 
 /* ================= the afterlife ================= */
@@ -370,6 +361,10 @@ function renderAfterlife(fromDeath){
   wrap.appendChild(el('<p class="breath">' + (firstDeath
     ? 'A shelf, a kettle, and no hurry at all.<br>Downstairs, the same morning is waiting.<br>More doors are lit now. There always were more doors.'
     : 'The kettle is on. The morning can wait.') + '</p>'));
+
+  const btn = el('<button class="bigbtn primary">the morning again</button>');
+  btn.onclick = renderMorning;
+  wrap.appendChild(btn);
 
   const stats = el('<div class="statbox"></div>');
   for (const a of L.attrs){
@@ -397,7 +392,6 @@ function renderAfterlife(fromDeath){
       const e = L.endings[eid];
       if (S.found[eid] && e.shelf){
         const s = el('<div class="slot"></div>');
-        if (S.judge[eid] === 1) s.classList.add('yes');
         s.textContent = e.shelf;
         shelf.appendChild(s);
       } else {
@@ -406,10 +400,6 @@ function renderAfterlife(fromDeath){
     }
   }
   wrap.appendChild(shelf);
-
-  const btn = el('<button class="bigbtn primary">the morning again</button>');
-  btn.onclick = renderMorning;
-  wrap.appendChild(btn);
   app.appendChild(wrap);
 }
 

@@ -71,7 +71,7 @@ nodes: {
     s:"The supermarket opens across the roundabout with a car park and a man dressed as a giant carrot. Dad laughs so hard he has to sit down, and then he can't stop coughing.",
     opts:[
       {l:"Keep the shop open", to:"shop3"},
-      {l:"Tell him what you are", to:"e_kettle", gate:{HEART:5}, hidden:true},
+      {l:"Tell him what you are", to:"e_kettle", gate:{HEART:5}},
     ]},
   shop3: {s:"Alice comes in every Thursday for candles. Danny sends a postcard from somewhere with better weather. The drawer for the wing nuts sticks, same as always.",
     opts:[{l:"Keep the shop open", to:"shop4"}]},
@@ -106,6 +106,7 @@ nodes: {
     opts:[
       {l:"The beetle room", to:"e_beetle"},
       {l:"The roof", to:"e_sky"},
+      {l:"The third door", to:"e_thirddoor", gate:{SOUL:2}},
     ]},
 
   /* THE TIMBER - quiet folk register. */
@@ -119,6 +120,7 @@ nodes: {
     opts:[
       {l:"Cut it - the crew needs the bonus", to:"e_widowmaker"},
       {l:"Refuse", to:"e_oldstand"},
+      {l:"Ask the stand what it is for", to:"e_askstand", gate:{SOUL:3}},
     ]},
 
   /* THE BOATS - romance, salt water. */
@@ -132,6 +134,7 @@ nodes: {
     opts:[
       {l:"Earn it the slow way", to:"boa3"},
       {l:"Show off at the regatta", to:"e_regatta"},
+      {l:"Take her father's January dare", to:"e_dare", gate:{BODY:3}},
     ]},
   boa3: {slip:"THREE MORE SEASONS",
     s:"October. The Maiden Fair is still out in a sea like beaten metal, her father aboard, and the lifeboat crew is one man short.",
@@ -191,6 +194,13 @@ endings: {
     line:"THE REMATCH IS ANNUAL.", shelf:"two gold stars",
     sum:"Identical marks, to the decimal. The examiners call it unprecedented; you both call it unfinished. She teaches at the school across the valley, and every June for forty-one years your best pupils meet hers on neutral ground, and the two of you keep a running score that only ever needs one more year to settle. It never settles. That was the point."},
 
+  e_thirddoor: {story:"school", title:"THE UNLISTED COURSE",
+    felt:"like the corridor was longer on Thursdays",
+    mattered:"seven students a decade, exactly",
+    cost:"a career anyone could point at",
+    line:"NOT ON THE FLOOR PLAN.", shelf:"a key with no teeth",
+    sum:"Between the beetle room and the stairs there is a third door, and the porters do not dust it. Inside: seven chairs, a syllabus older than the university, and no register - the course finds its own students. You attend for sixty years and teach it at the end, though nobody, ever, remembers being taught. The faculty denies the room exists. The room returns the favour."},
+
   /* THE TIMBER */
   e_widowmaker: {story:"timber", title:"WIDOWMAKER",
     felt:"pine resin, cold air, one loud crack",
@@ -210,6 +220,13 @@ endings: {
     cost:"company",
     line:"NOTHING HAPPENED, TWICE.", shelf:"a pair of binoculars",
     sum:"A tower, a stove, a valley, and every book in the county library twice over. In forty summers you call it in exactly twice: once for lightning, once, at four in the morning, for a thin grey thread above the old stand that nobody ever explains. Both times the valley wakes up whole and never learns whose voice it owes. The tower sways. You sway with it."},
+
+  e_askstand: {story:"timber", title:"WHAT THE RIDGE ANSWERS",
+    felt:"like small talk with bedrock",
+    mattered:"to every axe in three counties",
+    cost:"the habit of hurrying",
+    line:"IT ANSWERS. SLOWLY.", shelf:"a ring of heartwood",
+    sum:"You ask the old stand, out loud, feeling foolish, what it is for. The answer takes eleven years and arrives a word at a time - in windfall, in ring-width, in where the deer will not go. You write it down and burn the notebook, because some answers are load-bearing. Erik never asks what you learned. He starts planting, though. Everyone starts planting."},
 
   /* THE BOATS */
   e_storm: {story:"boats", title:"THE NIGHT THE FLEET CAME HOME",
@@ -236,6 +253,13 @@ endings: {
     cost:"the horizon",
     line:"THE WEATHER IS IN THE CATCH.", shelf:"a filleting knife, worn thin",
     sum:"You never go to sea; you learn everyone who does. Forty years on the stall and you can read the weather off a crate of mackerel and the mood off a skipper's boots. Alice runs the boat, you run the stall, and which of the two is harder is an argument you keep warm for half a century, by mutual arrangement, because ending it would be a widowhood of its own."},
+
+  e_dare: {story:"boats", title:"THE JANUARY SWIM",
+    felt:"seventeen minutes of knives",
+    mattered:"her father never said shop boy again",
+    cost:"two toes and every argument after",
+    line:"THE SEA TOOK ITS FEE.", shelf:"a medal, tarnished green",
+    sum:"The dare has stood since her father's own father: the harbour mouth and back, January, no boat. You do it because he is watching and Alice is pretending not to. Black water, seventeen minutes, the lifeboat idling alongside the whole way with his hand never leaving the throttle. You lose two toes, and win every argument for the rest of your life by rolling up one sock."},
 
   /* ---- skeleton stubs: the whole rest of the economy, prose to come ---- */
 
