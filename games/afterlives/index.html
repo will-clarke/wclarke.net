@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>afterlives</title>
+<meta name="theme-color" content="#161110">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚪</text></svg>">
+<style>
+  :root{
+    --bg:#161110; --bg2:#1f1815; --bg3:#241c17; --ink:#eadfce; --dim:#94836d;
+    --faint:#524537; --amber:#dfa254; --ember:#b96f45; --line:#372c22; --plank:#4a3826;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:'Palatino Linotype',Palatino,'URW Palladio L','Book Antiqua','Iowan Old Style',Georgia,serif;
+    font-size:17px; touch-action:manipulation; overscroll-behavior-y:none;}
+  @media (max-width:359px){ html,body{font-size:15px;} }
+  body{min-height:100dvh;
+    background:radial-gradient(120% 90% at 50% 0%, #1b1512 0%, var(--bg) 60%);}
+  #app{max-width:34rem; margin:0 auto; padding:1.4rem 1.1rem 3.5rem;
+    padding-top:calc(1.4rem + env(safe-area-inset-top));
+    padding-bottom:calc(3.5rem + env(safe-area-inset-bottom));}
+  h1{font-size:2.1rem; font-weight:normal; letter-spacing:.28em; text-align:center;
+    color:var(--ink); margin:1.2rem 0 .2rem;}
+  .sub{color:var(--dim); text-align:center; letter-spacing:.12em; font-size:.85rem;
+    margin:0 0 2rem; font-style:italic;}
+  .fade{animation:fadein .7s ease both;}
+  @keyframes fadein{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  .slip{color:var(--amber); text-align:center; letter-spacing:.38em; font-size:.8rem;
+    margin:2.2rem 0 -1rem; animation:fadein 1.5s ease both;}
+  .situation{font-size:1.24rem; line-height:1.6; margin:2rem 0 1.8rem; min-height:3em;
+    white-space:pre-wrap; -webkit-user-select:none; user-select:none;}
+  .caret{display:inline-block; width:.5em; color:var(--amber); animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
+  button{font:inherit; color:inherit; background:none; border:none; cursor:pointer; padding:0;
+    touch-action:manipulation; -webkit-user-select:none; user-select:none;}
+  .opts{margin-top:1.6rem;}
+  .door{display:block; width:100%; text-align:left; background:var(--bg2);
+    border:1px solid var(--line); border-left:4px solid var(--plank);
+    border-radius:.25rem; padding:.95rem 1rem; margin:.7rem 0; min-height:3.1rem;
+    font-size:1.05rem; line-height:1.4; position:relative; animation:fadein .5s ease both;}
+  .door:active{background:var(--bg3);}
+  .door .chip{float:right; color:var(--dim); font-size:.74rem; letter-spacing:.12em;
+    margin-left:.8rem; padding-top:.25em; white-space:nowrap;}
+  .door.locked{color:var(--faint); border-style:dashed; border-left-width:1px; cursor:default;}
+  .door.locked .chip{color:#7d6547;}
+  .door.finished{color:var(--dim);}
+  .door.finished .chip{color:var(--faint);}
+  .door.lit{border-left-color:var(--amber); box-shadow:inset 0 0 18px rgba(223,162,84,.07);
+    animation:lit 2.4s ease both;}
+  @keyframes lit{from{box-shadow:inset 0 0 30px rgba(223,162,84,.28);} to{box-shadow:inset 0 0 18px rgba(223,162,84,.07);}}
+  .card{background:var(--bg2); border:1px solid var(--line); border-top:2px solid var(--amber);
+    border-radius:.35rem; padding:1.7rem 1.3rem 1.4rem; margin:1.8rem 0 1rem;
+    animation:rise .8s ease both;}
+  @keyframes rise{from{opacity:0; transform:translateY(22px);} to{opacity:1; transform:none;}}
+  .card .kicker{color:var(--dim); font-size:.72rem; letter-spacing:.35em; text-align:center;
+    margin-bottom:1rem;}
+  .card h2{font-size:1.3rem; font-weight:normal; letter-spacing:.12em; text-align:center;
+    margin:.1em 0 .9em;}
+  .again{color:var(--faint); text-align:center; font-size:.78rem; font-style:italic;
+    margin:-0.6em 0 1em;}
+  .bars{margin:0 auto 1.3em; display:table;}
+  .bars .row{font-size:.95rem; letter-spacing:.14em; line-height:1.7; white-space:nowrap;}
+  .bars .g{display:inline-block; width:1.4em; color:var(--dim);}
+  .bars .on{color:var(--amber);}
+  .bars .off{color:var(--faint); opacity:.5;}
+  .bars .lbl{color:var(--dim); font-size:.66rem; letter-spacing:.24em; padding-left:.9em;}
+  .card .sum{line-height:1.65; font-size:.98rem; margin-bottom:1.3em;}
+  .card .carved{color:var(--dim); text-align:center; letter-spacing:.22em; font-size:.82rem;
+    margin-bottom:1.2em;}
+  .card .shelfline{color:var(--ember); text-align:center; font-size:.82rem;
+    letter-spacing:.14em; font-style:italic;}
+  .kept{color:var(--amber); text-align:center; letter-spacing:.2em; font-size:.86rem;
+    margin:1.3rem 0 .3rem; animation:fadein 1.6s ease both;}
+  .bigbtn{display:block; width:100%; border:1px solid var(--line); background:var(--bg2);
+    border-radius:.25rem; padding:1rem; margin:1rem 0 .4rem; font-size:1.02rem;
+    letter-spacing:.22em; text-align:center; color:var(--dim);}
+  .bigbtn:active{background:var(--bg3);}
+  .bigbtn.primary{border-color:#6b5433; color:var(--amber);}
+  .after h2{font-weight:normal; letter-spacing:.45em; font-size:1.05rem; color:var(--ink);
+    text-align:center; margin:2.2rem 0 .4rem;}
+  .after .breath{color:var(--dim); text-align:center; font-style:italic; line-height:1.7;
+    margin:0 0 1.8rem; font-size:.95rem;}
+  .statbox{border:1px solid var(--line); background:var(--bg2); border-radius:.3rem;
+    padding:1rem 1.1rem; margin:.9rem 0;}
+  .stat{display:flex; align-items:baseline; justify-content:space-between;
+    padding:.28rem 0; font-size:.92rem; letter-spacing:.2em;}
+  .stat .meter{color:var(--amber); font-size:.8rem; letter-spacing:.28em;}
+  .stat .meter .z{color:var(--faint);}
+  .perk{padding:.3rem 0; font-size:.9rem; letter-spacing:.14em;}
+  .perk .pd{color:var(--dim); font-size:.8rem; letter-spacing:.02em; font-style:italic;
+    display:block; padding:.15rem 0 0 .1rem;}
+  .shelfhead{color:var(--dim); letter-spacing:.4em; font-size:.78rem; text-align:center;
+    margin:2rem 0 .8rem;}
+  .shelf{display:grid; grid-template-columns:repeat(auto-fill,minmax(4.5rem,1fr)); gap:.45rem .5rem;}
+  .slot{border-bottom:2px solid var(--plank); background:linear-gradient(#1d1613,#191311);
+    min-height:3.3rem; padding:.5rem .3rem .45rem; font-size:.58rem; letter-spacing:.05em;
+    text-align:center; line-height:1.35; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;}
+  .slot.empty{color:var(--faint);}
+  .foot{margin-top:2.6rem; text-align:center;}
+  .foot button{color:var(--faint); font-size:.8rem; letter-spacing:.16em;
+    text-decoration:underline; margin:0 .8rem; padding:.5rem 0;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script src="lives.js"></script>
+<script>
+'use strict';
+
+/* ================= state ================= */
+
+const SAVE_KEY = 'afterlives-v1';
+const L = AFTERLIVES;
+const AUTHORED = L.storylines.filter(s => s.authored);
+const DOORS = L.storylines.filter(s => s.authored || s.teaser);
+
+let S = load();
+function load(){
+  try{
+    const raw = JSON.parse(localStorage.getItem(SAVE_KEY));
+    if (raw && raw.found) return Object.assign({found:{}, attrs:{}, perks:{}, seen:{}, deaths:0}, raw);
+  }catch(e){}
+  return {found:{}, attrs:{}, perks:{}, seen:{}, deaths:0};
+}
+function save(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){} }
+
+function canPass(gate){
+  if (!gate) return true;
+  if (gate.anyOf) return gate.anyOf.some(canPass);
+  for (const k of Object.keys(gate)){
+    if (k === 'perks'){ if (!gate.perks.every(p => S.perks[p])) return false; }
+    else if ((S.attrs[k]||0) < gate[k]) return false;
+  }
+  return true;
+}
+function gateLabel(gate){
+  if (!gate) return '';
+  if (gate.anyOf || gate.perks) return '???';
+  return Object.keys(gate).map(k => k + ' ' + gate[k]).join(' · ');
+}
+
+/* every ending somewhere below a node/ending id, gates ignored (for finished marks) */
+const underCache = {};
+function endingsUnder(id){
+  if (underCache[id]) return underCache[id];
+  const out = new Set();
+  (function walk(t){
+    if (L.endings[t]){ out.add(t); return; }
+    const n = L.nodes[t];
+    if (n) n.opts.forEach(o => walk(o.to));
+  })(id);
+  return underCache[id] = out;
+}
+function allFound(set){ for (const e of set) if (!S.found[e]) return false; return true; }
+function storyEndings(id){ return Object.keys(L.endings).filter(e => L.endings[e].story === id); }
+function unlockedDoorIds(){ return DOORS.filter(d => canPass(d.gate)).map(d => d.id); }
+
+/* ================= rendering helpers ================= */
+
+const app = document.getElementById('app');
+function el(html){ const d = document.createElement('div'); d.innerHTML = html; return d.firstElementChild; }
+function clear(){ app.innerHTML = ''; window.scrollTo(0,0); }
+
+let typeTimer = null, typeAbort = null;
+function typewriter(node, text, instant, done){
+  clearInterval(typeTimer);
+  if (typeAbort){ typeAbort(); typeAbort = null; }
+  if (instant){ node.textContent = text; done(); return; }
+  let i = 0;
+  node.textContent = '';
+  const caret = el('<span class="caret">▏</span>');
+  node.appendChild(caret);
+  const skip = () => finish();
+  const finish = () => {
+    clearInterval(typeTimer);
+    document.removeEventListener('pointerdown', skip, true);
+    typeAbort = null;
+    node.textContent = text;
+    done();
+  };
+  typeAbort = () => document.removeEventListener('pointerdown', skip, true);
+  typeTimer = setInterval(() => {
+    i++;
+    if (i >= text.length) return finish();
+    node.textContent = text.slice(0,i);
+    node.appendChild(caret);
+  }, 16);
+  /* tap anywhere to finish the typing - a phone thumb shouldn't have to aim */
+  setTimeout(() => document.addEventListener('pointerdown', skip, true), 80);
+}
+
+/* ================= the morning (hub) ================= */
+
+let doorsAtLifeStart = unlockedDoorIds();
+
+function renderMorning(){
+  clear();
+  const lit = unlockedDoorIds().filter(id => !doorsAtLifeStart.includes(id));
+  if (!S.deaths){
+    app.appendChild(el('<h1 class="fade">afterlives</h1>'));
+    app.appendChild(el('<p class="sub fade">one soul, many lives</p>'));
+  }
+  const sit = el('<p class="situation"></p>');
+  app.appendChild(sit);
+  const opts = el('<div class="opts" style="display:none"></div>');
+  app.appendChild(opts);
+
+  for (const d of DOORS){
+    const open = canPass(d.gate);
+    const label = d.secret && !open ? '???' : d.door;
+    const fin = d.authored && allFound(new Set(storyEndings(d.id)));
+    const b = el('<button class="door"></button>');
+    b.textContent = label;
+    if (!open){
+      b.classList.add('locked');
+      if (!d.secret){
+        const chip = el('<span class="chip"></span>');
+        chip.textContent = gateLabel(d.gate);
+        b.prepend(chip);
+      }
+    } else {
+      if (fin){
+        b.classList.add('finished');
+        b.prepend(el('<span class="chip">✓ nothing new here</span>'));
+      }
+      if (lit.includes(d.id)) b.classList.add('lit');
+      b.onclick = () => startLife(d);
+    }
+    opts.appendChild(b);
+  }
+
+  const foot = el('<div class="foot"></div>');
+  if (S.deaths){
+    const shelfBtn = el('<button>the afterlife</button>');
+    shelfBtn.onclick = () => renderAfterlife(false);
+    foot.appendChild(shelfBtn);
+  }
+  const reset = el('<button>forget everything</button>');
+  let holdT = null;
+  reset.ontouchstart = reset.onmousedown = () => {
+    clearTimeout(holdT);
+    reset.textContent = 'hold…';
+    holdT = setTimeout(() => {
+      localStorage.removeItem(SAVE_KEY);
+      S = load(); doorsAtLifeStart = [];
+      renderMorning();
+    }, 1600);
+  };
+  reset.ontouchend = reset.onmouseup = reset.onmouseleave = () => {
+    clearTimeout(holdT); reset.textContent = 'forget everything';
+  };
+  foot.appendChild(reset);
+  app.appendChild(foot);
+
+  typewriter(sit, L.morning.text, S.seen.__morning, () => {
+    S.seen.__morning = 1; save();
+    opts.style.display = '';
+  });
+}
+
+/* ================= a life ================= */
+
+function startLife(story){
+  doorsAtLifeStart = unlockedDoorIds();
+  playNode(story.start);
+}
+
+function playNode(id){
+  clear();
+  const n = L.nodes[id];
+  if (n.slip) app.appendChild(el('<p class="slip">' + n.slip + '</p>'));
+  const sit = el('<p class="situation"></p>');
+  app.appendChild(sit);
+  const opts = el('<div class="opts" style="display:none"></div>');
+  app.appendChild(opts);
+
+  for (const o of n.opts){
+    const open = canPass(o.gate);
+    if (o.hidden && !open) continue;
+    const b = el('<button class="door"></button>');
+    b.textContent = o.l;
+    if (!open){
+      b.classList.add('locked');
+      const chip = el('<span class="chip"></span>');
+      chip.textContent = gateLabel(o.gate);
+      b.prepend(chip);
+    } else {
+      if (allFound(endingsUnder(o.to))) b.prepend(el('<span class="chip">✓</span>'));
+      b.onclick = () => {
+        if (L.endings[o.to]) showEnding(o.to);
+        else playNode(o.to);
+      };
+    }
+    opts.appendChild(b);
+  }
+
+  typewriter(sit, n.s, S.seen[id], () => {
+    S.seen[id] = 1; save();
+    opts.style.display = '';
+  });
+}
+
+/* ================= an ending ================= */
+
+function barRow(glyph, val, lbl){
+  let cells = '';
+  for (let i = 0; i < 5; i++)
+    cells += '<span class="' + (i < val ? 'on' : 'off') + '">▰</span>';
+  return '<div class="row"><span class="g">' + glyph + '</span>' + cells +
+         '<span class="lbl">' + lbl + '</span></div>';
+}
+
+function showEnding(eid){
+  clear();
+  const e = L.endings[eid];
+  const story = L.storylines.find(s => s.id === e.story);
+  const isNew = !S.found[eid];
+  let keptBits = [];
+  if (isNew){
+    S.found[eid] = 1;
+    S.deaths++;
+    if (e.kept){
+      for (const k of Object.keys(e.kept)){
+        if (k === 'perks') e.kept.perks.forEach(p => { S.perks[p] = 1; keptBits.push(p.replace(/_/g,' ')); });
+        else { S.attrs[k] = (S.attrs[k]||0) + e.kept[k]; keptBits.push(k + ' ' + e.kept[k]); }
+      }
+    }
+    save();
+  }
+
+  const card = el('<div class="card"></div>');
+  card.appendChild(el('<div class="kicker">' + story.title + '</div>'));
+  card.appendChild(el('<h2>' + e.title + '</h2>'));
+  if (!isNew) card.appendChild(el('<div class="again">you have been here before</div>'));
+  card.appendChild(el('<div class="bars">' +
+    barRow('♥', e.bars[0], 'JOY') +
+    barRow('✦', e.bars[1], 'WORTH') +
+    barRow('£', e.bars[2], 'GOLD') + '</div>'));
+  card.appendChild(el('<p class="sum">' + e.sum + '</p>'));
+  card.appendChild(el('<div class="carved">' + e.line + '</div>'));
+  card.appendChild(el('<div class="shelfline">on the shelf: ' + e.shelf + '</div>'));
+  app.appendChild(card);
+
+  if (keptBits.length)
+    app.appendChild(el('<div class="kept">WHAT THE SOUL KEPT: ' + keptBits.join(' · ') + '</div>'));
+
+  const btn = el('<button class="bigbtn primary">let go</button>');
+  btn.onclick = () => renderAfterlife(true);
+  app.appendChild(btn);
+}
+
+/* ================= the afterlife ================= */
+
+function renderAfterlife(fromDeath){
+  clear();
+  const wrap = el('<div class="after fade"></div>');
+  wrap.appendChild(el('<h2>THE AFTERLIFE</h2>'));
+  const firstDeath = fromDeath && S.deaths === 1;
+  wrap.appendChild(el('<p class="breath">' + (firstDeath
+    ? 'A shelf, a kettle, and no hurry at all.<br>Downstairs, the same morning is waiting.<br>More doors are lit now. There always were more doors.'
+    : 'The kettle is on. The morning can wait.') + '</p>'));
+
+  const stats = el('<div class="statbox"></div>');
+  for (const a of L.attrs){
+    const v = S.attrs[a] || 0;
+    let meter = '';
+    for (let i = 0; i < Math.min(v, 12); i++) meter += '▪';
+    stats.appendChild(el('<div class="stat"><span>' + a + '</span>' +
+      '<span class="meter">' + (v ? meter + ' ' + v : '<span class="z">—</span>') + '</span></div>'));
+  }
+  wrap.appendChild(stats);
+
+  const owned = Object.keys(L.perks).filter(p => S.perks[p]);
+  if (owned.length){
+    const pb = el('<div class="statbox"></div>');
+    for (const p of owned)
+      pb.appendChild(el('<div class="perk">' + p.replace(/_/g,' ') +
+        '<span class="pd">' + L.perks[p].desc + '</span></div>'));
+    wrap.appendChild(pb);
+  }
+
+  wrap.appendChild(el('<div class="shelfhead">THE SHELF</div>'));
+  const shelf = el('<div class="shelf"></div>');
+  for (const st of L.storylines){
+    for (const eid of storyEndings(st.id)){
+      const e = L.endings[eid];
+      if (S.found[eid] && e.shelf){
+        const s = el('<div class="slot"></div>');
+        s.textContent = e.shelf;
+        shelf.appendChild(s);
+      } else {
+        shelf.appendChild(el('<div class="slot empty">·</div>'));
+      }
+    }
+  }
+  wrap.appendChild(shelf);
+
+  const btn = el('<button class="bigbtn primary">the morning again</button>');
+  btn.onclick = renderMorning;
+  wrap.appendChild(btn);
+  app.appendChild(wrap);
+}
+
+/* ================= boot ================= */
+renderMorning();
+</script>
+</body>
+</html>

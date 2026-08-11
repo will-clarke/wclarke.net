@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "afterlives",
+      "name": "Afterlives",
+      "accent": "#dfa254",
+      "tagline": "The same Tuesday morning, every time: tea, Dad's keys, and doors you can't afford yet. Live a life behind one of them - the shop, the storm, the beetles - die, and wake in the afterlife with whatever the soul kept: nerve, heart, stranger things. Traits only ever grow, and they open doors; some doors only ever say ???. Almost everything is locked. That's the game."
+    },
+    {
       "slug": "threescore",
       "name": "Threescore",
       "accent": "#5fd3c4",
