@@ -466,13 +466,15 @@ const CAMPAIGN = [
     '#..$*.#',
     '#######',
   ]},
-  { name: 'Sidestep', par: 5, stretch: true, requires: ['exit', 'spawn'], rows: [
+  // T42/T43 (Will, prompt 8): "This is a better puzzle" - his rebuilt
+  // Sidestep, verbatim. Same teach (spawn + desync), par re-baked.
+  { name: 'Sidestep', par: 10, stretch: true, requires: ['exit', 'spawn'], rows: [
     '#######',
     '-..N..#',
-    '#@.$*##',
+    '#@.$.*#',
     '#######',
     '#..N..#',
-    '#..$.*#',
+    '#..$*.#',
     '#######',
   ]},
   // NEW (T10): blockout. Push the right window out the door and it re-emerges
@@ -514,7 +516,7 @@ const CAMPAIGN = [
   ]},
   // T14 re-tag + T20 re-bake (14 -> 15 under pushable blocks): mint, spend,
   // burn - the optimal still buys a body with a body.
-  { name: 'Nest', par: 15, stretch: true, requires: ['exit', 'spawn', 'fill', 'boxout'], rows: [
+  { name: 'Nest', par: 14, stretch: true, requires: ['exit', 'spawn', 'fill', 'boxout'], rows: [
     '######-###',
     '###*##.#*#',
     '###N##~#N#',
@@ -530,8 +532,10 @@ const CAMPAIGN = [
   // Will's editor draft (2026-08-09), promoted as-is: two sealed storeys, one
   // box, two targets - the doors and windows are the only way anything moves
   // between floors. Par baked under the T24 engine.
-  { name: 'Duplex', par: 15, stretch: true, requires: ['boxout', 'blockout'], rows: [
-    '#######',
+  // T42 recut: one new N door above the upper window restores solvability -
+  // and blockout with it (push the window up through its doorless S face).
+  { name: 'Duplex', par: 18, stretch: true, requires: ['boxout', 'blockout'], rows: [
+    '###-###',
     '-.@N..#',
     '#..$..-',
     '#######',
@@ -560,7 +564,7 @@ const WORKSHOP = [
     '#@$~#',
     '#####',
   ]},
-  { name: 'Trapdoor', par: 7, stretch: true, requires: [], rows: [
+  { name: 'Trapdoor', par: 5, stretch: true, requires: [], rows: [
     '###-#',
     '#@$.#',
     '#N$~#',
@@ -578,7 +582,7 @@ const WORKSHOP = [
   { name: 'Crossing', par: 9, stretch: true, requires: [], rows: [
     '##-##',
     '#.@.#',
-    '-.*$-',
+    '#.*$-',
     '#.N.#',
     '##-##',
   ]},
@@ -589,7 +593,25 @@ const WORKSHOP = [
     '#*..#',
     '#-###',
   ]},
-  { name: 'Wings', par: 13, stretch: true, requires: [], rows: [
+  { name: 'Causeway', par: 12, stretch: true, requires: [], rows: [
+    '###-###',
+    '#@.N..#',
+    '#~~~~~#',
+    '-..N..-',
+    '#~~~~~#',
+    '#..$.*#',
+    '###-###',
+  ]},
+  { name: 'Compass', par: 12, stretch: true, requires: [], rows: [
+    '###-###',
+    '#N*...#',
+    '#.....#',
+    '#..@..#',
+    '-..##*-',
+    '#N.$.N#',
+    '###-###',
+  ]},
+  { name: 'Wings', par: 15, stretch: true, requires: [], rows: [
     '#######',
     '#*.*N*#',
     '#.$.###',
@@ -615,16 +637,15 @@ const WORKSHOP = [
     '#*...#',
     '######',
   ]},
-  { name: 'Causeway', par: 16, stretch: true, requires: [], rows: [
-    '###-###',
-    '#@.N..#',
-    '#~~~~~#',
-    '-..N..-',
-    '#~~~~~#',
-    '#..$.*#',
-    '###-###',
+  { name: 'Backdoor', par: 18, stretch: true, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#...$-',
+    '#$N@*#',
+    '#*.$.#',
+    '##-###',
   ]},
-  { name: 'Spiral', par: 17, stretch: true, requires: [], rows: [
+  { name: 'Spiral', par: 19, stretch: true, requires: [], rows: [
     '#-#####',
     '-*#..*#',
     '##.*$.#',
@@ -632,32 +653,6 @@ const WORKSHOP = [
     '#..$.##',
     '#.@.#*-',
     '#####-#',
-  ]},
-  { name: 'Backdoor', par: 18, stretch: true, requires: [], rows: [
-    '######',
-    '#.*..#',
-    '#...$#',
-    '#$N@*#',
-    '#*.$.#',
-    '##-###',
-  ]},
-  { name: 'Compass', par: 18, stretch: true, requires: [], rows: [
-    '###-###',
-    '#N*...#',
-    '#.....#',
-    '#..@..#',
-    '-..##*-',
-    '#N.$.N#',
-    '###-###',
-  ]},
-  { name: 'Periscope', par: 23, stretch: true, requires: [], rows: [
-    '#####-#',
-    '#.$.#.#',
-    '#.*.#.#',
-    '#...#.#',
-    '##N#..#',
-    '-*$..@-',
-    '#######',
   ]},
   { name: 'Avalanche', par: 23, stretch: true, requires: [], rows: [
     '#######',
@@ -668,7 +663,7 @@ const WORKSHOP = [
     '#*..~~#',
     '#######',
   ]},
-  { name: 'Island', par: 25, stretch: true, requires: [], rows: [
+  { name: 'Island', par: 23, stretch: true, requires: [], rows: [
     '####-####',
     '#~~~~~~~#',
     '#~~~~...#',
@@ -678,6 +673,15 @@ const WORKSHOP = [
     '#~~~~...#',
     '#~~~~~~~#',
     '####-####',
+  ]},
+  { name: 'Periscope', par: 24, stretch: true, requires: [], rows: [
+    '#####-#',
+    '#.$...#',
+    '#.*.#.#',
+    '#...#.#',
+    '##N#..#',
+    '-*$..@-',
+    '#######',
   ]},
   { name: 'Grindstone', par: 47, stretch: true, requires: [], rows: [
     '#######',
@@ -693,450 +697,106 @@ const WORKSHOP = [
 // T36: generator levels that survived the pruned BFS + portal-integrity
 // filter and a diversity pick over ~48k sketches. Ordered by par.
 const GENERATED = [
-  { name: 'Gen 1', par: 14, stretch: true, requires: [], rows: [
-    '#-#####',
-    '#.#####',
-    '#..*@~#',
-    '#..*$N#',
-    '#...$.#',
-    '#.~N.$#',
-    '##-####',
-  ]},
-  { name: 'Gen 2', par: 15, stretch: true, requires: [], rows: [
-    '#-#####',
-    '#.$N.##',
-    '#.N~..#',
-    '#..*..#',
-    '#.....-',
-    '#..@..#',
-    '#######',
-  ]},
-  { name: 'Gen 3', par: 15, stretch: true, requires: [], rows: [
-    '######',
-    '#..~.#',
-    '#..#.#',
-    '#N*N@#',
-    '#~$..#',
-    '####-#',
-  ]},
-  { name: 'Gen 4', par: 15, stretch: true, requires: [], rows: [
-    '#######',
-    '#.###.#',
-    '#...@N-',
-    '-...~.#',
-    '#...N*#',
-    '#...$.#',
-    '#######',
-  ]},
-  { name: 'Gen 5', par: 17, stretch: true, requires: [], rows: [
-    '#######',
-    '##~..##',
-    '#.$.*##',
-    '#N@..##',
-    '#.N.~##',
-    '#$...##',
-    '#-#####',
-  ]},
-  { name: 'Gen 6', par: 17, stretch: true, requires: [], rows: [
-    '###-###',
-    '#..*.*#',
-    '#@...$#',
-    '#N....#',
-    '#..##.#',
-    '#N$##.#',
-    '#######',
-  ]},
-  { name: 'Gen 7', par: 17, stretch: true, requires: [], rows: [
-    '#######',
-    '####..#',
-    '#.$#*.#',
-    '#.$@..-',
-    '#N.~..#',
-    '#..N.*#',
-    '#######',
-  ]},
-  { name: 'Gen 8', par: 17, stretch: true, requires: [], rows: [
-    '#-####',
-    '#~.N##',
-    '#..N$#',
-    '#.**.#',
-    '-$@.##',
-    '######',
-  ]},
-  { name: 'Gen 9', par: 18, stretch: true, requires: [], rows: [
-    '########',
-    '#.N..###',
-    '#....*##',
-    '#..@#*.#',
-    '#...#..-',
-    '#.N$#$~#',
-    '#.~.#..#',
-    '######-#',
-  ]},
-  { name: 'Gen 10', par: 18, stretch: true, requires: [], rows: [
-    '######',
-    '######',
-    '-**$*#',
-    '#@NN.#',
-    '#$$..#',
-    '##-###',
-  ]},
-  { name: 'Gen 11', par: 18, stretch: true, requires: [], rows: [
-    '######',
-    '-....#',
-    '##N..#',
-    '##N@.#',
-    '##.*$#',
-    '####-#',
-  ]},
-  { name: 'Gen 12', par: 18, stretch: true, requires: [], rows: [
-    '#######',
-    '#.$$..#',
-    '-N~...#',
-    '#..N.##',
-    '#....$#',
-    '#@.*..-',
-    '#######',
-  ]},
-  { name: 'Gen 13', par: 19, stretch: true, requires: [], rows: [
-    '#######',
-    '#$...N#',
-    '#~.N*@#',
-    '#..$.##',
-    '#...###',
-    '#.*$###',
-    '##-####',
-  ]},
-  { name: 'Gen 14', par: 19, stretch: true, requires: [], rows: [
-    '#######',
-    '#*$*.~-',
-    '#.....#',
-    '#NN.$.#',
-    '-*#~.$#',
-    '###..@#',
-    '#######',
-  ]},
-  { name: 'Gen 15', par: 20, stretch: true, requires: [], rows: [
-    '###-##',
-    '#....-',
-    '#.@~.#',
-    '#N$*N#',
-    '##.*$#',
-    '######',
-  ]},
-  { name: 'Gen 16', par: 20, stretch: true, requires: [], rows: [
-    '###-##',
-    '###.~#',
-    '#$.$*#',
-    '#.N.N#',
-    '#$@.*#',
-    '####-#',
-  ]},
-  { name: 'Gen 17', par: 20, stretch: true, requires: [], rows: [
-    '#####-#',
-    '#N@...-',
-    '###~$~#',
-    '#.#..*#',
-    '#N#$..#',
-    '#.*.###',
-    '#######',
-  ]},
-  { name: 'Gen 18', par: 21, stretch: true, requires: [], rows: [
-    '######',
-    '#@..##',
-    '#.*$##',
-    '-.N~##',
-    '#.N~.#',
-    '######',
-  ]},
-  { name: 'Gen 19', par: 22, stretch: true, requires: [], rows: [
-    '#-######',
-    '#.N....#',
-    '#@$....#',
-    '#..#####',
-    '#......#',
-    '#....~*#',
-    '#N.....#',
-    '####-###',
-  ]},
-  { name: 'Gen 20', par: 22, stretch: true, requires: [], rows: [
-    '##-####',
-    '#..$.*#',
-    '#.~...#',
-    '##...N#',
-    '#$..*.#',
-    '#.N.@~#',
-    '###-###',
-  ]},
-  { name: 'Gen 21', par: 22, stretch: true, requires: [], rows: [
-    '#-#####',
-    '#.#@N.#',
-    '#*#.#.#',
-    '#.#...#',
-    '#.#$#.#',
-    '#..$#N#',
-    '#####-#',
-  ]},
-  { name: 'Gen 22', par: 22, stretch: true, requires: [], rows: [
-    '########',
-    '-..#@..#',
-    '#N.#.$.#',
-    '#..#N..#',
-    '#.######',
-    '#.~....-',
-    '#*....~#',
-    '########',
-  ]},
-  { name: 'Gen 23', par: 22, stretch: true, requires: [], rows: [
-    '#######',
-    '#..*.N-',
-    '#..N..#',
-    '#$~.$##',
-    '#..@.~#',
-    '#..*###',
-    '#######',
-  ]},
-  { name: 'Gen 24', par: 22, stretch: true, requires: [], rows: [
-    '####-#',
-    '#...N#',
-    '##.$@#',
-    '###N.#',
-    '#*...#',
-    '##-###',
-  ]},
-  { name: 'Gen 25', par: 23, stretch: true, requires: [], rows: [
-    '######',
-    '#N..$#',
-    '#$@*##',
-    '#.#.N-',
-    '#.*.~#',
-    '####-#',
-  ]},
-  { name: 'Gen 26', par: 23, stretch: true, requires: [], rows: [
-    '###-###',
-    '#...###',
-    '#N....#',
-    '#N.@.~#',
-    '#*...$#',
-    '#.....#',
-    '#######',
-  ]},
-  { name: 'Gen 27', par: 23, stretch: true, requires: [], rows: [
-    '###-##',
-    '#.**~#',
-    '#.$N$#',
-    '##.$@#',
-    '###N*#',
-    '###-##',
-  ]},
-  { name: 'Gen 28', par: 23, stretch: true, requires: [], rows: [
-    '#####-#',
-    '#.N#.N#',
-    '#$..*.#',
-    '#.~...#',
-    '#~.@$.#',
-    '#.#####',
-    '#-#####',
-  ]},
-  { name: 'Gen 29', par: 24, stretch: true, requires: [], rows: [
-    '##-#####',
-    '#..N...#',
-    '#......#',
-    '#.....~-',
-    '#N*....#',
-    '#...#.$#',
-    '#...#.@#',
-    '########',
-  ]},
-  { name: 'Gen 30', par: 24, stretch: true, requires: [], rows: [
-    '####-##',
-    '#.$$*.#',
-    '#...N.#',
-    '#N..@##',
-    '##.*.##',
-    '#...###',
-    '#######',
-  ]},
-  { name: 'Gen 31', par: 26, stretch: true, requires: [], rows: [
-    '######',
-    '#..*$#',
-    '#..$.#',
-    '-.NN@#',
-    '#*#..#',
-    '####-#',
-  ]},
-  { name: 'Gen 32', par: 27, stretch: true, requires: [], rows: [
-    '#######',
-    '#..N#.#',
-    '-..##.#',
-    '#...N*#',
-    '#$....#',
-    '#.$$@.#',
-    '####-##',
-  ]},
-  { name: 'Gen 33', par: 28, stretch: true, requires: [], rows: [
-    '####-#',
-    '#N$$*#',
-    '#$@..#',
-    '#N*..#',
-    '#*#..#',
-    '###-##',
-  ]},
-  { name: 'Gen 34', par: 28, stretch: true, requires: [], rows: [
-    '######',
-    '#$$.~#',
-    '#@N.##',
-    '#...*-',
-    '-..N.#',
-    '######',
-  ]},
-  { name: 'Gen 35', par: 28, stretch: true, requires: [], rows: [
-    '#######',
-    '#...$.#',
-    '-@.#.*#',
-    '##.#N$#',
-    '##..*N-',
-    '##.*$.#',
-    '#######',
-  ]},
-  { name: 'Gen 36', par: 29, stretch: true, requires: [], rows: [
-    '###-###',
-    '#.$...#',
-    '#N...N#',
-    '#@~.*.-',
-    '#.~#*.#',
-    '#.##$##',
-    '#######',
-  ]},
-  { name: 'Gen 37', par: 29, stretch: true, requires: [], rows: [
-    '######-#',
-    '#...#.N#',
-    '#...#.$#',
-    '######.#',
-    '#@..#..#',
-    '#*....$#',
-    '#N.....#',
-    '########',
-  ]},
-  { name: 'Gen 38', par: 30, stretch: true, requires: [], rows: [
-    '######',
-    '#.N@.-',
-    '#$.*.#',
-    '#N.#.#',
-    '-*.#$#',
-    '######',
-  ]},
-  { name: 'Gen 39', par: 31, stretch: true, requires: [], rows: [
-    '########',
-    '#...N*.#',
-    '#$..$..#',
-    '#.###.*#',
-    '#...~..#',
-    '#.#..###',
-    '-~N...@#',
-    '##-#####',
-  ]},
-  { name: 'Gen 40', par: 32, stretch: true, requires: [], rows: [
-    '#######',
-    '#..N.*#',
-    '#..##.#',
-    '#.@...#',
-    '-$..~.#',
-    '#.$...#',
-    '####-##',
-  ]},
-  { name: 'Gen 41', par: 33, stretch: true, requires: [], rows: [
-    '#######',
-    '-$....#',
-    '#@..*.#',
-    '#N##N.#',
-    '#$.*..#',
-    '#.....#',
-    '#######',
-  ]},
-  { name: 'Gen 42', par: 33, stretch: true, requires: [], rows: [
-    '#-#####',
-    '#.$..@#',
-    '#..~..#',
-    '#.$$*##',
-    '#.#N..#',
-    '#.*..##',
-    '##-####',
-  ]},
-  { name: 'Gen 43', par: 34, stretch: true, requires: [], rows: [
-    '#-####',
-    '#$@N.#',
-    '#*.N.#',
-    '#....#',
-    '##$*.#',
-    '######',
-  ]},
-  { name: 'Gen 44', par: 36, stretch: true, requires: [], rows: [
-    '##-###',
-    '#.N.$#',
-    '#$N*$#',
-    '#.*#.#',
-    '##.@.#',
-    '##-###',
-  ]},
-  { name: 'Gen 45', par: 36, stretch: true, requires: [], rows: [
-    '###-####',
-    '#....*N#',
-    '#@##...#',
-    '#.N...$#',
-    '#...####',
-    '#......#',
-    '#.....$#',
-    '######-#',
-  ]},
-  { name: 'Gen 46', par: 37, stretch: true, requires: [], rows: [
-    '######',
-    '-*.###',
-    '#*...#',
-    '#N..$#',
-    '#.@.$-',
-    '######',
-  ]},
-  { name: 'Gen 47', par: 37, stretch: true, requires: [], rows: [
-    '###-####',
-    '-~.$...#',
-    '#*.....#',
-    '####.~*#',
-    '#.$@.N.#',
-    '#$.....#',
-    '#...####',
-    '########',
-  ]},
-  { name: 'Gen 48', par: 39, stretch: true, requires: [], rows: [
-    '########',
-    '#..@$..#',
-    '#..*...#',
-    '#.##N..#',
-    '-......#',
-    '#$..#..#',
-    '#...~.*#',
-    '########',
-  ]},
-  { name: 'Gen 49', par: 42, stretch: true, requires: [], rows: [
-    '#-######',
-    '#.#@...#',
-    '#.#..N.#',
-    '######.#',
-    '#*.$...#',
-    '#$..**.#',
-    '#.$.#..#',
-    '##-#####',
-  ]},
-  { name: 'Gen 50', par: 45, stretch: true, requires: [], rows: [
-    '###-####',
-    '#....$.#',
-    '#.*...$#',
-    '#.N.@..#',
-    '#*.....#',
-    '#....###',
-    '#.....N#',
-    '########',
-  ]},
+  { name: 'Gen 1', par: 11, stretch: true, requires: [],
+    rows: ['######', '-....#', '##N..#', '##N@.#', '##.*$#', '####-#'] },  // {blockstep,boxout,enter,exit,spawn}
+  { name: 'Gen 2', par: 13, stretch: true, requires: [],
+    rows: ['#-######', '#.N....#', '#@$....#', '#..#####', '#......#', '#....~*#', '#N.....#', '####-###'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 3', par: 13, stretch: true, requires: [],
+    rows: ['#-####', '#$$.N#', '#*.*.#', '##N@.#', '##$#.#', '######'] },  // {blockstep,boxout,enter,exit,merge,push,spawn} T42-fresh
+  { name: 'Gen 4', par: 14, stretch: true, requires: [],
+    rows: ['##-###', '#N$*@#', '#....#', '-.N..#', '#.#~##', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push} T42-fresh
+  { name: 'Gen 5', par: 15, stretch: true, requires: [],
+    rows: ['######-#', '#.@....#', '##$..*.#', '##.....#', '##.N...#', '##....$#', '##*...N-', '########'] },  // {blockout,blockstep,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Gen 6', par: 16, stretch: true, requires: [],
+    rows: ['#######', '####..#', '#.$#*.#', '#.$@..-', '#N.~..#', '#..N.*#', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 7', par: 17, stretch: true, requires: [],
+    rows: ['#-####', '#~.N##', '#..N$#', '#.**.#', '-$@.##', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 8', par: 17, stretch: true, requires: [],
+    rows: ['######', '#N*..#', '#.~*##', '#$@.$-', '###N.#', '###-##'] },  // {blockout,boxout,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'Gen 9', par: 17, stretch: true, requires: [],
+    rows: ['###-###', '#.*.$.#', '#@~N.$#', '#...*.-', '#..N..#', '#..#~.#', '#######'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'Gen 10', par: 18, stretch: true, requires: [],
+    rows: ['########', '#.N..###', '#....*##', '#..@#*.#', '#...#..-', '#.N$#$~#', '#.~.#..#', '######-#'] },  // {blocksink,enter,push}
+  { name: 'Gen 11', par: 19, stretch: true, requires: [],
+    rows: ['#######', '#$...N#', '#~.N*@#', '#..$.##', '#...###', '#.*$###', '##-####'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 12', par: 19, stretch: true, requires: [],
+    rows: ['########', '##.*...#', '##.....#', '##.N...#', '#.N....#', '#..#####', '#.$.@..-', '########'] },  // {blockstep,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Gen 13', par: 20, stretch: true, requires: [],
+    rows: ['###-##', '#....-', '#.@~.#', '#N$*N#', '##.*$#', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 14', par: 20, stretch: true, requires: [],
+    rows: ['##-####', '#..$.*#', '#.~...#', '##...N#', '#$..*.#', '#.N.@~#', '###-###'] },  // {blockstep,boxout,die,enter,exit,fill,merge,push,spawn}
+  { name: 'Gen 15', par: 20, stretch: true, requires: [],
+    rows: ['#######', '#..N#.#', '-..##.#', '#...N*#', '#$....#', '#.$$@.#', '####-##'] },  // {blockstep,boxin,enter,exit,push,spawn}
+  { name: 'Gen 16', par: 21, stretch: true, requires: [],
+    rows: ['##-#####', '#..N...#', '#......#', '#.....~-', '#N*....#', '#...#.$#', '#...#.@#', '########'] },  // {blockstep,boxout,die,exit,fill,push,spawn}
+  { name: 'Gen 17', par: 21, stretch: true, requires: [],
+    rows: ['######', '#..*$#', '#..$.#', '-.NN@#', '#*#..#', '####-#'] },  // {blockout,blockstep,boxout,enter,exit,push,spawn}
+  { name: 'Gen 18', par: 22, stretch: true, requires: [],
+    rows: ['#######', '#*$*.~-', '#.....#', '#NN.$.#', '-*#~.$#', '###..@#', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,sink,spawn}
+  { name: 'Gen 19', par: 22, stretch: true, requires: [],
+    rows: ['########', '-..#@..#', '#N.#.$.#', '#..#N..#', '#.######', '#.~....-', '#*....~#', '########'] },  // {boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 20', par: 22, stretch: true, requires: [],
+    rows: ['#####-#', '#.N#.N#', '#$..*.#', '#.~...#', '#~.@$.#', '#.#####', '#-#####'] },  // {boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 21', par: 22, stretch: true, requires: [],
+    rows: ['###-###', '#.$...#', '#N...N#', '#@~.*.-', '#.~#*.#', '#.##$##', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn}
+  { name: 'Gen 22', par: 22, stretch: true, requires: [],
+    rows: ['####-#', '#$*.@#', '#*#~$#', '#*#$~#', '#N#N##', '######'] },  // {boxin,boxout,die,enter,exit,fill,merge,push,sink,spawn} T42-fresh
+  { name: 'Gen 23', par: 22, stretch: true, requires: [],
+    rows: ['####-##', '#.**$$#', '#N#N.@#', '#*.$..#', '#.....#', '#.....#', '#######'] },  // {blockstep,boxin,boxout,enter,push,spawn} T42-fresh
+  { name: 'Gen 24', par: 23, stretch: true, requires: [],
+    rows: ['#-#####', '#.#####', '#..*@~#', '#..*$N#', '#...$.#', '#.~N.$#', '##-####'] },  // {die,enter,exit,fill,push,spawn}
+  { name: 'Gen 25', par: 23, stretch: true, requires: [],
+    rows: ['#######', '#.###.#', '#...@N-', '-...~.#', '#...N*#', '#...$.#', '#######'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 26', par: 23, stretch: true, requires: [],
+    rows: ['####-##', '#.$$*.#', '#...N.#', '#N..@##', '##.*.##', '#...###', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn}
+  { name: 'Gen 27', par: 23, stretch: true, requires: [],
+    rows: ['#######', '#..N.*#', '#..##.#', '#.@...#', '-$..~.#', '#.$...#', '####-##'] },  // {enter,push}
+  { name: 'Gen 28', par: 24, stretch: true, requires: [],
+    rows: ['######', '#N..$#', '#$@*##', '#.#.N-', '#.*.~#', '####-#'] },  // {blockout,blockstep,boxin,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 29', par: 25, stretch: true, requires: [],
+    rows: ['#-#####', '#.$N.##', '#.N~..#', '#..*..#', '#.....-', '#..@..#', '#######'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Gen 30', par: 25, stretch: true, requires: [],
+    rows: ['######', '-*.###', '#*...#', '#N..$#', '#.@.$-', '######'] },  // {blockstep,boxout,exit,push}
+  { name: 'Gen 31', par: 25, stretch: true, requires: [],
+    rows: ['####-#', '#$.N.#', '#.~..#', '#.N*##', '#$$@##', '######'] },  // {blockstep,boxin,boxout,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'Gen 32', par: 26, stretch: true, requires: [],
+    rows: ['#######', '#.....#', '#.~..$#', '#.*N.N#', '####..#', '#..~@.-', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'Gen 33', par: 27, stretch: true, requires: [],
+    rows: ['###-##', '#.#*$#', '#$..N-', '#$N@.#', '#.*.*#', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Gen 34', par: 28, stretch: true, requires: [],
+    rows: ['######', '####.#', '#$$.*#', '#N.~.#', '#.@$N#', '####-#'] },  // {blockout,blockstep,die,enter,exit,fill,merge,push,spawn} T42-fresh
+  { name: 'Gen 35', par: 30, stretch: true, requires: [],
+    rows: ['#######', '#@..N.#', '#*.$$.-', '###.N.#', '#.*.$##', '###...#', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push} T42-fresh
+  { name: 'Gen 36', par: 31, stretch: true, requires: [],
+    rows: ['#######', '#.@...#', '##$$.*#', '#.#...-', '#.#.N.#', '#..$.N#', '#######'] },  // {blockstep,boxin,enter,exit,push,spawn} T42-fresh
+  { name: 'Gen 37', par: 32, stretch: true, requires: [],
+    rows: ['########', '#..$...-', '#..@.N.#', '#..*..##', '#...$.##', '#..*...#', '#......#', '########'] },  // {blockstep,boxout,exit,push} T42-fresh
+  { name: 'Gen 38', par: 34, stretch: true, requires: [],
+    rows: ['########', '-.$.#..#', '#...#*.#', '#$###..#', '#...#..#', '#....@.#', '#.*...N#', '#-######'] },  // {blockstep,boxout,enter,exit,push} T42-fresh
+  { name: 'Gen 39', par: 35, stretch: true, requires: [],
+    rows: ['#-######', '#.$.*$.#', '#.$.N.*#', '#*..##.#', '#...@..#', '#..#####', '#......#', '########'] },  // {blockstep,enter,exit,push} T42-fresh
+  { name: 'Gen 40', par: 35, stretch: true, requires: [],
+    rows: ['########', '#...$..#', '#@.....#', '#*..####', '#~.....#', '#.#N...-', '#......#', '########'] },  // {blockstep,boxin,enter,push} T42-fresh
+  { name: 'Gen 41', par: 36, stretch: true, requires: [],
+    rows: ['#######', '#..*.N-', '#..N..#', '#$~.$##', '#..@.~#', '#..*###', '#######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn}
+  { name: 'Gen 42', par: 36, stretch: true, requires: [],
+    rows: ['###-##', '-N*$##', '#@..##', '#N*.##', '#~$.##', '######'] },  // {blockstep,boxout,enter,exit,push,sink,spawn} T42-fresh
+  { name: 'Gen 43', par: 36, stretch: true, requires: [],
+    rows: ['####-#', '-$...#', '#@NN.#', '###*.#', '#$$###', '######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Gen 44', par: 36, stretch: true, requires: [],
+    rows: ['#######', '#~.$@*#', '#$.*.##', '#..$..#', '#N.####', '##....-', '#####-#'] },  // {blockstep,enter,exit,push,sink} T42-fresh
+  { name: 'Gen 45', par: 37, stretch: true, requires: [],
+    rows: ['########', '#......#', '#$.*...#', '#*..#.@-', '#...#..#', '#.N$#$.#', '#*..#..#', '########'] },  // {blockstep,exit,push} T42-fresh
+  { name: 'Gen 46', par: 38, stretch: true, requires: [],
+    rows: ['########', '#......#', '#...#..-', '#*.~#$##', '#.*.#.##', '##...$.#', '#.@.NN.#', '########'] },  // {blockstep,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'Gen 47', par: 40, stretch: true, requires: [],
+    rows: ['########', '#..@$..#', '#..*...#', '#.##N..#', '-......#', '#$..#..#', '#...~.*#', '########'] },  // {blockstep,boxin,boxout,enter,exit,push}
+  { name: 'Gen 48', par: 43, stretch: true, requires: [],
+    rows: ['###-####', '#....$.#', '#.*...$#', '#.N.@..#', '#*.....#', '#....###', '#.....N#', '########'] },  // {blockstep,boxin,enter,exit,push}
+  { name: 'Gen 49', par: 44, stretch: true, requires: [],
+    rows: ['###-####', '-~.$...#', '#*.....#', '####.~*#', '#.$@.N.#', '#$.....#', '#...####', '########'] },  // {blockstep,boxin,enter,exit,push,sink}
+  { name: 'Gen 50', par: 44, stretch: true, requires: [],
+    rows: ['########', '#....**#', '#N...###', '#$.....#', '#......#', '-......-', '#@...$.#', '########'] },  // {blockstep,boxin,enter,exit,push} T42-fresh
 ];
 
 const TRACKS = [
@@ -1356,20 +1016,10 @@ function step(layout, state, dir) {
       }
       return true;
     }
-    if (ob === 'block') {
-      // Blockin: a window slides into a window the way a box would - through
-      // the matching door, landing on the arrival cell. It never shoves
-      // whatever is waiting there.
-      const arr = arrivalCell(layout, FACE[dir]);
-      if (arr === null || arr === pos || occ.has(arr)) return false;
-      occ.delete(pos);
-      events.push({ t: 'blockin', from: pos, block: bdest, to: arr });
-      if (lavaOpen(arr)) {
-        filled.add(arr);
-        events.push({ t: 'blocksink', at: arr });
-      } else occ.set(arr, 'block');
-      return true;
-    }
+    if (ob === 'block') return false;
+    // (Blockin died with T42's enter-first rule: threading a window through
+    // a window needed the very door that now means "enter", so no pusher
+    // can reach it any more. Window against window = pinned.)
     if (ob === 'box') {
       // T27 (Will): resolve from the far end. A window advancing onto a box
       // swallows it - the box crosses the window's boundary on the LEADING
@@ -1403,14 +1053,19 @@ function step(layout, state, dir) {
     // T24 - removed per Will: it undercut the pure sokobaning.)
     if (o === 'wall') continue;
     if (o === 'block') {
-      // T10 (A4): push beats enter - you enter only when the block is pinned.
+      // T42 (A4 v2): the facing door decides. A doored face is a portal -
+      // you enter (or bonk trying); a doorless face is a crate side - you
+      // push (or bonk). Enter beats push: the nearest interaction wins.
+      if (arrivalCell(layout, FACE[dir]) !== null) {
+        pendingEnter.push(c); pending.add(c.id); continue;
+      }
       // T32: a pusher is in motion, so its own cell counts as vacated while
       // its push resolves - a blockout mouth (or a swallowed box's arrival)
       // may land exactly where the pusher is stepping out of.
       occ.delete(c.pos);
       if (blockMove(dest)) { moveClone(c, dest); continue; }
       occ.set(c.pos, c.id); // pinned: the clone never moved after all
-      pendingEnter.push(c); pending.add(c.id); continue;
+      continue;
     }
     if (o === 'box') {
       const bdest = dest + delta;
@@ -1435,15 +1090,9 @@ function step(layout, state, dir) {
       }
       const ob = occ.get(bdest);
       if (ob === 'block') {
-        // T10 (A4): the block scoots first; the box goes in through the
-        // matching door only if the block cannot move.
-        if (blockMove(bdest)) {
-          occ.delete(dest);
-          occ.set(bdest, 'box');
-          events.push({ t: 'push', from: dest, to: bdest });
-          moveClone(c, dest);
-          continue;
-        }
+        // T42 (A11): windows weigh like boxes - a pushed box never shoves
+        // one (that would be multi-push). The box goes in through the
+        // matching door, or the whole move bonks.
         const arr = arrivalCell(layout, FACE[dir]);
         if (arr === null || occ.has(arr)) { stay(); continue; } // no matching door, or arrival taken
         occ.delete(dest);
@@ -1506,7 +1155,9 @@ function step(layout, state, dir) {
       // door would move one box through two portals in a tick: blocked,
       // recorded as an open question rather than improvised.
       const bdest = enterArr + delta;
-      if (thresholds.has(bdest) || occ.has(bdest)) continue; // stays put
+      // T42/A10: the enterer's own cell counts as vacated - the chain-pushed
+      // box may land exactly where the body is squeezing out of.
+      if (thresholds.has(bdest) || (occ.has(bdest) && occ.get(bdest) !== c.id)) continue;
       occ.delete(enterArr);
       if (lavaOpen(bdest)) {
         filled.add(bdest);
@@ -1517,7 +1168,7 @@ function step(layout, state, dir) {
         events.push({ t: 'push', from: enterArr, to: bdest });
       }
       events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-      occ.delete(c.pos);
+      if (occ.get(c.pos) === c.id) occ.delete(c.pos);
       occ.set(enterArr, c.id);
       c.pos = enterArr;
       continue;
@@ -1528,7 +1179,8 @@ function step(layout, state, dir) {
       // second door in the same tick stays blocked, same as a box), so you
       // can follow the window you just pushed in and keep pushing it.
       const bdest = enterArr + delta;
-      if (thresholds.has(bdest) || occ.has(bdest)) continue; // stays put
+      // T42/A10: as with boxes, the enterer's own cell counts as vacated.
+      if (thresholds.has(bdest) || (occ.has(bdest) && occ.get(bdest) !== c.id)) continue;
       occ.delete(enterArr);
       if (lavaOpen(bdest)) {
         filled.add(bdest);
@@ -1539,7 +1191,7 @@ function step(layout, state, dir) {
         events.push({ t: 'blockstep', from: enterArr, to: bdest });
       }
       events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-      occ.delete(c.pos);
+      if (occ.get(c.pos) === c.id) occ.delete(c.pos);
       occ.set(enterArr, c.id);
       c.pos = enterArr;
       continue;
@@ -1572,7 +1224,20 @@ function step(layout, state, dir) {
       const m = b + delta;
       if (thresholds.has(m)) continue;
       const om = occ.get(m);
-      if (om === 'wall') continue; // does not fire
+      if (om === 'wall') {
+        // T42 (A12) pop-out: squeezing out against a wall recoils the window
+        // one plain cell backwards and the body pops out where it stood.
+        // Conservative like T15: the recoil cell must be genuinely free
+        // (not the exiter's own cell, no pit, no second portal).
+        const bd = b - delta;
+        if (pushedTo.has(b) || thresholds.has(bd) || occ.has(bd) || lavaOpen(bd)) continue;
+        occ.delete(b);
+        occ.set(bd, 'block');
+        pushedTo.add(bd);
+        events.push({ t: 'blockstep', from: b, to: bd });
+        fired.push({ m: b, kind: 'free' });
+        continue;
+      }
       if (om === 'block') {
         // T24: the exiting body shoves the mouth window one plain cell
         // onward, exactly like a mouth box; if it cannot move (or already
@@ -1717,7 +1382,8 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'nest-v6'; // v6 = tracks (T35): best keyed 'trackId:i', unlocked per track
+const SAVE_KEY = 'nest-v7'; // v7 = T42 rules re-bake: campaign bests survive,
+// workshop/generated bests dropped (levels recut/reordered under the new rules)
 let progress = { best: {}, unlocked: {}, coached: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
@@ -1727,6 +1393,19 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!raw) {
+      // Migrate a v6 save: T42 changed the rules, so only campaign bests
+      // still describe the same puzzles (workshop was recut/reordered and
+      // the generated track rebuilt).
+      const v6 = JSON.parse(localStorage.getItem('nest-v6') || 'null');
+      if (v6 && typeof v6 === 'object') {
+        raw = { best: {}, unlocked: v6.unlocked || {},
+          coached: v6.coached || {}, audio: v6.audio };
+        for (const k in (v6.best || {})) {
+          if (k.startsWith('c:')) raw.best[k] = v6.best[k];
+        }
+      }
+    }
     if (!raw) {
       // Migrate a flat pre-tracks save: those indices were all campaign.
       const v5 = JSON.parse(localStorage.getItem('nest-v5') || 'null');
@@ -2026,7 +1705,7 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'blocksink': {
-        // Direct push slides in from one cell back; a blockout/blockin
+        // Direct push slides in from one cell back; a blockout
         // landing already has a sprite sat on the pit.
         const s = at('block', ev.at) || at('block', ev.at - delta);
         if (s) { s.b = ev.at; s.fate = 'sink'; s.live = false; }
@@ -2051,20 +1730,7 @@ function compileAnim(prev, events, dir) {
         flashes.push({ at: ev.to, kind: 'out' });
         break;
       }
-      case 'blockin': {
-        pushedFrom.add(ev.from);
-        const s = at('block', ev.from);
-        if (s) {
-          s.b = ev.block; s.bxy = mouthXY(ev.block, IN_FACE[dir]);
-          s.fate = 'squeeze'; s.live = false; axis(s);
-        }
-        list.push(axis({
-          kind: 'block', a: ev.to, b: ev.to, fate: null, birth: 'pop', live: true,
-          axy: [xOf(ev.to) - dx * 0.5, yOf(ev.to) - dy * 0.5],
-        }));
-        flashes.push({ at: ev.block, kind: 'in' });
-        break;
-      }
+      // (case 'blockin' removed with T42 - the event is unreachable now.)
     }
   }
   return { list, flashes, sank };
@@ -2095,7 +1761,7 @@ function applyMove(dir) {
     settle();
   } else {
     const { list, flashes, sank } = compileAnim(prev, r.events, dir);
-    const portal = ['enter', 'exit', 'boxin', 'boxout', 'blockin', 'blockout', 'merge'].some(t => kinds.has(t));
+    const portal = ['enter', 'exit', 'boxin', 'boxout', 'blockout', 'merge'].some(t => kinds.has(t));
     sprites = list;
     anim = { t0: performance.now(), p: 0, dur: portal ? PORTAL : TWEEN, flashes, sank };
     syncHud();
@@ -2360,7 +2026,9 @@ function drawWallMass(c, w, h, inWall) {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const nb = { L: inWall(x - 1, y), R: inWall(x + 1, y),
-        U: inWall(x, y - 1), D: inWall(x, y + 1) };
+        U: inWall(x, y - 1), D: inWall(x, y + 1),
+        UL: inWall(x - 1, y - 1), UR: inWall(x + 1, y - 1),
+        DL: inWall(x - 1, y + 1), DR: inWall(x + 1, y + 1) };
       if (inWall(x, y)) wallShape(c, x * CELL, y * CELL, nb, CELL * 0.3);
       else wallFillets(c, x * CELL, y * CELL, nb, CELL * 0.3);
     }
@@ -2384,28 +2052,30 @@ function wallShape(c, x, y, nb, rad) {
   c.closePath();
 }
 // A floor cell cornered by two walls gets a quarter-curve of wall bridging
-// them, so inside corners are as smooth as outside ones.
+// them, so inside corners are as smooth as outside ones. Only a genuine
+// concave corner qualifies: the diagonal cell between the two walls must be
+// wall too, or two masses touching only at a corner get webbed together.
 function wallFillets(c, x, y, nb, rf) {
   const x1 = x + CELL, y1 = y + CELL;
-  if (nb.L && nb.U) {
+  if (nb.L && nb.U && nb.UL) {
     c.moveTo(x, y + rf);
     c.arc(x + rf, y + rf, rf, Math.PI, Math.PI * 1.5);
     c.lineTo(x, y);
     c.closePath();
   }
-  if (nb.R && nb.U) {
+  if (nb.R && nb.U && nb.UR) {
     c.moveTo(x1 - rf, y);
     c.arc(x1 - rf, y + rf, rf, Math.PI * 1.5, Math.PI * 2);
     c.lineTo(x1, y);
     c.closePath();
   }
-  if (nb.R && nb.D) {
+  if (nb.R && nb.D && nb.DR) {
     c.moveTo(x1, y1 - rf);
     c.arc(x1 - rf, y1 - rf, rf, 0, Math.PI * 0.5);
     c.lineTo(x1, y1);
     c.closePath();
   }
-  if (nb.L && nb.D) {
+  if (nb.L && nb.D && nb.DL) {
     c.moveTo(x + rf, y1);
     c.arc(x + rf, y1 - rf, rf, Math.PI * 0.5, Math.PI);
     c.lineTo(x, y1);
@@ -3246,7 +2916,7 @@ function play(name, off) {
 // little gesture instead of one mush at t=0, roughly tracking the animation.
 function moveSfx(events, kinds, win) {
   if (!ac || !audio.sfx) return;
-  const portalIn = kinds.has('enter') || kinds.has('boxin') || kinds.has('blockin');
+  const portalIn = kinds.has('enter') || kinds.has('boxin');
   const portalOut = kinds.has('exit') || kinds.has('boxout') || kinds.has('blockout');
   if (portalIn) play('portalIn');
   if (portalOut) play('portalOut', portalIn ? 0.08 : 0);
