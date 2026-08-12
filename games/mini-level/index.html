@@ -258,6 +258,21 @@
   .shelf .shMeta { color: var(--dim); font-size: 12px; }
   .shelf .shChev { color: var(--dim); font-size: 18px; }
 
+  /* --- T61: the publish card. ------------------------------------------- */
+  #pubBody { margin: 10px 0 14px; color: var(--dim); }
+  #pubHandle {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fdfaf3;
+    color: var(--ink);
+    font: inherit;
+    text-align: center;
+  }
+  #pubNote { margin-top: 10px; color: #b0574f; font-size: 13px; }
+  #pubRow { display: flex; gap: 10px; margin-top: 16px; }
+
   /* --- Editor: a full screen of its own, under the scrims. -------------- */
   #editor {
     position: fixed;
@@ -402,6 +417,19 @@
   <div id="gridWrap" hidden><div id="grid"></div></div>
 </div>
 
+<div id="publish" class="scrim" hidden>
+  <div class="card">
+    <h2 class="cardTitle">Publish</h2>
+    <p id="pubBody"></p>
+    <input id="pubHandle" maxlength="16" placeholder="your name" aria-label="Your name">
+    <p id="pubNote" hidden></p>
+    <div id="pubRow">
+      <button id="pubCancel">Cancel</button>
+      <button id="pubGo" class="primary">Publish</button>
+    </div>
+  </div>
+</div>
+
 <div id="editor" hidden>
   <div id="edHead">
     <input id="edName" maxlength="28" placeholder="Untitled" aria-label="Level name">
@@ -424,6 +452,7 @@
   </div>
   <div class="edRow">
     <button id="edCodeBtn">Code</button>
+    <button id="edPublish">Publish</button>
     <button id="edClose">Close</button>
   </div>
 </div>
@@ -1896,6 +1925,9 @@ let levelDef = null; // the live definition: a track entry, or an editor draft
 let layout = null, state = null;
 let deadSet = null;  // deadCells(layout), cached per level for the stuck hint
 let history = [], moves = 0, won = false, initial = null;
+// T61: the moves actually made, as a UDLR string - snapshotted alongside
+// `moves` so undo and reset keep it honest. At a win it IS the solution.
+let moveLog = '';
 let sprites = [];
 let anim = null;     // { t0, p, flashes: [{at, kind}] }
 let bloom = null;    // { t0, p }
@@ -1931,10 +1963,9 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v9'; // v9 = T55 track reshape: tutorial + campaign
-// reordered (bests would misattach, dropped; coach marks re-keyed), workshop +
-// generated bests survive
-let progress = { best: {}, unlocked: {}, coached: {} };
+const SAVE_KEY = 'mini-level-v10'; // v10 = T61 community identity: handle +
+// authorToken join the blob, everything else carries over from v9 unchanged
+let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '' };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
 // T38 (Will): every level is open from the start - locks bought nothing here.
@@ -1943,6 +1974,10 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!raw) {
+      // Migrate a v9 save wholesale: T61 only ADDED fields.
+      raw = JSON.parse(localStorage.getItem('mini-level-v9') || 'null');
+    }
     if (!raw) {
       // Migrate a v8 save: T55 reordered the tutorial and campaign tracks,
       // so only workshop + generated bests still name the same puzzles.
@@ -1994,12 +2029,35 @@ function loadProgress() {
       progress.best = raw.best || {};
       progress.unlocked = (raw.unlocked && typeof raw.unlocked === 'object') ? raw.unlocked : {};
       progress.coached = raw.coached || {};
+      progress.handle = typeof raw.handle === 'string' ? raw.handle.slice(0, 16) : '';
+      progress.authorToken = typeof raw.authorToken === 'string' ? raw.authorToken : '';
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
 }
 function saveProgress() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(progress)); } catch (e) {}
+}
+
+// --- Community (T61): identity + publish -------------------------------------
+// The Worker is opt-in per tap; file:// play never touches it. A submission
+// is the level plus the author's recorded solution - the server replays it
+// through the same engine and keeps only what wins.
+const API = 'https://mini-level.wmmclarke.workers.dev';
+const NET = location.protocol === 'https:' ||
+  location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+
+// A random tripcode, never shown: its salted hash is the server-side proof
+// of authorship (delete/rename rights later, vote dedup). No OAuth, no
+// accounts - clearing browser data orphans your levels, and that is the deal.
+function authorToken() {
+  if (!progress.authorToken) {
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    progress.authorToken = Array.from(b, (x) => x.toString(16).padStart(2, '0')).join('');
+    saveProgress();
+  }
+  return progress.authorToken;
 }
 
 function xOf(i) { return i % layout.w; }
@@ -2022,6 +2080,8 @@ function startLevel(def) {
   initial = state;
   history = [];
   moves = 0;
+  moveLog = '';
+  proveRun = false; // the publish click re-arms it after this runs
   won = false;
   anim = null;
   bloom = null;
@@ -2053,10 +2113,12 @@ const COACH = {
 };
 
 function overlayOpen() {
-  return !$('overlay').hidden || !$('picker').hidden || !$('editor').hidden;
+  return !$('overlay').hidden || !$('picker').hidden || !$('editor').hidden ||
+    !$('publish').hidden;
 }
 function closeOverlays() {
   $('overlay').hidden = true; $('picker').hidden = true; $('editor').hidden = true;
+  $('publish').hidden = true;
 }
 
 function showCoach(i) {
@@ -2501,13 +2563,14 @@ function applyMove(dir) {
     play('bonk');
     return false;
   }
-  history.push({ state, moves });
+  history.push({ state, moves, log: moveLog });
   if (history.length > 1000) history.shift();
   lastDir = dir;
   lastMoveAt = performance.now();
   const prev = state;
   state = r.state;
   moves++;
+  moveLog += dir;
   won = r.win;
   // T50: a move that shifts a window breaks the dive's fixed point - rewind
   // the camera rather than land on a seam.
@@ -2549,6 +2612,7 @@ function undo() {
   const h = history.pop();
   state = h.state;
   moves = h.moves;
+  moveLog = h.log;
   won = false;
   bloom = null;
   hideHintTip();
@@ -2561,10 +2625,11 @@ function reset() {
   stopAuto();
   if (state === initial) return; // nothing to throw away
   play('reset');
-  history.push({ state, moves });
+  history.push({ state, moves, log: moveLog });
   if (history.length > 1000) history.shift();
   state = initial;
   moves = 0;
+  moveLog = '';
   won = false;
   bloom = null;
   resets++;
@@ -2577,6 +2642,8 @@ function reset() {
 
 function showWin() {
   hideToast();
+  // T61: a prove-run win is the publish moment, not a win card.
+  if (levelIndex < 0 && proveRun) { showPublish(); return; }
   const def = levelDef;
   const draft = levelIndex < 0;
   if (!draft) {
@@ -2599,6 +2666,86 @@ function showWin() {
   $('toLevels').textContent = draft ? 'Editor' : 'Levels';
   $('overlay').hidden = false;
 }
+
+// --- Publish (T61): solve it to ship it ---------------------------------------
+// Publishing is a prove-run: you must beat your own level by hand, and the
+// recorded solution IS the submission - the Worker replays it through the
+// same engine and stores only what wins. It also seeds the level's "best
+// known" moves (never called "optimal": nobody BFS'd it).
+let proveRun = false, pubLog = '';
+
+function showPublish() {
+  pubLog = moveLog;
+  $('pubBody').textContent =
+    '"' + (levelDef.name || 'Untitled') + '" · solved in ' + moves + ' moves';
+  $('pubHandle').value = progress.handle || '';
+  $('pubHandle').hidden = false;
+  $('pubCancel').hidden = false;
+  $('pubNote').hidden = true;
+  const go = $('pubGo');
+  go.disabled = false;
+  go.textContent = 'Publish';
+  delete go.dataset.done;
+  $('publish').hidden = false;
+}
+
+$('pubCancel').addEventListener('click', () => {
+  play('ui');
+  proveRun = false;
+  $('publish').hidden = true;
+  showWin(); // the normal draft win card takes over
+});
+
+$('pubGo').addEventListener('click', async () => {
+  const go = $('pubGo');
+  if (go.dataset.done) {
+    play('ui');
+    proveRun = false;
+    $('publish').hidden = true;
+    openEditor();
+    return;
+  }
+  const handle = $('pubHandle').value.trim();
+  if (handle.length < 3) {
+    $('pubNote').textContent = 'Pick a name - 3 to 16 characters.';
+    $('pubNote').hidden = false;
+    return;
+  }
+  play('ui');
+  progress.handle = handle;
+  saveProgress();
+  go.disabled = true;
+  go.textContent = 'Publishing…';
+  $('pubNote').hidden = true;
+  try {
+    const res = await fetch(API + '/levels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: levelDef.name || 'Untitled',
+        author: handle,
+        token: authorToken(),
+        rows: levelDef.rows,
+        moves: pubLog,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'the server said no (' + res.status + ')');
+    $('pubBody').textContent =
+      '"' + (levelDef.name || 'Untitled') + '" is live · best known ' + data.bestMoves + ', by you';
+    $('pubHandle').hidden = true;
+    $('pubCancel').hidden = true;
+    go.disabled = false;
+    go.textContent = 'Done';
+    go.dataset.done = '1';
+  } catch (e) {
+    $('pubNote').textContent = e && e.name === 'TypeError'
+      ? 'No connection - try again later.' : String(e.message || e);
+    $('pubNote').hidden = false;
+    go.disabled = false;
+    go.textContent = 'Publish';
+  }
+});
 
 // --- Renderer ---------------------------------------------------------------
 
@@ -4103,6 +4250,7 @@ function edBanner(text, cls) {
 function edValidate() {
   edSearch++;
   edWatchSync();
+  $('edPublish').disabled = true;
   if (edNote) { edBanner(edNote, 'bad'); return; }
   const v = edCheck();
   if (!v.ok) { edBanner(v.msg, 'bad'); return; }
@@ -4111,7 +4259,9 @@ function edValidate() {
   let msg = n + '×' + n + ' · ' + v.state.selves.length + ' self · ' +
     boxes + ' box / ' + targets + ' target';
   if (boxes < targets) msg += ' · needs more boxes';
-  edBanner(msg, boxes >= targets && targets > 0 ? 'good' : '');
+  const good = boxes >= targets && targets > 0;
+  $('edPublish').disabled = !good;
+  edBanner(msg, good ? 'good' : '');
 }
 
 function edTouch() {
@@ -4426,6 +4576,8 @@ function edSync() {
 function openEditor() {
   if (levelIndex >= 0) preEdit = [trackIndex, levelIndex];
   closeOverlays();
+  proveRun = false;
+  $('edPublish').hidden = !NET; // publishing needs a network; file:// never asks
   $('editor').hidden = false;
   $('edCode').hidden = true;
   $('edWrap').hidden = false;
@@ -4497,6 +4649,16 @@ $('edPlay').addEventListener('click', () => {
   if (!v.ok) { edNote = ''; edValidate(); return; }
   play('ui');
   playDraft(draftDef(ed()));
+});
+// T61: the prove-run. startLevel clears proveRun, so arm it after playDraft.
+$('edPublish').addEventListener('click', () => {
+  const v = edCheck();
+  if (!v.ok) { edNote = ''; edValidate(); return; }
+  play('ui');
+  playDraft(draftDef(ed()));
+  proveRun = true;
+  $('hintTip').textContent = 'Solve it to publish it.';
+  $('hintTip').hidden = false;
 });
 // The code box is the grid in another notation, so it takes the grid's place
 // rather than stacking under it - on a short screen, stacking squeezed the
@@ -4672,8 +4834,10 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (KEYS[k]) { e.preventDefault(); stopAuto(); applyMove(KEYS[k]); return; }
   // T60: Escape walks the Levels screen up one layer before closing it.
+  // T61: on the publish card it is Cancel, so the win card takes over.
   if (k === 'Escape') {
-    if (!$('picker').hidden && shelf !== null) openShelves();
+    if (!$('publish').hidden) $('pubCancel').click();
+    else if (!$('picker').hidden && shelf !== null) openShelves();
     else closeOverlays();
   }
   // T53: Enter or Space rolls straight off the win card into the next level.
