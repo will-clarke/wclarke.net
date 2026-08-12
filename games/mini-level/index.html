@@ -148,7 +148,7 @@
   /* The one forward action on a card sits rightmost and reads loudest. */
   .primary { border-color: var(--blue); background: var(--blue); color: #fbf8f1; }
   .primary:active { background: #4d82b6; }
-  #undo.pulse { animation: pulse 1.1s ease-in-out infinite; }
+  #undo.pulse, #reset.pulse { animation: pulse 1.1s ease-in-out infinite; }
   @keyframes pulse {
     0%, 100% { box-shadow: 0 0 0 rgba(95, 149, 201, 0); }
     50% { box-shadow: 0 0 14px rgba(95, 149, 201, 0.45); }
@@ -218,8 +218,45 @@
   }
   .trackHead:first-child { margin-top: 0; }
   .trackHead small { color: var(--dim); letter-spacing: 0.04em; text-transform: none; }
-  #pickerClose { width: 100%; }
   .lv .del { float: right; padding: 0 6px; color: var(--dim); font-size: 15px; }
+
+  /* --- T60: the Levels screen - a full screen, two views deep (the shelves
+     list, then one track's tile grid). Replaces the old 340px modal card. -- */
+  #picker {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--ground);
+    padding: calc(env(safe-area-inset-top) + 10px) 14px calc(env(safe-area-inset-bottom) + 12px);
+  }
+  #pkHead { display: flex; align-items: center; gap: 8px; }
+  #pkHead h2 { flex: 1; text-align: center; font-size: 17px; }
+  #shelves, #gridWrap {
+    flex: 1;
+    overflow-y: auto;
+    width: min(420px, 100%);
+    margin: 0 auto;
+    padding: 8px 2px;
+  }
+  #shelves { display: flex; flex-direction: column; gap: 10px; }
+  .shelf {
+    flex: 0 0 auto; /* the global button flex:1 grows HEIGHT in a column flex */
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 14px;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .shelf.here { border-color: var(--blue); }
+  .shelf .shName { flex: 1; font-weight: 600; font-size: 15px; }
+  .shelf .shMeta { color: var(--dim); font-size: 12px; }
+  .shelf .shChev { color: var(--dim); font-size: 18px; }
 
   /* --- Editor: a full screen of its own, under the scrims. -------------- */
   #editor {
@@ -351,12 +388,18 @@
   </div>
 </div>
 
-<div id="picker" class="scrim" hidden>
-  <div class="card">
+<div id="picker" hidden>
+  <div id="pkHead">
+    <button id="pkBack" class="icon" aria-label="Back to all tracks">
+      <svg viewBox="0 0 24 24"><path d="M14.5 5.5 8 12l6.5 6.5"/></svg>
+    </button>
     <h2 id="pickerTitle" class="cardTitle">Levels</h2>
-    <div id="grid"></div>
-    <button id="pickerClose">Close</button>
+    <button id="pickerClose" class="icon" aria-label="Close">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </button>
   </div>
+  <div id="shelves" hidden></div>
+  <div id="gridWrap" hidden><div id="grid"></div></div>
 </div>
 
 <div id="editor" hidden>
@@ -1984,7 +2027,7 @@ function startLevel(def) {
   bloom = null;
   zoom = null;
   resets = 0;
-  hintMoves = null;
+  hintPlan = null;
   hintSearch++;
   $('hintBtn').hidden = true;
   $('hintBtn').disabled = false;
@@ -2044,39 +2087,101 @@ function tile(num, title, note, onPick) {
   return b;
 }
 
-function openPicker() {
-  const grid = $('grid');
-  $('pickerTitle').textContent = 'Levels';
-  grid.textContent = '';
-  let here = null;
-  TRACKS.forEach((tr, t) => {
-    if (!tr.levels.length) return;
-    const solved = tr.levels.filter((_, i) => progress.best[bestKey(t, i)] !== undefined).length;
-    const head = document.createElement('div');
-    head.className = 'trackHead';
-    head.textContent = tr.name + ' ';
-    const count = document.createElement('small');
-    count.textContent = solved + '/' + tr.levels.length;
-    head.appendChild(count);
-    grid.appendChild(head);
-    tr.levels.forEach((def, i) => {
-      const best = progress.best[bestKey(t, i)];
-      // T46: solved reads solved; solved at par is the tier above.
-      const atPar = best !== undefined && def.par > 0 && best <= def.par;
-      const note = best === undefined ? 'unsolved'
-        : atPar ? '★ optimal ' + best
-        : '✓ best ' + best;
-      const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
-      if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
-      if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
-    });
-  });
-  tile('+', 'New level', 'editor', () => { play('ui'); openEditor(); });
+// T60: the Levels screen is two views deep - the shelves list, then one
+// track's tile grid. `shelf` is what the grid view shows now (a track index,
+// or 'yours' for the drafts shelf); null means the shelves list is up.
+let shelf = null;
+
+// Swap the two views inside the open screen. The back chevron stays in the
+// layout (visibility, not hidden) so the title never jumps sideways.
+function pkShow(which) {
+  shelf = which;
+  $('shelves').hidden = which !== null;
+  $('gridWrap').hidden = which === null;
+  $('pkBack').style.visibility = which === null ? 'hidden' : 'visible';
   $('overlay').hidden = true;
   $('picker').hidden = false;
-  // Three tracks make a long list: land the view on where you are.
+}
+
+function trackStats(t) {
+  let solved = 0, stars = 0;
+  TRACKS[t].levels.forEach((def, i) => {
+    const best = progress.best[bestKey(t, i)];
+    if (best === undefined) return;
+    solved++;
+    if (def.par > 0 && best <= def.par) stars++;
+  });
+  return { solved, stars };
+}
+
+function shelfRow(name, meta, onPick) {
+  const b = document.createElement('button');
+  b.className = 'shelf';
+  const nm = document.createElement('span');
+  nm.className = 'shName';
+  nm.textContent = name;
+  const mt = document.createElement('span');
+  mt.className = 'shMeta';
+  mt.textContent = meta;
+  const ch = document.createElement('span');
+  ch.className = 'shChev';
+  ch.textContent = '›';
+  b.append(nm, mt, ch);
+  b.addEventListener('click', onPick);
+  $('shelves').appendChild(b);
+  return b;
+}
+
+function openShelves() {
+  $('shelves').textContent = '';
+  $('pickerTitle').textContent = 'Levels';
+  TRACKS.forEach((tr, t) => {
+    if (!tr.levels.length) return;
+    const s = trackStats(t);
+    const meta = s.solved + '/' + tr.levels.length + (s.stars ? ' · ★' + s.stars : '');
+    const b = shelfRow(tr.name, meta, () => { play('ui'); openTrack(t); });
+    if (t === trackIndex && levelIndex >= 0) b.classList.add('here');
+  });
+  shelfRow('Yours', drafts.length + (drafts.length === 1 ? ' draft' : ' drafts'),
+    () => { play('ui'); openDrafts(); });
+  pkShow(null);
+}
+
+function openTrack(t) {
+  const grid = $('grid');
+  const tr = TRACKS[t];
+  $('pickerTitle').textContent = tr.name;
+  grid.textContent = '';
+  const s = trackStats(t);
+  const head = document.createElement('div');
+  head.className = 'trackHead';
+  head.textContent = s.solved + '/' + tr.levels.length + ' solved';
+  if (s.stars) {
+    const st = document.createElement('small');
+    st.textContent = ' · ★' + s.stars + ' optimal';
+    head.appendChild(st);
+  }
+  grid.appendChild(head);
+  let here = null;
+  tr.levels.forEach((def, i) => {
+    const best = progress.best[bestKey(t, i)];
+    // T46: solved reads solved; solved at par is the tier above.
+    const atPar = best !== undefined && def.par > 0 && best <= def.par;
+    const note = best === undefined ? 'unsolved'
+      : atPar ? '★ optimal ' + best
+      : '✓ best ' + best;
+    const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
+    if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
+    if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
+  });
+  pkShow(t);
+  // A long track: land the view on where you are.
   if (here) here.scrollIntoView({ block: 'center' });
 }
+
+// Always the CURRENT level's shelf: that is where .here and any fresh win
+// state live, so the post-solve return never lands on a stale shelf.
+function openPicker() { openTrack(trackIndex); }
 
 // Drop any animation and show the current state exactly.
 function settle() {
@@ -2126,74 +2231,96 @@ function buzz(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
-// --- Hints (T56) --------------------------------------------------------------
+// --- Hints (T56, reworked T59) -------------------------------------------------
 
-// The lightbulb: three restarts on a level reads as stuck, so offer the first
-// few moves of an optimal solution from the start position. The search is the
-// editor's chunked BFS (T30 pruning keeps every shipped level far under the
-// cap), run only when the bulb is tapped - a nudge is opt-in, never pushed.
+// The lightbulb: three restarts on a level reads as stuck, so offer help that
+// reads the board the player is actually on. A tap runs the editor's chunked
+// BFS from the CURRENT state (T30 pruning keeps every shipped level far under
+// the cap): if a win is reachable the bulb MAKES the next optimal move for
+// the player, one step per tap; if none is reachable the tip says restart
+// and the restart button pulses. Undo takes a hinted step back like any other.
 const HINT_AFTER = 3; // restarts before the bulb appears
-const HINT_LEN = 3;   // moves revealed - a nudge, not a walkthrough
-const ARROW = { U: '↑', D: '↓', L: '←', R: '→' };
 let resets = 0;        // real restarts on the current level
 let hintSearch = 0;    // token: bumping it abandons a running search
-let hintMoves = null;  // cached optimal prefix (valid until the level changes)
+let hintPlan = null;   // Map: state hash -> remaining optimal move string
 
 function offerHint() {
   $('hintBtn').hidden = !(resets >= HINT_AFTER && levelIndex >= 0 && !won);
 }
-function hideHintTip() { $('hintTip').hidden = true; }
+function hideHintTip() {
+  $('hintTip').hidden = true;
+  $('reset').classList.remove('pulse');
+}
 
-function presentHint(p) {
-  const arrows = [...p].map(m => ARROW[m]).join('  ');
-  $('hintTip').textContent = (moves ? 'From the start:  ' : 'Start with  ') + arrows;
+function stateHash(s) {
+  return s.selves.join(',') + '|' + s.boxes.join(',') + '|' +
+    s.blocks.join(',') + '|' + s.filled.join(',');
+}
+
+function presentDeadEnd() {
+  $('hintTip').textContent = 'Dead end - restart.';
   $('coach').hidden = true;
   hideToast();
   $('hintTip').hidden = false;
+  $('reset').classList.add('pulse');
 }
 
 function showHint() {
-  if (hintMoves) { presentHint(hintMoves); return; }
+  const h = stateHash(state);
+  const rest = hintPlan && hintPlan.get(h);
+  if (rest) { applyMove(rest[0]); return; } // known optimal line: take the step
+  if (isDoomed(layout, deadSet, state)) { presentDeadEnd(); return; }
   const token = ++hintSearch;
-  const lay = layout, start = initial, dead = deadSet;
+  const lay = layout, start = state, dead = deadSet;
   const btn = $('hintBtn');
   btn.disabled = true;
-  const hash = (s) => s.selves.join(',') + '|' + s.boxes.join(',') + '|' +
-    s.blocks.join(',') + '|' + s.filled.join(',');
-  const seen = new Map([[hash(start), null]]);
+  const seen = new Map([[h, null]]);
   const queue = [start];
   let head = 0;
-  const giveUp = () => { btn.disabled = false; btn.hidden = true; };
+  const done = () => { btn.disabled = false; };
   const pump = () => {
     if (token !== hintSearch) return;
     const until = performance.now() + 40;
     while (head < queue.length) {
-      const s = queue[head++], hs = hash(s);
+      const s = queue[head++], hs = stateHash(s);
       for (const mv of ['U', 'D', 'L', 'R']) {
         const r = step(lay, s, mv);
         if (!r.changed) continue;
-        const hn = hash(r.state);
+        const hn = stateHash(r.state);
         if (seen.has(hn)) continue;
         seen.set(hn, { prev: hs, mv });
         if (r.win) {
-          let p = '';
+          // Cache the remaining moves at every state along the line: a suffix
+          // of a shortest path is itself shortest, so later taps (and manual
+          // moves that follow the line) resolve instantly with no re-search.
+          const line = [];
           for (let cur = hn; seen.get(cur) !== null; ) {
             const e = seen.get(cur);
-            p = e.mv + p;
+            line.unshift({ hash: e.prev, mv: e.mv });
             cur = e.prev;
           }
-          btn.disabled = false;
-          hintMoves = p.slice(0, HINT_LEN);
-          presentHint(hintMoves);
+          hintPlan = hintPlan || new Map();
+          let tail = '';
+          for (let i = line.length - 1; i >= 0; i--) {
+            tail = line[i].mv + tail;
+            hintPlan.set(line[i].hash, tail);
+          }
+          done();
+          // Only auto-step if the board hasn't moved since the tap; if the
+          // player kept playing, the cached plan serves the next tap instead.
+          if (stateHash(state) === h) applyMove(line[0].mv);
           return;
         }
-        if (seen.size > ED_CAP) { giveUp(); return; }
+        if (seen.size > ED_CAP) { done(); btn.hidden = true; return; } // never true of a shipped level
         if (isDoomed(lay, dead, r.state)) continue;
         queue.push(r.state);
       }
       if (performance.now() > until) { setTimeout(pump, 0); return; }
     }
-    giveUp(); // unsolvable start = never true of a shipped level; hide quietly
+    done();
+    // Every reachable state searched: no win from here (if the board moved
+    // mid-search the verdict is stale - stay quiet and let the next tap ask).
+    if (stateHash(state) === h) presentDeadEnd();
   };
   setTimeout(pump, 0);
 }
@@ -4306,8 +4433,10 @@ function openEditor() {
   edSync();
 }
 
+// T60: drafts live on the Yours shelf of the Levels screen (and will share
+// it with your published levels once the community shelf exists).
 function openDrafts() {
-  $('pickerTitle').textContent = 'Drafts';
+  $('pickerTitle').textContent = 'Yours';
   $('grid').textContent = '';
   drafts.forEach((d, i) => {
     const b = tile(i + 1, d.name || 'Untitled', d.rows.length + '×' + d.rows.length,
@@ -4336,8 +4465,7 @@ function openDrafts() {
     saveDrafts();
     openEditor();
   });
-  $('overlay').hidden = true;
-  $('picker').hidden = false;
+  pkShow('yours');
 }
 
 $('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
@@ -4543,7 +4671,11 @@ window.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (KEYS[k]) { e.preventDefault(); stopAuto(); applyMove(KEYS[k]); return; }
-  if (k === 'Escape') closeOverlays();
+  // T60: Escape walks the Levels screen up one layer before closing it.
+  if (k === 'Escape') {
+    if (!$('picker').hidden && shelf !== null) openShelves();
+    else closeOverlays();
+  }
   // T53: Enter or Space rolls straight off the win card into the next level.
   else if (!$('overlay').hidden && (k === 'Enter' || k === ' ')) {
     e.preventDefault();
@@ -4591,12 +4723,10 @@ $('editBtn').addEventListener('click', () => {
   draftIx = i;
   openEditor();
 });
-// Closing the drafts list just uncovers the editor it was opened from.
+// Closing the Levels screen uncovers whatever it was opened over - the game,
+// or the editor when the Yours shelf was opened from there.
 $('pickerClose').addEventListener('click', () => { play('ui'); $('picker').hidden = true; });
-// Tapping the dimmed backdrop closes a card, same as its close button.
-$('picker').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) { play('ui'); $('picker').hidden = true; }
-});
+$('pkBack').addEventListener('click', () => { play('ui'); openShelves(); });
 $('overlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) $('overlay').hidden = true;
 });

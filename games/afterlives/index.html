@@ -116,8 +116,9 @@
 
 const SAVE_KEY = 'afterlives-v1';
 const L = AFTERLIVES;
-/* every non-secret door is on the morning from life one - the wall of locks IS the
-   game's promise. secrets (piper, drum) are entered from inside other lives. */
+/* the morning GROWS: a small kid-sensible garden at first, then doors revealed by
+   what you DID in earlier lives (reveal), each opened by what the soul kept (gate).
+   secrets (piper, drum) are entered from inside other lives. */
 const DOORS = L.storylines.filter(s => !s.secret || s.teaser);
 
 let S = load();
@@ -137,6 +138,9 @@ function canPass(gate){
     if (k === 'perks'){ if (!gate.perks.every(p => S.perks[p])) return false; }
     else if (k === 'storyAny'){
       if (!gate.storyAny.some(st => storyEndings(st).some(e => S.found[e]))) return false;
+    }
+    else if (k === 'endingAny'){
+      if (!gate.endingAny.some(e => S.found[e])) return false;
     }
     else if ((S.attrs[k]||0) < gate[k]) return false;
   }
