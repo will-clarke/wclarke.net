@@ -652,7 +652,7 @@ const WORKSHOP = [
     '#*.$.#',
     '##-###',
   ]},
-  { name: 'Spiral', par: 19, stretch: true, requires: [], rows: [
+  { name: 'Spiral', par: 15, stretch: true, requires: [], rows: [
     '#-#####',
     '-*#..*#',
     '##.*$.#',
@@ -786,7 +786,7 @@ const GENERATED = [
     rows: ['###-##', '-N*$##', '#@..##', '#N*.##', '#~$.##', '######'] },  // {blockstep,boxout,enter,exit,push,sink,spawn} T42-fresh
   { name: 'Gen 43', par: 8, stretch: true, requires: [],
     rows: ['####-#', '-$...#', '#@NN.#', '###*.#', '#$$###', '######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
-  { name: 'Gen 44', par: 36, stretch: true, requires: [],
+  { name: 'Gen 44', par: 31, stretch: true, requires: [],
     rows: ['#######', '#~.$@*#', '#$.*.##', '#..$..#', '#N.####', '##....-', '#####-#'] },  // {blockstep,enter,exit,push,sink} T42-fresh
   { name: 'Gen 45', par: 35, stretch: true, requires: [],
     rows: ['########', '#......#', '#$.*...#', '#*..#.@-', '#...#..#', '#.N$#$.#', '#*..#..#', '########'] },  // {blockstep,exit,push} T42-fresh
@@ -1227,7 +1227,42 @@ function step(layout, state, dir) {
         c.alive = false;
         return true;
       }
-      if (f !== 'free' && f !== 'pit') return true; // refused inside: a plain bonk
+      if (f !== 'free' && f !== 'pit') {
+        // T51 (A4 v3): the door is shut - the enter is refused inside - so
+        // fall back to the push a doorless face would give: can I go in?
+        // No: can I shove the whole window? Same fates as Phase A (slide,
+        // sink, blockout, swallow; pinned = bonk). A window already moved
+        // this phase, or claimed by another transfer, stays put.
+        if (occ.get(block) !== 'block' || parkedAt.has(block) || pushedTo.has(block)) return true;
+        const bd = block + delta;
+        const g = F(bd);
+        if (g === 'pending') return false;
+        if (g === 'threshold') {
+          t.kind = 'blockout'; t.body = block; t.claim = null;
+          t.rank = along(block); t.tie = block;
+          parkedAt.add(block);
+          return attempt(t);
+        }
+        if (g === 'box') {
+          t.kind = 'swallow'; t.body = block; t.box = bd;
+          t.claim = arrivalCell(layout, LEAD[dir]);
+          t.rank = along(block); t.tie = block;
+          parkedAt.add(block); parkedAt.add(bd);
+          return attempt(t);
+        }
+        if (g !== 'free' && g !== 'pit') return true; // pinned too: a plain bonk
+        occ.delete(block);
+        if (g === 'pit') {
+          filled.add(bd);
+          events.push({ t: 'blocksink', at: bd });
+        } else {
+          occ.set(bd, 'block');
+          pushedTo.add(bd);
+          events.push({ t: 'blockstep', from: block, to: bd });
+        }
+        moveSelf(c, block);
+        return true;
+      }
       events.push({ t: 'enter', from: c.pos, block, to: enterArr });
       if (occ.get(c.pos) === c.id) occ.delete(c.pos);
       if (f === 'pit') {
@@ -1490,7 +1525,10 @@ let dirty = true;
 let auto = null;     // timeout id while a solver replay is walking the board
 function stopAuto() { if (auto !== null) { clearTimeout(auto); auto = null; } }
 // T50: the dive camera - tap a window, zoom into it, arrive where you began.
-let zoom = null;     // { t0, dur, fx, fy, logZ, e } (+ back, e0, tb mid-retract)
+// T52: the climb - long-press and it runs backwards (up: true, e eases 1 -> 0):
+// the board shrinks into one of its own windows and the level materializes
+// around it at full scale. Both end frames are the resting frame.
+let zoom = null;     // { t0, dur, fx, fy, logZ, e, up } (+ back, e0, tb mid-retract)
 function retractZoom() {
   if (zoom && !zoom.back) { zoom.back = true; zoom.e0 = zoom.e; zoom.tb = performance.now(); }
 }
@@ -2858,6 +2896,13 @@ function frame(ts) {
   // Hold-to-walk: a still finger fires no events, so poll here - AFTER the
   // tween update, so the next held step chains on the frame this one lands.
   if (down) maybeWalk(ts);
+  // T52: a press that stays stock-still past RISE climbs a level. Marking it
+  // fired keeps the release from also firing the dive tap.
+  if (down && !down.fired && ts - down.t0 > RISE &&
+      Math.hypot(down.px - down.sx, down.py - down.sy) < 12) {
+    down.fired = true;
+    maybeRise(down.sx, down.sy);
+  }
   if (bloom) {
     bloom.p = Math.min(1, (ts - bloom.t0) / BLOOM);
     if (bloom.p >= 1) bloom = null;
@@ -2872,7 +2917,8 @@ function frame(ts) {
       if (zoom.e <= 0) zoom = null;
     } else {
       const p = Math.min(1, (ts - zoom.t0) / zoom.dur);
-      zoom.e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      const v = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      zoom.e = zoom.up ? 1 - v : v; // T52: the climb is the dive backwards
       if (p >= 1) zoom = null;
     }
   }
@@ -3148,6 +3194,24 @@ const SFX = {
     o.start(t); o.stop(t + 1);
     noise(t, 0.7, 'bandpass', 600, 3600, 1.8, 0.025, 0.35);
     pop(t + 0.8, 740, 0.13);
+  },
+  // T52: the climb - the whee mirrored. The body tone falls the octave and a
+  // half it rose, the filter closes, and a soft low pop sets the world down.
+  whoa(t) {
+    const o = ac.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(1180, t);
+    o.frequency.exponentialRampToValueAtTime(196, t + 0.72);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 5;
+    lp.frequency.setValueAtTime(4200, t);
+    lp.frequency.exponentialRampToValueAtTime(700, t + 0.72);
+    const g = ac.createGain();
+    env(g, t, 0.05, 0.85, 0.14);
+    o.connect(lp); lp.connect(g); route(g, 0.35);
+    o.start(t); o.stop(t + 1);
+    noise(t, 0.7, 'bandpass', 3600, 600, 1.8, 0.025, 0.35);
+    pop(t + 0.8, 330, 0.13);
   },
   win(t) {
     [7, 9, 11, 12, 14].forEach((deg, i) => {
@@ -3878,7 +3942,8 @@ const SWIPE = 24;    // px from origin before a direction is held
 const LEASH = 40;    // max px the origin lags the finger
 const REPEAT = 100;  // ms floor between held steps (the tween is the real pacer)
 const TURN = 12;     // px of finger travel off the held direction = a real turn
-let down = null;     // { id, ox, oy, px, py, fired, last, dir, tx, ty }
+const RISE = 500;    // ms of stock-still press = climb a level (T52)
+let down = null;     // { id, t0, sx, sy, ox, oy, px, py, fired, last, dir, tx, ty }
 
 function maybeWalk(now) {
   const dx = down.px - down.ox, dy = down.py - down.oy;
@@ -3903,7 +3968,8 @@ stage.addEventListener('pointerdown', (e) => {
   stopAuto(); // grabbing the board takes over from a solution replay
   // First finger down owns the gesture; a second one must not move the origin.
   if (!down) {
-    down = { id: e.pointerId, ox: e.clientX, oy: e.clientY,
+    down = { id: e.pointerId, t0: e.timeStamp, sx: e.clientX, sy: e.clientY,
+      ox: e.clientX, oy: e.clientY,
       px: e.clientX, py: e.clientY, fired: false, last: 0, dir: null, tx: 0, ty: 0 };
   }
 });
@@ -3952,6 +4018,29 @@ function maybeDive(e) {
   zoom = { t0: performance.now(), dur: 950, e: 0,
     fx: dx / (1 - m.k), fy: dy / (1 - m.k), logZ: -Math.log(m.k) };
   play('whee');
+  buzz(10);
+}
+// T52: LONG-press and the camera goes the other way - the board you are
+// playing shrinks into one of its own windows and the same level materializes
+// around it at full scale. Implementation: the dive played backwards. e starts
+// at 1 (z = 1/k, which renders pixel-identical to rest) and eases to 0, so
+// the climb starts and ends on the resting frame - you rise forever and get
+// nowhere, same joke, other direction. Rises out of the window under the
+// finger if there is one, else the first - the one the outer backdrop
+// already brackets.
+function maybeRise(x, y) {
+  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return;
+  if (!state.blocks.length) return; // no window on the board = no outside
+  const r = board.getBoundingClientRect();
+  const cx = Math.floor((x - r.left - PAD) / CELL) + 1;
+  const cy = Math.floor((y - r.top - PAD) / CELL) + 1;
+  const pressed = state.blocks.find(i => xOf(i) === cx && yOf(i) === cy);
+  const b = pressed === undefined ? state.blocks[0] : pressed;
+  const m = miniGeom();
+  const dx = PAD + (xOf(b) - 1 + m.ox) * CELL, dy = PAD + (yOf(b) - 1 + m.oy) * CELL;
+  zoom = { t0: performance.now(), dur: 950, e: 1, up: true,
+    fx: dx / (1 - m.k), fy: dy / (1 - m.k), logZ: -Math.log(m.k) };
+  play('whoa');
   buzz(10);
 }
 const release = (e) => {
