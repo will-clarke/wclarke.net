@@ -97,6 +97,7 @@ sync-games: snapshot
 	@rsync -a --delete $(KEEP_EXCLUDES) $(BUILD_EXCLUDES) $(SRC_EXCLUDES) \
 	  --exclude='.gitignore' --exclude='Makefile' \
 	  --exclude='*.md' --exclude='_template' --exclude='scratch-*.js' \
+	  --include='icon-*.png' --include='apple-touch-icon.png' \
 	  --exclude='*.png' --exclude='test.js' \
 	  --exclude='tune.js' --exclude='tuner-results.json' \
 	  --exclude='/index.html' --exclude='/shots' \

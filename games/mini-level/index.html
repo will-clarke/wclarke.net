@@ -2,6 +2,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#f3ecdf">
 <title>Mini Levels</title>
+<!-- T58: installable PWA. The manifest/sw/icons live beside this file; from
+     file:// the links just 404 quietly and the game plays exactly as before. -->
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Mini Levels">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f3ecdf'/%3E%3Crect x='5.5' y='5.5' width='21' height='21' rx='2' fill='none' stroke='%235f95c9' stroke-width='2.5'/%3E%3Crect x='11.5' y='11.5' width='9' height='9' rx='1.5' fill='none' stroke='%239a86cb' stroke-width='2'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23d9a94e'/%3E%3C/svg%3E">
 <style>
   /* T22 pastel pass: warm linen ground, dusty pastels, soft everything. */
@@ -4611,5 +4619,11 @@ let start = 0;
 while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
 loadLevel(0, start);
 if (location.hash === '#edit') openEditor();
+// T58: the offline shell. Secure contexts only - file:// and plain http skip
+// this and lose nothing. sw.js is network-first, so deploys are never stale.
+if ('serviceWorker' in navigator &&
+    (location.protocol === 'https:' || location.hostname === 'localhost')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
 requestAnimationFrame(frame);
 </script>
