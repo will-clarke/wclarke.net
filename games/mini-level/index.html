@@ -481,7 +481,8 @@ const CAMPAIGN = [
   // from the left one (2 -> 2) - parked exactly where the box lane needs a
   // door. Post the box, follow it through, walk it home.
   // T24 re-bake: par 11 -> 12 (the old optimal leaned on the removed A5 scoot).
-  { name: 'Removals', par: 12, stretch: true, requires: ['blockout', 'boxin'], rows: [
+  // T48 re-bake: back to 11 - universal pop-out opens a one-move-shorter line.
+  { name: 'Removals', par: 11, stretch: true, requires: ['blockout', 'boxin'], rows: [
     '#-#####',
     '#.##..#',
     '#.##$.#',
@@ -602,7 +603,7 @@ const WORKSHOP = [
     '#..$.*#',
     '###-###',
   ]},
-  { name: 'Compass', par: 12, stretch: true, requires: [], rows: [
+  { name: 'Compass', par: 11, stretch: true, requires: [], rows: [
     '###-###',
     '#N*...#',
     '#.....#',
@@ -611,7 +612,7 @@ const WORKSHOP = [
     '#N.$.N#',
     '###-###',
   ]},
-  { name: 'Wings', par: 15, stretch: true, requires: [], rows: [
+  { name: 'Wings', par: 14, stretch: true, requires: [], rows: [
     '#######',
     '#*.*N*#',
     '#.$.###',
@@ -637,7 +638,7 @@ const WORKSHOP = [
     '#*...#',
     '######',
   ]},
-  { name: 'Backdoor', par: 18, stretch: true, requires: [], rows: [
+  { name: 'Backdoor', par: 16, stretch: true, requires: [], rows: [
     '######',
     '#.*..#',
     '#...$-',
@@ -701,15 +702,13 @@ const GENERATED = [
     rows: ['######', '-....#', '##N..#', '##N@.#', '##.*$#', '####-#'] },  // {blockstep,boxout,enter,exit,spawn}
   { name: 'Gen 2', par: 13, stretch: true, requires: [],
     rows: ['#-######', '#.N....#', '#@$....#', '#..#####', '#......#', '#....~*#', '#N.....#', '####-###'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 3', par: 13, stretch: true, requires: [],
-    rows: ['#-####', '#$$.N#', '#*.*.#', '##N@.#', '##$#.#', '######'] },  // {blockstep,boxout,enter,exit,merge,push,spawn} T42-fresh
-  { name: 'Gen 4', par: 14, stretch: true, requires: [],
+  { name: 'Gen 4', par: 6, stretch: true, requires: [],
     rows: ['##-###', '#N$*@#', '#....#', '-.N..#', '#.#~##', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push} T42-fresh
-  { name: 'Gen 5', par: 15, stretch: true, requires: [],
+  { name: 'Gen 5', par: 16, stretch: true, requires: [],
     rows: ['######-#', '#.@....#', '##$..*.#', '##.....#', '##.N...#', '##....$#', '##*...N-', '########'] },  // {blockout,blockstep,boxout,enter,exit,push,spawn} T42-fresh
   { name: 'Gen 6', par: 16, stretch: true, requires: [],
     rows: ['#######', '####..#', '#.$#*.#', '#.$@..-', '#N.~..#', '#..N.*#', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 7', par: 17, stretch: true, requires: [],
+  { name: 'Gen 7', par: 14, stretch: true, requires: [],
     rows: ['#-####', '#~.N##', '#..N$#', '#.**.#', '-$@.##', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
   { name: 'Gen 8', par: 17, stretch: true, requires: [],
     rows: ['######', '#N*..#', '#.~*##', '#$@.$-', '###N.#', '###-##'] },  // {blockout,boxout,die,enter,exit,fill,push,spawn} T42-fresh
@@ -721,7 +720,7 @@ const GENERATED = [
     rows: ['#######', '#$...N#', '#~.N*@#', '#..$.##', '#...###', '#.*$###', '##-####'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
   { name: 'Gen 12', par: 19, stretch: true, requires: [],
     rows: ['########', '##.*...#', '##.....#', '##.N...#', '#.N....#', '#..#####', '#.$.@..-', '########'] },  // {blockstep,boxout,enter,exit,push,spawn} T42-fresh
-  { name: 'Gen 13', par: 20, stretch: true, requires: [],
+  { name: 'Gen 13', par: 23, stretch: true, requires: [],
     rows: ['###-##', '#....-', '#.@~.#', '#N$*N#', '##.*$#', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
   { name: 'Gen 14', par: 20, stretch: true, requires: [],
     rows: ['##-####', '#..$.*#', '#.~...#', '##...N#', '#$..*.#', '#.N.@~#', '###-###'] },  // {blockstep,boxout,die,enter,exit,fill,merge,push,spawn}
@@ -729,19 +728,17 @@ const GENERATED = [
     rows: ['#######', '#..N#.#', '-..##.#', '#...N*#', '#$....#', '#.$$@.#', '####-##'] },  // {blockstep,boxin,enter,exit,push,spawn}
   { name: 'Gen 16', par: 21, stretch: true, requires: [],
     rows: ['##-#####', '#..N...#', '#......#', '#.....~-', '#N*....#', '#...#.$#', '#...#.@#', '########'] },  // {blockstep,boxout,die,exit,fill,push,spawn}
-  { name: 'Gen 17', par: 21, stretch: true, requires: [],
+  { name: 'Gen 17', par: 20, stretch: true, requires: [],
     rows: ['######', '#..*$#', '#..$.#', '-.NN@#', '#*#..#', '####-#'] },  // {blockout,blockstep,boxout,enter,exit,push,spawn}
-  { name: 'Gen 18', par: 22, stretch: true, requires: [],
-    rows: ['#######', '#*$*.~-', '#.....#', '#NN.$.#', '-*#~.$#', '###..@#', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,sink,spawn}
   { name: 'Gen 19', par: 22, stretch: true, requires: [],
     rows: ['########', '-..#@..#', '#N.#.$.#', '#..#N..#', '#.######', '#.~....-', '#*....~#', '########'] },  // {boxin,die,enter,exit,fill,push,spawn}
   { name: 'Gen 20', par: 22, stretch: true, requires: [],
     rows: ['#####-#', '#.N#.N#', '#$..*.#', '#.~...#', '#~.@$.#', '#.#####', '#-#####'] },  // {boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 21', par: 22, stretch: true, requires: [],
+  { name: 'Gen 21', par: 20, stretch: true, requires: [],
     rows: ['###-###', '#.$...#', '#N...N#', '#@~.*.-', '#.~#*.#', '#.##$##', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn}
   { name: 'Gen 22', par: 22, stretch: true, requires: [],
     rows: ['####-#', '#$*.@#', '#*#~$#', '#*#$~#', '#N#N##', '######'] },  // {boxin,boxout,die,enter,exit,fill,merge,push,sink,spawn} T42-fresh
-  { name: 'Gen 23', par: 22, stretch: true, requires: [],
+  { name: 'Gen 23', par: 18, stretch: true, requires: [],
     rows: ['####-##', '#.**$$#', '#N#N.@#', '#*.$..#', '#.....#', '#.....#', '#######'] },  // {blockstep,boxin,boxout,enter,push,spawn} T42-fresh
   { name: 'Gen 24', par: 23, stretch: true, requires: [],
     rows: ['#-#####', '#.#####', '#..*@~#', '#..*$N#', '#...$.#', '#.~N.$#', '##-####'] },  // {die,enter,exit,fill,push,spawn}
@@ -751,45 +748,43 @@ const GENERATED = [
     rows: ['####-##', '#.$$*.#', '#...N.#', '#N..@##', '##.*.##', '#...###', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn}
   { name: 'Gen 27', par: 23, stretch: true, requires: [],
     rows: ['#######', '#..N.*#', '#..##.#', '#.@...#', '-$..~.#', '#.$...#', '####-##'] },  // {enter,push}
-  { name: 'Gen 28', par: 24, stretch: true, requires: [],
+  { name: 'Gen 28', par: 19, stretch: true, requires: [],
     rows: ['######', '#N..$#', '#$@*##', '#.#.N-', '#.*.~#', '####-#'] },  // {blockout,blockstep,boxin,boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 29', par: 25, stretch: true, requires: [],
+  { name: 'Gen 29', par: 18, stretch: true, requires: [],
     rows: ['#-#####', '#.$N.##', '#.N~..#', '#..*..#', '#.....-', '#..@..#', '#######'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
   { name: 'Gen 30', par: 25, stretch: true, requires: [],
     rows: ['######', '-*.###', '#*...#', '#N..$#', '#.@.$-', '######'] },  // {blockstep,boxout,exit,push}
-  { name: 'Gen 31', par: 25, stretch: true, requires: [],
+  { name: 'Gen 31', par: 20, stretch: true, requires: [],
     rows: ['####-#', '#$.N.#', '#.~..#', '#.N*##', '#$$@##', '######'] },  // {blockstep,boxin,boxout,die,enter,exit,fill,push,spawn} T42-fresh
-  { name: 'Gen 32', par: 26, stretch: true, requires: [],
+  { name: 'Gen 32', par: 14, stretch: true, requires: [],
     rows: ['#######', '#.....#', '#.~..$#', '#.*N.N#', '####..#', '#..~@.-', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn} T42-fresh
-  { name: 'Gen 33', par: 27, stretch: true, requires: [],
+  { name: 'Gen 33', par: 18, stretch: true, requires: [],
     rows: ['###-##', '#.#*$#', '#$..N-', '#$N@.#', '#.*.*#', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
   { name: 'Gen 34', par: 28, stretch: true, requires: [],
     rows: ['######', '####.#', '#$$.*#', '#N.~.#', '#.@$N#', '####-#'] },  // {blockout,blockstep,die,enter,exit,fill,merge,push,spawn} T42-fresh
-  { name: 'Gen 35', par: 30, stretch: true, requires: [],
+  { name: 'Gen 35', par: 20, stretch: true, requires: [],
     rows: ['#######', '#@..N.#', '#*.$$.-', '###.N.#', '#.*.$##', '###...#', '#######'] },  // {blockstep,boxin,boxout,enter,exit,push} T42-fresh
   { name: 'Gen 36', par: 31, stretch: true, requires: [],
     rows: ['#######', '#.@...#', '##$$.*#', '#.#...-', '#.#.N.#', '#..$.N#', '#######'] },  // {blockstep,boxin,enter,exit,push,spawn} T42-fresh
-  { name: 'Gen 37', par: 32, stretch: true, requires: [],
+  { name: 'Gen 37', par: 24, stretch: true, requires: [],
     rows: ['########', '#..$...-', '#..@.N.#', '#..*..##', '#...$.##', '#..*...#', '#......#', '########'] },  // {blockstep,boxout,exit,push} T42-fresh
   { name: 'Gen 38', par: 34, stretch: true, requires: [],
     rows: ['########', '-.$.#..#', '#...#*.#', '#$###..#', '#...#..#', '#....@.#', '#.*...N#', '#-######'] },  // {blockstep,boxout,enter,exit,push} T42-fresh
-  { name: 'Gen 39', par: 35, stretch: true, requires: [],
+  { name: 'Gen 39', par: 32, stretch: true, requires: [],
     rows: ['#-######', '#.$.*$.#', '#.$.N.*#', '#*..##.#', '#...@..#', '#..#####', '#......#', '########'] },  // {blockstep,enter,exit,push} T42-fresh
   { name: 'Gen 40', par: 35, stretch: true, requires: [],
     rows: ['########', '#...$..#', '#@.....#', '#*..####', '#~.....#', '#.#N...-', '#......#', '########'] },  // {blockstep,boxin,enter,push} T42-fresh
-  { name: 'Gen 41', par: 36, stretch: true, requires: [],
+  { name: 'Gen 41', par: 29, stretch: true, requires: [],
     rows: ['#######', '#..*.N-', '#..N..#', '#$~.$##', '#..@.~#', '#..*###', '#######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn}
-  { name: 'Gen 42', par: 36, stretch: true, requires: [],
+  { name: 'Gen 42', par: 18, stretch: true, requires: [],
     rows: ['###-##', '-N*$##', '#@..##', '#N*.##', '#~$.##', '######'] },  // {blockstep,boxout,enter,exit,push,sink,spawn} T42-fresh
-  { name: 'Gen 43', par: 36, stretch: true, requires: [],
+  { name: 'Gen 43', par: 8, stretch: true, requires: [],
     rows: ['####-#', '-$...#', '#@NN.#', '###*.#', '#$$###', '######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
   { name: 'Gen 44', par: 36, stretch: true, requires: [],
     rows: ['#######', '#~.$@*#', '#$.*.##', '#..$..#', '#N.####', '##....-', '#####-#'] },  // {blockstep,enter,exit,push,sink} T42-fresh
-  { name: 'Gen 45', par: 37, stretch: true, requires: [],
+  { name: 'Gen 45', par: 35, stretch: true, requires: [],
     rows: ['########', '#......#', '#$.*...#', '#*..#.@-', '#...#..#', '#.N$#$.#', '#*..#..#', '########'] },  // {blockstep,exit,push} T42-fresh
-  { name: 'Gen 46', par: 38, stretch: true, requires: [],
-    rows: ['########', '#......#', '#...#..-', '#*.~#$##', '#.*.#.##', '##...$.#', '#.@.NN.#', '########'] },  // {blockstep,die,enter,exit,fill,push,spawn} T42-fresh
-  { name: 'Gen 47', par: 40, stretch: true, requires: [],
+  { name: 'Gen 47', par: 37, stretch: true, requires: [],
     rows: ['########', '#..@$..#', '#..*...#', '#.##N..#', '-......#', '#$..#..#', '#...~.*#', '########'] },  // {blockstep,boxin,boxout,enter,exit,push}
   { name: 'Gen 48', par: 43, stretch: true, requires: [],
     rows: ['###-####', '#....$.#', '#.*...$#', '#.N.@..#', '#*.....#', '#....###', '#.....N#', '########'] },  // {blockstep,boxin,enter,exit,push}
@@ -925,8 +920,15 @@ function isDoomed(layout, dead, state) {
   return state.blocks.length < 2 && live < need;
 }
 
-// One tick. Pure: inputs are never mutated. Phase A resolves grid moves in
-// sweep order; Phase B resolves portal transfers against the settled board.
+// One tick. Pure: inputs are never mutated. Phase A resolves every PLAIN
+// move (slides, pushes, sinks, bonks) in sweep order; any move that sends a
+// body through a door - enter, exit, boxin, boxout, blockout, swallow - and
+// any walk into a still-moving self parks as a TRANSFER and resolves in
+// Phase B against the settled board (T48; before this, boxout/blockout fired
+// mid-sweep and could see half-moved clones). Phase B runs in rounds: a
+// transfer blocked by a body that may still move this tick waits for it to
+// settle, so outcomes do not depend on processing order; only a genuinely
+// circular standoff falls back to sweep order.
 function step(layout, state, dir) {
   const [dx, dy] = DIRS[dir];
   const w = layout.w;
@@ -956,8 +958,8 @@ function step(layout, state, dir) {
   const events = [];
   const moveClone = (c, to) => {
     events.push({ t: 'step', from: c.pos, to });
-    // T32: the push this move resolves may have landed something on the cell
-    // the clone is vacating - only remove the entry if it is still the clone.
+    // T32: the transfer this move resolves may have landed something on the
+    // cell the clone is vacating - only remove the entry if it is the clone.
     if (occ.get(c.pos) === c.id) occ.delete(c.pos);
     occ.set(to, c.id);
     c.pos = to;
@@ -980,74 +982,51 @@ function step(layout, state, dir) {
     Math.floor(pos / w);
   const order = clones.slice().sort((a, b) => along(a.pos) - along(b.pos) || a.pos - b.pos);
 
-  // T10 (A4): one block move, tried before anything enters it. True if the
-  // block vacated its cell (slide, sink, out through a door, into another
-  // block); false if it is pinned. A block never shoves what is in its way.
-  const blockMove = (pos) => {
-    const bdest = pos + delta;
-    if (thresholds.has(bdest)) {
-      // Blockout: the window leaves the level, so it re-emerges from every
-      // OTHER window still on the grid (1->0, 2->2, 3->4). The exit itself
-      // always succeeds - with one block the set of other windows is empty
-      // and it is simply gone. Blocked mouths do not fire, like exits.
-      occ.delete(pos);
-      const fired = blocksNow().map(b => b + delta)
-        .filter(m => !thresholds.has(m) && !occ.has(m));
-      if (fired.length === 0) events.push({ t: 'blockout', from: pos, to: null, spawned: false });
-      fired.forEach((m, k) => {
-        events.push({ t: 'blockout', from: pos, to: m, spawned: k > 0 });
-        if (lavaOpen(m)) {
-          filled.add(m);
-          events.push({ t: 'blocksink', at: m });
-        } else occ.set(m, 'block');
-      });
-      return true;
-    }
-    const ob = occ.get(bdest);
-    if (ob === undefined) {
-      occ.delete(pos);
-      if (lavaOpen(bdest)) {
-        // The world it showed is unharmed - only the window sinks.
-        filled.add(bdest);
-        events.push({ t: 'blocksink', at: bdest });
-      } else {
-        occ.set(bdest, 'block');
-        events.push({ t: 'blockstep', from: pos, to: bdest });
-      }
-      return true;
-    }
-    if (ob === 'block') return false;
-    // (Blockin died with T42's enter-first rule: threading a window through
-    // a window needed the very door that now means "enter", so no pusher
-    // can reach it any more. Window against window = pinned.)
-    if (ob === 'box') {
-      // T27 (Will): resolve from the far end. A window advancing onto a box
-      // swallows it - the box crosses the window's boundary on the LEADING
-      // face (relative motion) and lands at that door's arrival cell - and
-      // the window takes its cell. Only if the box has no way in is the
-      // window truly pinned (and entering it becomes the fallback).
-      const arr = arrivalCell(layout, LEAD[dir]);
-      if (arr === null || arr === bdest || occ.has(arr)) return false;
-      occ.delete(bdest);
-      events.push({ t: 'boxin', from: bdest, block: bdest, to: arr, lead: true });
-      settleBox(arr);
-      occ.delete(pos);
-      occ.set(bdest, 'block');
-      events.push({ t: 'blockstep', from: pos, to: bdest });
-      return true;
-    }
-    return false;
+  // T48: every fan-out walks the windows furthest-along-d first, the same
+  // sweep Phase A uses for clones - so a body emerging out of a train of
+  // windows resolves from the front, like the train itself would.
+  const mouthOrder = () => blocksNow().sort((a, b) => along(a) - along(b) || a - b);
+
+  // Transfers: the door-crossing moves parked for Phase B, in sweep order.
+  // pending = clone ids not yet settled; parkedAt = cells of boxes/windows
+  // claimed by a parked transfer (they may still leave, so nothing else may
+  // shove or recoil them until it resolves).
+  const transfers = [];
+  const pending = new Set();
+  const parkedAt = new Set();
+  const park = (kind, c, data) => {
+    // Queue rank = the MOVING body (the pushed box/window, or the clone
+    // itself), not the pusher: two bodies bound for the same doorway then
+    // resolve front-of-the-line first in every orientation - a box one cell
+    // ahead of an entering clone lands first and gets chain-shoved onward,
+    // instead of whoever parses first winning the cell.
+    const body = data && data.body !== undefined ? data.body : c.pos;
+    transfers.push({ kind, c, rank: along(body), tie: body, done: false, ...(data || {}) });
+    pending.add(c.id);
   };
 
-  const pendingEnter = [];
-  const pendingExit = [];
-  const pendingFollow = [];
-  const pending = new Set(); // ids of clones whose move resolves in Phase B
+  // T48 (A12 v2, universal pop-out): a body squeezing out of window b whose
+  // mouth is blocked recoils the window one cell backwards and emerges where
+  // it stood - Newton, for every body kind (clone, box, window). The recoil
+  // cell must be genuinely free: plain floor/target, no pit, no threshold,
+  // nothing standing on it - and the window itself must be neither claimed
+  // by a transfer nor already shoved this phase (`guard`).
+  const recoilWindow = (b, guard, touch) => {
+    const rc = b - delta;
+    if (touch) { touch(b); touch(rc); }
+    if (parkedAt.has(b) || (guard && guard.has(b)) ||
+        thresholds.has(rc) || occ.has(rc) || lavaOpen(rc)) return false;
+    occ.delete(b);
+    occ.set(rc, 'block');
+    if (guard) guard.add(rc);
+    events.push({ t: 'blockstep', from: b, to: rc });
+    return true;
+  };
 
-  // PHASE A - grid moves.
+  // PHASE A - plain moves only; anything portal-shaped parks.
   for (const c of order) {
     const dest = c.pos + delta;
-    if (thresholds.has(dest)) { pendingExit.push(c); pending.add(c.id); continue; }
+    if (thresholds.has(dest)) { park('exit', c); continue; }
     const o = occ.get(dest);
     // Walls are walls, boundary or not. (A5 shell-scoot lived here, T10 to
     // T24 - removed per Will: it undercut the pure sokobaning.)
@@ -1056,70 +1035,63 @@ function step(layout, state, dir) {
       // T42 (A4 v2): the facing door decides. A doored face is a portal -
       // you enter (or bonk trying); a doorless face is a crate side - you
       // push (or bonk). Enter beats push: the nearest interaction wins.
-      if (arrivalCell(layout, FACE[dir]) !== null) {
-        pendingEnter.push(c); pending.add(c.id); continue;
+      if (arrivalCell(layout, FACE[dir]) !== null) { park('enter', c); continue; }
+      const bdest = dest + delta;
+      if (thresholds.has(bdest)) {
+        park('blockout', c, { body: dest });
+        parkedAt.add(dest);
+        continue;
       }
-      // T32: a pusher is in motion, so its own cell counts as vacated while
-      // its push resolves - a blockout mouth (or a swallowed box's arrival)
-      // may land exactly where the pusher is stepping out of.
-      occ.delete(c.pos);
-      if (blockMove(dest)) { moveClone(c, dest); continue; }
-      occ.set(c.pos, c.id); // pinned: the clone never moved after all
+      const ob = occ.get(bdest);
+      if (ob === 'box') {
+        park('swallow', c, { body: dest, box: bdest });
+        parkedAt.add(dest);
+        parkedAt.add(bdest);
+        continue;
+      }
+      if (ob !== undefined) continue; // pinned against wall/window/self: bonk
+      occ.delete(dest);
+      if (lavaOpen(bdest)) {
+        // The world it showed is unharmed - only the window sinks.
+        filled.add(bdest);
+        events.push({ t: 'blocksink', at: bdest });
+      } else {
+        occ.set(bdest, 'block');
+        events.push({ t: 'blockstep', from: dest, to: bdest });
+      }
+      moveClone(c, dest);
       continue;
     }
     if (o === 'box') {
       const bdest = dest + delta;
-      occ.delete(c.pos); // T32: as above - every blocked path restores this
-      const stay = () => occ.set(c.pos, c.id);
       if (thresholds.has(bdest)) {
-        // Box pushed out through a door: fires at every free block mouth.
-        const fired = [];
-        for (const b of blocksNow()) {
-          const m = b + delta;
-          if (thresholds.has(m) || occ.get(m) !== undefined) continue;
-          fired.push(m);
-        }
-        if (fired.length === 0) { stay(); continue; } // blocked
-        occ.delete(dest);
-        fired.forEach((m, k) => {
-          events.push({ t: 'boxout', from: dest, to: m, spawned: k > 0 });
-          settleBox(m);
-        });
-        moveClone(c, dest);
+        park('boxout', c, { body: dest });
+        parkedAt.add(dest);
         continue;
       }
       const ob = occ.get(bdest);
       if (ob === 'block') {
-        // T42 (A11): windows weigh like boxes - a pushed box never shoves
-        // one (that would be multi-push). The box goes in through the
-        // matching door, or the whole move bonks.
-        const arr = arrivalCell(layout, FACE[dir]);
-        if (arr === null || occ.has(arr)) { stay(); continue; } // no matching door, or arrival taken
-        occ.delete(dest);
-        events.push({ t: 'boxin', from: dest, block: bdest, to: arr });
-        settleBox(arr);
-        moveClone(c, dest);
+        park('boxin', c, { body: dest, into: bdest });
+        parkedAt.add(dest);
         continue;
       }
-      if (ob !== undefined) { stay(); continue; } // wall, box or clone: blocked, no multi-push
+      if (ob !== undefined) continue; // wall, box or clone: blocked, no multi-push
+      occ.delete(dest);
       if (lavaOpen(bdest)) {
-        occ.delete(dest);
         filled.add(bdest);
         events.push({ t: 'sink', at: bdest });
-        moveClone(c, dest);
-        continue;
+      } else {
+        occ.set(bdest, 'box');
+        events.push({ t: 'push', from: dest, to: bdest });
       }
-      occ.delete(dest);
-      occ.set(bdest, 'box');
-      events.push({ t: 'push', from: dest, to: bdest });
       moveClone(c, dest);
       continue;
     }
     if (typeof o === 'number') {
       // Walking into a self never merges (merge is portal-only). If the
-      // occupant is itself waiting on a portal transfer, follow it in
-      // Phase B once it has actually vacated; a blocked self is a wall.
-      if (pending.has(o)) { pendingFollow.push(c); pending.add(c.id); }
+      // occupant may still move this tick, follow it once it truly has;
+      // a blocked self is a wall.
+      if (pending.has(o)) park('follow', c);
       continue;
     }
     if (lavaOpen(dest)) {
@@ -1135,185 +1107,330 @@ function step(layout, state, dir) {
     moveClone(c, dest);
   }
 
-  // PHASE B - portal transfers, against post-Phase-A occupancy.
+  // PHASE B - the parked transfers, in rounds, front-of-the-line first.
+  transfers.sort((a, b) => a.rank - b.rank || a.tie - b.tie);
   const enterArr = arrivalCell(layout, FACE[dir]);
+  // Doorway claims: two bodies bound for the same arrival cell from the
+  // same distance have no front-of-the-line - they JAM (mutual defer, so
+  // the standoff rule bonks both). Entering clones are exempt: arrivals
+  // landing on a self merge, which no order can tell apart.
+  for (const t of transfers) {
+    t.claim = t.kind === 'enter' || t.kind === 'boxin' ? enterArr :
+      t.kind === 'swallow' ? arrivalCell(layout, LEAD[dir]) : null;
+  }
+  const jammed = (t) => {
+    if (t.claim === null) return false;
+    for (const u of transfers) {
+      if (u === t || u.done || u.claim !== t.claim || u.rank !== t.rank) continue;
+      if (t.kind === 'enter' && u.kind === 'enter') continue;
+      return true;
+    }
+    return false;
+  };
   const pushedTo = new Set(); // boxes/blocks already shoved once this phase stay put
-  for (const c of pendingEnter) {
-    if (!c.alive) continue;
-    if (enterArr === null) continue; // no door on that side: stays put
-    const block = c.pos + delta;
-    const o = occ.get(enterArr);
-    if (o === c.id) {
-      // Self-arrival: legal, ends where it started.
-      events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-      continue;
-    }
-    if (o === 'box') {
-      // T15: the door is just floor - coming through it shoves the arrival
-      // box one cell onward (same direction: the entry face's inward normal
-      // IS the direction of travel). Shoving it into another block or out a
-      // door would move one box through two portals in a tick: blocked,
-      // recorded as an open question rather than improvised.
-      const bdest = enterArr + delta;
-      // T42/A10: the enterer's own cell counts as vacated - the chain-pushed
-      // box may land exactly where the body is squeezing out of.
-      if (thresholds.has(bdest) || (occ.has(bdest) && occ.get(bdest) !== c.id)) continue;
-      occ.delete(enterArr);
-      if (lavaOpen(bdest)) {
-        filled.add(bdest);
-        events.push({ t: 'sink', at: bdest });
-      } else {
-        occ.set(bdest, 'box');
-        pushedTo.add(bdest);
-        events.push({ t: 'push', from: enterArr, to: bdest });
-      }
-      events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-      if (occ.get(c.pos) === c.id) occ.delete(c.pos);
-      occ.set(enterArr, c.id);
-      c.pos = enterArr;
-      continue;
-    }
-    if (o === 'block') {
-      // T24: doors are transparent to windows too - the body coming through
-      // shoves the arrival window one plain cell onward (slide or sink; a
-      // second door in the same tick stays blocked, same as a box), so you
-      // can follow the window you just pushed in and keep pushing it.
-      const bdest = enterArr + delta;
-      // T42/A10: as with boxes, the enterer's own cell counts as vacated.
-      if (thresholds.has(bdest) || (occ.has(bdest) && occ.get(bdest) !== c.id)) continue;
-      occ.delete(enterArr);
-      if (lavaOpen(bdest)) {
-        filled.add(bdest);
-        events.push({ t: 'blocksink', at: bdest });
-      } else {
-        occ.set(bdest, 'block');
-        pushedTo.add(bdest);
-        events.push({ t: 'blockstep', from: enterArr, to: bdest });
-      }
-      events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-      if (occ.get(c.pos) === c.id) occ.delete(c.pos);
-      occ.set(enterArr, c.id);
-      c.pos = enterArr;
-      continue;
-    }
-    if (o === 'wall') continue; // stays put
-    if (typeof o === 'number') {
-      events.push({ t: 'merge', at: enterArr, from: c.pos, via: 'enter' });
-      occ.delete(c.pos);
-      c.alive = false;
-      continue;
-    }
-    events.push({ t: 'enter', from: c.pos, block, to: enterArr });
-    occ.delete(c.pos);
-    if (lavaOpen(enterArr)) {
-      events.push({ t: 'die', at: enterArr });
-      events.push({ t: 'fill', at: enterArr });
-      filled.add(enterArr);
-      c.alive = false;
-      continue;
-    }
-    occ.set(enterArr, c.id);
-    c.pos = enterArr;
-  }
 
-  for (const c of pendingExit) {
-    if (!c.alive) continue;
+  // What a transfer finds at a cell. 'pending' = a body that may still move
+  // this tick, so the asker should wait for it to settle. A cell the asker
+  // itself occupies counts as free: it leaves it whenever its move succeeds
+  // (A10 - the pusher's, enterer's and exiter's own cells all work alike).
+  const fate = (cell, self) => {
+    if (thresholds.has(cell)) return 'threshold';
+    const v = occ.get(cell);
+    if (v === undefined) return lavaOpen(cell) ? 'pit' : 'free';
+    if (v === self) return 'free';
+    if (parkedAt.has(cell)) return 'pending';
+    if (typeof v === 'number' && pending.has(v)) return 'pending';
+    return v;
+  };
+  // Fan-out landing check with the same own-cell rule.
+  const freeFor = (cell, c) => {
+    const v = occ.get(cell);
+    return v === undefined || v === c.id;
+  };
+
+  // One attempt at one transfer. Returns true if it RESOLVED (moved or
+  // definitively bonked), false to retry next round once whatever it is
+  // waiting on has settled.
+  const attempt = (t) => {
+    const c = t.c;
+    const F = (cell) => fate(cell, c.id);
+
+    // Fan-outs cascade - a recoil parks a window in front of the next mouth
+    // - so no pre-scan can enumerate the cells one will touch. Run the whole
+    // fan-out for real, watching every cell it consults; if any belongs to a
+    // body that may still move this tick, roll the world back and retry once
+    // it has settled.
+    const fanout = (run) => {
+      const oc = new Map(occ), fi = new Set(filled), pu = new Set(pushedTo);
+      const ev = events.length, cl = clones.length, ni = nextId;
+      const alive = c.alive, pos = c.pos;
+      let touched = false;
+      run((cell) => { if (fate(cell, c.id) === 'pending') touched = true; });
+      if (!touched) return true;
+      occ.clear();
+      for (const [k, v] of oc) occ.set(k, v);
+      filled.clear();
+      for (const v of fi) filled.add(v);
+      pushedTo.clear();
+      for (const v of pu) pushedTo.add(v);
+      events.length = ev;
+      clones.length = cl;
+      nextId = ni;
+      c.alive = alive;
+      c.pos = pos;
+      return false;
+    };
+
+    if (t.kind === 'follow') {
+      const dest = c.pos + delta;
+      const f = F(dest);
+      if (f === 'pending') return false;
+      if (f === 'free') moveClone(c, dest);
+      return true; // anything else: the leader failed or was replaced - stay
+    }
+
+    if (t.kind === 'enter') {
+      if (jammed(t)) return false;
+      const block = c.pos + delta;
+      let f = F(enterArr);
+      if (f === 'pending') return false;
+      if ((f === 'box' || f === 'block') && !parkedAt.has(enterArr)) {
+        // T15/T24: the door is just floor - the body coming through shoves
+        // the arrival box/window one plain cell onward (slide or sink).
+        // A second portal in the same tick, or a taken cell, refuses.
+        const bd = enterArr + delta;
+        const g = F(bd);
+        if (g === 'pending') return false;
+        if (g === 'free' || g === 'pit') {
+          occ.delete(enterArr);
+          if (g === 'pit') {
+            filled.add(bd);
+            events.push({ t: f === 'box' ? 'sink' : 'blocksink', at: bd });
+          } else {
+            occ.set(bd, f);
+            pushedTo.add(bd);
+            events.push({ t: f === 'box' ? 'push' : 'blockstep', from: enterArr, to: bd });
+          }
+          f = 'free';
+        }
+      }
+      if (typeof f === 'number') {
+        // Arrival on a self: merge (A6) - the reverse of the 1-many teleport.
+        events.push({ t: 'merge', at: enterArr, from: c.pos, via: 'enter' });
+        if (occ.get(c.pos) === c.id) occ.delete(c.pos);
+        c.alive = false;
+        return true;
+      }
+      if (f !== 'free' && f !== 'pit') return true; // refused inside: a plain bonk
+      events.push({ t: 'enter', from: c.pos, block, to: enterArr });
+      if (occ.get(c.pos) === c.id) occ.delete(c.pos);
+      if (f === 'pit') {
+        events.push({ t: 'die', at: enterArr });
+        events.push({ t: 'fill', at: enterArr });
+        filled.add(enterArr);
+        c.alive = false;
+        return true;
+      }
+      occ.set(enterArr, c.id);
+      c.pos = enterArr;
+      return true;
+    }
+
+    if (t.kind === 'boxin') {
+      // T42 (A11): windows weigh like boxes - a pushed box never shoves
+      // one. It goes IN through the matching door, or the move bonks.
+      const body = t.body;
+      const bonk = () => { parkedAt.delete(body); return true; };
+      if (enterArr === null || enterArr === body) return bonk();
+      if (jammed(t)) return false;
+      const f = F(enterArr);
+      if (f === 'pending') return false;
+      if (f !== 'free' && f !== 'pit') return bonk(); // arrival taken
+      parkedAt.delete(body);
+      occ.delete(body);
+      events.push({ t: 'boxin', from: body, block: t.into, to: enterArr });
+      settleBox(enterArr);
+      moveClone(c, body);
+      return true;
+    }
+
+    if (t.kind === 'swallow') {
+      // T27 (A9): the far end resolves first - a window advancing onto a
+      // box swallows it through its LEADING face; the box lands at that
+      // door's arrival cell and the window takes its cell. No leading
+      // door, or nowhere to land = the window is pinned.
+      const body = t.body, box = t.box;
+      const bonk = () => { parkedAt.delete(body); parkedAt.delete(box); return true; };
+      const arr = arrivalCell(layout, LEAD[dir]);
+      if (arr === null || arr === box || arr === body) return bonk();
+      if (jammed(t)) return false;
+      const f = F(arr);
+      if (f === 'pending') return false;
+      if (f !== 'free' && f !== 'pit') return bonk();
+      parkedAt.delete(body);
+      parkedAt.delete(box);
+      occ.delete(box);
+      events.push({ t: 'boxin', from: box, block: box, to: arr, lead: true });
+      settleBox(arr);
+      occ.delete(body);
+      occ.set(box, 'block');
+      events.push({ t: 'blockstep', from: body, to: box });
+      moveClone(c, body);
+      return true;
+    }
+
+    if (t.kind === 'boxout') {
+      // A box pushed out through a door re-emerges at every window's
+      // mouth. It never shoves what it finds there (A11), but a blocked
+      // mouth recoils its window (A12 v2) and the box lands where the
+      // window stood. No mouth fires = the whole move bonks.
+      const body = t.body;
+      if (!fanout((touch) => {
+        occ.delete(body);
+        let fired = 0;
+        for (const b of mouthOrder()) {
+          const m = b + delta;
+          if (thresholds.has(m)) continue;
+          touch(m);
+          let land = null;
+          if (freeFor(m, c)) land = m;
+          else if (recoilWindow(b, null, touch)) land = b;
+          else continue;
+          events.push({ t: 'boxout', from: body, to: land, spawned: fired > 0 });
+          fired++;
+          settleBox(land);
+        }
+        if (fired === 0) occ.set(body, 'box'); // all dark: bonk
+        else moveClone(c, body);
+      })) return false;
+      parkedAt.delete(body);
+      return true;
+    }
+
+    if (t.kind === 'blockout') {
+      // Blockout: the window leaves the level and re-emerges from every
+      // OTHER window still on the grid (1->0, 2->2, 3->4). The exit itself
+      // always succeeds - with one window the set of others is empty and
+      // it is simply gone. Blocked mouths recoil (A12 v2) or stay dark.
+      const body = t.body;
+      if (!fanout((touch) => {
+        occ.delete(body);
+        let fired = 0;
+        for (const b of mouthOrder()) {
+          const m = b + delta;
+          if (thresholds.has(m)) continue;
+          touch(m);
+          let land = null;
+          if (freeFor(m, c)) land = m;
+          else if (recoilWindow(b, null, touch)) land = b;
+          else continue;
+          events.push({ t: 'blockout', from: body, to: land, spawned: fired > 0 });
+          fired++;
+          if (lavaOpen(land)) {
+            filled.add(land);
+            events.push({ t: 'blocksink', at: land });
+          } else occ.set(land, 'block');
+        }
+        if (fired === 0) events.push({ t: 'blockout', from: body, to: null, spawned: false });
+        moveClone(c, body); // the exit itself always succeeds (A7)
+      })) return false;
+      parkedAt.delete(body);
+      return true;
+    }
+
+    // exit: the clone leaves through a door and emerges from every window.
     const from = c.pos;
-    const fired = [];
-    for (const b of blocksNow()) {
-      const m = b + delta;
-      if (thresholds.has(m)) continue;
-      const om = occ.get(m);
-      if (om === 'wall') {
-        // T42 (A12) pop-out: squeezing out against a wall recoils the window
-        // one plain cell backwards and the body pops out where it stood.
-        // Conservative like T15: the recoil cell must be genuinely free
-        // (not the exiter's own cell, no pit, no second portal).
-        const bd = b - delta;
-        if (pushedTo.has(b) || thresholds.has(bd) || occ.has(bd) || lavaOpen(bd)) continue;
-        occ.delete(b);
-        occ.set(bd, 'block');
-        pushedTo.add(bd);
-        events.push({ t: 'blockstep', from: b, to: bd });
-        fired.push({ m: b, kind: 'free' });
-        continue;
-      }
-      if (om === 'block') {
-        // T24: the exiting body shoves the mouth window one plain cell
-        // onward, exactly like a mouth box; if it cannot move (or already
-        // moved this phase), that mouth does not fire.
-        const bd = m + delta;
-        if (pushedTo.has(m) || thresholds.has(bd) || occ.has(bd)) continue;
-        occ.delete(m);
-        if (lavaOpen(bd)) {
-          filled.add(bd);
-          events.push({ t: 'blocksink', at: bd });
-        } else {
-          occ.set(bd, 'block');
-          pushedTo.add(bd);
-          events.push({ t: 'blockstep', from: m, to: bd });
+    // Mouths resolve one at a time, furthest first, claiming cells as they
+    // go. The exiter's own cell counts as vacated while they do (A10): a
+    // mouth shove may land exactly where the body is squeezing out of -
+    // the cheeky swap. If no mouth fires it is restored below.
+    return fanout((touch) => {
+      if (occ.get(from) === c.id) occ.delete(from);
+      c.alive = false; // consumed unless a mouth revives it (or spawns copies)
+      let fired = 0;
+      const land = (cell) => {
+        events.push({ t: 'exit', from, to: cell, spawned: fired > 0 });
+        fired++;
+        if (lavaOpen(cell)) {
+          events.push({ t: 'die', at: cell });
+          events.push({ t: 'fill', at: cell });
+          filled.add(cell);
+          return;
         }
-        fired.push({ m, kind: 'free' });
-        continue;
-      }
-      if (om === 'box') {
-        // T15: the exiting body pushes the mouth box one cell onward; if
-        // the box cannot move (or was already shoved this phase), the
-        // mouth does not fire. Into a block/threshold = two portals in one
-        // tick: blocked, open question. Fan-out mouths stay independent.
-        const bd = m + delta;
-        if (pushedTo.has(m) || thresholds.has(bd) || occ.has(bd)) continue;
-        occ.delete(m);
-        if (lavaOpen(bd)) {
-          filled.add(bd);
-          events.push({ t: 'sink', at: bd });
+        if (!c.alive) {
+          c.alive = true;
+          c.pos = cell;
+          occ.set(cell, c.id);
         } else {
-          occ.set(bd, 'box');
-          pushedTo.add(bd);
-          events.push({ t: 'push', from: m, to: bd });
+          const n = { id: nextId++, pos: cell, alive: true };
+          clones.push(n);
+          occ.set(cell, n.id);
         }
-        fired.push({ m, kind: 'free' });
-        continue;
+      };
+      for (const b of mouthOrder()) {
+        const m = b + delta;
+        if (thresholds.has(m)) continue; // two portals in one tick: blocked
+        touch(m);
+        let om = occ.get(m);
+        if (typeof om === 'number') {
+          // A self at the mouth: portal arrival onto a clone = merge (A6).
+          events.push({ t: 'merge', at: m, from, via: 'exit' });
+          fired++;
+          continue;
+        }
+        if ((om === 'box' || om === 'block') && !parkedAt.has(m)) {
+          // T15/T24: the exiting body shoves the mouth box/window one plain
+          // cell onward - slide onto free floor/target, or sink into a pit.
+          // Refused if it was already shoved this phase, if anything stands
+          // beyond, or if beyond is a threshold (one portal per body per
+          // tick). A refused shove falls through to the pop-out.
+          const bd = m + delta;
+          touch(bd);
+          if (!pushedTo.has(m) && !thresholds.has(bd) && !occ.has(bd)) {
+            occ.delete(m);
+            if (lavaOpen(bd)) {
+              filled.add(bd);
+              events.push({ t: om === 'box' ? 'sink' : 'blocksink', at: bd });
+            } else {
+              occ.set(bd, om);
+              pushedTo.add(bd);
+              events.push({ t: om === 'box' ? 'push' : 'blockstep', from: m, to: bd });
+            }
+            om = undefined; // mouth cleared: emerge below
+          }
+        }
+        if (om === undefined) { land(m); continue; } // free (or freed, or a pit: die+fill)
+        // Blocked mouth - wall, or an immovable box/window: pop-out (A12 v2).
+        if (recoilWindow(b, pushedTo, touch)) land(b);
       }
-      if (typeof om === 'number' && om !== c.id) fired.push({ m, kind: 'merge' });
-      else if (lavaOpen(m)) fired.push({ m, kind: 'die' });
-      else fired.push({ m, kind: 'free' }); // om === c.id: occ ignores c itself
-    }
-    if (fired.length === 0) continue; // stays put
-    occ.delete(from);
-    c.alive = false;
-    fired.forEach((f, k) => {
-      if (f.kind === 'merge') {
-        events.push({ t: 'merge', at: f.m, from, via: 'exit' });
-        return;
-      }
-      events.push({ t: 'exit', from, to: f.m, spawned: k > 0 });
-      if (f.kind === 'die') {
-        events.push({ t: 'die', at: f.m });
-        events.push({ t: 'fill', at: f.m });
-        filled.add(f.m);
-        return;
-      }
-      if (!c.alive) {
-        c.alive = true;
-        c.pos = f.m;
-        occ.set(f.m, c.id);
-      } else {
-        const n = { id: nextId++, pos: f.m, alive: true };
-        clones.push(n);
-        occ.set(f.m, n.id);
-      }
+      if (fired === 0) { c.alive = true; occ.set(from, c.id); } // bonk: stays put
     });
-  }
+  };
 
-  // Followers: clones that walked into a portal-pending self. Sweep order put
-  // each one after its leader, so chains march in a train. If the leader's
-  // transfer failed (or self-arrived), its cell is still taken: stay put.
-  for (const c of pendingFollow) {
-    if (!c.alive) continue;
-    const dest = c.pos + delta;
-    if (occ.has(dest)) continue;
-    moveClone(c, dest);
+  for (;;) {
+    let progress = false;
+    const open = [];
+    for (const t of transfers) {
+      if (t.done) continue;
+      if (attempt(t)) {
+        t.done = true;
+        pending.delete(t.c.id);
+        progress = true;
+      } else open.push(t);
+    }
+    if (open.length === 0) break;
+    if (!progress) {
+      // A circular standoff: every open transfer waits on a body claimed by
+      // another. No one can be given priority without inventing a compass,
+      // so the whole knot freezes - those moves are plain bonks.
+      for (const t of open) {
+        if (t.body !== undefined) parkedAt.delete(t.body);
+        if (t.box !== undefined) parkedAt.delete(t.box);
+        pending.delete(t.c.id);
+        t.done = true;
+      }
+      break;
+    }
   }
 
   const outBoxes = [];
@@ -1382,8 +1499,9 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v7'; // v7 = T42 rules re-bake: campaign bests survive,
-// workshop/generated bests dropped (levels recut/reordered under the new rules)
+const SAVE_KEY = 'mini-level-v8'; // v8 = T48 rules re-bake: campaign + workshop
+// bests survive, generated bests dropped (three levels broke under universal
+// pop-out and the track was recut)
 let progress = { best: {}, unlocked: {}, coached: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
@@ -1394,8 +1512,17 @@ function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     if (!raw) {
-      // Same save under the old name: this was 'Nest' before the rename.
-      raw = JSON.parse(localStorage.getItem('nest-v7') || 'null');
+      // Migrate a v7 save (under either name - this was 'Nest' before the
+      // rename): T48 recut the generated track, so only its bests are stale.
+      const v7 = JSON.parse(localStorage.getItem('mini-level-v7') ||
+        localStorage.getItem('nest-v7') || 'null');
+      if (v7 && typeof v7 === 'object') {
+        raw = { best: {}, unlocked: v7.unlocked || {},
+          coached: v7.coached || {}, audio: v7.audio };
+        for (const k in (v7.best || {})) {
+          if (!k.startsWith('g:')) raw.best[k] = v7.best[k];
+        }
+      }
     }
     if (!raw) {
       // Migrate a v6 save: T42 changed the rules, so only campaign bests
