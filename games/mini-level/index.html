@@ -144,6 +144,9 @@
     background: rgba(84, 73, 56, 0.45);
     padding: 24px;
   }
+  /* T53: the win card sits low and its scrim stays light, so the solved
+     board - blooming, grinning at every depth - remains the hero. */
+  #overlay { align-items: flex-end; background: rgba(84, 73, 56, 0.18); }
   .card {
     width: min(340px, 100%);
     max-height: 100%;
@@ -1622,6 +1625,7 @@ let trackIndex = 0;  // index into TRACKS...
 let levelIndex = 0;  // ...and into its levels, or -1 while playtesting a draft
 let levelDef = null; // the live definition: a track entry, or an editor draft
 let layout = null, state = null;
+let deadSet = null;  // deadCells(layout), cached per level for the stuck hint
 let history = [], moves = 0, won = false, initial = null;
 let sprites = [];
 let anim = null;     // { t0, p, flashes: [{at, kind}] }
@@ -1732,6 +1736,7 @@ function startLevel(def) {
   levelDef = def;
   const parsed = parseLevel(def);
   layout = parsed.layout;
+  deadSet = deadCells(layout); // T53: the solver's pruning doubles as a hint
   state = parsed.state;
   initial = state;
   history = [];
@@ -1844,6 +1849,11 @@ function syncHud() {
   chip.hidden = state.selves.length < 2;
   chip.textContent = '@ x' + state.selves.length;
   if (!won && state.selves.length === 0) showToast('No one left.');
+  // T53: SPEC section 4 promised the cornered-box banner too - the solver's
+  // isDoomed check (a needed box sunk or parked where no target is
+  // reachable) already knows, so say so gently instead of letting the
+  // player push on a lost board.
+  else if (!won && isDoomed(layout, deadSet, state)) showToast('A box is stuck.');
   else hideToast();
   dirty = true;
 }
@@ -2125,7 +2135,9 @@ function showWin() {
     saveProgress();
   }
 
-  $('cardTitle').textContent = 'Solved';
+  // T53: solving at par earns the star right here, not only in the picker.
+  $('cardTitle').textContent =
+    (!draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
   let body = 'in ' + moves + ' moves' + (def.par ? ' (par ' + def.par + ')' : '');
   if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
@@ -2778,6 +2790,16 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
     || yawn > 0.6;
   for (const sx of [-1, 1]) {
     const ex = sx * R * 0.42, ey = -R * 0.2;
+    if (won) {
+      // T53: happy-shut arches - the joy lives in the eyes, not the teeth.
+      c.strokeStyle = '#33506e';
+      c.lineWidth = Math.max(1, er * 0.45);
+      c.lineCap = 'round';
+      c.beginPath();
+      c.arc(ex, ey + er * 0.4, er * 0.85, Math.PI * 1.12, Math.PI * 1.88);
+      c.stroke();
+      continue;
+    }
     if (blink) {
       c.strokeStyle = '#33506e';
       c.lineWidth = Math.max(1, er * 0.4);
@@ -2800,15 +2822,32 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   c.lineWidth = Math.max(1, R * 0.14);
   c.lineCap = 'round';
   if (won) {
-    // The grin: a wide open mouth, and because miniatures re-render, every
-    // depth of the nest grins with you.
+    // T53: the joyful grin. The old white-rimmed half-disc read predatory
+    // (Will: the rim looked like lips-as-teeth), so the whole face
+    // celebrates instead: shut-happy eyes (above), rosy cheeks, and a soft
+    // open crescent with a tongue. Miniatures re-render, so every depth of
+    // the nest still grins with you.
+    c.fillStyle = 'rgba(224,130,130,0.4)';
+    for (const sx of [-1, 1]) {
+      c.beginPath();
+      c.arc(sx * R * 0.62, R * 0.08, R * 0.16, 0, Math.PI * 2);
+      c.fill();
+    }
+    const w = R * 0.42;
     c.beginPath();
-    c.arc(0, R * 0.12, R * 0.5, Math.PI * 0.08, Math.PI * 0.92);
+    c.moveTo(-w, R * 0.18);
+    c.quadraticCurveTo(0, R * 0.34, w, R * 0.18);
+    c.quadraticCurveTo(0, R * 1.08, -w, R * 0.18);
     c.closePath();
     c.fillStyle = '#33506e';
     c.fill();
-    c.strokeStyle = 'rgba(255,255,255,0.85)';
-    c.stroke();
+    c.save();
+    c.clip();
+    c.fillStyle = '#e08a8a';
+    c.beginPath();
+    c.ellipse(0, R * 0.74, w * 0.62, R * 0.3, 0, 0, Math.PI * 2);
+    c.fill();
+    c.restore();
   } else if (yawn > 0.05) {
     // The yawn: a sleepy O that swells and shuts, eyes squeezed at the peak.
     c.beginPath();
@@ -4178,6 +4217,11 @@ window.addEventListener('keydown', (e) => {
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
   if (KEYS[k]) { e.preventDefault(); stopAuto(); applyMove(KEYS[k]); return; }
   if (k === 'Escape') closeOverlays();
+  // T53: Enter or Space rolls straight off the win card into the next level.
+  else if (!$('overlay').hidden && (k === 'Enter' || k === ' ')) {
+    e.preventDefault();
+    ($('next').hidden ? $('toLevels') : $('next')).click();
+  }
   else if (overlayOpen()) return;
   else if (k === 'z' || k === 'u') undo();
   else if (k === 'r') reset();
@@ -4186,7 +4230,23 @@ window.addEventListener('keydown', (e) => {
 // Both "Levels" buttons go back to wherever this level came from.
 const goBack = () => { play('ui'); if (levelIndex < 0) openEditor(); else openPicker(); };
 
-$('undo').addEventListener('click', undo);
+// T53: hold Undo to rewind - a quick tap is one step (the click), a hold
+// repeats at the walk cadence. The held flag swallows the click a long
+// press releases into, so the rewind never overshoots by one.
+{
+  const el = $('undo');
+  let t = null, iv = null, held = false;
+  const stop = () => { clearTimeout(t); clearInterval(iv); t = iv = null; };
+  el.addEventListener('pointerdown', () => {
+    held = false;
+    t = setTimeout(() => { held = true; undo(); iv = setInterval(undo, 130); }, 420);
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) {
+    el.addEventListener(ev, stop);
+  }
+  el.addEventListener('click', () => { if (held) { held = false; return; } undo(); });
+  el.addEventListener('contextmenu', (e) => e.preventDefault());
+}
 $('reset').addEventListener('click', reset);
 $('levels').addEventListener('click', goBack);
 // T38: crack the current level open in the editor - as a draft COPY, so Solve
