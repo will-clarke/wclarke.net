@@ -178,6 +178,12 @@
   }
   .lv b { display: block; color: var(--blue); font-size: 12px; letter-spacing: 0.1em; }
   .lv small { color: var(--dim); font-size: 11px; }
+  /* T46: win states. Solved is unmistakably solved (sage, checked); solved
+     AT PAR is the special tier - butter card with a soft gold glow. */
+  .lv.solved { border-color: #a9cdb2; background: #e9f0e2; }
+  .lv.solved b, .lv.solved small { color: #47825a; }
+  .lv.par { border-color: #e0b45a; background: #f8efd8; box-shadow: 0 0 9px rgba(233,188,96,0.5); }
+  .lv.par b, .lv.par small { color: #a97c1e; }
   .lv.here { border-color: var(--blue); }
   .trackHead {
     grid-column: 1 / -1;
@@ -1458,11 +1464,11 @@ const DPR = Math.min(2, window.devicePixelRatio || 1);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
 const TWEEN = 100;   // ms per tick of animation
-const PORTAL = 180;  // ...but going through a door is worth watching
+const PORTAL = 240;  // ...but going through a door is worth watching (T45)
 const FLASH = 260;   // ms for merge rings and death flares
 const BLOOM = 800;   // ms for the win cascade
 const DEPTH = 3;     // feedback passes on top of the flat pass
-const BLOCK_INSET = 0.07;  // bezel around the little world, in cells
+const BLOCK_INSET = 0;     // T49: no bezel - the window's rim IS the mini's own shell
 const PAD_FRAC = 0.38;     // T38: apron around the interior (frame + door mouths), in cells
 const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
 const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
@@ -1655,8 +1661,13 @@ function openPicker() {
     grid.appendChild(head);
     tr.levels.forEach((def, i) => {
       const best = progress.best[bestKey(t, i)];
-      const note = best !== undefined ? 'best ' + best : 'unsolved';
+      // T46: solved reads solved; solved at par is the tier above.
+      const atPar = best !== undefined && def.par > 0 && best <= def.par;
+      const note = best === undefined ? 'unsolved'
+        : atPar ? '★ par ' + best
+        : '✓ best ' + best;
       const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
+      if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
       if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
     });
   });
@@ -2325,22 +2336,28 @@ function drawTiles(c) {
   }
 }
 
-// Frame edges break open on sides where the level has a door, so the block
-// itself shows which faces can be walked (or have a box pushed) into.
-function drawBlockFrame(c, x, y) {
-  const lw = Math.max(1, CELL * 0.06);
-  // The gap IS the door cell at miniature scale, sat at the same fraction along
-  // the face as the door glow inside it.
-  const gap = Math.max(miniGeom().k * CELL, 3);
-  const x0 = x + lw / 2, y0 = y + lw / 2;
-  const x1 = x + CELL - lw / 2, y1 = y + CELL - lw / 2;
+// T49: the window's rim IS the mini's own shell frame, redrawn at a weight a
+// phone can read - one violet line broken open at the doors, an arch mouth on
+// exactly the enterable faces. A doorless face is unbroken shell: crate side,
+// push. Same language as drawBoardFrame, so a window looks EXACTLY like the
+// whole board in miniature (which is the literal truth of the game).
+function drawMiniShell(c, x, y) {
+  const m = miniGeom();
+  const lw = Math.max(1.5, CELL * 0.045);
+  // The rim sits where the mini's own apron frame sits: PAD*k inside the cell.
+  const inset = m.pc * m.k * CELL;
+  const rx = x + m.ox * CELL + inset, ry = y + m.oy * CELL + inset;
+  const rw = (layout.w - 2) * m.k * CELL, rh = (layout.h - 2) * m.k * CELL;
+  const gap = Math.max(m.k * CELL, 3.5);
   c.save();
   c.strokeStyle = 'rgba(154,134,203,0.95)';
   c.shadowColor = 'rgba(154,134,203,0.35)';
   c.shadowBlur = CELL * 0.14;
   c.lineWidth = lw;
   c.lineCap = 'round';
-  // Every edge is passed low-to-high along its one varying axis.
+  // Every edge is passed low-to-high along its one varying axis. The gap sits
+  // at doorFrac, so it lines up with the door in the blitted picture by
+  // construction.
   const edge = (ax, ay, bx, by, side) => {
     c.beginPath();
     if (layout.doors[side] === null) {
@@ -2355,10 +2372,26 @@ function drawBlockFrame(c, x, y) {
     }
     c.stroke();
   };
-  edge(x0, y0, x1, y0, 'N');
-  edge(x1, y0, x1, y1, 'E');
-  edge(x0, y1, x1, y1, 'S');
-  edge(x0, y0, x0, y1, 'W');
+  edge(rx, ry, rx + rw, ry, 'N');
+  edge(rx + rw, ry, rx + rw, ry + rh, 'E');
+  edge(rx, ry + rh, rx + rw, ry + rh, 'S');
+  edge(rx, ry, rx, ry + rh, 'W');
+  // The arch mouths, bulging outward through the gaps - the board apron's
+  // doors in miniature, floored so they survive phone-sized cells.
+  const r = Math.max(2.75, inset * 0.7);
+  c.lineWidth = Math.max(1, lw * 0.9);
+  for (const side of ['N', 'S', 'W', 'E']) {
+    if (layout.doors[side] === null) continue;
+    const f = doorFrac(side);
+    const px = side === 'W' ? rx : side === 'E' ? rx + rw : x + f * CELL;
+    const py = side === 'N' ? ry : side === 'S' ? ry + rh : y + f * CELL;
+    const a0 = side === 'N' ? Math.PI : side === 'S' ? 0 : side === 'W' ? Math.PI / 2 : -Math.PI / 2;
+    c.fillStyle = 'rgba(154,134,203,0.3)';
+    c.beginPath();
+    c.arc(px, py, r, a0, a0 + Math.PI);
+    c.fill();
+    c.stroke();
+  }
   c.restore();
 }
 
@@ -2387,27 +2420,25 @@ function blockShell() {
       c.fillStyle = g;
       c.fillRect(0, 0, CELL, CELL);
     };
-    let [cv, c] = make();          // no inner picture: solid violet + frame
+    let [cv, c] = make();          // no inner picture: solid violet + shell
     grad(c, '#cfc2ea', '#b2a2d8');
-    drawBlockFrame(c, 0, 0);
+    drawMiniShell(c, 0, 0);
     shellCache.solid = cv;
-    [cv, c] = make();              // bezel the little world sits on
+    [cv, c] = make();              // backing under the picture (letterbox strips)
     grad(c, '#d7ccee', '#bcaede');
     shellCache.bezel = cv;
-    [cv, c] = make();              // inner border + frame, drawn OVER the picture
-    const m = miniGeom();
-    const dw = m.vw * m.k * CELL, dh = m.vh * m.k * CELL;
-    c.strokeStyle = 'rgba(154,134,203,0.5)';
-    c.lineWidth = 1;
-    c.strokeRect(m.ox * CELL - 0.5, m.oy * CELL - 0.5, dw + 1, dh + 1);
-    drawBlockFrame(c, 0, 0);
+    [cv, c] = make();              // T49: one rim - the shell, drawn OVER the picture
+    drawMiniShell(c, 0, 0);
     shellCache.frame = cv;
   }
   return shellCache;
 }
 
-// inner = the previous pass's board, blitted in as the little world.
-function drawBlockAt(c, x, y, inner) {
+// inner = the previous pass's board, blitted in as the little world. shellA
+// fades the legibility rim out during a T50 dive: once the blit's own frame is
+// magnified enough to read, the overlay leaves - so at full zoom the picture
+// IS the identity frame and the camera snap stays invisible.
+function drawBlockAt(c, x, y, inner, shellA) {
   const sh = blockShell();
   const px = x - sh.pad, py = y - sh.pad, ps = CELL + sh.pad * 2;
   if (!inner) {
@@ -2418,7 +2449,13 @@ function drawBlockAt(c, x, y, inner) {
   const m = miniGeom();
   c.drawImage(inner, x + m.ox * CELL, y + m.oy * CELL,
     m.vw * m.k * CELL, m.vh * m.k * CELL);
-  c.drawImage(sh.frame, px, py, ps, ps);
+  const a = shellA === undefined ? 1 : shellA;
+  if (a > 0.01) {
+    const ga = c.globalAlpha;
+    c.globalAlpha = ga * a;
+    c.drawImage(sh.frame, px, py, ps, ps);
+    c.globalAlpha = ga;
+  }
 }
 
 // The two halves of a pass-through share one tick: the body pinches away over
@@ -2429,7 +2466,7 @@ const POP_WIN = [0.45, 1];
 
 // T10: blocks are sprites too now - a rigid window that slides, sinks, and
 // threads doors whole (no needle stretch: it is a pane, not a body).
-function drawBlockSprite(c, s, p, inner) {
+function drawBlockSprite(c, s, p, inner, shellA) {
   const win = s.fate === 'squeeze' ? SQUEEZE_WIN
     : s.birth === 'pop' && !s.fate ? POP_WIN : null;
   if (win) p = Math.max(0, Math.min(1, (p - win[0]) / (win[1] - win[0])));
@@ -2447,7 +2484,7 @@ function drawBlockSprite(c, s, p, inner) {
   c.translate((x + 0.5) * CELL, (y + 0.5) * CELL);
   c.scale(scale, scale);
   c.translate(-CELL / 2, -CELL / 2);
-  drawBlockAt(c, 0, 0, inner);
+  drawBlockAt(c, 0, 0, inner, shellA);
   c.restore();
 }
 
@@ -2456,9 +2493,10 @@ function drawSprite(c, s, p, time) {
     : s.birth === 'pop' && !s.fate ? POP_WIN : null;
   if (win) p = Math.max(0, Math.min(1, (p - win[0]) / (win[1] - win[0])));
   const e = 1 - Math.pow(1 - p, 3);
-  // Back-in for the pinch: a short brace away from the door, then a rush into
-  // it. Everything else eases out.
-  const eb = p * p * (3 * p - 2);
+  // Back-in for the pinch: a brace away from the door, then a rush into it.
+  // T45: deeper and later (dips ~0.2 around p=0.48) so the suck-in reads as
+  // gather THEN whip. Everything else eases out.
+  const eb = p * p * (3.6 * p - 2.6);
   const ax = s.axy ? s.axy[0] : xOf(s.a), ay = s.axy ? s.axy[1] : yOf(s.a);
   const bx = s.bxy ? s.bxy[0] : xOf(s.b), by = s.bxy ? s.bxy[1] : yOf(s.b);
   // The brace is mostly squash: pulling the whole body back would slide it into
@@ -2474,18 +2512,22 @@ function drawSprite(c, s, p, time) {
     scale = 0.34 + 0.66 * e;
     alpha = Math.min(1, e * 2.4);
     const st = Math.max(0, 1 - e * 1.45);                           // needle, gone by ~0.7
-    const sq = Math.max(0, Math.sin((e - 0.55) / 0.45 * Math.PI));  // squash on the tail
-    along = 1 + 0.85 * st - 0.16 * sq;
-    across = 1 - 0.6 * st + 0.16 * sq;
+    // T45: the jelly settle - not one squash but a damped wobble, so the body
+    // visibly reinflates, overshoots, and comes to rest like something wet.
+    const jq = Math.max(0, (e - 0.45) / 0.55);
+    const jl = Math.sin(jq * Math.PI * 2) * Math.pow(1 - jq, 1.2);
+    along = 1 + 1.1 * st - 0.22 * jl;
+    across = 1 - 0.68 * st + 0.22 * jl;
   }
   if (s.fate === 'squeeze') {
     // brace = the anticipation part of the back-in curve: squash across the
     // door before the needle. Gone by the time the pinch proper starts.
+    // T45: bigger brace, harder whip - the door visibly sucks the body in.
     const pinch = Math.max(0, eb), brace = Math.max(0, -eb);
     scale *= 1 - 0.6 * pinch;
     alpha *= Math.max(0, 1 - 1.08 * pinch);
-    along *= 1 + pinch - 1.1 * brace;
-    across *= 1 - 0.65 * pinch + 1.5 * brace;
+    along *= 1 + 1.35 * pinch - 1.1 * brace;
+    across *= 1 - 0.72 * pinch + 1.35 * brace;
   }
   else if (s.fate === 'merge') { alpha *= 1 - Math.max(0, (e - 0.6) / 0.4); }
   else if (s.fate === 'die') { y += 0.3 * e; scale *= 1 - 0.8 * e; alpha *= 1 - e; }
@@ -2502,10 +2544,11 @@ function drawSprite(c, s, p, time) {
     const mdx = bx - ax, mdy = by - ay;
     if (!s.fate && !s.birth && (mdx || mdy)) {
       // T40: the squelch. A push is one long squash against the load; a free
-      // step is gather -> stretch -> landing splat -> settle.
-      const st = s.pushing ? -0.24 * Math.sin(Math.PI * p) : 0.3 * squelch(p);
-      if (Math.abs(mdx) >= Math.abs(mdy)) { kx *= 1 + st; ky *= 1 - st * 0.6; }
-      else { ky *= 1 + st; kx *= 1 - st * 0.6; }
+      // step is gather -> stretch -> landing splat -> settle. T45: wetter -
+      // more amplitude, more overshoot, stronger cross-axis coupling.
+      const st = s.pushing ? -0.3 * Math.sin(Math.PI * p) : 0.42 * squelch(p);
+      if (Math.abs(mdx) >= Math.abs(mdy)) { kx *= 1 + st; ky *= 1 - st * 0.72; }
+      else { ky *= 1 + st; kx *= 1 - st * 0.72; }
     }
     if (!reducedMotion.matches && bonkAt !== null && !s.fate && !s.birth) {
       // Splat: every self flattens against the wall it just walked into.
@@ -2528,12 +2571,13 @@ function drawSprite(c, s, p, time) {
 }
 
 // The step squelch: a beat of gathering squash, a rush of stretch, a splat
-// on landing that settles to rest. Returns the along-axis deform (-1..1).
+// on landing that settles to rest. Returns the along-axis deform (-1..1.15).
+// T45: deeper gather, taller stretch, bouncier landing.
 function squelch(p) {
-  if (p < 0.2) return -0.55 * Math.sin(p / 0.2 * Math.PI / 2);
-  if (p < 0.55) return -0.55 + 1.55 * (1 - Math.cos((p - 0.2) / 0.35 * Math.PI)) / 2;
+  if (p < 0.2) return -0.7 * Math.sin(p / 0.2 * Math.PI / 2);
+  if (p < 0.55) return -0.7 + 1.85 * (1 - Math.cos((p - 0.2) / 0.35 * Math.PI)) / 2;
   const q = (p - 0.55) / 0.45;
-  return Math.cos(q * Math.PI * 1.5) * (1 - q);
+  return 1.15 * Math.cos(q * Math.PI * 1.5) * (1 - q);
 }
 
 // T39 (Will): the player is an amoeba - a live blob whose rim ripples on two
@@ -2572,7 +2616,16 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   const ll = Math.hypot(lx, ly) || 1;
   lx /= ll; ly /= ll;
   const er = Math.max(1.5, R * 0.3);
-  const blink = !reducedMotion.matches && ((t * 0.001 + seed) % 3.8) < 0.15;
+  // T44: the mouth has moods. Resting = small smile; the smile widens with
+  // how much is going on (the amoeba likes company); solving the level is a
+  // full grin; and once in a while, sat still, it yawns.
+  const crowd = state ? state.selves.length + state.boxes.length + state.blocks.length : 1;
+  const cheer = Math.max(0, Math.min(1, (crowd - 1) / 8));
+  const yph = (t * 0.001 + seed * 2.1) % 23;
+  const yawn = (!reducedMotion.matches && !won && !(mdx || mdy) && yph < 1.6)
+    ? Math.sin(yph / 1.6 * Math.PI) : 0;
+  const blink = (!reducedMotion.matches && ((t * 0.001 + seed) % 3.8) < 0.15)
+    || yawn > 0.6;
   for (const sx of [-1, 1]) {
     const ex = sx * R * 0.42, ey = -R * 0.2;
     if (blink) {
@@ -2594,12 +2647,31 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
     c.arc(ex + lx * er * 0.36, ey + (ly * er * 0.36) + er * 0.1, er * 0.55, 0, Math.PI * 2);
     c.fill();
   }
-  c.strokeStyle = 'rgba(255,255,255,0.85)';
   c.lineWidth = Math.max(1, R * 0.14);
   c.lineCap = 'round';
-  c.beginPath();
-  c.arc(0, R * 0.18, R * 0.36, Math.PI * 0.2, Math.PI * 0.8);
-  c.stroke();
+  if (won) {
+    // The grin: a wide open mouth, and because miniatures re-render, every
+    // depth of the nest grins with you.
+    c.beginPath();
+    c.arc(0, R * 0.12, R * 0.5, Math.PI * 0.08, Math.PI * 0.92);
+    c.closePath();
+    c.fillStyle = '#33506e';
+    c.fill();
+    c.strokeStyle = 'rgba(255,255,255,0.85)';
+    c.stroke();
+  } else if (yawn > 0.05) {
+    // The yawn: a sleepy O that swells and shuts, eyes squeezed at the peak.
+    c.beginPath();
+    c.ellipse(0, R * 0.3, R * (0.1 + 0.12 * yawn), R * (0.04 + 0.3 * yawn), 0, 0, Math.PI * 2);
+    c.fillStyle = '#33506e';
+    c.fill();
+  } else {
+    const a0 = Math.PI * (0.3 - 0.18 * cheer);
+    c.strokeStyle = 'rgba(255,255,255,0.85)';
+    c.beginPath();
+    c.arc(0, R * 0.18, R * (0.3 + 0.12 * cheer), a0, Math.PI - a0);
+    c.stroke();
+  }
   c.restore();
   c.globalAlpha = 1;
 }
@@ -2701,8 +2773,14 @@ function drawScene(c, time, inner, bg, dpr, cam) {
   c.translate(PAD - CELL, PAD - CELL);
   drawTiles(c);
   const p = anim ? anim.p : 1;
+  // T49/T50: as the dive magnifies a window, the real frame inside its blit
+  // becomes legible on its own, so the legibility rim bows out early in the
+  // dive and the end frame is pixel-identical to the resting one.
+  const shellA = cam
+    ? Math.max(0, Math.min(1, 1 - (cam.z - 1) / (0.35 * Math.max(0.001, 1 / miniGeom().k - 1))))
+    : 1;
   // Blocks first: everything else walks over (and through) them.
-  for (const s of sprites) if (s.kind === 'block') drawBlockSprite(c, s, p, inner);
+  for (const s of sprites) if (s.kind === 'block') drawBlockSprite(c, s, p, inner, shellA);
   for (const s of sprites) if (s.kind !== 'block') drawSprite(c, s, p, time);
   if (bg) return;
   drawFlashes(c, time);
@@ -2897,7 +2975,8 @@ function ensureAudio() {
     for (let i = 0; i < nd.length; i++) nd[i] = Math.random() * 2 - 1;
 
     // Plucks echo into a dotted-ish delay - most of the "chilled" is here.
-    delay = ac.createDelay(1);
+    // (T45: max was 1s, silently clamping the 1.32s dotted time.)
+    delay = ac.createDelay(2);
     delay.delayTime.value = STEP * 3;
     const fb = ac.createGain(); fb.gain.value = 0.36;
     const dlp = ac.createBiquadFilter();
@@ -2997,8 +3076,9 @@ const SFX = {
     stepDeg += (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.25 ? 2 : 1);
     stepDeg = Math.max(5, Math.min(12, stepDeg));
     const f = scaleHz(stepDeg);
-    squish(t, f * 1.3, f, 0.1, 0.15, 6, 0.14);
-    noise(t, 0.045, 'bandpass', 2600, 1100, 1.4, 0.018, 0.12);
+    // T45: a touch wetter - more resonance, more room, a longer noise lick.
+    squish(t, f * 1.3, f, 0.1, 0.15, 7.5, 0.24);
+    noise(t, 0.06, 'bandpass', 2300, 950, 1.4, 0.022, 0.24);
   },
   push(t) {
     squish(t, 210, 112, 0.18, 0.22, 7, 0.18);
