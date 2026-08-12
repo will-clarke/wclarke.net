@@ -414,7 +414,7 @@ const CAMPAIGN = [
     '###..*#',
     '#######',
   ]},
-  // 8x8 -> 7x7: the clone's only legal first move is out the door.
+  // 8x8 -> 7x7: the self's only legal first move is out the door.
   { name: 'Out the Back', par: 7, stretch: false, requires: ['exit'], rows: [
     '#######',
     '###...#',
@@ -491,7 +491,7 @@ const CAMPAIGN = [
     '#@..N.-',
     '#######',
   ]},
-  // T13 rebuild of Reunion; T20 re-pocket: the clone starts beside the door
+  // T13 rebuild of Reunion; T20 re-pocket: the self starts beside the door
   // with walls on every other side, so the shell can never be pressed and the
   // blocks can never be scooted (A5) - the herding dance survives.
   { name: 'Hold Still', par: 6, stretch: true, requires: ['spawn'], rows: [
@@ -820,7 +820,7 @@ function parseLevel(def) {
   }
 
   const walls = new Set(), targets = new Set(), lava = new Set();
-  const blocks = [], clones = [], boxes = [];
+  const blocks = [], selves = [], boxes = [];
   const doors = { N: null, S: null, W: null, E: null };
 
   for (let y = 0; y < h; y++) {
@@ -838,10 +838,10 @@ function parseLevel(def) {
         case '*': targets.add(i); break;
         case '~': lava.add(i); break;
         case 'N': blocks.push(i); break;
-        case '@': clones.push(i); break;
+        case '@': selves.push(i); break;
         case '$': boxes.push(i); break;
         case 'B': boxes.push(i); targets.add(i); break;
-        case 'P': clones.push(i); targets.add(i); break;
+        case 'P': selves.push(i); targets.add(i); break;
         case '-': {
           const vertical = y === 0 || y === h - 1;
           const horizontal = x === 0 || x === w - 1;
@@ -856,7 +856,7 @@ function parseLevel(def) {
     }
   }
 
-  if (clones.length === 0) fail('no clone start (@)');
+  if (selves.length === 0) fail('no self start (@)');
   if (!def.stretch && blocks.length > 1) fail('non-stretch level has ' + blocks.length + ' nest blocks');
 
   const layout = { w, h, walls, targets, lava, doors };
@@ -868,7 +868,7 @@ function parseLevel(def) {
 
   // T10: blocks are pushable objects, so they live in state, not layout.
   const state = {
-    clones: clones.sort((a, b) => a - b),
+    selves: selves.sort((a, b) => a - b),
     boxes: boxes.sort((a, b) => a - b),
     blocks: blocks.sort((a, b) => a - b),
     filled: [],
@@ -925,7 +925,7 @@ function isDoomed(layout, dead, state) {
 // body through a door - enter, exit, boxin, boxout, blockout, swallow - and
 // any walk into a still-moving self parks as a TRANSFER and resolves in
 // Phase B against the settled board (T48; before this, boxout/blockout fired
-// mid-sweep and could see half-moved clones). Phase B runs in rounds: a
+// mid-sweep and could see half-moved selves). Phase B runs in rounds: a
 // transfer blocked by a body that may still move this tick waits for it to
 // settle, so outcomes do not depend on processing order; only a genuinely
 // circular standoff falls back to sweep order.
@@ -941,14 +941,14 @@ function step(layout, state, dir) {
   }
   const lavaOpen = (i) => layout.lava.has(i) && !filled.has(i);
 
-  // occ: idx -> 'wall' | 'block' | 'box' | clone id (number). Live-updated.
+  // occ: idx -> 'wall' | 'block' | 'box' | self id (number). Live-updated.
   const occ = new Map();
   for (const i of layout.walls) occ.set(i, 'wall');
   for (const i of state.blocks) occ.set(i, 'block');
   for (const i of state.boxes) occ.set(i, 'box');
-  const clones = state.clones.map((pos, id) => ({ id, pos, alive: true }));
-  let nextId = clones.length;
-  for (const c of clones) occ.set(c.pos, c.id);
+  const selves = state.selves.map((pos, id) => ({ id, pos, alive: true }));
+  let nextId = selves.length;
+  for (const c of selves) occ.set(c.pos, c.id);
   const blocksNow = () => {
     const bs = [];
     for (const [i, v] of occ) if (v === 'block') bs.push(i);
@@ -956,10 +956,10 @@ function step(layout, state, dir) {
   };
 
   const events = [];
-  const moveClone = (c, to) => {
+  const moveSelf = (c, to) => {
     events.push({ t: 'step', from: c.pos, to });
     // T32: the transfer this move resolves may have landed something on the
-    // cell the clone is vacating - only remove the entry if it is the clone.
+    // cell the self is vacating - only remove the entry if it is the self.
     if (occ.get(c.pos) === c.id) occ.delete(c.pos);
     occ.set(to, c.id);
     c.pos = to;
@@ -980,25 +980,25 @@ function step(layout, state, dir) {
     dir === 'L' ? pos % w :
     dir === 'D' ? -Math.floor(pos / w) :
     Math.floor(pos / w);
-  const order = clones.slice().sort((a, b) => along(a.pos) - along(b.pos) || a.pos - b.pos);
+  const order = selves.slice().sort((a, b) => along(a.pos) - along(b.pos) || a.pos - b.pos);
 
   // T48: every fan-out walks the windows furthest-along-d first, the same
-  // sweep Phase A uses for clones - so a body emerging out of a train of
+  // sweep Phase A uses for selves - so a body emerging out of a train of
   // windows resolves from the front, like the train itself would.
   const mouthOrder = () => blocksNow().sort((a, b) => along(a) - along(b) || a - b);
 
   // Transfers: the door-crossing moves parked for Phase B, in sweep order.
-  // pending = clone ids not yet settled; parkedAt = cells of boxes/windows
+  // pending = self ids not yet settled; parkedAt = cells of boxes/windows
   // claimed by a parked transfer (they may still leave, so nothing else may
   // shove or recoil them until it resolves).
   const transfers = [];
   const pending = new Set();
   const parkedAt = new Set();
   const park = (kind, c, data) => {
-    // Queue rank = the MOVING body (the pushed box/window, or the clone
+    // Queue rank = the MOVING body (the pushed box/window, or the self
     // itself), not the pusher: two bodies bound for the same doorway then
     // resolve front-of-the-line first in every orientation - a box one cell
-    // ahead of an entering clone lands first and gets chain-shoved onward,
+    // ahead of an entering self lands first and gets chain-shoved onward,
     // instead of whoever parses first winning the cell.
     const body = data && data.body !== undefined ? data.body : c.pos;
     transfers.push({ kind, c, rank: along(body), tie: body, done: false, ...(data || {}) });
@@ -1007,7 +1007,7 @@ function step(layout, state, dir) {
 
   // T48 (A12 v2, universal pop-out): a body squeezing out of window b whose
   // mouth is blocked recoils the window one cell backwards and emerges where
-  // it stood - Newton, for every body kind (clone, box, window). The recoil
+  // it stood - Newton, for every body kind (self, box, window). The recoil
   // cell must be genuinely free: plain floor/target, no pit, no threshold,
   // nothing standing on it - and the window itself must be neither claimed
   // by a transfer nor already shoved this phase (`guard`).
@@ -1059,7 +1059,7 @@ function step(layout, state, dir) {
         occ.set(bdest, 'block');
         events.push({ t: 'blockstep', from: dest, to: bdest });
       }
-      moveClone(c, dest);
+      moveSelf(c, dest);
       continue;
     }
     if (o === 'box') {
@@ -1075,7 +1075,7 @@ function step(layout, state, dir) {
         parkedAt.add(dest);
         continue;
       }
-      if (ob !== undefined) continue; // wall, box or clone: blocked, no multi-push
+      if (ob !== undefined) continue; // wall, box or self: blocked, no multi-push
       occ.delete(dest);
       if (lavaOpen(bdest)) {
         filled.add(bdest);
@@ -1084,7 +1084,7 @@ function step(layout, state, dir) {
         occ.set(bdest, 'box');
         events.push({ t: 'push', from: dest, to: bdest });
       }
-      moveClone(c, dest);
+      moveSelf(c, dest);
       continue;
     }
     if (typeof o === 'number') {
@@ -1104,7 +1104,7 @@ function step(layout, state, dir) {
       c.alive = false;
       continue;
     }
-    moveClone(c, dest);
+    moveSelf(c, dest);
   }
 
   // PHASE B - the parked transfers, in rounds, front-of-the-line first.
@@ -1112,7 +1112,7 @@ function step(layout, state, dir) {
   const enterArr = arrivalCell(layout, FACE[dir]);
   // Doorway claims: two bodies bound for the same arrival cell from the
   // same distance have no front-of-the-line - they JAM (mutual defer, so
-  // the standoff rule bonks both). Entering clones are exempt: arrivals
+  // the standoff rule bonks both). Entering selves are exempt: arrivals
   // landing on a self merge, which no order can tell apart.
   for (const t of transfers) {
     t.claim = t.kind === 'enter' || t.kind === 'boxin' ? enterArr :
@@ -1162,7 +1162,7 @@ function step(layout, state, dir) {
     // it has settled.
     const fanout = (run) => {
       const oc = new Map(occ), fi = new Set(filled), pu = new Set(pushedTo);
-      const ev = events.length, cl = clones.length, ni = nextId;
+      const ev = events.length, cl = selves.length, ni = nextId;
       const alive = c.alive, pos = c.pos;
       let touched = false;
       run((cell) => { if (fate(cell, c.id) === 'pending') touched = true; });
@@ -1174,7 +1174,7 @@ function step(layout, state, dir) {
       pushedTo.clear();
       for (const v of pu) pushedTo.add(v);
       events.length = ev;
-      clones.length = cl;
+      selves.length = cl;
       nextId = ni;
       c.alive = alive;
       c.pos = pos;
@@ -1185,7 +1185,7 @@ function step(layout, state, dir) {
       const dest = c.pos + delta;
       const f = F(dest);
       if (f === 'pending') return false;
-      if (f === 'free') moveClone(c, dest);
+      if (f === 'free') moveSelf(c, dest);
       return true; // anything else: the leader failed or was replaced - stay
     }
 
@@ -1250,7 +1250,7 @@ function step(layout, state, dir) {
       occ.delete(body);
       events.push({ t: 'boxin', from: body, block: t.into, to: enterArr });
       settleBox(enterArr);
-      moveClone(c, body);
+      moveSelf(c, body);
       return true;
     }
 
@@ -1275,7 +1275,7 @@ function step(layout, state, dir) {
       occ.delete(body);
       occ.set(box, 'block');
       events.push({ t: 'blockstep', from: body, to: box });
-      moveClone(c, body);
+      moveSelf(c, body);
       return true;
     }
 
@@ -1301,7 +1301,7 @@ function step(layout, state, dir) {
           settleBox(land);
         }
         if (fired === 0) occ.set(body, 'box'); // all dark: bonk
-        else moveClone(c, body);
+        else moveSelf(c, body);
       })) return false;
       parkedAt.delete(body);
       return true;
@@ -1332,13 +1332,13 @@ function step(layout, state, dir) {
           } else occ.set(land, 'block');
         }
         if (fired === 0) events.push({ t: 'blockout', from: body, to: null, spawned: false });
-        moveClone(c, body); // the exit itself always succeeds (A7)
+        moveSelf(c, body); // the exit itself always succeeds (A7)
       })) return false;
       parkedAt.delete(body);
       return true;
     }
 
-    // exit: the clone leaves through a door and emerges from every window.
+    // exit: the self leaves through a door and emerges from every window.
     const from = c.pos;
     // Mouths resolve one at a time, furthest first, claiming cells as they
     // go. The exiter's own cell counts as vacated while they do (A10): a
@@ -1363,7 +1363,7 @@ function step(layout, state, dir) {
           occ.set(cell, c.id);
         } else {
           const n = { id: nextId++, pos: cell, alive: true };
-          clones.push(n);
+          selves.push(n);
           occ.set(cell, n.id);
         }
       };
@@ -1373,7 +1373,7 @@ function step(layout, state, dir) {
         touch(m);
         let om = occ.get(m);
         if (typeof om === 'number') {
-          // A self at the mouth: portal arrival onto a clone = merge (A6).
+          // A self at the mouth: portal arrival onto a self = merge (A6).
           events.push({ t: 'merge', at: m, from, via: 'exit' });
           fired++;
           continue;
@@ -1436,7 +1436,7 @@ function step(layout, state, dir) {
   const outBoxes = [];
   for (const [i, v] of occ) if (v === 'box') outBoxes.push(i);
   const outState = {
-    clones: clones.filter(c => c.alive).map(c => c.pos).sort((a, b) => a - b),
+    selves: selves.filter(c => c.alive).map(c => c.pos).sort((a, b) => a - b),
     boxes: outBoxes.sort((a, b) => a - b),
     blocks: blocksNow(),
     filled: Array.from(filled).sort((a, b) => a - b),
@@ -1483,6 +1483,11 @@ let PAD = 9;         // px of apron; derived from CELL in resize()
 let dirty = true;
 let auto = null;     // timeout id while a solver replay is walking the board
 function stopAuto() { if (auto !== null) { clearTimeout(auto); auto = null; } }
+// T50: the dive camera - tap a window, zoom into it, arrive where you began.
+let zoom = null;     // { t0, dur, fx, fy, logZ, e } (+ back, e0, tb mid-retract)
+function retractZoom() {
+  if (zoom && !zoom.back) { zoom.back = true; zoom.e0 = zoom.e; zoom.tb = performance.now(); }
+}
 
 // Offscreen ping-pong buffers for the feedback recursion.
 const bufA = document.createElement('canvas');
@@ -1580,6 +1585,7 @@ function startLevel(def) {
   won = false;
   anim = null;
   bloom = null;
+  zoom = null;
   closeOverlays();
   hideToast();
   showCoach(levelIndex);
@@ -1674,9 +1680,9 @@ function syncHud() {
   $('levelName').textContent = def.name;
   $('moves').textContent = def.par ? moves + '/' + def.par : String(moves);
   const chip = $('selves');
-  chip.hidden = state.clones.length < 2;
-  chip.textContent = '@ x' + state.clones.length;
-  if (!won && state.clones.length === 0) showToast('No one left.');
+  chip.hidden = state.selves.length < 2;
+  chip.textContent = '@ x' + state.selves.length;
+  if (!won && state.selves.length === 0) showToast('No one left.');
   else hideToast();
   dirty = true;
 }
@@ -1684,7 +1690,7 @@ function syncHud() {
 function buildSprites() {
   const list = [];
   for (const i of state.blocks) list.push({ kind: 'block', a: i, b: i, fate: null, birth: null });
-  for (const i of state.clones) list.push({ kind: 'clone', a: i, b: i, fate: null, birth: null });
+  for (const i of state.selves) list.push({ kind: 'self', a: i, b: i, fate: null, birth: null });
   for (const i of state.boxes) list.push({ kind: 'box', a: i, b: i, fate: null, birth: null });
   return list;
 }
@@ -1716,7 +1722,7 @@ function compileAnim(prev, events, dir) {
   const delta = dy * layout.w + dx;
   const list = [];
   for (const i of prev.blocks) list.push({ kind: 'block', a: i, b: i, fate: null, birth: null, live: true });
-  for (const i of prev.clones) list.push({ kind: 'clone', a: i, b: i, fate: null, birth: null, live: true });
+  for (const i of prev.selves) list.push({ kind: 'self', a: i, b: i, fate: null, birth: null, live: true });
   for (const i of prev.boxes) list.push({ kind: 'box', a: i, b: i, fate: null, birth: null, live: true });
   const flashes = [];
   const sank = [];
@@ -1734,14 +1740,14 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'step': {
-        const s = at('clone', ev.from);
+        const s = at('self', ev.from);
         // T40: a step onto a cell something was shoved out of is a PUSH -
         // the body animates as strain, not a free stride.
         if (s) { s.b = ev.to; if (pushedFrom.has(ev.to)) s.pushing = true; }
         break;
       }
       case 'enter': case 'boxin': {
-        const kind = ev.t === 'enter' ? 'clone' : 'box';
+        const kind = ev.t === 'enter' ? 'self' : 'box';
         if (ev.t === 'boxin' && !ev.lead) pushedFrom.add(ev.from);
         const s = at(kind, ev.from);
         // Pinch into the door mouth on the face we entered by, not the middle
@@ -1763,7 +1769,7 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'exit': case 'boxout': {
-        const kind = ev.t === 'exit' ? 'clone' : 'box';
+        const kind = ev.t === 'exit' ? 'self' : 'box';
         if (ev.t === 'boxout') pushedFrom.add(ev.from);
         if (!ev.spawned) {
           const s = at(kind, ev.from);
@@ -1790,7 +1796,7 @@ function compileAnim(prev, events, dir) {
         // old handling slid the body flat across the whole board, which read
         // as jank whenever the door was far from the survivor, and left
         // multi-mouth merges visibly out of unison.
-        const s = at('clone', ev.from);
+        const s = at('self', ev.from);
         if (s) {
           s.fate = 'squeeze'; s.live = false;
           if (ev.via === 'enter') {
@@ -1802,7 +1808,7 @@ function compileAnim(prev, events, dir) {
           axis(s);
         }
         list.push(axis({
-          kind: 'clone', a: ev.at, b: ev.at, fate: 'merge', birth: 'pop', live: false,
+          kind: 'self', a: ev.at, b: ev.at, fate: 'merge', birth: 'pop', live: false,
           axy: ev.via === 'enter'
             ? [xOf(ev.at) - dx * 0.5, yOf(ev.at) - dy * 0.5]
             : mouthXY(ev.at - delta, OUT_FACE[dir]),
@@ -1811,7 +1817,7 @@ function compileAnim(prev, events, dir) {
         break;
       }
       case 'die': {
-        const s = at('clone', ev.at);
+        const s = at('self', ev.at);
         if (s) { s.fate = 'die'; s.live = false; }
         flashes.push({ at: ev.at, kind: 'die' });
         break;
@@ -1886,6 +1892,9 @@ function applyMove(dir) {
   state = r.state;
   moves++;
   won = r.win;
+  // T50: a move that shifts a window breaks the dive's fixed point - rewind
+  // the camera rather than land on a seam.
+  if (zoom && prev.blocks.join() !== state.blocks.join()) retractZoom();
 
   const kinds = new Set(r.events.map(e => e.t));
   if (reducedMotion.matches) {
@@ -1924,6 +1933,7 @@ function undo() {
   moves = h.moves;
   won = false;
   bloom = null;
+  retractZoom();
   closeOverlays();
   settle();
 }
@@ -1938,6 +1948,7 @@ function reset() {
   moves = 0;
   won = false;
   bloom = null;
+  retractZoom();
   closeOverlays();
   settle();
 }
@@ -1999,7 +2010,7 @@ function resize() {
 // one of its nest-block cells. The scale falls out of drawBlock's own fit: if a
 // block cell shows the world at k, the parent showing US must be 1/k bigger.
 // With several blocks we live in the first one - a fixed choice, so the
-// backdrop does not swim about as clones come and go.
+// backdrop does not swim about as selves come and go.
 function placeOuter() {
   // Blocks live in state now (T10), so the parent world tracks the first
   // window as it is pushed about - and leaves when the last window goes.
@@ -2486,7 +2497,7 @@ function drawSprite(c, s, p, time) {
   let ky = scale * (horiz ? across : along);
   const cx = x * CELL + CELL / 2;
   const cy = y * CELL + CELL / 2;
-  if (s.kind === 'clone') {
+  if (s.kind === 'self') {
     let ox = 0, oy = 0;
     const mdx = bx - ax, mdy = by - ay;
     if (!s.fate && !s.birth && (mdx || mdy)) {
@@ -2505,7 +2516,7 @@ function drawSprite(c, s, p, time) {
       ox = bonkVec[0] * k * CELL * 0.12;
       oy = bonkVec[1] * k * CELL * 0.12;
     }
-    drawClone(c, s, cx + ox, cy + oy, kx, ky, alpha, time, mdx, mdy);
+    drawSelf(c, s, cx + ox, cy + oy, kx, ky, alpha, time, mdx, mdy);
     return;
   }
   const onTarget = layout.targets.has(Math.round(y) * layout.w + Math.round(x));
@@ -2529,7 +2540,7 @@ function squelch(p) {
 // slow sine waves (seeded per body, so twins never wobble in unison), with
 // eyes that look where it is going and blink every few seconds. Drawn as a
 // path per frame; the pricey shadowBlur glow stays a cached image underneath.
-function drawClone(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
+function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   const t = reducedMotion.matches ? 0 : (time || 0);
   const seed = (s.a * 2.399) % (Math.PI * 2);
   const R = CELL * 0.37;
@@ -2593,7 +2604,7 @@ function drawClone(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   c.globalAlpha = 1;
 }
 
-// T34: clone and box bodies pre-render once per cell size - their shadowBlur
+// T34: self and box bodies pre-render once per cell size - their shadowBlur
 // fills were the single biggest per-frame cost on a busy board (every sprite,
 // every feedback pass, every frame). Squash / needle / pop deforms scale the
 // cached image instead; the corner radii distort imperceptibly for the
@@ -2681,8 +2692,10 @@ function drawBloom(c) {
 
 // bg = the parent pass: same world, but flashes and the win bloom stay home so
 // the backdrop never strobes.
-function drawScene(c, time, inner, bg, dpr) {
+function drawScene(c, time, inner, bg, dpr, cam) {
   c.setTransform(dpr || DPR, 0, 0, dpr || DPR, 0, 0);
+  // T50: the dive camera - a pure zoom about a fixed point, view-layer only.
+  if (cam) { c.translate(cam.fx * (1 - cam.z), cam.fy * (1 - cam.z)); c.scale(cam.z, cam.z); }
   // Crop to the interior: layout cell (1,1) lands at (PAD, PAD). Everything
   // below draws in full-layout coords, so sprites mid-door just slide off.
   c.translate(PAD - CELL, PAD - CELL);
@@ -2734,7 +2747,9 @@ function render(time) {
   // Pass 0 flat, then feedback passes: each one blits the previous
   // board into every nest block, so the picture nests into itself.
   drawScene(ctxA, time, null);
-  const passes = fbDepth();
+  // T50: one extra pass while diving - the magnified mini shows one level
+  // deeper than the resting camera ever needs.
+  const passes = Math.min(DEPTH, fbDepth() + (zoom ? 1 : 0));
   for (let i = 0; i < passes; i++) {
     drawScene(ctxB, time, curBuf);
     [curBuf, altBuf] = [altBuf, curBuf];
@@ -2742,7 +2757,13 @@ function render(time) {
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, board.width, board.height);
-  ctx.drawImage(curBuf, 0, 0);
+  if (zoom) {
+    // Draw the scene once more, zoomed, with the finished buffer as the
+    // inner picture: at full dive the tapped mini fills the view at scale
+    // ~1, which IS the resting frame - so the snap back is invisible.
+    drawScene(ctx, time, curBuf, false, DPR,
+      { fx: zoom.fx, fy: zoom.fy, z: Math.exp(zoom.logZ * zoom.e) });
+  } else ctx.drawImage(curBuf, 0, 0);
   drawOuter(time);
 }
 
@@ -2764,6 +2785,19 @@ function frame(ts) {
     if (bloom.p >= 1) bloom = null;
     motion = true;
   }
+  // T50: the dive camera. Forward it eases to full depth then snaps to rest
+  // (the frames are identical); a retract rewinds it quickly after input.
+  if (zoom) {
+    motion = true;
+    if (zoom.back) {
+      zoom.e = zoom.e0 * (1 - Math.min(1, (ts - zoom.tb) / 240));
+      if (zoom.e <= 0) zoom = null;
+    } else {
+      const p = Math.min(1, (ts - zoom.t0) / zoom.dur);
+      zoom.e = p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+      if (p >= 1) zoom = null;
+    }
+  }
   if (bonkAt !== null) {
     motion = true; // the blob is mid-splat, keep frames coming
     const p = (ts - bonkAt) / 180;
@@ -2778,7 +2812,7 @@ function frame(ts) {
   // T39: the amoeba idles - breathe at ~30fps between moves so the wobble and
   // the blinks stay alive, but skip it under reduced motion or a covered board.
   if (!motion && !dirty) {
-    if (reducedMotion.matches || !state || !state.clones.length || overlayOpen()) return;
+    if (reducedMotion.matches || !state || !state.selves.length || overlayOpen()) return;
     if (ts - lastBreath < 33) return;
   }
   lastBreath = ts;
@@ -3016,6 +3050,25 @@ const SFX = {
     pop(t + 0.26, 520, 0.14);
   },
   spawn(t) { pop(t, 590, 0.18); pop(t + 0.085, 880, 0.16); },
+  // T50: diving into your own picture - the squish family on a swing. A body
+  // tone swoops up an octave and a half under an opening filter, air rushes
+  // past, and a little pop lands you where you started.
+  whee(t) {
+    const o = ac.createOscillator();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(196, t);
+    o.frequency.exponentialRampToValueAtTime(1180, t + 0.72);
+    const lp = ac.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 5;
+    lp.frequency.setValueAtTime(700, t);
+    lp.frequency.exponentialRampToValueAtTime(4200, t + 0.72);
+    const g = ac.createGain();
+    env(g, t, 0.05, 0.85, 0.14);
+    o.connect(lp); lp.connect(g); route(g, 0.35);
+    o.start(t); o.stop(t + 1);
+    noise(t, 0.7, 'bandpass', 600, 3600, 1.8, 0.025, 0.35);
+    pop(t + 0.8, 740, 0.13);
+  },
   win(t) {
     [7, 9, 11, 12, 14].forEach((deg, i) => {
       bell(t + i * 0.11, scaleHz(deg), 0.16, 1.1 + i * 0.25, 0.7);
@@ -3306,7 +3359,7 @@ function edValidate() {
   if (!v.ok) { edBanner(v.msg, 'bad'); return; }
   const n = ed().rows.length;
   const boxes = v.state.boxes.length, targets = v.layout.targets.size;
-  let msg = n + '×' + n + ' · ' + v.state.clones.length + ' self · ' +
+  let msg = n + '×' + n + ' · ' + v.state.selves.length + ' self · ' +
     boxes + ' box / ' + targets + ' target';
   if (boxes < targets) msg += ' · needs more boxes';
   edBanner(msg, boxes >= targets && targets > 0 ? 'good' : '');
@@ -3383,11 +3436,11 @@ function edPaint() {
     }
     if (ch === '@' || ch === '$' || ch === 'B') {
       const pad = C * 0.15, s = C - pad * 2, r = Math.max(2, s * 0.26);
-      const clone = ch === '@';
-      c.fillStyle = clone ? '#7aaede' : ch === 'B' ? '#93c493' : '#e9bc60';
+      const isSelf = ch === '@';
+      c.fillStyle = isSelf ? '#7aaede' : ch === 'B' ? '#93c493' : '#e9bc60';
       roundRect(c, px + pad, py + pad, s, s, r);
       c.fill();
-      if (clone) {
+      if (isSelf) {
         const er = Math.max(1, s * 0.15), ex = px + C / 2, ey = py + C / 2 - s * 0.1;
         for (const sx of [-1, 1]) {
           c.fillStyle = '#fff';
@@ -3505,7 +3558,7 @@ function edSolve() {
   const token = ++edSearch;
   const { layout, state } = v;
   const dead = deadCells(layout);
-  const hash = (s) => s.clones.join(',') + '|' + s.boxes.join(',') + '|' +
+  const hash = (s) => s.selves.join(',') + '|' + s.boxes.join(',') + '|' +
     s.blocks.join(',') + '|' + s.filled.join(',');
   if (isWin(layout, state)) { edBanner('par 0 · already solved', 'good'); return; }
   const seen = new Map([[hash(state), null]]);
@@ -3802,7 +3855,31 @@ window.addEventListener('pointermove', (e) => {
   }
   maybeWalk(e.timeStamp);
 });
-const release = (e) => { if (down && e.pointerId === down.id) down = null; };
+// T50: a deliberate tap on a window (never became a swipe, barely moved)
+// dives the camera into it. The picture is the level, so full zoom lands on
+// the exact frame the resting camera shows - the dive goes nowhere, forever.
+function maybeDive(e) {
+  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return;
+  const r = board.getBoundingClientRect();
+  const cx = Math.floor((e.clientX - r.left - PAD) / CELL) + 1;
+  const cy = Math.floor((e.clientY - r.top - PAD) / CELL) + 1;
+  const b = state.blocks.find(i => xOf(i) === cx && yOf(i) === cy);
+  if (b === undefined) return;
+  const m = miniGeom();
+  // The mini rect is the view rect scaled by k about a fixed point F: zoom
+  // about F by 1/k and the mini lands exactly on the view. F = d / (1 - k).
+  const dx = PAD + (xOf(b) - 1 + m.ox) * CELL, dy = PAD + (yOf(b) - 1 + m.oy) * CELL;
+  zoom = { t0: performance.now(), dur: 950, e: 0,
+    fx: dx / (1 - m.k), fy: dy / (1 - m.k), logZ: -Math.log(m.k) };
+  play('whee');
+  buzz(10);
+}
+const release = (e) => {
+  if (down && e.pointerId === down.id) {
+    if (!down.fired && Math.hypot(e.clientX - down.ox, e.clientY - down.oy) < 12) maybeDive(e);
+    down = null;
+  }
+};
 window.addEventListener('pointerup', release);
 window.addEventListener('pointercancel', release);
 // Kill pull-to-refresh etc. on the board only: the picker and the editor are
