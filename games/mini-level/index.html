@@ -381,6 +381,115 @@ const INWARD = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] };
 // T20 recut: every campaign level re-verified under pushable blocks (T10),
 // compressed where the old cut had dead space, pars re-baked by BFS. Blocks
 // that must be entered (not pushed) are pinned by walls - push beats enter.
+// T43: the Tutorial track - Will's "Out the Back" progression (prompt 14),
+// curated under the T51 engine. One lesson per level, and every lesson is
+// FORCED: the solver proves each level unsolvable without its requires set,
+// not merely that the optimal happens to use it. #4 and #7 of Will's drafts
+// were unsolvable as drawn; recut by single-cell mutation search ((3,1)
+// opened in Heavy Goods, the (4,1) target dropped in Moving Day).
+const TUTORIAL = [
+  { name: 'First Push', par: 1, stretch: false, requires: ['push'], rows: [
+    '#####',
+    '#...#',
+    '#@$*#',
+    '#...#',
+    '#####',
+  ]},
+  // The far side of the box must be free - walk around and come at it.
+  { name: 'Come Around', par: 3, stretch: false, requires: ['push'], rows: [
+    '#####',
+    '#.$*#',
+    '#.@.#',
+    '#...#',
+    '#####',
+  ]},
+  // The enter teach: walk into the little world, pop out of its own W door.
+  { name: 'Little World', par: 2, stretch: false, requires: ['enter'], rows: [
+    '#####',
+    '#@N##',
+    '#####',
+    '-.$*#',
+    '#####',
+  ]},
+  // Will's OTB-1: the only legal first move is out the back door - and you
+  // fall out of the window across the board. Doors go both ways.
+  { name: 'Out the Back', par: 9, stretch: false, requires: ['exit'], rows: [
+    '######',
+    '-@#..#',
+    '##.*.#',
+    '#.$.N#',
+    '#....#',
+    '######',
+  ]},
+  // OTB-2: boxes fit through doors too - post the box into the window,
+  // then follow it through and shove it home.
+  { name: 'Post It', par: 8, stretch: false, requires: ['boxin'], rows: [
+    '######',
+    '-@*#.#',
+    '###..#',
+    '#.$.N#',
+    '#....#',
+    '######',
+  ]},
+  // OTB-3 (Will's fixed cut): push the box OUT the back door and it drops
+  // out of the window - straight onto the target.
+  { name: 'Return to Sender', par: 7, stretch: false, requires: ['boxout'], rows: [
+    '##-###',
+    '-$.#.#',
+    '###..#',
+    '#.*N.#',
+    '#.@..#',
+    '######',
+  ]},
+  // OTB-4 recut ((3,1) opened): the window's doorless faces push like a
+  // crate - park the world where you need its mouth.
+  { name: 'Heavy Goods', par: 10, stretch: false, requires: ['blockstep'], rows: [
+    '##-###',
+    '-$...#',
+    '###..#',
+    '#..N.#',
+    '#*@..#',
+    '######',
+  ]},
+  // OTB-5: two parcels, two targets - one posts in, one falls out.
+  { name: 'Double Order', par: 11, stretch: false, requires: ['boxout'], rows: [
+    '####-#',
+    '-$@#$#',
+    '###..#',
+    '#*.N.#',
+    '#...*#',
+    '######',
+  ]},
+  // OTB-6: a third door and a third target join the house.
+  { name: 'Three Doors', par: 15, stretch: false, requires: ['boxout'], rows: [
+    '####-#',
+    '-$@#$#',
+    '##...#',
+    '#*.N.#',
+    '#$.**#',
+    '#-####',
+  ]},
+  // OTB-8: every face of the house is a door.
+  { name: 'Open House', par: 17, stretch: false, requires: ['boxin', 'boxout'], rows: [
+    '####-#',
+    '-*@.*#',
+    '##..$#',
+    '#..$N#',
+    '#*..$-',
+    '#-####',
+  ]},
+  // OTB-7 recut (the (4,1) target dropped): the finale - four boxes, two
+  // targets, every verb the track taught.
+  { name: 'Moving Day', par: 21, stretch: false, requires: ['boxin', 'boxout'], rows: [
+    '####-#',
+    '-*@..#',
+    '##.$.#',
+    '#.$N.#',
+    '#*.$$#',
+    '#-####',
+  ]},
+];
+
 const CAMPAIGN = [
   { name: 'First Steps', par: 2, stretch: false, requires: ['push'], rows: [
     '#####',
@@ -801,6 +910,7 @@ const GENERATED = [
 ];
 
 const TRACKS = [
+  { id: 't', name: 'Tutorial', levels: TUTORIAL },
   { id: 'c', name: 'Campaign', levels: CAMPAIGN },
   { id: 'w', name: 'Workshop', levels: WORKSHOP },
   { id: 'g', name: 'Generated', levels: GENERATED },
@@ -1640,10 +1750,12 @@ function startLevel(def) {
 
 // --- Overlays and coach marks -----------------------------------------------
 
+// T43: keyed to the Tutorial track (track 0) - one line per new idea.
 const COACH = {
   0: 'Swipe to move',
   2: 'That little world is this one',
-  4: 'Doors go both ways',
+  3: 'Doors go both ways',
+  4: 'Boxes fit through doors too',
   6: 'The little world pushes like a box',
 };
 
@@ -1655,7 +1767,7 @@ function closeOverlays() {
 }
 
 function showCoach(i) {
-  // Coach marks belong to the campaign's teaching arc only.
+  // Coach marks belong to the tutorial's teaching arc only.
   const msg = trackIndex === 0 && i >= 0 ? COACH[i] : undefined;
   $('coach').hidden = !msg || !!progress.coached[i];
   if (msg) $('coach').textContent = msg;
@@ -4115,7 +4227,7 @@ window.addEventListener('resize', () => {
 loadProgress();
 loadDrafts();
 syncAudioBtns();
-// Resume at the campaign's first unsolved level that is already unlocked.
+// Resume at the tutorial's first unsolved level that is already unlocked.
 let start = 0;
 while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
 loadLevel(0, start);
