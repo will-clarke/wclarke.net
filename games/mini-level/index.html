@@ -60,7 +60,18 @@
      its intrinsic (device-pixel) size. */
   #world { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #board { display: block; position: relative; }
-  #toast, #coach {
+  /* T56: the lightbulb - appears after three restarts, breathing gently. */
+  #hintBtn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    background: rgba(250, 246, 238, 0.92);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+  #toast, #coach, #hintTip {
     position: absolute;
     bottom: 8px;
     padding: 8px 14px;
@@ -304,6 +315,10 @@
     <canvas id="board"></canvas>
     <div id="coach" hidden></div>
     <div id="toast" hidden></div>
+    <div id="hintTip" hidden></div>
+    <button id="hintBtn" class="icon" aria-label="Hint" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 3.5a6 6 0 0 0-3.4 10.9c.9.6 1.4 1.6 1.4 2.6h4c0-1 .5-2 1.4-2.6A6 6 0 0 0 12 3.5z"/><path d="M10.5 20h3"/></svg>
+    </button>
   </main>
   <footer id="bar">
     <button id="undo" aria-label="Undo">
@@ -406,6 +421,15 @@ const TUTORIAL = [
     '#...#',
     '#####',
   ]},
+  // T55: promoted from the campaign - corners eat boxes, undo is your friend,
+  // taught before any portal appears.
+  { name: 'Corners', par: 9, stretch: false, requires: ['push'], rows: [
+    '#####',
+    '#*.@#',
+    '#.$.#',
+    '#.$*#',
+    '#####',
+  ]},
   // The enter teach: walk into the little world, pop out of its own W door.
   { name: 'Little World', par: 2, stretch: false, requires: ['enter'], rows: [
     '#####',
@@ -413,6 +437,18 @@ const TUTORIAL = [
     '#####',
     '-.$*#',
     '#####',
+  ]},
+  // T55: promoted from the campaign - the same enter lesson at full size:
+  // walk in, pop out across the map. The block is walled U/D/L so the only
+  // way onward is to press it and squeeze through.
+  { name: 'Through the Looking Glass', par: 8, stretch: false, requires: ['enter'], rows: [
+    '#######',
+    '##@####',
+    '#N.#*.-',
+    '####..#',
+    '####$.#',
+    '####..#',
+    '#######',
   ]},
   // Will's OTB-1: the only legal first move is out the back door - and you
   // fall out of the window across the board. Doors go both ways.
@@ -472,55 +508,13 @@ const TUTORIAL = [
     '#$.**#',
     '#-####',
   ]},
-  // OTB-8: every face of the house is a door.
-  { name: 'Open House', par: 17, stretch: false, requires: ['boxin', 'boxout'], rows: [
-    '####-#',
-    '-*@.*#',
-    '##..$#',
-    '#..$N#',
-    '#*..$-',
-    '#-####',
-  ]},
-  // OTB-7 recut (the (4,1) target dropped): the finale - four boxes, two
-  // targets, every verb the track taught.
-  { name: 'Moving Day', par: 21, stretch: false, requires: ['boxin', 'boxout'], rows: [
-    '####-#',
-    '-*@..#',
-    '##.$.#',
-    '#.$N.#',
-    '#*.$$#',
-    '#-####',
-  ]},
 ];
 
+// T55 reshape: First Steps deleted (First Push made it redundant), Corners +
+// Through the Looking Glass promoted into Moving In, Open House + Moving Day
+// demoted here from the tutorial (too hard for a teach track), Nest + the
+// campaign's own Out the Back benched to BENCH.md.
 const CAMPAIGN = [
-  { name: 'First Steps', par: 2, stretch: false, requires: ['push'], rows: [
-    '#####',
-    '#.*.#',
-    '#.$.#',
-    '#@..#',
-    '#####',
-  ]},
-  // 6x6 -> 5x5: same lesson (corners eat boxes, undo is your friend), no air.
-  { name: 'Corners', par: 9, stretch: false, requires: ['push'], rows: [
-    '#####',
-    '#*.@#',
-    '#.$.#',
-    '#.$*#',
-    '#####',
-  ]},
-  // Recut for T10: the old W door sat behind the block, so the natural walk-in
-  // now pushed the world out of itself on the very level that teaches enter.
-  // The block is walled U/D/L - the only way in is to press it and squeeze.
-  { name: 'Through the Looking Glass', par: 8, stretch: false, requires: ['enter'], rows: [
-    '#######',
-    '##@####',
-    '#N.#*.-',
-    '####..#',
-    '####$.#',
-    '####..#',
-    '#######',
-  ]},
   // 8x8 -> 7x7: shaft, wall, chamber. The block is pinned by the boundary so
   // the box posts through it instead of scooting it.
   { name: 'Special Delivery', par: 9, stretch: false, requires: ['boxin', 'enter'], rows: [
@@ -530,16 +524,6 @@ const CAMPAIGN = [
     '#$#...#',
     '#N#...#',
     '###..*#',
-    '#######',
-  ]},
-  // 8x8 -> 7x7: the self's only legal first move is out the door.
-  { name: 'Out the Back', par: 7, stretch: false, requires: ['exit'], rows: [
-    '#######',
-    '###...#',
-    '-@#...#',
-    '###.N.#',
-    '###*$.#',
-    '###...#',
     '#######',
   ]},
   // 7x7 -> 6x6, same par: sink one box to bridge, walk the second across.
@@ -574,6 +558,26 @@ const CAMPAIGN = [
     '#@.....#',
     '#......#',
     '########',
+  ]},
+  // T55: ex-tutorial OTB-8 (too hard for a teach track) - every face of the
+  // house is a door.
+  { name: 'Open House', par: 17, stretch: false, requires: ['boxin', 'boxout'], rows: [
+    '####-#',
+    '-*@.*#',
+    '##..$#',
+    '#..$N#',
+    '#*..$-',
+    '#-####',
+  ]},
+  // T55: ex-tutorial finale (OTB-7 recut, the (4,1) target dropped) - four
+  // boxes, two targets, every verb the old track taught.
+  { name: 'Moving Day', par: 21, stretch: false, requires: ['boxin', 'boxout'], rows: [
+    '####-#',
+    '-*@..#',
+    '##.$.#',
+    '#.$N.#',
+    '#*.$$#',
+    '#-####',
   ]},
   { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
     '#######',
@@ -633,20 +637,7 @@ const CAMPAIGN = [
     '#.....#',
     '###-###',
   ]},
-  // T14 re-tag + T20 re-bake (14 -> 15 under pushable blocks): mint, spend,
-  // burn - the optimal still buys a body with a body.
-  { name: 'Nest', par: 14, stretch: true, requires: ['exit', 'spawn', 'fill', 'boxout'], rows: [
-    '######-###',
-    '###*##.#*#',
-    '###N##~#N#',
-    '###......#',
-    '###B#.$#.#',
-    '###~#....#',
-    '#####.$###',
-    '#@###..###',
-    '#.########',
-    '#-########',
-  ]},
+  // (Nest lived here T14 -> T55; benched to BENCH.md - Will's dislike list.)
   // --- Guest levels ----------------------------------------------------------
   // Will's editor draft (2026-08-09), promoted as-is: two sealed storeys, one
   // box, two targets - the doors and windows are the only way anything moves
@@ -660,6 +651,230 @@ const CAMPAIGN = [
     '#######',
     '#*.N.*#',
     '#.....#',
+    '#######',
+  ]},
+];
+
+// T57: Around the Houses - twenty hand-authored levels channeling Removals
+// (Will's favourite): small boards, one or two boxes, short optimals, and one
+// or two ahas each. Every level was designed around a single portal trick and
+// solver-checked: the requires set is in the BFS optimal, and for most levels
+// the trick is FORCED (unsolvable with that mechanic banned). Acts: one
+// window and one trick, then the window itself moves, then two windows.
+const HOUSES = [
+  // The corridor is sealed - leave the level and be born beside the box,
+  // shoving it as you arrive.
+  { name: 'Knock and Run', par: 5, stretch: false, requires: ['exit'], rows: [
+    '######',
+    '#N$.*#',
+    '######',
+    '#@...-',
+    '######',
+    '######',
+  ]},
+  // Step into the window and the box you were pressing trades places with
+  // you through the world.
+  { name: 'Roundabout', par: 5, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '#..*.#',
+    '#....#',
+    '#.N@$-',
+    '###..#',
+    '######',
+  ]},
+  // The box is walled in. Leave by the front door and come up through the
+  // floor beneath it.
+  { name: 'Air Mail', par: 6, stretch: false, requires: ['exit'], rows: [
+    '##-###',
+    '#.*..#',
+    '##$#.#',
+    '##N..#',
+    '####@#',
+    '######',
+  ]},
+  // The yard beside the box is sealed - drop out of the window into it by
+  // leaving through the south door.
+  { name: 'Fire Escape', par: 6, stretch: false, requires: ['exit'], rows: [
+    '#######',
+    '#.....#',
+    '#.N..@#',
+    '##.$.*#',
+    '#####.#',
+    '#####.#',
+    '#####-#',
+  ]},
+  // The box sits on the east door's own arrival cell - enter the window and
+  // shove it home as you land.
+  { name: 'Doorbell', par: 7, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '#....#',
+    '#.N..#',
+    '#.#*$-',
+    '#@####',
+    '######',
+  ]},
+  // Push the box AWAY from the target: out the west door, round the world,
+  // out of the window beside it.
+  { name: 'Wrong Way', par: 7, stretch: false, requires: ['boxout'], rows: [
+    '#######',
+    '#######',
+    '##....#',
+    '-.$@.N#',
+    '###.*.#',
+    '#######',
+    '#######',
+  ]},
+  // The front room is sealed. The window delivers you just inside the west
+  // door - behind the box at last.
+  { name: "Tradesman's Entrance", par: 8, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '-..$*#',
+    '######',
+    '#.N.@#',
+    '#....#',
+    '######',
+  ]},
+  // The box cannot be pushed - drive the window over it and it is swallowed
+  // through the leading door, straight into the east pocket.
+  { name: 'Ferryman', par: 7, stretch: false, requires: ['boxin', 'blockstep'], rows: [
+    '######',
+    '#..#*#',
+    '#@N$.-',
+    '#..#.#',
+    '#....#',
+    '######',
+  ]},
+  // Post the box out the north door: the window's mouth is walled, so it
+  // recoils - and the box lands exactly where the window stood.
+  { name: 'Recoil', par: 6, stretch: false, requires: ['boxout', 'blockstep'], rows: [
+    '#-#####',
+    '#...###',
+    '#$..N*#',
+    '#@....#',
+    '#.....#',
+    '#.....#',
+    '#######',
+  ]},
+  // Two boxes, one gullet: serve the first before the window can swallow
+  // the second - then post it backwards onto the cell you just left.
+  { name: 'Encore', par: 7, stretch: false, requires: ['boxin', 'blockstep'], rows: [
+    '#######',
+    '#....*#',
+    '#@N$$*-',
+    '#.....#',
+    '#######',
+    '#######',
+    '#######',
+  ]},
+  // Park the window one row down first, so the box posted out the west door
+  // drops out of its mouth exactly on target.
+  { name: 'Removal Van', par: 11, stretch: false, requires: ['boxout', 'blockstep'], rows: [
+    '######',
+    '##...#',
+    '#.N..#',
+    '#*...#',
+    '-.$.@#',
+    '######',
+  ]},
+  // The box rides the doors twice - east across the wall, then south onto
+  // the target - and you fly out after it.
+  { name: 'Connecting Flight', par: 9, stretch: false, requires: ['boxout', 'exit'], rows: [
+    '#######',
+    '#@$...-',
+    '####..#',
+    '#.....#',
+    '#..N..#',
+    '#..*..#',
+    '#####-#',
+  ]},
+  // Sink the window into the pit and push the box across the sunken world's
+  // roof.
+  { name: 'Pontoon', par: 10, stretch: false, requires: ['blocksink'], rows: [
+    '######',
+    '#@N~*#',
+    '#.$.##',
+    '#....#',
+    '#....#',
+    '######',
+  ]},
+  // Swallow the box east, then post it out the east door: the walled mouth
+  // recoils the window and the box lands on its old cell - one shove home.
+  { name: 'Service Entrance', par: 10, stretch: false,
+    requires: ['boxin', 'boxout', 'blockstep'], rows: [
+    '#######',
+    '#..#.*#',
+    '#@.#..#',
+    '#..N$.#',
+    '#..#..#',
+    '#..#..-',
+    '#######',
+  ]},
+  // The box goes out the east door, falls from the window, gets posted back
+  // through it - and you follow it in and chase it home.
+  { name: 'Return Address', par: 12, stretch: false,
+    requires: ['enter', 'boxin', 'boxout'], rows: [
+    '#######',
+    '#@....#',
+    '#*...$-',
+    '#####.#',
+    '#..N..#',
+    '#.....#',
+    '#######',
+  ]},
+  // --- two windows ------------------------------------------------------
+  // One box, two targets: push it out the south door and it falls out of
+  // both windows at once.
+  { name: 'Double Drop', par: 6, stretch: true, requires: ['boxout', 'spawn'], rows: [
+    '######',
+    '#@...#',
+    '#N.N$#',
+    '#*.*.#',
+    '####.#',
+    '####-#',
+  ]},
+  // One exit, two corridors: you arrive in both at once, and every swipe
+  // pushes both boxes home together.
+  { name: 'Duet', par: 7, stretch: true, requires: ['exit', 'spawn'], rows: [
+    '#######',
+    '#N$..*#',
+    '#######',
+    '#N$..*#',
+    '#######',
+    '#@....-',
+    '#######',
+  ]},
+  // Exit once - your double falls in the pit and becomes the bridge. Exit
+  // again - the bridge holds, and the box lane is yours.
+  { name: 'Stunt Double', par: 5, stretch: true,
+    requires: ['exit', 'spawn', 'fill'], rows: [
+    '#######',
+    '#N~$.*#',
+    '#######',
+    '#N...@-',
+    '#######',
+    '#######',
+    '#######',
+  ]},
+  // Push the right window out the east door and it re-emerges beside the
+  // left one - which then swallows the box clean onto the north arrival.
+  { name: 'House Swap', par: 6, stretch: true, requires: ['blockout', 'boxin'], rows: [
+    '#####-#',
+    '#...#*#',
+    '#.$.#.#',
+    '#.....#',
+    '#N..@N-',
+    '#.....#',
+    '#######',
+  ]},
+  // The finale: aim the chimney by posting one window out the north door,
+  // then fire the parcel east - it comes out doubled, one copy on target.
+  { name: 'Removals & Sons', par: 13, stretch: true, requires: ['boxout', 'spawn'], rows: [
+    '###-###',
+    '#.*...#',
+    '#N....#',
+    '###N..#',
+    '#.$...-',
+    '#..@..#',
     '#######',
   ]},
 ];
@@ -913,8 +1128,11 @@ const GENERATED = [
 ];
 
 const TRACKS = [
-  { id: 't', name: 'Tutorial', levels: TUTORIAL },
+  // T55 (Will): 'Tutorial' read aggressively bureaucratic - the teach track
+  // is now Moving In, which is also what its levels are about.
+  { id: 't', name: 'Moving In', levels: TUTORIAL },
   { id: 'c', name: 'Campaign', levels: CAMPAIGN },
+  { id: 'a', name: 'Around the Houses', levels: HOUSES },
   { id: 'w', name: 'Workshop', levels: WORKSHOP },
   { id: 'g', name: 'Generated', levels: GENERATED },
 ];
@@ -1662,9 +1880,9 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v8'; // v8 = T48 rules re-bake: campaign + workshop
-// bests survive, generated bests dropped (three levels broke under universal
-// pop-out and the track was recut)
+const SAVE_KEY = 'mini-level-v9'; // v9 = T55 track reshape: tutorial + campaign
+// reordered (bests would misattach, dropped; coach marks re-keyed), workshop +
+// generated bests survive
 let progress = { best: {}, unlocked: {}, coached: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
@@ -1674,6 +1892,18 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    if (!raw) {
+      // Migrate a v8 save: T55 reordered the tutorial and campaign tracks,
+      // so only workshop + generated bests still name the same puzzles.
+      // Coach marks are keyed by level index, which also shifted - re-show.
+      const v8 = JSON.parse(localStorage.getItem('mini-level-v8') || 'null');
+      if (v8 && typeof v8 === 'object') {
+        raw = { best: {}, unlocked: v8.unlocked || {}, coached: {}, audio: v8.audio };
+        for (const k in (v8.best || {})) {
+          if (k.startsWith('w:') || k.startsWith('g:')) raw.best[k] = v8.best[k];
+        }
+      }
+    }
     if (!raw) {
       // Migrate a v7 save (under either name - this was 'Nest' before the
       // rename): T48 recut the generated track, so only its bests are stale.
@@ -1745,6 +1975,12 @@ function startLevel(def) {
   anim = null;
   bloom = null;
   zoom = null;
+  resets = 0;
+  hintMoves = null;
+  hintSearch++;
+  $('hintBtn').hidden = true;
+  $('hintBtn').disabled = false;
+  hideHintTip();
   closeOverlays();
   hideToast();
   showCoach(levelIndex);
@@ -1755,13 +1991,14 @@ function startLevel(def) {
 
 // --- Overlays and coach marks -----------------------------------------------
 
-// T43: keyed to the Tutorial track (track 0) - one line per new idea.
+// T43: keyed to the Moving In track (track 0) - one line per new idea.
+// T55 remap: Corners and Through the Looking Glass moved in above these.
 const COACH = {
   0: 'Swipe to move',
-  2: 'That little world is this one',
-  3: 'Doors go both ways',
-  4: 'Boxes fit through doors too',
-  6: 'The little world pushes like a box',
+  3: 'That little world is this one',
+  5: 'Doors go both ways',
+  6: 'Boxes fit through doors too',
+  8: 'The little world pushes like a box',
 };
 
 function overlayOpen() {
@@ -1819,7 +2056,7 @@ function openPicker() {
       // T46: solved reads solved; solved at par is the tier above.
       const atPar = best !== undefined && def.par > 0 && best <= def.par;
       const note = best === undefined ? 'unsolved'
-        : atPar ? '★ par ' + best
+        : atPar ? '★ optimal ' + best
         : '✓ best ' + best;
       const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
       if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
@@ -1867,6 +2104,7 @@ function buildSprites() {
 }
 
 function showToast(msg) {
+  hideHintTip(); // both live at the bottom of the stage - the warning wins
   $('toast').textContent = msg;
   $('toast').hidden = false;
   $('undo').classList.add('pulse');
@@ -1878,6 +2116,78 @@ function hideToast() {
 
 function buzz(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// --- Hints (T56) --------------------------------------------------------------
+
+// The lightbulb: three restarts on a level reads as stuck, so offer the first
+// few moves of an optimal solution from the start position. The search is the
+// editor's chunked BFS (T30 pruning keeps every shipped level far under the
+// cap), run only when the bulb is tapped - a nudge is opt-in, never pushed.
+const HINT_AFTER = 3; // restarts before the bulb appears
+const HINT_LEN = 3;   // moves revealed - a nudge, not a walkthrough
+const ARROW = { U: '↑', D: '↓', L: '←', R: '→' };
+let resets = 0;        // real restarts on the current level
+let hintSearch = 0;    // token: bumping it abandons a running search
+let hintMoves = null;  // cached optimal prefix (valid until the level changes)
+
+function offerHint() {
+  $('hintBtn').hidden = !(resets >= HINT_AFTER && levelIndex >= 0 && !won);
+}
+function hideHintTip() { $('hintTip').hidden = true; }
+
+function presentHint(p) {
+  const arrows = [...p].map(m => ARROW[m]).join('  ');
+  $('hintTip').textContent = (moves ? 'From the start:  ' : 'Start with  ') + arrows;
+  $('coach').hidden = true;
+  hideToast();
+  $('hintTip').hidden = false;
+}
+
+function showHint() {
+  if (hintMoves) { presentHint(hintMoves); return; }
+  const token = ++hintSearch;
+  const lay = layout, start = initial, dead = deadSet;
+  const btn = $('hintBtn');
+  btn.disabled = true;
+  const hash = (s) => s.selves.join(',') + '|' + s.boxes.join(',') + '|' +
+    s.blocks.join(',') + '|' + s.filled.join(',');
+  const seen = new Map([[hash(start), null]]);
+  const queue = [start];
+  let head = 0;
+  const giveUp = () => { btn.disabled = false; btn.hidden = true; };
+  const pump = () => {
+    if (token !== hintSearch) return;
+    const until = performance.now() + 40;
+    while (head < queue.length) {
+      const s = queue[head++], hs = hash(s);
+      for (const mv of ['U', 'D', 'L', 'R']) {
+        const r = step(lay, s, mv);
+        if (!r.changed) continue;
+        const hn = hash(r.state);
+        if (seen.has(hn)) continue;
+        seen.set(hn, { prev: hs, mv });
+        if (r.win) {
+          let p = '';
+          for (let cur = hn; seen.get(cur) !== null; ) {
+            const e = seen.get(cur);
+            p = e.mv + p;
+            cur = e.prev;
+          }
+          btn.disabled = false;
+          hintMoves = p.slice(0, HINT_LEN);
+          presentHint(hintMoves);
+          return;
+        }
+        if (seen.size > ED_CAP) { giveUp(); return; }
+        if (isDoomed(lay, dead, r.state)) continue;
+        queue.push(r.state);
+      }
+      if (performance.now() > until) { setTimeout(pump, 0); return; }
+    }
+    giveUp(); // unsolvable start = never true of a shipped level; hide quietly
+  };
+  setTimeout(pump, 0);
 }
 
 // Which face of a block a body pinches into, and which it grows back out of,
@@ -2047,6 +2357,7 @@ function compileAnim(prev, events, dir) {
 function applyMove(dir) {
   if (won || overlayOpen()) return false;
   dismissCoach();
+  hideHintTip();
   const r = step(layout, state, dir);
   if (!r.changed) {
     bonkAt = performance.now();
@@ -2084,6 +2395,7 @@ function applyMove(dir) {
   moveSfx(r.events, kinds, won);
 
   if (won) {
+    $('hintBtn').hidden = true;
     bloom = reducedMotion.matches ? null : { t0: performance.now(), p: 0 };
     const at = levelIndex, atTrack = trackIndex;
     setTimeout(() => { if (won && levelIndex === at && trackIndex === atTrack) showWin(); },
@@ -2104,6 +2416,7 @@ function undo() {
   moves = h.moves;
   won = false;
   bloom = null;
+  hideHintTip();
   retractZoom();
   closeOverlays();
   settle();
@@ -2119,6 +2432,9 @@ function reset() {
   moves = 0;
   won = false;
   bloom = null;
+  resets++;
+  hideHintTip();
+  offerHint();
   retractZoom();
   closeOverlays();
   settle();
@@ -2138,7 +2454,7 @@ function showWin() {
   // T53: solving at par earns the star right here, not only in the picker.
   $('cardTitle').textContent =
     (!draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
-  let body = 'in ' + moves + ' moves' + (def.par ? ' (par ' + def.par + ')' : '');
+  let body = 'in ' + moves + ' moves' + (def.par ? ' (optimal ' + def.par + ')' : '');
   if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
     body += ' · best ' + progress.best[bestKey(trackIndex, levelIndex)];
@@ -3544,6 +3860,9 @@ function setAudio(which, on) {
 
 $('sfxBtn').addEventListener('click', () => setAudio('sfx', !audio.sfx));
 $('musicBtn').addEventListener('click', () => setAudio('music', !audio.music));
+$('hintBtn').addEventListener('click', () => { play('ui'); showHint(); });
+// The bulb lives inside the stage: a tap on it must not arm a swipe or dive.
+$('hintBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
 
 // Nothing may make a sound before the first gesture, and trying to is what
 // throws in Safari. So: arm on the first one, whatever it was.
@@ -3855,7 +4174,7 @@ function edSolve() {
   const dead = deadCells(layout);
   const hash = (s) => s.selves.join(',') + '|' + s.boxes.join(',') + '|' +
     s.blocks.join(',') + '|' + s.filled.join(',');
-  if (isWin(layout, state)) { edBanner('par 0 · already solved', 'good'); return; }
+  if (isWin(layout, state)) { edBanner('optimal 0 · already solved', 'good'); return; }
   const seen = new Map([[hash(state), null]]);
   const queue = [state];
   let head = 0;
@@ -3884,7 +4203,7 @@ function edSolve() {
           const p = path(hn);
           edSolution = { key: ed().rows.join('/'), moves: p };
           edWatchSync();
-          edBanner('par ' + p.length + ' · ' + p, 'good');
+          edBanner('optimal ' + p.length + ' · ' + p, 'good');
           return;
         }
         if (seen.size > ED_CAP) {
