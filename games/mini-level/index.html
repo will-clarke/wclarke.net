@@ -61,7 +61,7 @@
       --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
       --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
       --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
-      --par-glow: 0 0 9px rgba(233, 188, 96, 0.5);
+      --par-glow: none; /* T83: lamplight is flat too - no glow anywhere */
     }
   }
   :root[data-theme="dark"] {
@@ -84,7 +84,7 @@
     --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
     --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
     --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
-    --par-glow: 0 0 9px rgba(233, 188, 96, 0.5);
+    --par-glow: none; /* T83: lamplight is flat too - no glow anywhere */
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -1318,6 +1318,18 @@ const WORKSHOP = [
     '#*..#',
     '#-###',
   ]},
+  // T80: Will's grid (prompt 24) - he called it Out the Back, but Moving In's
+  // opener owns that name; the box goes out the west door and round to the
+  // window's mouth, so: Round the Back.
+  { name: 'Round the Back', par: 11, stretch: true, requires: [], rows: [
+    '#######',
+    '#.....#',
+    '#..#*.#',
+    '#..##.#',
+    '-.@$.N#',
+    '#.....#',
+    '#######',
+  ]},
   { name: 'Causeway', par: 12, stretch: true, requires: [], rows: [
     '###-###',
     '#@.N..#',
@@ -2256,7 +2268,7 @@ const THEMES = {
     bezelTop: '#d7ccee', bezelBot: '#bcaede',
     // T75: the bodies live here too now. Day keeps the classic T22 values
     // and does not glow; lamplight dims them so they stop searing.
-    self: '#7aaede', selfRgb: '122,174,222',
+    self: '#7aaede', selfRgb: '122,174,222', selfLine: 'rgba(44,78,110,0.5)',
     box: '#e9bc60', boxLine: 'rgba(146,103,26,0.5)', boxGlow: 'rgba(233,188,96,0.4)',
     boxOn: '#93c493', boxOnLine: 'rgba(58,110,58,0.5)', boxOnGlow: 'rgba(147,196,147,0.4)',
     glow: 0,
@@ -2270,10 +2282,13 @@ const THEMES = {
     mergeRing: 'rgba(230,221,202,0.9)', dieRing: 'rgba(153,144,124,0.95)',
     blockTop: '#6f6099', blockBot: '#57497c',
     bezelTop: '#79699f', bezelBot: '#5f5284',
-    self: '#6b96c2', selfRgb: '107,150,194',
+    // T83 (Will, prompt 24): lamplight is flat too now - no glow anywhere,
+    // the self dims another notch and wears a proper dark outline instead
+    // of relying on blue-on-dark edge contrast.
+    self: '#5d83ab', selfRgb: '93,131,171', selfLine: 'rgba(8,12,18,0.75)',
     box: '#c99c50', boxLine: 'rgba(94,68,20,0.6)', boxGlow: 'rgba(201,156,80,0.4)',
     boxOn: '#7dab7d', boxOnLine: 'rgba(40,80,40,0.55)', boxOnGlow: 'rgba(125,171,125,0.4)',
-    glow: 1,
+    glow: 0,
   },
 };
 let THEME = THEMES.light;
@@ -2321,7 +2336,7 @@ let trackIndex = 0;  // index into TRACKS...
 let levelIndex = 0;  // ...and into its levels, or -1 while playtesting a draft
 let levelDef = null; // the live definition: a track entry, or an editor draft
 let layout = null, state = null;
-let deadSet = null;  // deadCells(layout), cached per level for the stuck hint
+let deadSet = null;  // deadCells(layout), cached per level for the bulb's dead-end check
 let history = [], moves = 0, won = false, initial = null;
 // T61: the moves actually made, as a UDLR string - snapshotted alongside
 // `moves` so undo and reset keep it honest. At a win it IS the solution.
@@ -2365,11 +2380,12 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v11'; // v11 = T64 level reshape: Moving In's
-// TtLG + Heavy Goods recut in place (their old bests describe retired
-// puzzles), Heavy Goods II into the campaign at 6, Tight Corner into the
+const SAVE_KEY = 'mini-level-v12'; // v12 = T80: Round the Back into the
+// workshop at 6, so w:6+ shift up one. (v11 = T64 level reshape: Moving In's
+// TtLG + Heavy Goods recut in place - their old bests describe retired
+// puzzles - Heavy Goods II into the campaign at 6, Tight Corner into the
 // workshop at 13 - migration below drops/remaps exactly those keys.
-// (v10 = T61 community identity; T62 hearts and T63 records were additive.)
+// v10 = T61 community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
   hearts: {}, records: {}, at: '', theme: 'auto', anim: 'auto' };
 
@@ -2380,7 +2396,12 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let preT80 = false; // any pre-v12 save needs the T80 workshop shift below
     let preT64 = false; // any pre-v11 save needs the T64 key fixup below
+    if (!raw) {
+      preT80 = true;
+      raw = JSON.parse(localStorage.getItem('mini-level-v11') || 'null');
+    }
     if (!raw) {
       preT64 = true;
       raw = JSON.parse(localStorage.getItem('mini-level-v10') || 'null');
@@ -2436,23 +2457,29 @@ function loadProgress() {
         for (const k in (v5.best || {})) raw.best['c:' + k] = v5.best[k];
       }
     }
+    const shift = (id, from, last) => {
+      for (let i = last; i >= from; i--) {
+        const k = id + ':' + i;
+        if (raw.best[k] !== undefined) {
+          raw.best[id + ':' + (i + 1)] = raw.best[k];
+          delete raw.best[k];
+        }
+      }
+    };
     if (raw && typeof raw === 'object' && preT64 && raw.best) {
       // T64 fixup: t:4 (TtLG) and t:8 (Heavy Goods) were recut in place -
       // their old bests describe retired puzzles - and one level slid into
       // the campaign at 6 and the workshop at 13, so later keys shift up.
       delete raw.best['t:4'];
       delete raw.best['t:8'];
-      const shift = (id, from, last) => {
-        for (let i = last; i >= from; i--) {
-          const k = id + ':' + i;
-          if (raw.best[k] !== undefined) {
-            raw.best[id + ':' + (i + 1)] = raw.best[k];
-            delete raw.best[k];
-          }
-        }
-      };
       shift('c', 6, 11);
       shift('w', 13, 16);
+    }
+    if (raw && typeof raw === 'object' && preT80 && raw.best) {
+      // T80 fixup: Round the Back into the workshop at 6, later keys shift.
+      shift('w', 6, 17);
+      const m = /^w:(\d+)$/.exec(raw.at || '');
+      if (m && Number(m[1]) >= 6) raw.at = 'w:' + (Number(m[1]) + 1);
     }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
@@ -2518,7 +2545,7 @@ function loadLevel(t, i) {
   // T74: remember where you are - the hub's Continue and next boot land here.
   progress.at = bestKey(t, i);
   saveProgress();
-  startLevel(TRACKS[t].levels[i]);
+  startLevel(TRACKS[t].levels[i], true);
 }
 
 // An editor draft rides the same path but owns no slot in LEVELS, so
@@ -2531,11 +2558,41 @@ function playCommunity(id) {
   const m = comCache[id];
   levelIndex = -1;
   communityId = id;
-  startLevel({ name: m.name, par: 0, stretch: true, rows: m.rows });
+  startLevel({ name: m.name, par: 0, stretch: true, rows: m.rows }, true);
 }
 
-function startLevel(def) {
+// T84 (Will, prompt 24): levels are dealt at a random rotation. The engine
+// owns no compass (A15; proptest I7 proves mirror AND transpose worlds tick
+// identically, and a quarter-turn is just transpose-then-mirror), so every
+// orientation is the same puzzle - same par, same mechanics - but the board
+// feels fresh on every visit. The spin holds through undo/reset and re-rolls
+// on the next entry. Drafts and the editor never spin: what you author is
+// what you see, and the prove-run publishes canonical rows.
+let spinK = 0;       // quarter-turns clockwise the current level is dealt at
+let srcRows = null;  // the canonical rows behind the spin (Edit copies these)
+const SPIN_DIRS = 'URDL'; // the clockwise direction cycle
+function spinRows(rows, k) {
+  let out = rows;
+  for (let j = 0; j < k; j++) {
+    const n = out.length;
+    out = out.map((_, y) => {
+      let r = '';
+      for (let x = 0; x < n; x++) r += out[n - 1 - x][y];
+      return r;
+    });
+  }
+  return out;
+}
+// A recorded move maps back to the canonical board by undoing the spin -
+// the community worker replays solves against the rows it stores.
+const unspin = (log) => !spinK ? log : [...log].map(
+  (m) => SPIN_DIRS[(SPIN_DIRS.indexOf(m) + 4 - spinK) % 4]).join('');
+
+function startLevel(def, spin) {
   stopAuto();
+  srcRows = def.rows;
+  spinK = spin ? (Math.random() * 4) | 0 : 0;
+  if (spinK) def = Object.assign({}, def, { rows: spinRows(def.rows, spinK) });
   levelDef = def;
   const parsed = parseLevel(def);
   layout = parsed.layout;
@@ -2706,6 +2763,9 @@ function openShelves(expand) {
   if (communityId) cb.classList.add('here');
   shelfRow('Yours', drafts.length + (drafts.length === 1 ? ' draft' : ' drafts'),
     () => { play('ui'); openDrafts(); });
+  // T82 (Will, prompt 24): a dedicated door straight into the editor -
+  // Yours is the drafts SHELF; this one opens the workbench itself.
+  shelfRow('Editor', 'build a level', () => { play('ui'); openEditor(); });
   shelfRow('Settings', 'sound · theme · help', () => { play('ui'); openSettings(); });
   $('pkSub').textContent = '★ ' + totStars + ' / ' + totPar;
   pkShow(null);
@@ -3079,11 +3139,6 @@ function syncHud() {
   chip.hidden = state.selves.length < 2;
   chip.textContent = '@ x' + state.selves.length;
   if (!won && state.selves.length === 0) showToast('No one left.');
-  // T53: SPEC section 4 promised the cornered-box banner too - the solver's
-  // isDoomed check (a needed box sunk or parked where no target is
-  // reachable) already knows, so say so gently instead of letting the
-  // player push on a lost board.
-  else if (!won && isDoomed(layout, deadSet, state)) showToast('A box is stuck.');
   else hideToast();
   dirty = true;
 }
@@ -3494,7 +3549,7 @@ function showWin() {
     const prev = progress.best[key];
     if (prev === undefined || moves < prev) progress.best[key] = moves;
     saveProgress();
-    comReportSolve(communityId, moveLog);
+    comReportSolve(communityId, unspin(moveLog)); // T84: back to canonical
   } else if (!draft) {
     const key = bestKey(trackIndex, levelIndex);
     const prevBest = progress.best[key];
@@ -4408,6 +4463,12 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   }
   c.closePath();
   c.fill();
+  // T83: an inked outline, like the boxes wear - the body reads by its line,
+  // not by fill-on-ground contrast (Will: the bare blue edge looked weird
+  // against the dark room, especially mid-jiggle).
+  c.strokeStyle = THEME.selfLine;
+  c.lineWidth = Math.max(1, R * 0.16);
+  c.stroke();
   // Eyes: track the direction of travel (or the last one, at rest).
   let [lx, ly] = (mdx || mdy) ? [mdx, mdy] : DIRS[lastDir];
   const ll = Math.hypot(lx, ly) || 1;
@@ -5527,6 +5588,10 @@ function edPaint() {
       roundRect(c, px + pad, py + pad, s, s, r);
       c.fill();
       if (isSelf) {
+        c.strokeStyle = THEME.selfLine; // T83: same inked outline as in play
+        c.lineWidth = Math.max(1, s * 0.08);
+        roundRect(c, px + pad, py + pad, s, s, r);
+        c.stroke();
         const er = Math.max(1, s * 0.15), ex = px + C / 2, ey = py + C / 2 - s * 0.1;
         for (const sx of [-1, 1]) {
           c.fillStyle = '#fff';
@@ -6180,10 +6245,13 @@ $('levelName').addEventListener('click', goBack);
 $('editBtn').addEventListener('click', () => {
   play('ui');
   const def = levelDef;
-  const key = def.rows.join('/');
+  // T84: copy the canonical rows, not the spun deal - otherwise each
+  // orientation of the same level would mint its own draft.
+  const rows = srcRows || def.rows;
+  const key = rows.join('/');
   let i = drafts.findIndex(d => d.rows.join('/') === key);
   if (i < 0) {
-    drafts.push({ name: def.name, rows: def.rows.slice() });
+    drafts.push({ name: def.name, rows: rows.slice() });
     i = drafts.length - 1;
     saveDrafts();
   }
