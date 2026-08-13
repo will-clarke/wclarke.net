@@ -4846,31 +4846,108 @@ let lastBreath = 0;
 // same place.
 
 const AC = window.AudioContext || window.webkitAudioContext;
-const ROOT = 146.83;                    // D3, and everything hangs off it
-// T86 (Will: "calming music.. almost started valley chill.. every thing is
-// at peace"): the whole soundtrack retuned from a minor drone to a sunny
-// major pentatonic over an 8-chord pastoral loop at a strolling 60bpm.
-// The sfx plucks and win bells hang off the same scale, so they retune too.
-const SCALE = [0, 2, 4, 7, 9];          // major pentatonic: no wrong notes
-const CHORDS = [
-  [0, 4, 9, 14],    // D6/9   - home, feet up
-  [5, 9, 12, 19],   // Gadd9
-  [-3, 0, 4, 7],    // Bm7    - the one soft shadow
-  [-5, 2, 9, 16],   // Asus2  - open fifths, wide sky
-  [2, 5, 9, 12],    // Em7
-  [5, 9, 12, 16],   // Gmaj7
-  [0, 7, 14, 16],   // Dadd9
-  [7, 12, 14, 17],  // A7sus  - leans gently home again
+// T86 (Will: "calming music.. every thing is at peace") retuned the
+// soundtrack pastoral; T87 (Will: "different types of music") grows it into
+// a little album. Four moods rotate like tracks on a record - each plays a
+// couple of minutes, lets its last chord ring, takes a breath and hands
+// over - in an order shuffled once per session. ROOT/SCALE always follow
+// the mood that is playing, so the sfx plucks and win bells retune with
+// the record (the T86 rule).
+// Each mood: root Hz, scale (semitone steps), step (one eighth, seconds),
+// bars (16 steps each) before handover, an 8-chord loop + bass roots (all
+// semitones from root), a melody voice + walk range/odds, a sprinkle, and
+// the pad's colour.
+const MOODS = [
+  { // valley - the T86 pastoral stroll: sunny D major pentatonic, 60bpm.
+    root: 146.83, scale: [0, 2, 4, 7, 9], step: 30 / 60, bars: 16,
+    chords: [
+      [0, 4, 9, 14],    // D6/9   - home, feet up
+      [5, 9, 12, 19],   // Gadd9
+      [-3, 0, 4, 7],    // Bm7    - the one soft shadow
+      [-5, 2, 9, 16],   // Asus2  - open fifths, wide sky
+      [2, 5, 9, 12],    // Em7
+      [5, 9, 12, 16],   // Gmaj7
+      [0, 7, 14, 16],   // Dadd9
+      [7, 12, 14, 17],  // A7sus  - leans gently home again
+    ],
+    bass: [-12, -7, -15, -5, -10, -7, -12, -5],
+    voice: 'pluck', melGain: 0.07, melLo: 7, melHi: 14, melStart: 10,
+    density: [0.22, 0.1], gap: 2, sprinkle: 'brook', wash: true,
+    padGain: 0.09, padHz: 900,
+  },
+  { // lament - sad, reflective, beautiful: sparse felt piano wandering
+    // A natural minor at 50bpm, strings barely breathing underneath.
+    root: 220, scale: [0, 2, 3, 5, 7, 8, 10], step: 0.6, bars: 16,
+    chords: [
+      [0, 3, 7, 14],    // Am add9 - the ache
+      [-4, 0, 3, 7],    // Fmaj7
+      [3, 7, 10, 14],   // Cmaj7   - a memory of brightness
+      [-2, 2, 5, 10],   // G
+      [0, 3, 7, 12],    // Am
+      [-5, -2, 2, 5],   // Em7
+      [-7, -4, 0, 3],   // Dm7     - the low turn
+      [-5, 0, 2, 7],    // Esus4   - leans home, never resolves
+    ],
+    bass: [-12, -16, -9, -14, -12, -17, -19, -17],
+    voice: 'piano', melGain: 0.11, melLo: 7, melHi: 16, melStart: 10,
+    density: [0.16, 0.06], gap: 3, sprinkle: '', wash: true,
+    padGain: 0.07, padHz: 700,
+  },
+  { // stroll - softly upbeat: G major pentatonic at 84bpm, brushed offbeat
+    // ticks, a bass that skips - the blob has places to be and is glad.
+    root: 196, scale: [0, 2, 4, 7, 9], step: 30 / 84, bars: 24,
+    chords: [
+      [0, 4, 7, 14],    // Gadd9
+      [5, 9, 12, 19],   // Cadd9
+      [-3, 0, 4, 7],    // Em7
+      [7, 12, 14, 19],  // Dsus4
+      [0, 4, 7, 14],    // Gadd9
+      [4, 7, 11, 14],   // Bm7
+      [5, 9, 12, 16],   // Cmaj7
+      [7, 9, 14, 19],   // Dsus2  - up on its toes for the turnaround
+    ],
+    bass: [-12, -7, -15, -17, -12, -8, -7, -17],
+    voice: 'pluck', melGain: 0.075, melLo: 8, melHi: 15, melStart: 11,
+    density: [0.34, 0.16], gap: 2, sprinkle: 'tick', wash: false,
+    padGain: 0.08, padHz: 1150, bass2: true,
+  },
+  { // drift - a different calm: a starlit music box over slow maj7 pads
+    // in C at 48bpm, with a very high shimmer once in a while.
+    root: 130.81, scale: [0, 2, 4, 7, 9], step: 0.625, bars: 16,
+    chords: [
+      [0, 4, 7, 11],    // Cmaj7
+      [-3, 0, 4, 7],    // Am7
+      [5, 9, 12, 16],   // Fmaj7
+      [-5, -1, 2, 4],   // G6
+      [0, 4, 7, 11],    // Cmaj7
+      [4, 7, 11, 14],   // Em7
+      [-7, -3, 0, 4],   // Fmaj7 low
+      [-5, -3, 2, 7],   // Gsus2
+    ],
+    bass: [-12, -3, -7, -5, -12, -8, -7, -5],
+    voice: 'chime', melGain: 0.055, melLo: 10, melHi: 17, melStart: 13,
+    density: [0.12, 0.05], gap: 3, sprinkle: 'shimmer', wash: true,
+    padGain: 0.085, padHz: 800,
+  },
 ];
-const BASS = [-12, -7, -15, -5, -10, -7, -12, -5]; // chord roots, D2 lowest
-const STEP = 30 / 60;                   // one eighth note at 60bpm, seconds
+// The running order, shuffled once per session so every sitting opens on a
+// different side of the record.
+const MOOD_ORDER = MOODS.map((_, i) => i);
+for (let i = MOOD_ORDER.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [MOOD_ORDER[i], MOOD_ORDER[j]] = [MOOD_ORDER[j], MOOD_ORDER[i]];
+}
+let moodAt = 0;
+let mood = MOODS[MOOD_ORDER[0]], ROOT = mood.root, SCALE = mood.scale;
+
 const SFX_LEVEL = 0.5;
 const MUSIC_LEVEL = 0.17;               // well under the sfx, as specified
 
-// deg counts pentatonic steps from D3 and rolls over into the next octave.
+// deg counts scale steps from the mood's root and rolls into the next octave.
 function scaleHz(deg) {
-  const o = Math.floor(deg / 5);
-  return ROOT * Math.pow(2, (SCALE[deg - o * 5] + 12 * o) / 12);
+  const n = SCALE.length;
+  const o = Math.floor(deg / n);
+  return ROOT * Math.pow(2, (SCALE[deg - o * n] + 12 * o) / 12);
 }
 function semi(n) { return ROOT * Math.pow(2, n / 12); }
 
@@ -4878,7 +4955,7 @@ let ac = null, acDead = false;
 let sfxBus, sfxWet, musicBus, musicWet, verb, noiseBuf, delay, padFilter;
 let audio = { sfx: 1, music: 1 };
 let musicTimer = null, musicStep = 0, musicNext = 0, lastPluck = -9;
-let stepDeg = 8;
+let stepDeg = 8, melDeg = mood.melStart;
 
 // A short synthetic room: exponentially decaying noise. Enough to make a plop
 // sound wet without smearing the pad.
@@ -4929,7 +5006,7 @@ function ensureAudio() {
     // Plucks echo into a dotted-ish delay - most of the "chilled" is here.
     // (T45: max was 1s, silently clamping the 1.32s dotted time.)
     delay = ac.createDelay(2);
-    delay.delayTime.value = STEP * 3;
+    delay.delayTime.value = mood.step * 3;
     const fb = ac.createGain(); fb.gain.value = 0.36;
     const dlp = ac.createBiquadFilter();
     dlp.type = 'lowpass'; dlp.frequency.value = 1600;
@@ -4942,7 +5019,7 @@ function ensureAudio() {
     // than the old saws, and a Q whistle is not peaceful.
     padFilter = ac.createBiquadFilter();
     padFilter.type = 'lowpass'; padFilter.Q.value = 0.9;
-    padFilter.frequency.value = 900;
+    padFilter.frequency.value = mood.padHz;
     padFilter.connect(musicBus); padFilter.connect(musicWet);
     const lfo = ac.createOscillator();
     lfo.frequency.value = 0.045;
@@ -5230,9 +5307,77 @@ function washVoice(t, dur) {
   s.onended = () => g.disconnect();
 }
 
-// T86: the tune strolls instead of jumping - a random walk over the scale
-// wanders a step at a time (rarely two), reflecting off its range.
-let melDeg = 10;
+// T87: the piano, for the lament - three partials with a stretched octave,
+// a hammer that closes fast, and a long singing release into the room.
+function pianoVoice(f, t, gain) {
+  const lp = ac.createBiquadFilter();
+  lp.type = 'lowpass'; lp.Q.value = 0.6;
+  lp.frequency.setValueAtTime(Math.min(6500, f * 9), t);
+  lp.frequency.exponentialRampToValueAtTime(f * 1.5, t + 1.6);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(gain * 0.25, t + 0.7);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
+  for (const [r, a, ty] of [[1, 1, 'triangle'], [2.004, 0.4, 'sine'], [3.01, 0.14, 'sine']]) {
+    const o = ac.createOscillator();
+    o.type = ty; o.frequency.value = f * r;
+    const og = ac.createGain(); og.gain.value = a;
+    o.connect(og); og.connect(lp);
+    o.start(t); o.stop(t + 3);
+    if (r === 1) o.onended = () => g.disconnect();
+  }
+  lp.connect(g);
+  g.connect(musicBus); g.connect(musicWet);
+  const d = ac.createGain(); d.gain.value = 0.22;
+  g.connect(d); d.connect(delay);
+}
+
+// T87: the music box, for drift - a sine with a glassy fourth-partial ping
+// that dies quickly, the fundamental left ringing into the delay.
+function chimeVoice(f, t, gain) {
+  const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = f;
+  const o2 = ac.createOscillator(); o2.type = 'sine'; o2.frequency.value = f * 3.99;
+  const g2 = ac.createGain();
+  g2.gain.setValueAtTime(gain * 0.35, t);
+  g2.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+  const g = ac.createGain();
+  env(g, t, 0.006, 2.2, gain);
+  o.connect(g); o2.connect(g2); g2.connect(g);
+  g.connect(musicBus); g.connect(musicWet);
+  const d = ac.createGain(); d.gain.value = 0.45;
+  g.connect(d); d.connect(delay);
+  o.start(t); o2.start(t); o.stop(t + 2.5); o2.stop(t + 0.6);
+  o.onended = () => g.disconnect();
+}
+
+// T87: the stroll's brushed offbeat tick - almost a hi-hat, mostly air.
+function tickVoice(t) {
+  const s = ac.createBufferSource();
+  s.buffer = noiseBuf; s.loop = true;
+  const hp = ac.createBiquadFilter();
+  hp.type = 'highpass'; hp.frequency.value = 6000;
+  const g = ac.createGain();
+  env(g, t, 0.004, 0.05, 0.012);
+  s.connect(hp); hp.connect(g); g.connect(musicBus);
+  s.start(t, Math.random() * 1.5); s.stop(t + 0.12);
+  s.onended = () => g.disconnect();
+}
+
+// T87: drift's starlight - a very high, very quiet fifth that swells over a
+// second and fades over two more. Felt more than heard.
+function shimmerVoice(t) {
+  for (const n of [36, 43]) {
+    const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = semi(n);
+    const g = ac.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(n === 36 ? 0.016 : 0.011, t + 1.1);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
+    o.connect(g); g.connect(musicBus); g.connect(musicWet);
+    o.start(t); o.stop(t + 3);
+    o.onended = () => g.disconnect();
+  }
+}
 
 // T86: the brook - a tiny sine bloop that rises a fifth and vanishes into
 // the echo. The "bubbling along" in Will's brief; felt more than heard.
@@ -5253,30 +5398,62 @@ function dropletVoice(t) {
   o.onended = () => g.disconnect();
 }
 
+function bassVoice(f, t, peak) {
+  const b = ac.createOscillator();
+  b.type = 'sine'; b.frequency.value = f;
+  const bg = ac.createGain();
+  env(bg, t, 0.35, 3.2, peak);
+  b.connect(bg); bg.connect(musicBus);
+  b.start(t); b.stop(t + 4);
+  b.onended = () => bg.disconnect();
+}
+
+// T87: swap every dial over to the new mood. ROOT/SCALE move too, so the
+// sfx change key with the record; the delay retimes to the new tempo and
+// its old echoes ring across the gap - the bridge between tracks.
+function setMood(m) {
+  mood = m; ROOT = m.root; SCALE = m.scale;
+  melDeg = m.melStart; lastPluck = -9;
+  if (ac) {
+    delay.delayTime.setTargetAtTime(m.step * 3, ac.currentTime, 0.6);
+    padFilter.frequency.value = m.padHz;
+  }
+}
+function nextMood() {
+  moodAt = (moodAt + 1) % MOOD_ORDER.length;
+  setMood(MOODS[MOOD_ORDER[moodAt]]);
+}
+
 function scheduleStep(i, t) {
+  const m = mood;
   const bar = Math.floor(i / 16);
   if (i % 16 === 0) {
-    const c = CHORDS[bar % CHORDS.length];
-    for (const n of c) padVoice(semi(n), t, STEP * 16 + 1.4, 0.09);
-    const b = ac.createOscillator();
-    b.type = 'sine'; b.frequency.value = semi(BASS[bar % BASS.length]);
-    const bg = ac.createGain();
-    env(bg, t, 0.35, 3.2, 0.1);
-    b.connect(bg); bg.connect(musicBus);
-    b.start(t); b.stop(t + 4);
-    b.onended = () => bg.disconnect();
-    if (bar % 2 === 0) washVoice(t, STEP * 16);
+    const c = m.chords[bar % m.chords.length];
+    for (const n of c) padVoice(semi(n), t, m.step * 16 + 1.4, m.padGain);
+    bassVoice(semi(m.bass[bar % m.bass.length]), t, 0.1);
+    if (m.wash && bar % 2 === 0) washVoice(t, m.step * 16);
   }
-  // Sparse pentatonic stroll: leans onto the beat, never doubles up.
-  if (i - lastPluck >= 2 && Math.random() < (i % 2 === 0 ? 0.22 : 0.1)) {
+  // The stroll's bass skips: the root again, an octave up, at mid-bar.
+  if (m.bass2 && i % 16 === 8) {
+    bassVoice(semi(m.bass[bar % m.bass.length]) * 2, t, 0.05);
+  }
+  // Sparse melody stroll (T86): a random walk over the scale wanders a step
+  // at a time (rarely two), reflecting off its range, leaning onto the
+  // beat, never crowding itself.
+  if (i - lastPluck >= m.gap && Math.random() < m.density[i % 2 === 0 ? 0 : 1]) {
     lastPluck = i;
     melDeg += (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.2 ? 2 : 1);
-    if (melDeg < 7) melDeg = 14 - melDeg;   // reflect off the bottom...
-    if (melDeg > 14) melDeg = 28 - melDeg;  // ...and off the top
-    pluckVoice(scaleHz(melDeg), t, 0.07);
+    if (melDeg < m.melLo) melDeg = 2 * m.melLo - melDeg;   // reflect off the bottom...
+    if (melDeg > m.melHi) melDeg = 2 * m.melHi - melDeg;   // ...and off the top
+    const f = scaleHz(melDeg);
+    if (m.voice === 'piano') pianoVoice(f, t, m.melGain);
+    else if (m.voice === 'chime') chimeVoice(f, t, m.melGain);
+    else pluckVoice(f, t, m.melGain);
   }
-  // A rare droplet on an offbeat keeps the brook running.
-  if (i % 2 === 1 && Math.random() < 0.05) dropletVoice(t + STEP * 0.4);
+  // Each mood's sprinkle, always off the beat, always nearly nothing.
+  if (m.sprinkle === 'brook' && i % 2 === 1 && Math.random() < 0.05) dropletVoice(t + m.step * 0.4);
+  if (m.sprinkle === 'tick' && i % 4 === 2 && Math.random() < 0.8) tickVoice(t);
+  if (m.sprinkle === 'shimmer' && i % 32 === 24 && Math.random() < 0.8) shimmerVoice(t);
 }
 
 function musicPump() {
@@ -5285,8 +5462,16 @@ function musicPump() {
   // the backlog, just pick up from now.
   if (musicNext < ac.currentTime) musicNext = ac.currentTime + 0.05;
   while (musicNext < ac.currentTime + 0.4) {
+    // T87: end of the track - the last chord rings out through the gap,
+    // then the needle drops on the next mood.
+    if (musicStep >= mood.bars * 16) {
+      nextMood();
+      musicStep = 0;
+      musicNext += 2.6;
+      continue;
+    }
     scheduleStep(musicStep++, musicNext);
-    musicNext += STEP;
+    musicNext += mood.step;
   }
 }
 
