@@ -12,7 +12,9 @@
 <meta name="apple-mobile-web-app-title" content="Mini Levels">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f3ecdf'/%3E%3Crect x='5.5' y='5.5' width='21' height='21' rx='2' fill='none' stroke='%235f95c9' stroke-width='2.5'/%3E%3Crect x='11.5' y='11.5' width='9' height='9' rx='1.5' fill='none' stroke='%239a86cb' stroke-width='2'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23d9a94e'/%3E%3C/svg%3E">
 <style>
-  /* T22 pastel pass: warm linen ground, dusty pastels, soft everything. */
+  /* T22 pastel pass: warm linen ground, dusty pastels, soft everything.
+     T73: every surface is a token now, and the dark set below swaps in on
+     prefers-color-scheme - same warmth, lamplight instead of daylight. */
   :root {
     --ground: #f3ecdf;
     --line: #d9cdb6;
@@ -21,6 +23,41 @@
     --blue: #5f95c9;
     --violet: #9a86cb;
     --amber: #d9a94e;
+    --btn: #eae1cf;
+    --btn-active: #dfd4bd;
+    --btn2: #f2ead9;
+    --card: #f8f3e8;
+    --field: #fdfaf3;
+    --pill: rgba(250, 246, 238, 0.92);
+    --accent-wash: #e7edf3;
+    --scrim: rgba(84, 73, 56, 0.45);
+    --scrim-light: rgba(84, 73, 56, 0.18);
+    --solved-bg: #e9f0e2; --solved-line: #a9cdb2; --solved-ink: #47825a;
+    --par-bg: #f8efd8; --par-line: #e0b45a; --par-ink: #a97c1e;
+    --red-ink: #b0574f; --red-line: #dcaaa2; --red-wash: #f6e3dc;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #211c14;
+      --line: #463d2d;
+      --ink: #e6ddca;
+      --dim: #968b70;
+      --blue: #7aaede;
+      --violet: #ab98d8;
+      --amber: #dcb05e;
+      --btn: #322b1f;
+      --btn-active: #3e3526;
+      --btn2: #3a3226;
+      --card: #2b2519;
+      --field: #1c1811;
+      --pill: rgba(43, 37, 25, 0.92);
+      --accent-wash: #29384a;
+      --scrim: rgba(0, 0, 0, 0.55);
+      --scrim-light: rgba(0, 0, 0, 0.28);
+      --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
+      --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
+      --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
+    }
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -76,7 +113,7 @@
     width: 42px;
     height: 42px;
     border-radius: 999px;
-    background: rgba(250, 246, 238, 0.92);
+    background: var(--pill);
     animation: breathe 2.4s ease-in-out infinite;
   }
   #toast, #coach, #hintTip {
@@ -85,7 +122,7 @@
     padding: 8px 14px;
     border: 1px solid var(--line);
     border-radius: 999px;
-    background: rgba(250, 246, 238, 0.92);
+    background: var(--pill);
     color: var(--ink);
     font-size: 13px;
     letter-spacing: 0.06em;
@@ -108,7 +145,7 @@
     min-height: 48px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #eae1cf;
+    background: var(--btn);
     color: var(--ink);
     font: inherit;
     letter-spacing: 0.12em;
@@ -144,7 +181,7 @@
   .icon.off { color: var(--dim); opacity: 0.6; }
   .icon .slash { display: none; }
   .icon.off .slash { display: inline; }
-  button:active { background: #dfd4bd; }
+  button:active { background: var(--btn-active); }
   /* The one forward action on a card sits rightmost and reads loudest. */
   .primary { border-color: var(--blue); background: var(--blue); color: #fbf8f1; }
   .primary:active { background: #4d82b6; }
@@ -160,12 +197,12 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(84, 73, 56, 0.45);
+    background: var(--scrim);
     padding: 24px;
   }
   /* T53: the win card sits low and its scrim stays light, so the solved
      board - blooming, grinning at every depth - remains the hero. */
-  #overlay { align-items: flex-end; background: rgba(84, 73, 56, 0.18); }
+  #overlay { align-items: flex-end; background: var(--scrim-light); }
   .card {
     width: min(340px, 100%);
     max-height: 100%;
@@ -173,7 +210,7 @@
     padding: 22px 20px;
     border: 1px solid var(--line);
     border-radius: 18px;
-    background: #f8f3e8;
+    background: var(--card);
     text-align: center;
   }
   .cardTitle {
@@ -202,10 +239,10 @@
   .lv small { color: var(--dim); font-size: 11px; }
   /* T46: win states. Solved is unmistakably solved (sage, checked); solved
      AT PAR is the special tier - butter card with a soft gold glow. */
-  .lv.solved { border-color: #a9cdb2; background: #e9f0e2; }
-  .lv.solved b, .lv.solved small { color: #47825a; }
-  .lv.par { border-color: #e0b45a; background: #f8efd8; box-shadow: 0 0 9px rgba(233,188,96,0.5); }
-  .lv.par b, .lv.par small { color: #a97c1e; }
+  .lv.solved { border-color: var(--solved-line); background: var(--solved-bg); }
+  .lv.solved b, .lv.solved small { color: var(--solved-ink); }
+  .lv.par { border-color: var(--par-line); background: var(--par-bg); box-shadow: 0 0 9px rgba(233,188,96,0.5); }
+  .lv.par b, .lv.par small { color: var(--par-ink); }
   .lv.here { border-color: var(--blue); }
   .trackHead {
     grid-column: 1 / -1;
@@ -256,7 +293,16 @@
   .shelf.here { border-color: var(--blue); }
   .shelf .shName { flex: 1; font-weight: 600; font-size: 15px; }
   .shelf .shMeta { color: var(--dim); font-size: 12px; }
-  .shelf .shChev { color: var(--dim); font-size: 18px; }
+  .shelf .shChev { color: var(--dim); font-size: 18px; transition: transform 0.15s; }
+  .shelf.open .shChev { transform: rotate(90deg); }
+  /* T69: the accordion - each track's tile grid expands in place under its
+     shelf row, so changing level is open -> tap -> tap. */
+  .accGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 2px 8px;
+  }
 
   /* --- T62: the Community view - the picker's third page. ---------------- */
   #community {
@@ -271,7 +317,7 @@
   }
   #comTabs { display: flex; gap: 8px; }
   .comTab { flex: 1; min-height: 40px; font-size: 13px; }
-  .comTab.on { border-color: var(--blue); color: var(--blue); background: #e7edf3; }
+  .comTab.on { border-color: var(--blue); color: var(--blue); background: var(--accent-wash); }
   #comNote { text-align: center; color: var(--dim); font-size: 13px; padding: 6px 0; }
   #comList { display: flex; flex-direction: column; gap: 10px; }
   /* T63: cards are divs now (a card holds buttons and a rename input, which
@@ -282,16 +328,16 @@
     padding: 10px 14px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #eae1cf;
+    background: var(--btn);
     text-align: left;
     text-transform: none;
     letter-spacing: 0.02em;
   }
-  div.comCard:active { background: #dfd4bd; }
+  div.comCard:active { background: var(--btn-active); }
   .comCard .ccTop { display: flex; align-items: baseline; gap: 8px; }
   .comCard .ccName { flex: 1; font-weight: 600; font-size: 15px; }
-  .comCard .ccState { font-size: 13px; color: #47825a; }
-  .comCard .ccState.star { color: #a97c1e; }
+  .comCard .ccState { font-size: 13px; color: var(--solved-ink); }
+  .comCard .ccState.star { color: var(--par-ink); }
   .comCard .ccMeta { margin-top: 3px; color: var(--dim); font-size: 12px; }
   .comCard.more { text-align: center; color: var(--dim); }
   /* T63: the per-card overflow - dots open a small action row. */
@@ -313,7 +359,7 @@
     min-height: 32px;
     padding: 0 14px;
     border-radius: 8px;
-    background: #f2ead9;
+    background: var(--btn2);
     font-size: 11px;
   }
   .ccEdit {
@@ -321,7 +367,7 @@
     padding: 4px 8px;
     border: 1px solid var(--blue);
     border-radius: 8px;
-    background: #fdfaf3;
+    background: var(--field);
     color: var(--ink);
     font: inherit;
     font-weight: 600;
@@ -339,11 +385,11 @@
     text-transform: none;
     letter-spacing: 0.04em;
   }
-  #heart { color: #b0574f; }
-  #heart.on { border-color: #dcaaa2; background: #f6e3dc; }
+  #heart { color: var(--red-ink); }
+  #heart.on { border-color: var(--red-line); background: var(--red-wash); }
   #shareBtn { color: var(--blue); }
   /* T63: the record-claimed moment gets the par-star gold. */
-  .cardTitle.gold { color: #a97c1e; }
+  .cardTitle.gold { color: var(--par-ink); }
 
   /* --- T61: the publish card. ------------------------------------------- */
   #pubBody { margin: 10px 0 14px; color: var(--dim); }
@@ -352,12 +398,12 @@
     padding: 10px 12px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: #fdfaf3;
+    background: var(--field);
     color: var(--ink);
     font: inherit;
     text-align: center;
   }
-  #pubNote { margin-top: 10px; color: #b0574f; font-size: 13px; }
+  #pubNote { margin-top: 10px; color: var(--red-ink); font-size: 13px; }
   #pubRow { display: flex; gap: 10px; margin-top: 16px; }
 
   /* --- Editor: a full screen of its own, under the scrims. -------------- */
@@ -378,7 +424,7 @@
     padding: 10px 12px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: #f8f3e8;
+    background: var(--card);
     color: var(--ink);
     font: inherit;
   }
@@ -389,15 +435,15 @@
     padding: 8px 10px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: #f8f3e8;
+    background: var(--card);
     color: var(--dim);
     font-size: 12px;
     letter-spacing: 0.03em;
     line-height: 1.35;
     overflow-wrap: anywhere;
   }
-  #edBanner.bad { color: #b0574f; border-color: #dcaaa2; }
-  #edBanner.good { color: #47825a; border-color: #a9cdb2; }
+  #edBanner.bad { color: var(--red-ink); border-color: var(--red-line); }
+  #edBanner.good { color: var(--solved-ink); border-color: var(--solved-line); }
   #edPal { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
   #edPal button {
     display: flex;
@@ -411,7 +457,7 @@
     letter-spacing: 0.04em;
   }
   #edPal b { font-size: 15px; color: var(--dim); letter-spacing: 0; }
-  #edPal button.on { border-color: var(--blue); background: #dfe9f4; }
+  #edPal button.on { border-color: var(--blue); background: var(--accent-wash); }
   #edPal button.on b { color: var(--blue); }
   .edRow { display: flex; gap: 8px; }
   .edRow button { min-height: 46px; font-size: 12px; }
@@ -432,7 +478,7 @@
     padding: 8px 10px;
     border: 1px solid var(--line);
     border-radius: 10px;
-    background: #f8f3e8;
+    background: var(--card);
     color: var(--ink);
     font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, monospace;
     resize: none;
@@ -620,16 +666,15 @@ const TUTORIAL = [
     '#####',
   ]},
   // T55: promoted from the campaign - the same enter lesson at full size:
-  // walk in, pop out across the map. The block is walled U/D/L so the only
-  // way onward is to press it and squeeze through.
-  { name: 'Through the Looking Glass', par: 8, stretch: false, requires: ['enter'], rows: [
-    '#######',
-    '##@####',
-    '#N.#*.-',
-    '####..#',
-    '####$.#',
-    '####..#',
-    '#######',
+  // walk in, pop out across the map. T64: Will's condensed 6x6 recut (prompt
+  // 21) replaces the 7x7 - same lesson, tighter house; enter still FORCED.
+  { name: 'Through the Looking Glass', par: 10, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '#N@#.#',
+    '###.*-',
+    '##.$.#',
+    '##...#',
+    '######',
   ]},
   // Will's OTB-1: the only legal first move is out the back door - and you
   // fall out of the window across the board. Doors go both ways.
@@ -661,12 +706,14 @@ const TUTORIAL = [
     '#.@..#',
     '######',
   ]},
-  // OTB-4 recut ((3,1) opened): the window's doorless faces push like a
-  // crate - park the world where you need its mouth.
-  { name: 'Heavy Goods', par: 10, stretch: false, requires: ['blockstep'], rows: [
-    '##-###',
-    '-$...#',
-    '###..#',
+  // OTB-4, Will's T64 recut (prompt 21, also published as Mins' community
+  // level): the window's doorless faces push like a crate - park the world
+  // where you need its mouth. blockstep still FORCED. The trickier T43 cut
+  // moved to the campaign as Heavy Goods II.
+  { name: 'Heavy Goods', par: 11, stretch: false, requires: ['blockstep'], rows: [
+    '####-#',
+    '-$.$.#',
+    '##..##',
     '#..N.#',
     '#*@..#',
     '######',
@@ -759,6 +806,18 @@ const CAMPAIGN = [
     '#.$N.#',
     '#*.$$#',
     '#-####',
+  ]},
+  // T64: the original T43 Heavy Goods cut, demoted here when Will's tighter
+  // recut took its Moving In slot (prompt 21: "the existing one is more
+  // tricky and could be a later V2 level") - same demote path Open House
+  // and Moving Day took at T55.
+  { name: 'Heavy Goods II', par: 10, stretch: false, requires: ['blockstep'], rows: [
+    '##-###',
+    '-$...#',
+    '###..#',
+    '#..N.#',
+    '#*@..#',
+    '######',
   ]},
   { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
     '#######',
@@ -1168,6 +1227,17 @@ const WORKSHOP = [
     '#..$.##',
     '#.@.#*-',
     '#####-#',
+  ]},
+  // T64: grafted from the community shelf - Will published it as Mins
+  // ("Tight corner", best known 22 there); the BFS par is 18.
+  { name: 'Tight Corner', par: 18, stretch: true, requires: [], rows: [
+    '#######',
+    '-@.#*.#',
+    '#$.##.#',
+    '#....N#',
+    '###...#',
+    '#..$..#',
+    '##-####',
   ]},
   { name: 'Avalanche', par: 23, stretch: true, requires: [], rows: [
     '#######',
@@ -2010,15 +2080,59 @@ const wctx = world.getContext('2d');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
+// T73: the board's palette, twinned. Bodies (blue selves, butter boxes),
+// the violet window language and the coral doors carry across unchanged -
+// only the room they sit in swaps from daylight linen to lamplight. Values
+// mirror the CSS tokens; render caches are dropped whenever THEME flips.
+const THEMES = {
+  light: {
+    ground: '#f3ecdf', groundRgb: '243,236,223',
+    floor: '#ece4d3', floorLine: 'rgba(92,80,60,0.06)',
+    wall: '#cfc0a4', wallShadow: 'rgba(110,95,70,0.3)',
+    pit: '#4a4132', slab: '#ddd3bf', slabLine: 'rgba(74,65,50,0.3)',
+    target: 'rgba(74,67,54,0.42)',
+    mergeRing: 'rgba(74,67,54,0.9)', dieRing: 'rgba(153,144,124,0.95)',
+    blockTop: '#cfc2ea', blockBot: '#b2a2d8',
+    bezelTop: '#d7ccee', bezelBot: '#bcaede',
+  },
+  dark: {
+    ground: '#211c14', groundRgb: '33,28,20',
+    floor: '#2b251a', floorLine: 'rgba(255,244,220,0.05)',
+    wall: '#4f4331', wallShadow: 'rgba(0,0,0,0.5)',
+    pit: '#110d07', slab: '#3a3322', slabLine: 'rgba(230,221,202,0.28)',
+    target: 'rgba(230,221,202,0.42)',
+    mergeRing: 'rgba(230,221,202,0.9)', dieRing: 'rgba(153,144,124,0.95)',
+    blockTop: '#6f6099', blockBot: '#57497c',
+    bezelTop: '#79699f', bezelBot: '#5f5284',
+  },
+};
+let THEME = THEMES.light;
+const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+function applyTheme() {
+  THEME = darkMq.matches ? THEMES.dark : THEMES.light;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', THEME.ground);
+  tileLayout = null;
+  shellCache = { layout: null, cell: 0 };
+  spriteCache = { cell: 0 };
+  dirty = true;
+  if (!$('editor').hidden) edPaint();
+}
+darkMq.addEventListener('change', applyTheme);
+
 const TWEEN = 100;   // ms per tick of animation
 const PORTAL = 240;  // ...but going through a door is worth watching (T45)
 const FLASH = 260;   // ms for merge rings and death flares
 const BLOOM = 800;   // ms for the win cascade
 const DEPTH = 3;     // feedback passes on top of the flat pass
+const OUTER_WASH = 0.76;   // how much ground colour washes the parent world out
 const BLOCK_INSET = 0;     // T49: no bezel - the window's rim IS the mini's own shell
+// T67 (Will: "doors should be more obvious"): doors get their own colour -
+// warm coral, an OPENING - so they stop reading as more violet frame. Used
+// by the board mouths, the mini-shell arches, the editor and the door rings.
+const DOOR_RGB = '214,118,95';
+const doorCol = (a) => 'rgba(' + DOOR_RGB + ',' + a + ')';
 const PAD_FRAC = 0.38;     // T38: apron around the interior (frame + door mouths), in cells
-const OUTER_DIM = 0.24;    // how loud the parent world is allowed to be
-const OUTER_RES = 0.5;     // ...and it gets blown up ~10x, so half-res is plenty
 
 let trackIndex = 0;  // index into TRACKS...
 let levelIndex = 0;  // ...and into its levels, or -1 while playtesting a draft
@@ -2035,6 +2149,7 @@ let bloom = null;    // { t0, p }
 let bonkAt = null, bonkVec = [0, 0];
 let lastDir = 'D';   // where the amoeba's eyes rest between moves
 let lastMoveAt = 0;  // when it last moved (its wobble calms as it sits)
+let squirmAt = -1;   // T72: when the blob was last poked (every self squirms)
 let CELL = 24;
 let PAD = 9;         // px of apron; derived from CELL in resize()
 let dirty = true;
@@ -2045,6 +2160,9 @@ function stopAuto() { if (auto !== null) { clearTimeout(auto); auto = null; } }
 // the board shrinks into one of its own windows and the level materializes
 // around it at full scale. Both end frames are the resting frame.
 let zoom = null;     // { t0, dur, fx, fy, logZ, e, up } (+ back, e0, tb mid-retract)
+// T68: tapping the solved board throws confetti and rolls into the next
+// level. View-layer only; parts live in board CSS coords.
+let confetti = null; // { t0, last, age, parts: [{x,y,vx,vy,rot,vr,w,h,ph,color}] }
 function retractZoom() {
   if (zoom && !zoom.back) { zoom.back = true; zoom.e0 = zoom.e; zoom.tb = performance.now(); }
 }
@@ -2056,18 +2174,19 @@ let ctxA = bufA.getContext('2d');
 let ctxB = bufB.getContext('2d');
 let curBuf = bufA, altBuf = bufB;
 
-// One more buffer for the world OUTSIDE the board: the same level again, blown
-// up so our board lands exactly in one of its nest-block cells.
-const bufC = document.createElement('canvas');
-const ctxC = bufC.getContext('2d');
+// The world OUTSIDE the board: the same level again, blown up so our board
+// lands exactly in one of its nest-block cells. T66: drawn DIRECTLY into the
+// world canvas at full resolution (it used to go through a half-res buffer
+// blown up ~10x, which read as a massively scaled sprite - Will, prompt 21).
 let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v10'; // v10 = T61 community identity: handle +
-// authorToken join the blob, everything else carries over from v9 unchanged.
-// T62 adds hearts (my votes, by server id); T63 adds records (the community
-// levels whose best known count I set) - both additive, so still v10.
+const SAVE_KEY = 'mini-level-v11'; // v11 = T64 level reshape: Moving In's
+// TtLG + Heavy Goods recut in place (their old bests describe retired
+// puzzles), Heavy Goods II into the campaign at 6, Tight Corner into the
+// workshop at 13 - migration below drops/remaps exactly those keys.
+// (v10 = T61 community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
   hearts: {}, records: {} };
 
@@ -2078,6 +2197,11 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let preT64 = false; // any pre-v11 save needs the T64 key fixup below
+    if (!raw) {
+      preT64 = true;
+      raw = JSON.parse(localStorage.getItem('mini-level-v10') || 'null');
+    }
     if (!raw) {
       // Migrate a v9 save wholesale: T61 only ADDED fields.
       raw = JSON.parse(localStorage.getItem('mini-level-v9') || 'null');
@@ -2128,6 +2252,24 @@ function loadProgress() {
           coached: v5.coached || {}, audio: v5.audio };
         for (const k in (v5.best || {})) raw.best['c:' + k] = v5.best[k];
       }
+    }
+    if (raw && typeof raw === 'object' && preT64 && raw.best) {
+      // T64 fixup: t:4 (TtLG) and t:8 (Heavy Goods) were recut in place -
+      // their old bests describe retired puzzles - and one level slid into
+      // the campaign at 6 and the workshop at 13, so later keys shift up.
+      delete raw.best['t:4'];
+      delete raw.best['t:8'];
+      const shift = (id, from, last) => {
+        for (let i = last; i >= from; i--) {
+          const k = id + ':' + i;
+          if (raw.best[k] !== undefined) {
+            raw.best[id + ':' + (i + 1)] = raw.best[k];
+            delete raw.best[k];
+          }
+        }
+      };
+      shift('c', 6, 11);
+      shift('w', 13, 16);
     }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
@@ -2219,6 +2361,7 @@ function startLevel(def) {
   anim = null;
   bloom = null;
   zoom = null;
+  confetti = null;
   resets = 0;
   hintPlan = null;
   hintSearch++;
@@ -2267,8 +2410,9 @@ function dismissCoach() {
   saveProgress();
 }
 
-// One tile-maker for both lists: the level picker and the editor's drafts.
-function tile(num, title, note, onPick) {
+// One tile-maker for all lists: the accordion's track grids, the drafts
+// shelf, wherever. `box` defaults to the classic #grid page (drafts).
+function tile(num, title, note, onPick, box) {
   const b = document.createElement('button');
   b.className = 'lv';
   b.innerHTML = '<b>' + num + '</b>';
@@ -2278,7 +2422,7 @@ function tile(num, title, note, onPick) {
   small.textContent = note;
   b.appendChild(small);
   if (onPick) b.addEventListener('click', onPick);
-  $('grid').appendChild(b);
+  (box || $('grid')).appendChild(b);
   return b;
 }
 
@@ -2328,15 +2472,26 @@ function shelfRow(name, meta, onPick) {
   return b;
 }
 
-function openShelves() {
+// T69 (Will: "streamline so we don't need to click as many times... maybe
+// an accordion"): the tracks ARE the accordion now. Each shelf row expands
+// its tile grid in place - one open at a time - so switching level anywhere
+// is open -> tap -> tap, never a page deep. Community and Yours keep their
+// own sub-pages (tabs and drafts need the room).
+function openShelves(expand) {
   $('shelves').textContent = '';
   $('pickerTitle').textContent = 'Levels';
   TRACKS.forEach((tr, t) => {
     if (!tr.levels.length) return;
     const s = trackStats(t);
     const meta = s.solved + '/' + tr.levels.length + (s.stars ? ' · ★' + s.stars : '');
-    const b = shelfRow(tr.name, meta, () => { play('ui'); openTrack(t); });
+    const b = shelfRow(tr.name, meta, () => { play('ui'); accToggle(t); });
+    b.dataset.track = t;
     if (t === trackIndex && levelIndex >= 0 && !communityId) b.classList.add('here');
+    const g = document.createElement('div');
+    g.className = 'accGrid';
+    g.dataset.track = t;
+    g.hidden = true;
+    $('shelves').appendChild(g);
   });
   const comSolved = Object.keys(progress.best).filter(k => k.startsWith('x:')).length;
   const cb = shelfRow('Community', comSolved ? comSolved + ' solved' : 'by everyone',
@@ -2345,43 +2500,44 @@ function openShelves() {
   shelfRow('Yours', drafts.length + (drafts.length === 1 ? ' draft' : ' drafts'),
     () => { play('ui'); openDrafts(); });
   pkShow(null);
+  if (expand !== undefined && expand !== null) accToggle(expand, true);
 }
 
-function openTrack(t) {
-  const grid = $('grid');
-  const tr = TRACKS[t];
-  $('pickerTitle').textContent = tr.name;
-  grid.textContent = '';
-  const s = trackStats(t);
-  const head = document.createElement('div');
-  head.className = 'trackHead';
-  head.textContent = s.solved + '/' + tr.levels.length + ' solved';
-  if (s.stars) {
-    const st = document.createElement('small');
-    st.textContent = ' · ★' + s.stars + ' optimal';
-    head.appendChild(st);
-  }
-  grid.appendChild(head);
-  let here = null;
-  tr.levels.forEach((def, i) => {
+function fillTrackGrid(t, box) {
+  TRACKS[t].levels.forEach((def, i) => {
     const best = progress.best[bestKey(t, i)];
     // T46: solved reads solved; solved at par is the tier above.
     const atPar = best !== undefined && def.par > 0 && best <= def.par;
     const note = best === undefined ? 'unsolved'
       : atPar ? '★ optimal ' + best
       : '✓ best ' + best;
-    const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); });
+    const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); }, box);
     if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
-    if (t === trackIndex && i === levelIndex) { b.classList.add('here'); here = b; }
+    if (t === trackIndex && i === levelIndex) b.classList.add('here');
   });
-  pkShow(t);
-  // A long track: land the view on where you are.
-  if (here) here.scrollIntoView({ block: 'center' });
 }
 
-// Always the CURRENT level's shelf: that is where .here and any fresh win
-// state live, so the post-solve return never lands on a stale shelf.
-function openPicker() { openTrack(trackIndex); }
+// Expand one track's grid (collapsing the rest); toggles shut if it was
+// open. `enter` marks the opening tap that comes from the Levels button -
+// that one lands the view on the level you are on.
+function accToggle(t, enter) {
+  const sh = $('shelves');
+  const box = sh.querySelector('.accGrid[data-track="' + t + '"]');
+  const head = sh.querySelector('.shelf[data-track="' + t + '"]');
+  const wasOpen = !box.hidden;
+  for (const g of sh.querySelectorAll('.accGrid')) g.hidden = true;
+  for (const h of sh.querySelectorAll('.shelf')) h.classList.remove('open');
+  if (wasOpen && !enter) return;
+  if (!box.childElementCount) fillTrackGrid(t, box);
+  box.hidden = false;
+  head.classList.add('open');
+  const here = box.querySelector('.lv.here');
+  (enter && here ? here : head).scrollIntoView({ block: enter ? 'center' : 'nearest' });
+}
+
+// Always land on the CURRENT level's shelf, expanded and scrolled to where
+// you are - that is where .here and any fresh win state live.
+function openPicker() { openShelves(trackIndex); }
 
 // T62: the Community view. Tabs Top / New / Mine (T63), one column of
 // cards, 20 a page behind a "more" tile. Fetches on every open; offline
@@ -2861,6 +3017,14 @@ function compileAnim(prev, events, dir) {
   const at = (kind, idx) => list.find(s => s.live && s.kind === kind && s.b === idx);
   // Portal sprites squash and stretch along the direction they travelled.
   const axis = (s) => { s.axis = dx !== 0 ? 'x' : 'y'; return s; };
+  // T65: the point on the board frame where a door's arch mouth sits, in
+  // sprite grid coords - the anchor a body exiting the LEVEL pinches into,
+  // and where the door lights up as it passes.
+  const doorXY = (side) => {
+    const t = layout.doors[side];
+    if (t === null) return null;
+    return [xOf(t) + INWARD[side][0] * 0.5, yOf(t) + INWARD[side][1] * 0.5];
+  };
 
   for (const ev of events) {
     switch (ev.t) {
@@ -2897,6 +3061,11 @@ function compileAnim(prev, events, dir) {
           axy: [xOf(ev.to) - dx * back, yOf(ev.to) - dy * back],
         }));
         flashes.push({ at: ev.block, kind: 'in' });
+        // T65: the board door the copy re-emerges through lights up too.
+        if (!ev.lead) {
+          const dm = doorXY(IN_FACE[dir]);
+          if (dm) flashes.push({ xy: dm, kind: 'out' });
+        }
         break;
       }
       case 'exit': case 'boxout': {
@@ -2904,13 +3073,17 @@ function compileAnim(prev, events, dir) {
         if (ev.t === 'boxout') pushedFrom.add(ev.from);
         if (!ev.spawned) {
           const s = at(kind, ev.from);
-          // Walking off the edge: step past it in grid COORDS, since from+delta
-          // wraps onto the next row.
+          // Walking off the edge, in grid COORDS (from+delta wraps onto the
+          // next row). T65: pinch INTO the door's arch mouth on the frame
+          // (half a cell out), not a full cell past it - the body visibly
+          // morphs into the side of the grid, the way it does into a window.
           if (s) {
             s.fate = 'squeeze'; s.live = false;
-            s.bxy = [xOf(ev.from) + dx, yOf(ev.from) + dy];
+            s.bxy = [xOf(ev.from) + dx * 0.5, yOf(ev.from) + dy * 0.5];
             axis(s);
           }
+          const dm = doorXY(OUT_FACE[dir]);
+          if (dm) flashes.push({ xy: dm, kind: 'in' });
         }
         // ...and grow back out of the mouth on the far face.
         list.push(axis({
@@ -2934,7 +3107,7 @@ function compileAnim(prev, events, dir) {
             s.b = ev.from + delta;
             s.bxy = mouthXY(ev.from + delta, IN_FACE[dir]);
           } else {
-            s.bxy = [xOf(ev.from) + dx, yOf(ev.from) + dy];
+            s.bxy = [xOf(ev.from) + dx * 0.5, yOf(ev.from) + dy * 0.5];
           }
           axis(s);
         }
@@ -2986,9 +3159,11 @@ function compileAnim(prev, events, dir) {
           const s = at('block', ev.from);
           if (s) {
             s.fate = 'squeeze'; s.live = false;
-            s.bxy = [xOf(ev.from) + dx, yOf(ev.from) + dy];
+            s.bxy = [xOf(ev.from) + dx * 0.5, yOf(ev.from) + dy * 0.5];
             axis(s);
           }
+          const dm = doorXY(OUT_FACE[dir]);
+          if (dm) flashes.push({ xy: dm, kind: 'in' });
         }
         if (ev.to === null) break; // a lone window just leaves
         list.push(axis({
@@ -3068,6 +3243,7 @@ function undo() {
   moveLog = h.log;
   won = false;
   bloom = null;
+  confetti = null;
   hideHintTip();
   retractZoom();
   closeOverlays();
@@ -3085,6 +3261,7 @@ function reset() {
   moveLog = '';
   won = false;
   bloom = null;
+  confetti = null;
   resets++;
   hideHintTip();
   offerHint();
@@ -3362,8 +3539,6 @@ function resize() {
     cv.width = Math.round(cssW * DPR);
     cv.height = Math.round(cssH * DPR);
   }
-  bufC.width = Math.max(1, Math.round(cssW * DPR * OUTER_RES));
-  bufC.height = Math.max(1, Math.round(cssH * DPR * OUTER_RES));
   world.width = Math.round(availW * DPR);
   world.height = Math.round(availH * DPR);
   placeOuter();
@@ -3445,7 +3620,7 @@ function drawPit(c, x, y) {
   const s = CELL - inset * 2;
   const r = Math.max(2, CELL * 0.2);
   roundRect(c, x + inset, y + inset, s, s, r);
-  c.fillStyle = '#4a4132';
+  c.fillStyle = THEME.pit;
   c.fill();
   // Inner shadow: deepest under the top lip, as if lit from above.
   const g = c.createLinearGradient(0, y + inset, 0, y + inset + s);
@@ -3465,10 +3640,10 @@ function drawPit(c, x, y) {
 
 // A filled pit: flat slab, walkable, visibly once-a-hole.
 function drawSlab(c, x, y) {
-  c.fillStyle = '#ddd3bf';
+  c.fillStyle = THEME.slab;
   c.fillRect(x, y, CELL, CELL);
   const inset = CELL * 0.09;
-  c.strokeStyle = 'rgba(74,65,50,0.3)';
+  c.strokeStyle = THEME.slabLine;
   c.lineWidth = 1;
   roundRect(c, x + inset, y + inset, CELL - inset * 2, CELL - inset * 2, Math.max(2, CELL * 0.2));
   c.stroke();
@@ -3490,7 +3665,7 @@ function buildTileCache() {
   tileCache.height = Math.max(1, Math.round(h * CELL * DPR));
   const c = tileCtx;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  c.fillStyle = '#f3ecdf';
+  c.fillStyle = THEME.ground;
   c.fillRect(0, 0, w * CELL, h * CELL);
   for (let i = 0; i < w * h; i++) {
     const gx = xOf(i), gy = yOf(i);
@@ -3510,7 +3685,7 @@ function buildTileCache() {
       c.translate(x + CELL / 2, y + CELL / 2);
       c.rotate(Math.PI / 4);
       const s = CELL * 0.34;
-      c.strokeStyle = 'rgba(74,67,54,0.42)';
+      c.strokeStyle = THEME.target;
       c.lineWidth = Math.max(1, CELL * 0.055);
       c.strokeRect(-s / 2, -s / 2, s, s);
       c.restore();
@@ -3539,8 +3714,8 @@ function drawWallMass(c, w, h, inWall) {
       else wallFillets(c, x * CELL, y * CELL, nb, CELL * 0.3);
     }
   }
-  c.fillStyle = '#cfc0a4';
-  c.shadowColor = 'rgba(110,95,70,0.3)';
+  c.fillStyle = THEME.wall;
+  c.shadowColor = THEME.wallShadow;
   c.shadowBlur = CELL * 0.16;
   c.shadowOffsetY = CELL * 0.05;
   c.fill();
@@ -3627,25 +3802,32 @@ function drawBoardFrame(c) {
   for (const side of ['N', 'S', 'W', 'E']) drawDoorMouth(c, side);
 }
 
-function drawDoorMouth(c, side) {
+// The point on the board's frame where a door's arch mouth sits, in grid px.
+function doorMouthPx(side) {
   const d = layout.doors[side];
-  if (d === null) return;
   const { w, h } = layout;
   const px = side === 'W' ? CELL : side === 'E' ? (w - 1) * CELL : xOf(d) * CELL + CELL / 2;
   const py = side === 'N' ? CELL : side === 'S' ? (h - 1) * CELL : yOf(d) * CELL + CELL / 2;
-  // Light spilling inward marks where the door lets out.
+  return [px, py];
+}
+
+function drawDoorMouth(c, side) {
+  const d = layout.doors[side];
+  if (d === null) return;
+  const [px, py] = doorMouthPx(side);
+  // Light spilling inward marks where the door lets out (coral since T67).
   const g = c.createRadialGradient(px, py, 0, px, py, CELL * 1.05);
-  g.addColorStop(0, 'rgba(154,134,203,0.5)');
-  g.addColorStop(1, 'rgba(154,134,203,0)');
+  g.addColorStop(0, doorCol(0.45));
+  g.addColorStop(1, doorCol(0));
   c.fillStyle = g;
   c.fillRect(px - CELL * 1.05, py - CELL * 1.05, CELL * 2.1, CELL * 2.1);
   // The mouth: an archway bulging outward through the gap in the frame.
   const a0 = side === 'N' ? Math.PI : side === 'S' ? 0 : side === 'W' ? Math.PI / 2 : -Math.PI / 2;
   const r = Math.max(3, PAD * 0.62);
   c.save();
-  c.fillStyle = 'rgba(154,134,203,0.3)';
-  c.strokeStyle = 'rgba(154,134,203,0.95)';
-  c.shadowColor = 'rgba(154,134,203,0.5)';
+  c.fillStyle = doorCol(0.35);
+  c.strokeStyle = doorCol(0.95);
+  c.shadowColor = doorCol(0.5);
   c.shadowBlur = CELL * 0.18;
   c.lineWidth = Math.max(2, CELL * 0.09);
   c.lineCap = 'round';
@@ -3656,10 +3838,29 @@ function drawDoorMouth(c, side) {
   c.restore();
 }
 
+// T67: doors breathe - a slow coral pulse over each arch mouth, drawn live
+// (the tile bake is static, and idle frames already render at ~30fps for
+// the amoeba). The feedback blit carries it into every window's miniature,
+// so the doors glow at every depth for free.
+function drawDoorBreath(c, time) {
+  const t = reducedMotion.matches ? 0 : (time || 0);
+  const a = 0.2 + 0.14 * Math.sin(t * 0.0024);
+  const img = spriteImg('doorGlow');
+  const r = CELL * 1.1;
+  const ga = c.globalAlpha;
+  c.globalAlpha = ga * a;
+  for (const side of ['N', 'S', 'W', 'E']) {
+    if (layout.doors[side] === null) continue;
+    const [px, py] = doorMouthPx(side);
+    c.drawImage(img, px - r, py - r, r * 2, r * 2);
+  }
+  c.globalAlpha = ga;
+}
+
 function drawFloorCell(c, x, y) {
-  c.fillStyle = '#ece4d3';
+  c.fillStyle = THEME.floor;
   c.fillRect(x, y, CELL, CELL);
-  c.strokeStyle = 'rgba(92,80,60,0.06)';
+  c.strokeStyle = THEME.floorLine;
   c.lineWidth = 1;
   c.strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
 }
@@ -3730,16 +3931,19 @@ function drawMiniShell(c, x, y) {
   edge(rx, ry + rh, rx + rw, ry + rh, 'S');
   edge(rx, ry, rx, ry + rh, 'W');
   // The arch mouths, bulging outward through the gaps - the board apron's
-  // doors in miniature, floored so they survive phone-sized cells.
+  // doors in miniature, floored so they survive phone-sized cells. Coral
+  // (T67), so a window's enterable faces read at a glance.
   const r = Math.max(2.75, inset * 0.7);
   c.lineWidth = Math.max(1, lw * 0.9);
+  c.strokeStyle = doorCol(0.95);
+  c.shadowColor = doorCol(0.4);
   for (const side of ['N', 'S', 'W', 'E']) {
     if (layout.doors[side] === null) continue;
     const f = doorFrac(side);
     const px = side === 'W' ? rx : side === 'E' ? rx + rw : x + f * CELL;
     const py = side === 'N' ? ry : side === 'S' ? ry + rh : y + f * CELL;
     const a0 = side === 'N' ? Math.PI : side === 'S' ? 0 : side === 'W' ? Math.PI / 2 : -Math.PI / 2;
-    c.fillStyle = 'rgba(154,134,203,0.3)';
+    c.fillStyle = doorCol(0.35);
     c.beginPath();
     c.arc(px, py, r, a0, a0 + Math.PI);
     c.fill();
@@ -3774,11 +3978,11 @@ function blockShell() {
       c.fillRect(0, 0, CELL, CELL);
     };
     let [cv, c] = make();          // no inner picture: solid violet + shell
-    grad(c, '#cfc2ea', '#b2a2d8');
+    grad(c, THEME.blockTop, THEME.blockBot);
     drawMiniShell(c, 0, 0);
     shellCache.solid = cv;
     [cv, c] = make();              // backing under the picture (letterbox strips)
-    grad(c, '#d7ccee', '#bcaede');
+    grad(c, THEME.bezelTop, THEME.bezelBot);
     shellCache.bezel = cv;
     [cv, c] = make();              // T49: one rim - the shell, drawn OVER the picture
     drawMiniShell(c, 0, 0);
@@ -3867,20 +4071,22 @@ function drawSprite(c, s, p, time) {
     const st = Math.max(0, 1 - e * 1.45);                           // needle, gone by ~0.7
     // T45: the jelly settle - not one squash but a damped wobble, so the body
     // visibly reinflates, overshoots, and comes to rest like something wet.
+    // T65: fatter needle, wetter wobble - same clock, more flesh.
     const jq = Math.max(0, (e - 0.45) / 0.55);
     const jl = Math.sin(jq * Math.PI * 2) * Math.pow(1 - jq, 1.2);
-    along = 1 + 1.1 * st - 0.22 * jl;
-    across = 1 - 0.68 * st + 0.22 * jl;
+    along = 1 + 1.28 * st - 0.28 * jl;
+    across = 1 - 0.74 * st + 0.28 * jl;
   }
   if (s.fate === 'squeeze') {
     // brace = the anticipation part of the back-in curve: squash across the
     // door before the needle. Gone by the time the pinch proper starts.
     // T45: bigger brace, harder whip - the door visibly sucks the body in.
+    // T65: deeper pinch still (Will: lean into the suck) - timing untouched.
     const pinch = Math.max(0, eb), brace = Math.max(0, -eb);
     scale *= 1 - 0.6 * pinch;
     alpha *= Math.max(0, 1 - 1.08 * pinch);
-    along *= 1 + 1.35 * pinch - 1.1 * brace;
-    across *= 1 - 0.72 * pinch + 1.35 * brace;
+    along *= 1 + 1.55 * pinch - 1.1 * brace;
+    across *= 1 - 0.78 * pinch + 1.35 * brace;
   }
   else if (s.fate === 'merge') { alpha *= 1 - Math.max(0, (e - 0.6) / 0.4); }
   else if (s.fate === 'die') { y += 0.3 * e; scale *= 1 - 0.8 * e; alpha *= 1 - e; }
@@ -3943,6 +4149,13 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   const R = CELL * 0.37;
   // T40: lively right after a move, near-still once it has sat for a moment.
   const act = 0.3 + 0.7 * Math.max(0, Math.min(1, 1 - (t - lastMoveAt - 400) / 600));
+  // T72: freshly poked - a decaying side-to-side wriggle, every self at once.
+  const sq = squirmAt >= 0 && t - squirmAt < 650 ? 1 - (t - squirmAt) / 650 : 0;
+  if (sq > 0) {
+    const wig = Math.sin(t * 0.045 + seed * 3) * 0.16 * sq;
+    kx *= 1 + wig;
+    ky *= 1 - wig;
+  }
   c.save();
   c.translate(cx, cy);
   c.scale(kx, ky);
@@ -3973,7 +4186,8 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   // how much is going on (the amoeba likes company); solving the level is a
   // full grin; and once in a while, sat still, it yawns.
   const crowd = state ? state.selves.length + state.boxes.length + state.blocks.length : 1;
-  const cheer = Math.max(0, Math.min(1, (crowd - 1) / 8));
+  // A poked blob grins wide for as long as the wriggle lasts (T72).
+  const cheer = Math.min(1, Math.max(0, (crowd - 1) / 8) + sq);
   const yph = (t * 0.001 + seed * 2.1) % 23;
   const yawn = (!reducedMotion.matches && !won && !(mdx || mdy) && yph < 1.6)
     ? Math.sin(yph / 1.6 * Math.PI) : 0;
@@ -4083,6 +4297,14 @@ function spriteImg(kind) {
     g.addColorStop(1, 'rgba(122,174,222,0)');
     c.fillStyle = g;
     c.fillRect(0, 0, CELL + pad * 2, CELL + pad * 2);
+  } else if (kind === 'doorGlow') {
+    // T67: the doors' breath - baked once, blitted with a slow alpha sine.
+    const g = c.createRadialGradient(cx, cy, 0, cx, cy, pad + CELL / 2);
+    g.addColorStop(0, doorCol(0.5));
+    g.addColorStop(0.55, doorCol(0.2));
+    g.addColorStop(1, doorCol(0));
+    c.fillStyle = g;
+    c.fillRect(0, 0, CELL + pad * 2, CELL + pad * 2);
   } else {
     const on = kind === 'boxOn';
     c.shadowColor = on ? 'rgba(147,196,147,0.4)' : 'rgba(233,188,96,0.4)';
@@ -4108,16 +4330,19 @@ function drawFlashes(c, time) {
   const p = Math.max(0, Math.min(1, (time - anim.t0) / FLASH));
   if (p >= 1) return;
   for (const f of anim.flashes) {
-    const cx = xOf(f.at) * CELL + CELL / 2;
-    const cy = yOf(f.at) * CELL + CELL / 2;
+    // T65: door flashes anchor at the frame's arch mouth (fractional grid
+    // coords in f.xy); everything else at its cell centre.
+    const cx = f.xy ? (f.xy[0] + 0.5) * CELL : xOf(f.at) * CELL + CELL / 2;
+    const cy = f.xy ? (f.xy[1] + 0.5) * CELL : yOf(f.at) * CELL + CELL / 2;
     // Portal rings collapse inward where a body went in and bloom outward
     // where one came out; merge/death rings just expand.
     const portal = f.kind === 'in' || f.kind === 'out';
     const rad = f.kind === 'in' ? CELL * (0.74 - 0.42 * p) : CELL * (0.22 + 0.7 * p);
     c.save();
     c.globalAlpha = (1 - p) * (portal ? 0.55 : 1);
-    c.strokeStyle = portal ? 'rgba(154,134,203,0.95)'
-      : f.kind === 'merge' ? 'rgba(74,67,54,0.9)' : 'rgba(153,144,124,0.95)';
+    // Door-anchored rings (f.xy) speak the doors' coral (T67).
+    c.strokeStyle = portal ? (f.xy ? doorCol(0.95) : 'rgba(154,134,203,0.95)')
+      : f.kind === 'merge' ? THEME.mergeRing : THEME.dieRing;
     c.shadowColor = c.strokeStyle;
     c.shadowBlur = CELL * 0.18;
     c.lineWidth = Math.max(1, CELL * (portal ? 0.05 : 0.09));
@@ -4146,19 +4371,24 @@ function drawBloom(c) {
 // the backdrop never strobes.
 function drawScene(c, time, inner, bg, dpr, cam) {
   c.setTransform(dpr || DPR, 0, 0, dpr || DPR, 0, 0);
-  // T50: the dive camera - a pure zoom about a fixed point, view-layer only.
-  if (cam) { c.translate(cam.fx * (1 - cam.z), cam.fy * (1 - cam.z)); c.scale(cam.z, cam.z); }
+  // T50/T66: the camera - an affine {tx, ty, z}, view-layer only. The dive
+  // zoom and the outer-world placement both ride it (composed, for the
+  // parent world during a dive - the whole picture zooms as one).
+  if (cam) { c.translate(cam.tx, cam.ty); c.scale(cam.z, cam.z); }
   // Crop to the interior: layout cell (1,1) lands at (PAD, PAD). Everything
   // below draws in full-layout coords, so sprites mid-door just slide off.
   c.translate(PAD - CELL, PAD - CELL);
   drawTiles(c);
+  drawDoorBreath(c, time);
   const p = anim ? anim.p : 1;
   // T49/T50: as the dive magnifies a window, the real frame inside its blit
   // becomes legible on its own, so the legibility rim bows out early in the
-  // dive and the end frame is pixel-identical to the resting one.
-  const shellA = cam
-    ? Math.max(0, Math.min(1, 1 - (cam.z - 1) / (0.35 * Math.max(0.001, 1 / miniGeom().k - 1))))
-    : 1;
+  // dive and the end frame is pixel-identical to the resting one. cam.sz is
+  // the DIVE magnification alone (the outer world's huge base scale must
+  // not fade its bracket rim).
+  const shellZ = cam ? (cam.sz !== undefined ? cam.sz : cam.z) : 1;
+  const shellA =
+    Math.max(0, Math.min(1, 1 - (shellZ - 1) / (0.35 * Math.max(0.001, 1 / miniGeom().k - 1))));
   // Blocks first: everything else walks over (and through) them.
   for (const s of sprites) if (s.kind === 'block') drawBlockSprite(c, s, p, inner, shellA);
   for (const s of sprites) if (s.kind !== 'block') drawSprite(c, s, p, time);
@@ -4167,18 +4397,32 @@ function drawScene(c, time, inner, bg, dpr, cam) {
   drawBloom(c);
 }
 
-// One pass up instead of down: the same level again, huge and dim, with the
-// finished board blitted back into it - so it goes on forever both ways.
+// One pass up instead of down: the same level again, huge and faint, with
+// the finished board blitted back into it - so it goes on forever both ways.
+// T66: drawn straight into the world canvas at device resolution (sharp,
+// not a blown-up sprite), and the dive/climb zoom composes into the same
+// transform - the outside now zooms with the board instead of sitting still.
 function drawOuter(time) {
   wctx.setTransform(1, 0, 0, 1, 0, 0);
   wctx.clearRect(0, 0, world.width, world.height);
   if (!outer) return;
-  drawScene(ctxC, time, curBuf, true, DPR * OUTER_RES);
+  const s = outer.w / viewW();
+  const zz = zoom ? Math.exp(zoom.logZ * zoom.e) : 1;
+  const fx = board.offsetLeft + (zoom ? zoom.fx : 0);
+  const fy = board.offsetTop + (zoom ? zoom.fy : 0);
+  drawScene(wctx, time, curBuf, true, DPR, {
+    tx: fx * (1 - zz) + zz * outer.x,
+    ty: fy * (1 - zz) + zz * outer.y,
+    z: s * zz,
+    sz: zz,
+  });
   const cssW = world.width / DPR, cssH = world.height / DPR;
   wctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  wctx.globalAlpha = OUTER_DIM;
-  wctx.drawImage(bufC, outer.x, outer.y, outer.w, outer.h);
-  wctx.globalAlpha = 1;
+  // Wash the parent world toward the ground colour (the page IS that
+  // colour, so this reads as the old 24% alpha did).
+  wctx.globalCompositeOperation = 'source-atop';
+  wctx.fillStyle = 'rgba(' + THEME.groundRgb + ',' + OUTER_WASH + ')';
+  wctx.fillRect(0, 0, cssW, cssH);
   // Erase the far field so only the cell we live in reads as a shape.
   const cx = board.offsetLeft + viewW() / 2;
   const cy = board.offsetTop + viewH() / 2;
@@ -4219,9 +4463,11 @@ function render(time) {
     // Draw the scene once more, zoomed, with the finished buffer as the
     // inner picture: at full dive the tapped mini fills the view at scale
     // ~1, which IS the resting frame - so the snap back is invisible.
+    const zz = Math.exp(zoom.logZ * zoom.e);
     drawScene(ctx, time, curBuf, false, DPR,
-      { fx: zoom.fx, fy: zoom.fy, z: Math.exp(zoom.logZ * zoom.e) });
+      { tx: zoom.fx * (1 - zz), ty: zoom.fy * (1 - zz), z: zz });
   } else ctx.drawImage(curBuf, 0, 0);
+  drawConfetti(ctx);
   drawOuter(time);
 }
 
@@ -4249,6 +4495,23 @@ function frame(ts) {
     bloom.p = Math.min(1, (ts - bloom.t0) / BLOOM);
     if (bloom.p >= 1) bloom = null;
     motion = true;
+  }
+  // T72: a fresh poke keeps frames coming for the wriggle.
+  if (squirmAt >= 0 && ts - squirmAt < 650) motion = true;
+  // T68: confetti physics - light drag, heavy paper.
+  if (confetti) {
+    motion = true;
+    const dt = Math.min(0.05, Math.max(0, (ts - confetti.last) / 1000));
+    confetti.last = ts;
+    confetti.age = (ts - confetti.t0) / 1000;
+    for (const p of confetti.parts) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 560 * dt;
+      p.vx *= 1 - 1.4 * dt;
+      p.rot += p.vr * dt;
+    }
+    if (confetti.age > 1.5) confetti = null;
   }
   // T50: the dive camera. Forward it eases to full depth then snaps to rest
   // (the frames are identical); a retract rewinds it quickly after input.
@@ -4476,16 +4739,21 @@ const SFX = {
     squish(t, 150, 60, 0.24, 0.3, 10, 0.22);               // rubbery, not a knock
     noise(t, 0.055, 'lowpass', 700, 180, 0.8, 0.06, 0.1);
   },
-  // Being pulled through the little world's door: pitch and filter both climb.
+  // Being pulled through the little world's door: pitch and filter both
+  // climb, and (T65, Will: "cramped and squished in... squeeky") a thin
+  // rubbery squeak rides on top - the body cramming itself through.
   portalIn(t) {
     squish(t, 190, 640, 0.17, 0.17, 9, 0.32);
+    squish(t + 0.03, 980, 1680, 0.12, 0.05, 16, 0.4);
     noise(t, 0.19, 'bandpass', 480, 3200, 2.2, 0.05, 0.32);
   },
-  // ...and coming back out of the far mouth, which is that in reverse plus the
-  // pop of a body reinflating.
+  // ...and coming back out is the release (T65): air rushes out, the cork
+  // pops, and a rounder second pop is the body reinflating.
   portalOut(t) {
     noise(t, 0.13, 'bandpass', 3000, 700, 2.2, 0.045, 0.32);
-    pop(t + 0.05, 660, 0.2);
+    noise(t + 0.04, 0.14, 'lowpass', 2200, 420, 0.7, 0.035, 0.45);
+    pop(t + 0.04, 470, 0.24);
+    pop(t + 0.11, 740, 0.13);
   },
   // A pit swallowing a box: the pitch falls off a cliff, then a wet gulp.
   sink(t) {
@@ -4518,6 +4786,12 @@ const SFX = {
     pop(t + 0.26, 520, 0.14);
   },
   spawn(t) { pop(t, 590, 0.18); pop(t + 0.085, 880, 0.16); },
+  // T72: poked - two quick rubbery squeaks and a happy little pop.
+  giggle(t) {
+    squish(t, 620, 1040, 0.08, 0.12, 12, 0.3);
+    squish(t + 0.09, 760, 1280, 0.08, 0.11, 12, 0.3);
+    pop(t + 0.19, 960, 0.13);
+  },
   // T50: diving into your own picture - the squish family on a swing. A body
   // tone swoops up an octave and a half under an opening filter, air rushes
   // past, and a little pop lands you where you started.
@@ -4693,6 +4967,7 @@ function startMusic() {
   musicBus.gain.cancelScheduledValues(t);
   musicBus.gain.setValueAtTime(now, t);
   musicBus.gain.exponentialRampToValueAtTime(MUSIC_LEVEL, t + 3);
+  musicWet.gain.setTargetAtTime(0.9, t, 0.4); // reopen the room (T70)
   // Come back in on a chord, not halfway through one.
   musicStep = Math.ceil(musicStep / 16) * 16;
   musicNext = t + 0.12;
@@ -4708,7 +4983,12 @@ function stopMusic() {
   const now = Math.max(0.0001, musicBus.gain.value);
   musicBus.gain.cancelScheduledValues(t);
   musicBus.gain.setValueAtTime(now, t);
-  musicBus.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+  // T70 (Will: "mute takes a while to kick in"): a fast fade, and - the
+  // actual fix - close the wet send too. The pad voices feed musicWet
+  // directly, so only ramping the bus left them singing on through the
+  // reverb for seconds after the toggle.
+  musicBus.gain.exponentialRampToValueAtTime(0.0001, t + 0.25);
+  musicWet.gain.setTargetAtTime(0, t, 0.06);
 }
 
 // --- Audio wiring -----------------------------------------------------------
@@ -4761,6 +5041,27 @@ document.addEventListener('visibilitychange', () => {
   if (!ac) return;
   if (document.hidden) ac.suspend();
   else if (audio.sfx || audio.music) ac.resume();
+});
+
+// T71 (Will: reopening the browser app could show "a blue tangled mess
+// without a grid"): a backgrounded tab's canvas backing stores may be
+// purged by the OS, but our bake keys still match - so the tile layer,
+// window chrome and body sprites blit as blank while the live-drawn blobs
+// still appear. Coming back, drop every bake and re-lay-out; resize()
+// also reallocates the board buffers and catches a viewport that changed
+// while we slept.
+function wake() {
+  if (!layout) return;
+  tileLayout = null;
+  shellCache = { layout: null, cell: 0 };
+  spriteCache = { cell: 0 };
+  resize();
+  if (!$('editor').hidden) edResize();
+  settle();
+}
+window.addEventListener('pageshow', (e) => { if (e.persisted) wake(); });
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) wake();
 });
 
 // --- Editor -----------------------------------------------------------------
@@ -4886,23 +5187,23 @@ function edPaint() {
   const savedCell = CELL;
   CELL = C;
   c.setTransform(DPR, 0, 0, DPR, 0, 0);
-  c.fillStyle = '#f3ecdf';
+  c.fillStyle = THEME.ground;
   c.fillRect(0, 0, n * C, n * C);
   const isW = (x, y) => x >= 0 && y >= 0 && x < n && y < n && rows[y][x] === '#';
   for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) {
     const ch = rows[y][x], px = x * C, py = y * C;
     if (ch === '#') continue; // the wall mass is drawn whole, after the loop
-    c.fillStyle = '#ece4d3';
+    c.fillStyle = THEME.floor;
     c.fillRect(px, py, C, C);
-    c.strokeStyle = 'rgba(92,80,60,0.06)';
+    c.strokeStyle = THEME.floorLine;
     c.lineWidth = 1;
     c.strokeRect(px + 0.5, py + 0.5, C - 1, C - 1);
 
     if (ch === '~') drawPit(c, px, py);
     if (ch === '-') {
       const g = c.createRadialGradient(px + C / 2, py + C / 2, 0, px + C / 2, py + C / 2, C * 0.9);
-      g.addColorStop(0, 'rgba(154,134,203,0.5)');
-      g.addColorStop(1, 'rgba(154,134,203,0)');
+      g.addColorStop(0, doorCol(0.55));
+      g.addColorStop(1, doorCol(0));
       c.fillStyle = g;
       c.fillRect(px - C / 2, py - C / 2, C * 2, C * 2);
     }
@@ -4911,15 +5212,15 @@ function edPaint() {
       c.translate(px + C / 2, py + C / 2);
       c.rotate(Math.PI / 4);
       const s = C * 0.34;
-      c.strokeStyle = 'rgba(74,67,54,0.42)';
+      c.strokeStyle = THEME.target;
       c.lineWidth = Math.max(1, C * 0.055);
       c.strokeRect(-s / 2, -s / 2, s, s);
       c.restore();
     }
     if (ch === 'N') {
       const g = c.createLinearGradient(px, py, px, py + C);
-      g.addColorStop(0, '#cfc2ea');
-      g.addColorStop(1, '#b2a2d8');
+      g.addColorStop(0, THEME.blockTop);
+      g.addColorStop(1, THEME.blockBot);
       c.fillStyle = g;
       c.fillRect(px, py, C, C);
       c.strokeStyle = 'rgba(154,134,203,0.95)';
@@ -5366,12 +5667,12 @@ window.addEventListener('pointermove', (e) => {
 // dives the camera into it. The picture is the level, so full zoom lands on
 // the exact frame the resting camera shows - the dive goes nowhere, forever.
 function maybeDive(e) {
-  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return;
+  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return false;
   const r = board.getBoundingClientRect();
   const cx = Math.floor((e.clientX - r.left - PAD) / CELL) + 1;
   const cy = Math.floor((e.clientY - r.top - PAD) / CELL) + 1;
   const b = state.blocks.find(i => xOf(i) === cx && yOf(i) === cy);
-  if (b === undefined) return;
+  if (b === undefined) return false;
   const m = miniGeom();
   // The mini rect is the view rect scaled by k about a fixed point F: zoom
   // about F by 1/k and the mini lands exactly on the view. F = d / (1 - k).
@@ -5380,7 +5681,79 @@ function maybeDive(e) {
     fx: dx / (1 - m.k), fy: dy / (1 - m.k), logZ: -Math.log(m.k) };
   play('whee');
   buzz(10);
+  return true;
 }
+// T72 (Will): poke the blob and it squirms - a giggle and a ~650ms wiggle,
+// pure view layer. Only fires on a tap that was already a no-op (no swipe,
+// no window under the finger), so movement never pays for it.
+function maybeSquirm(e) {
+  if (!state || won || overlayOpen()) return;
+  const r = board.getBoundingClientRect();
+  const cx = Math.floor((e.clientX - r.left - PAD) / CELL) + 1;
+  const cy = Math.floor((e.clientY - r.top - PAD) / CELL) + 1;
+  if (!state.selves.some(i => xOf(i) === cx && yOf(i) === cy)) return;
+  squirmAt = performance.now();
+  play('giggle');
+  buzz(15);
+  dirty = true;
+}
+// T68 (Will: a tap on the solved board "should do something better...
+// confetti and then moves onto the next level"). The burst is pure view
+// layer; the advance happens once the paper is mostly down.
+const CONFETTI_COLS = ['#7aaede', '#9a86cb', '#e9bc60', '#93c493', '#d6765f'];
+function winTap(e) {
+  if (reducedMotion.matches) { advanceFromWin(); return; }
+  if (confetti) return; // one burst per solve is plenty
+  const r = board.getBoundingClientRect();
+  const parts = [];
+  for (let i = 0; i < 70; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.2;
+    const v = 130 + Math.random() * 330;
+    parts.push({
+      x: e.clientX - r.left, y: e.clientY - r.top,
+      vx: Math.cos(a) * v, vy: Math.sin(a) * v - 60,
+      rot: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 14,
+      w: 4 + Math.random() * 5, h: 3 + Math.random() * 4,
+      ph: Math.random() * Math.PI * 2,
+      color: CONFETTI_COLS[i % CONFETTI_COLS.length],
+    });
+  }
+  confetti = { t0: performance.now(), last: performance.now(), age: 0, parts };
+  play('spawn');
+  play('merge', 0.1);
+  buzz([15, 30, 15]);
+  setTimeout(advanceFromWin, 950);
+}
+function advanceFromWin() {
+  if (!won || overlayOpen()) return; // undone, reset, or a card is up: stay
+  if (!communityId && levelIndex >= 0 &&
+      levelIndex < TRACKS[trackIndex].levels.length - 1) {
+    play('ui');
+    loadLevel(trackIndex, levelIndex + 1);
+  } else {
+    // A draft, a community level or the end of a track: the card again
+    // (already populated by showWin - re-showing must not re-report).
+    $('overlay').hidden = false;
+  }
+}
+function drawConfetti(c) {
+  if (!confetti) return;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  const a = Math.max(0, Math.min(1, (1.5 - confetti.age) / 0.5));
+  c.globalAlpha = a;
+  for (const p of confetti.parts) {
+    c.save();
+    c.translate(p.x, p.y);
+    c.rotate(p.rot);
+    // A cheap tumble: each flake squashes across one axis on its own phase.
+    c.scale(1, 0.3 + 0.7 * Math.abs(Math.sin(p.rot * 1.7 + p.ph)));
+    c.fillStyle = p.color;
+    c.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+    c.restore();
+  }
+  c.globalAlpha = 1;
+}
+
 // T52: LONG-press and the camera goes the other way - the board you are
 // playing shrinks into one of its own windows and the same level materializes
 // around it at full scale. Implementation: the dive played backwards. e starts
@@ -5406,7 +5779,12 @@ function maybeRise(x, y) {
 }
 const release = (e) => {
   if (down && e.pointerId === down.id) {
-    if (!down.fired && Math.hypot(e.clientX - down.ox, e.clientY - down.oy) < 12) maybeDive(e);
+    if (!down.fired && Math.hypot(e.clientX - down.ox, e.clientY - down.oy) < 12) {
+      // T68: a tap on the solved board celebrates and rolls on; otherwise
+      // it is a dive (window) or a squirm (T72, the blob itself).
+      if (won && !overlayOpen()) winTap(e);
+      else if (!maybeDive(e)) maybeSquirm(e);
+    }
     down = null;
   }
 };
@@ -5506,6 +5884,7 @@ window.addEventListener('resize', () => {
 loadProgress();
 loadDrafts();
 syncAudioBtns();
+applyTheme(); // T73: pick the palette before the first render
 // Resume at the tutorial's first unsolved level that is already unlocked.
 let start = 0;
 while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
