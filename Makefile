@@ -47,12 +47,16 @@ BUILD_EXCLUDES := $(foreach g,$(BUILD_GAMES),--exclude=$(g))
 
 # Source/tooling cruft that must never reach the site. Static games are single
 # self-contained index.html files; anything below is build source (hydra's TS,
-# node_modules, configs) or a dev-only test harness (harness.mjs).
+# node_modules, configs) or a dev-only test harness (harness.mjs). `worker`
+# is mini-level's Cloudflare Worker (server-side deploy tooling - wrangler
+# config, D1 schema, and .dev.vars secrets that must NEVER land on the site;
+# the game talks to the deployed worker over https, nothing here serves it).
 SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
                 --exclude=package-lock.json --exclude=tsconfig.json \
                 --exclude='*.ts' --exclude='*.mjs' \
                 --exclude=src --exclude=test --exclude=tools \
-                --exclude=web --exclude=public --exclude=scripts --exclude=dist
+                --exclude=web --exclude=public --exclude=scripts --exclude=dist \
+                --exclude=worker
 
 .DEFAULT_GOAL := help
 
