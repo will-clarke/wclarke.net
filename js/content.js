@@ -230,6 +230,8 @@ const SEED_CONTENT = {
             blurb: 'trilemmas as svg triangles - pick any two: cap theorem, zooko, career / family / hobbies, and more.' },
   '0,-2': { glyph: '🎼', title: 'ai music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
             blurb: 'a keyboard piece from a model trained in the shed. nobody wrote it; it came out sounding like bach anyway. tap to play.' },
+  '2,-1': { glyph: '🪆', title: 'sokoban that contains itself', act: 'play', href: '/games/mini-level/', accent: '#3f9bf4',
+            blurb: 'one block on the board is a shrunken copy of the whole level. step in through its door and you are back in the room you just left, one size down.' },
   '2,-2': { glyph: '🎬', title: 'classiccult · film finder', act: 'visit', href: 'https://classiccult.pages.dev/', accent: '#ffd166',
             blurb: 'every classic & cult screening in london, scraped nightly onto one page. no backend, nothing to pay for. i moved to dorset shortly after finishing it.' },
   '1,-2': { note: 'welcome to my hexagon! explore around if you like.', glyph: '👋' },
@@ -392,16 +394,24 @@ const PLAYED = [
   { glyph: '💭', title: 'the pattern', blurb: 'logic, progression, automation. nothing that demands reflexes after nine pm.' },
 ];
 
-// games will actually rates; the rest of games.json lands in the
-// 'unfinished concepts' sub-room at the games room's centre cell
-const DECENT_SLUGS = ['afterlives', 'mini-level', 'hydra', 'mirror', 'tile', 'shipshape', 'loom', 'drip', 'allotmatic',
-  'antwar', 'antwar-factions'];
+// three tiers, each in the centre cell of the one above: the games room
+// itself (DECENT_SLUGS), 'rough games' beneath it, and 'unfinished
+// concepts' (WORST_SLUGS) beneath that. keep each tier under 18 items -
+// that's a comb's slot count, and fillSection's overflow would otherwise
+// claim the centre cell the next tier lives in.
+const DECENT_SLUGS = ['recurr', 'afterlives', 'mini-level', 'mirror', 'tile', 'drip', 'allotmatic', 'antwar'];
+const WORST_SLUGS = ['lanternwake', 'fathom', 'seed'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
   drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉',
   hydra: '🐉', allotmatic: '🥕', trine: '🔺', kaleid: '❋', antwar: '⚔', 'antwar-factions': '🛡', ants: '🐜',
   'mini-level': '🪆', threescore: '🪦', afterlives: '🚪' };
-const PINNED_GAMES = [
+// games with no games.json entry, pinned into a tier by hand
+const PINNED_ROUGH = [
+  { glyph: '🟢', title: 'slime teleports', act: 'play', href: '/games/slime-teleports/',
+    blurb: 'sokoban, except the slime teleports.' },
+];
+const PINNED_WORST = [
   { glyph: '🏭', title: 'paint machine', act: 'play', href: '/games/paint-machine/', accent: '#ff9a3a',
     blurb: 'a little factory: emitters, colourers, portals, fans. build it, press play, watch it be wrong, rewind. 30 levels.' },
   { glyph: '📦', title: 'recursive sokoban', act: 'play', href: '/games/recursive-sokoban/',
@@ -410,11 +420,7 @@ const PINNED_GAMES = [
     blurb: 'push value-boxes through function-boxes: +1, *2, NEG. then currying sneaks in. sorry.' },
   { glyph: '🪱', title: 'worm division', act: 'play', href: '/games/worm-division/',
     blurb: 'a worm that divides. then the copies start helping, which is somehow worse. it kept mutating.' },
-  { glyph: '🟢', title: 'slime teleports', act: 'play', href: '/games/slime-teleports/',
-    blurb: 'sokoban, except the slime teleports.' },
 ];
-// featured at the top level of the comb, so not repeated in the games room
-const FEATURED_SLUGS = ['recurr'];
 // first matching pattern names a post's glyph; ✍ is the fallback
 const POST_GLYPHS = [
   [/vim/i, '⌨'], [/git/i, '🌿'], [/ruby|rails/i, '💎'], [/go module/i, '🐹'],

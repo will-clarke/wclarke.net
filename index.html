@@ -356,7 +356,7 @@ function fillSection(baseKey, items, moreTitle, moreGlyph){
 }
 
 // the content itself (SEED_CONTENT, FILMS, BOOKS, PLAYED, GAME_GLYPHS,
-// PINNED_GAMES, FEATURED_SLUGS, POST_GLYPHS) lives in /js/content.js,
+// PINNED_ROUGH, PINNED_WORST, POST_GLYPHS) lives in /js/content.js,
 // loaded just before this script.
 for (const k in SEED_CONTENT) addContent(k, SEED_CONTENT[k]);
 
@@ -375,17 +375,21 @@ const contentReady = Promise.allSettled([
         act: 'play', href: '/games/' + g.slug + '/', accent: g.accent,
         blurb: g.tagline,
       });
-      const rest = d.games.filter(g => !FEATURED_SLUGS.includes(g.slug));
-      const good = rest.filter(g => DECENT_SLUGS.includes(g.slug))
+      const good = d.games.filter(g => DECENT_SLUGS.includes(g.slug))
         .sort((a, b) => DECENT_SLUGS.indexOf(a.slug) - DECENT_SLUGS.indexOf(b.slug));
       fillSection('1,0', good.map(toItem), 'more games', '🕹');
-      // the rest live one level deeper, at the room's centre cell
-      addContent('1,0|0,0', { section: true, glyph: '💡', title: 'unfinished concepts' });
+      // the rest sink one level per tier, each at the room's centre cell
+      const rest = d.games.filter(g => !DECENT_SLUGS.includes(g.slug));
+      addContent('1,0|0,0', { section: true, glyph: '🪨', title: 'rough games' });
       fillSection('1,0|0,0',
-        rest.filter(g => !DECENT_SLUGS.includes(g.slug)).map(toItem).concat(PINNED_GAMES),
+        rest.filter(g => !WORST_SLUGS.includes(g.slug)).map(toItem).concat(PINNED_ROUGH),
+        'more rough games', '🪨');
+      addContent('1,0|0,0|0,0', { section: true, glyph: '💡', title: 'unfinished concepts' });
+      fillSection('1,0|0,0|0,0',
+        rest.filter(g => WORST_SLUGS.includes(g.slug)).map(toItem).concat(PINNED_WORST),
         'more concepts', '💡');
     })
-    .catch(() => fillSection('1,0', PINNED_GAMES, 'more games', '🕹')),
+    .catch(() => fillSection('1,0', PINNED_ROUGH.concat(PINNED_WORST), 'more games', '🕹')),
   fetch('/index.xml')
     .then(r => r.text())
     .then(t => {

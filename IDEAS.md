@@ -45,7 +45,7 @@ morgue, early stuff), the armchair (consciousness, ai, the ledger), threads
 ## Ports
 
 - **chip8 → WASM** - ncurses→canvas shim; 36 real ROMs. The games-room
-  plaque is drafted in a comment next to `PINNED_GAMES`. Highest-value port.
+  plaque would join `PINNED_ROUGH` in `js/content.js`. Highest-value port.
 - **hex-game → WASM** - same raylib recipe as the sokobans; low risk.
 - **crossword / wordsearch → browser** - JS rewrite of the core (grid →
   HTML table, typeable cells, clue lists, check/reveal); `dict.rb` → JSON.
