@@ -20,7 +20,7 @@ for (const g of JSON.parse(readFileSync('games/games.json', 'utf8')).games)
 
 // content.js is a plain script of top-level consts, so node can just run it
 const content = new Function(
-  readFileSync('js/content.js', 'utf8') + '; return {SEED_CONTENT, PINNED_GAMES};')();
+  readFileSync('js/content.js', 'utf8') + '; return {SEED_CONTENT, PINNED_ROUGH, PINNED_WORST};')();
 const walk = v => {
   if (Array.isArray(v)) return v.forEach(walk);
   if (v && typeof v === 'object') {
@@ -31,7 +31,8 @@ const walk = v => {
   }
 };
 walk(content.SEED_CONTENT);
-walk(content.PINNED_GAMES);
+walk(content.PINNED_ROUGH);
+walk(content.PINNED_WORST);
 
 // writing room: the RSS links still carry the old .html suffix; the comb's
 // slug router serves them without it, so that is the canonical URL
