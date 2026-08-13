@@ -258,6 +258,49 @@
   .shelf .shMeta { color: var(--dim); font-size: 12px; }
   .shelf .shChev { color: var(--dim); font-size: 18px; }
 
+  /* --- T62: the Community view - the picker's third page. ---------------- */
+  #community {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    width: min(420px, 100%);
+    margin: 0 auto;
+    padding: 8px 2px;
+  }
+  #comTabs { display: flex; gap: 8px; }
+  .comTab { flex: 1; min-height: 40px; font-size: 13px; }
+  .comTab.on { border-color: var(--blue); color: var(--blue); background: #e7edf3; }
+  #comNote { text-align: center; color: var(--dim); font-size: 13px; padding: 6px 0; }
+  #comList { display: flex; flex-direction: column; gap: 10px; }
+  .comCard {
+    flex: 0 0 auto;
+    min-height: 56px;
+    padding: 10px 14px;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: 0.02em;
+  }
+  .comCard .ccTop { display: flex; align-items: baseline; gap: 8px; }
+  .comCard .ccName { flex: 1; font-weight: 600; font-size: 15px; }
+  .comCard .ccState { font-size: 13px; color: #47825a; }
+  .comCard .ccState.star { color: #a97c1e; }
+  .comCard .ccMeta { margin-top: 3px; color: var(--dim); font-size: 12px; }
+  .comCard.more { text-align: center; color: var(--dim); }
+
+  /* T62: the heart - one vote, only ever offered to a finisher. */
+  #heart {
+    min-height: 40px;
+    margin-bottom: 16px;
+    padding: 0 22px;
+    border-radius: 999px;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    color: #b0574f;
+  }
+  #heart.on { border-color: #dcaaa2; background: #f6e3dc; }
+
   /* --- T61: the publish card. ------------------------------------------- */
   #pubBody { margin: 10px 0 14px; color: var(--dim); }
   #pubHandle {
@@ -395,6 +438,7 @@
   <div class="card">
     <h2 id="cardTitle" class="cardTitle">Solved</h2>
     <p id="cardBody"></p>
+    <button id="heart" hidden>♡ 0</button>
     <div id="cardRow">
       <button id="replay">Replay</button>
       <button id="toLevels">Levels</button>
@@ -415,6 +459,14 @@
   </div>
   <div id="shelves" hidden></div>
   <div id="gridWrap" hidden><div id="grid"></div></div>
+  <div id="community" hidden>
+    <div id="comTabs">
+      <button id="comTop" class="comTab on">Top</button>
+      <button id="comNew" class="comTab">New</button>
+    </div>
+    <p id="comNote" hidden></p>
+    <div id="comList"></div>
+  </div>
 </div>
 
 <div id="publish" class="scrim" hidden>
@@ -1964,8 +2016,10 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 // --- Persistence ------------------------------------------------------------
 
 const SAVE_KEY = 'mini-level-v10'; // v10 = T61 community identity: handle +
-// authorToken join the blob, everything else carries over from v9 unchanged
-let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '' };
+// authorToken join the blob, everything else carries over from v9 unchanged.
+// T62 adds hearts (my votes, by server id) - additive, so still v10.
+let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
+  hearts: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
 // T38 (Will): every level is open from the start - locks bought nothing here.
@@ -2031,6 +2085,7 @@ function loadProgress() {
       progress.coached = raw.coached || {};
       progress.handle = typeof raw.handle === 'string' ? raw.handle.slice(0, 16) : '';
       progress.authorToken = typeof raw.authorToken === 'string' ? raw.authorToken : '';
+      progress.hearts = (raw.hearts && typeof raw.hearts === 'object') ? raw.hearts : {};
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
@@ -2060,15 +2115,42 @@ function authorToken() {
   return progress.authorToken;
 }
 
+// --- Community (T62): the shelf. ----------------------------------------------
+// Every community level you PLAY caches locally (rows + meta, under its
+// server id) so it replays offline forever and survives server culls.
+// Progress keys by that id too - 'x:<id>' in progress.best - never by list
+// position: the list is dynamic.
+const COM_CACHE_KEY = 'mini-level-community-cache';
+let comCache = {};
+try { comCache = JSON.parse(localStorage.getItem(COM_CACHE_KEY) || '{}') || {}; }
+catch (e) { comCache = {}; }
+function saveComCache() {
+  try { localStorage.setItem(COM_CACHE_KEY, JSON.stringify(comCache)); } catch (e) {}
+}
+let communityId = null; // server id while playing a community level, else null
+
 function xOf(i) { return i % layout.w; }
 function yOf(i) { return Math.floor(i / layout.w); }
 function lerp(a, b, t) { return a + (b - a) * t; }
 
-function loadLevel(t, i) { trackIndex = t; levelIndex = i; startLevel(TRACKS[t].levels[i]); }
+function loadLevel(t, i) {
+  communityId = null;
+  trackIndex = t; levelIndex = i;
+  startLevel(TRACKS[t].levels[i]);
+}
 
 // An editor draft rides the same path but owns no slot in LEVELS, so
 // levelIndex goes to -1 and every progress write is gated on it.
-function playDraft(def) { levelIndex = -1; startLevel(def); }
+function playDraft(def) { communityId = null; levelIndex = -1; startLevel(def); }
+
+// A community level does the same, but keeps its server id so wins can key
+// progress, report the solve, and offer the heart.
+function playCommunity(id) {
+  const m = comCache[id];
+  levelIndex = -1;
+  communityId = id;
+  startLevel({ name: m.name, par: 0, stretch: true, rows: m.rows });
+}
 
 function startLevel(def) {
   stopAuto();
@@ -2095,7 +2177,7 @@ function startLevel(def) {
   closeOverlays();
   hideToast();
   showCoach(levelIndex);
-  $('levels').textContent = levelIndex < 0 ? 'Editor' : 'Levels';
+  $('levels').textContent = levelIndex < 0 && !communityId ? 'Editor' : 'Levels';
   resize();
   settle();
 }
@@ -2159,7 +2241,8 @@ let shelf = null;
 function pkShow(which) {
   shelf = which;
   $('shelves').hidden = which !== null;
-  $('gridWrap').hidden = which === null;
+  $('gridWrap').hidden = which === null || which === 'community';
+  $('community').hidden = which !== 'community';
   $('pkBack').style.visibility = which === null ? 'hidden' : 'visible';
   $('overlay').hidden = true;
   $('picker').hidden = false;
@@ -2202,8 +2285,12 @@ function openShelves() {
     const s = trackStats(t);
     const meta = s.solved + '/' + tr.levels.length + (s.stars ? ' · ★' + s.stars : '');
     const b = shelfRow(tr.name, meta, () => { play('ui'); openTrack(t); });
-    if (t === trackIndex && levelIndex >= 0) b.classList.add('here');
+    if (t === trackIndex && levelIndex >= 0 && !communityId) b.classList.add('here');
   });
+  const comSolved = Object.keys(progress.best).filter(k => k.startsWith('x:')).length;
+  const cb = shelfRow('Community', comSolved ? comSolved + ' solved' : 'by everyone',
+    () => { play('ui'); openCommunity(); });
+  if (communityId) cb.classList.add('here');
   shelfRow('Yours', drafts.length + (drafts.length === 1 ? ' draft' : ' drafts'),
     () => { play('ui'); openDrafts(); });
   pkShow(null);
@@ -2244,6 +2331,129 @@ function openTrack(t) {
 // Always the CURRENT level's shelf: that is where .here and any fresh win
 // state live, so the post-solve return never lands on a stale shelf.
 function openPicker() { openTrack(trackIndex); }
+
+// T62: the Community view. Tabs Top / New (Mine lands in T63), one column
+// of cards, 20 a page behind a "more" tile. Fetches on every open; offline
+// or file:// it quietly shows the levels already cached by playing them.
+let comTab = 'top';
+let comRows = [];   // the rows this visit has fetched (or the offline cache)
+let comMore = false;
+let comPage = 0;
+let comSeq = 0;     // bumping it abandons a stale fetch (tab hop, reopen)
+
+function openCommunity() {
+  $('pickerTitle').textContent = 'Community';
+  pkShow('community');
+  comSwitch(comTab, true);
+}
+
+function comSwitch(tab, force) {
+  if (!force && tab === comTab) return;
+  comTab = tab;
+  comRows = []; comMore = false; comPage = 0;
+  $('comTop').classList.toggle('on', tab === 'top');
+  $('comNew').classList.toggle('on', tab === 'new');
+  comRender('Loading…');
+  comFetch();
+}
+
+async function comFetch() {
+  const seq = ++comSeq;
+  if (!NET) { comOffline(); return; }
+  try {
+    const res = await fetch(API + '/levels?sort=' + comTab + '&page=' + comPage);
+    const data = await res.json();
+    if (seq !== comSeq) return;
+    if (!res.ok) throw 0;
+    comRows = comRows.concat(data.levels || []);
+    comMore = !!data.more;
+    // Freshen the cached copy of anything we already hold.
+    for (const m of comRows) {
+      if (comCache[m.id]) Object.assign(comCache[m.id], m);
+    }
+    saveComCache();
+    comRender(comRows.length ? '' : 'Nothing here yet - publish one!');
+  } catch (e) {
+    if (seq !== comSeq) return;
+    comOffline();
+  }
+}
+
+function comOffline() {
+  comRows = Object.values(comCache);
+  comMore = false;
+  comRender(comRows.length
+    ? "You're offline - saved levels only." : "You're offline.");
+}
+
+function comNote(msg) {
+  $('comNote').textContent = msg || '';
+  $('comNote').hidden = !msg;
+}
+
+function comRender(note) {
+  comNote(note);
+  const box = $('comList');
+  box.textContent = '';
+  for (const m of comRows) box.appendChild(comCard(m));
+  if (comMore) {
+    const b = document.createElement('button');
+    b.className = 'comCard more';
+    b.textContent = 'more';
+    b.addEventListener('click', () => {
+      play('ui');
+      b.disabled = true;
+      b.textContent = '…';
+      comPage++;
+      comFetch();
+    });
+    box.appendChild(b);
+  }
+}
+
+function comCard(m) {
+  const b = document.createElement('button');
+  b.className = 'comCard';
+  const best = progress.best['x:' + m.id];
+  // The star means your best matches the best anyone knows - the same
+  // visual promise the campaign's par star makes.
+  const star = best !== undefined && m.bestMoves > 0 && best <= m.bestMoves;
+  const top = document.createElement('div');
+  top.className = 'ccTop';
+  const nm = document.createElement('span');
+  nm.className = 'ccName';
+  nm.textContent = m.name;
+  const st = document.createElement('span');
+  st.className = 'ccState' + (star ? ' star' : '');
+  st.textContent = best === undefined ? '' : star ? '★' : '✓';
+  top.append(nm, st);
+  const meta = document.createElement('div');
+  meta.className = 'ccMeta';
+  meta.textContent = 'by ' + m.author + ' · ♥ ' + (m.hearts || 0) +
+    ' · best known ' + m.bestMoves;
+  b.append(top, meta);
+  b.addEventListener('click', () => { play('ui'); comPlay(m); });
+  return b;
+}
+
+async function comPlay(m) {
+  if (comCache[m.id] && comCache[m.id].rows) { playCommunity(m.id); return; }
+  if (!NET) { comNote("You're offline - that one is not saved."); return; }
+  comNote('Fetching…');
+  try {
+    const res = await fetch(API + '/levels/' + m.id);
+    const data = await res.json();
+    if (!res.ok) throw 0;
+    comCache[m.id] = data;
+    saveComCache();
+    playCommunity(m.id);
+  } catch (e) {
+    comNote('No connection - try again.');
+  }
+}
+
+$('comTop').addEventListener('click', () => { play('ui'); comSwitch('top'); });
+$('comNew').addEventListener('click', () => { play('ui'); comSwitch('new'); });
 
 // Drop any animation and show the current state exactly.
 function settle() {
@@ -2645,8 +2855,17 @@ function showWin() {
   // T61: a prove-run win is the publish moment, not a win card.
   if (levelIndex < 0 && proveRun) { showPublish(); return; }
   const def = levelDef;
-  const draft = levelIndex < 0;
-  if (!draft) {
+  // T62: a community win keys progress by server id, reports the solve, and
+  // earns the heart button. Everything else on the card stays the same.
+  const com = communityId ? comCache[communityId] : null;
+  const draft = levelIndex < 0 && !com;
+  if (com) {
+    const key = 'x:' + communityId;
+    const prev = progress.best[key];
+    if (prev === undefined || moves < prev) progress.best[key] = moves;
+    saveProgress();
+    comReportSolve(communityId, moveLog);
+  } else if (!draft) {
     const key = bestKey(trackIndex, levelIndex);
     const prevBest = progress.best[key];
     if (prevBest === undefined || moves < prevBest) progress.best[key] = moves;
@@ -2654,18 +2873,86 @@ function showWin() {
   }
 
   // T53: solving at par earns the star right here, not only in the picker.
+  // For a community level the star's promise is the same, against the best
+  // KNOWN moves (nobody BFS'd it, so never 'optimal').
+  const comStar = com && com.bestMoves > 0 && progress.best['x:' + communityId] <= com.bestMoves;
   $('cardTitle').textContent =
-    (!draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
+    (com ? comStar : !draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
   let body = 'in ' + moves + ' moves' + (def.par ? ' (optimal ' + def.par + ')' : '');
-  if (draft) body += ' · draft';
+  if (com) body += ' · best known ' + com.bestMoves + ' by ' + com.bestHolder;
+  else if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
     body += ' · best ' + progress.best[bestKey(trackIndex, levelIndex)];
   }
   $('cardBody').textContent = body;
-  $('next').hidden = draft || levelIndex >= TRACKS[trackIndex].levels.length - 1;
+  syncHeart();
+  $('next').hidden = com || draft || levelIndex >= TRACKS[trackIndex].levels.length - 1;
   $('toLevels').textContent = draft ? 'Editor' : 'Levels';
   $('overlay').hidden = false;
 }
+
+// T62: report the solve with the moves actually made - the Worker replays
+// them (the same trust model as publishing), bumps solves, and flips the
+// record if beaten. The record-claimed moment on the card is T63; here the
+// cached meta just freshens quietly.
+async function comReportSolve(id, log) {
+  if (!NET) return;
+  try {
+    const res = await fetch(API + '/levels/' + id + '/solve', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ moves: log, handle: progress.handle || undefined }),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const com = comCache[id];
+    if (com && typeof data.bestMoves === 'number') {
+      com.bestMoves = data.bestMoves;
+      com.bestHolder = data.bestHolder;
+      saveComCache();
+    }
+  } catch (e) { /* offline is fine - the win is already saved locally */ }
+}
+
+// T62: the heart. Only on a community win card, and votes need a network.
+function syncHeart() {
+  const com = communityId ? comCache[communityId] : null;
+  const el = $('heart');
+  el.hidden = !com || !NET;
+  if (!com) return;
+  const on = !!progress.hearts[communityId];
+  el.classList.toggle('on', on);
+  el.textContent = (on ? '♥ ' : '♡ ') + (com.hearts || 0);
+}
+
+$('heart').addEventListener('click', async () => {
+  const id = communityId;
+  const com = id && comCache[id];
+  if (!com) return;
+  play('ui');
+  // Optimistic: flip now, put it back only if the server says no.
+  const on = !progress.hearts[id];
+  if (on) progress.hearts[id] = 1; else delete progress.hearts[id];
+  com.hearts = Math.max(0, (com.hearts || 0) + (on ? 1 : -1));
+  saveProgress(); saveComCache(); syncHeart();
+  try {
+    const res = await fetch(API + '/levels/' + id + '/heart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: authorToken(), on }),
+    });
+    if (!res.ok) throw 0;
+    const data = await res.json();
+    if (typeof data.hearts === 'number' && progress.hearts[id] === (on ? 1 : undefined)) {
+      com.hearts = data.hearts;
+      saveComCache(); syncHeart();
+    }
+  } catch (e) {
+    if (on) delete progress.hearts[id]; else progress.hearts[id] = 1;
+    com.hearts = Math.max(0, (com.hearts || 0) + (on ? -1 : 1));
+    saveProgress(); saveComCache(); syncHeart();
+  }
+});
 
 // --- Publish (T61): solve it to ship it ---------------------------------------
 // Publishing is a prove-run: you must beat your own level by hand, and the
@@ -4851,7 +5138,12 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Both "Levels" buttons go back to wherever this level came from.
-const goBack = () => { play('ui'); if (levelIndex < 0) openEditor(); else openPicker(); };
+const goBack = () => {
+  play('ui');
+  if (communityId) openCommunity();
+  else if (levelIndex < 0) openEditor();
+  else openPicker();
+};
 
 // T53: hold Undo to rewind - a quick tap is one step (the click), a hold
 // repeats at the walk cadence. The held flag swallows the click a long
