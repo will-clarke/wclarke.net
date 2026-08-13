@@ -274,32 +274,76 @@
   .comTab.on { border-color: var(--blue); color: var(--blue); background: #e7edf3; }
   #comNote { text-align: center; color: var(--dim); font-size: 13px; padding: 6px 0; }
   #comList { display: flex; flex-direction: column; gap: 10px; }
+  /* T63: cards are divs now (a card holds buttons and a rename input, which
+     a <button> may not), so they carry the button look themselves. */
   .comCard {
     flex: 0 0 auto;
     min-height: 56px;
     padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #eae1cf;
     text-align: left;
     text-transform: none;
     letter-spacing: 0.02em;
   }
+  div.comCard:active { background: #dfd4bd; }
   .comCard .ccTop { display: flex; align-items: baseline; gap: 8px; }
   .comCard .ccName { flex: 1; font-weight: 600; font-size: 15px; }
   .comCard .ccState { font-size: 13px; color: #47825a; }
   .comCard .ccState.star { color: #a97c1e; }
   .comCard .ccMeta { margin-top: 3px; color: var(--dim); font-size: 12px; }
   .comCard.more { text-align: center; color: var(--dim); }
+  /* T63: the per-card overflow - dots open a small action row. */
+  .ccDots {
+    flex: 0 0 auto;
+    width: 34px;
+    min-height: 24px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--dim);
+    font-size: 15px;
+    letter-spacing: 0.08em;
+  }
+  .ccActs { display: flex; gap: 8px; margin-top: 8px; }
+  .ccActs .note { color: var(--dim); font-size: 12px; padding: 6px 0; }
+  .ccAct {
+    flex: 0 0 auto;
+    min-height: 32px;
+    padding: 0 14px;
+    border-radius: 8px;
+    background: #f2ead9;
+    font-size: 11px;
+  }
+  .ccEdit {
+    width: 100%;
+    padding: 4px 8px;
+    border: 1px solid var(--blue);
+    border-radius: 8px;
+    background: #fdfaf3;
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    font-size: 15px;
+  }
 
-  /* T62: the heart - one vote, only ever offered to a finisher. */
-  #heart {
+  /* T62: the heart - one vote, only ever offered to a finisher.
+     T63 adds Share beside it; the pair share the pill look. */
+  #pillRow { display: flex; justify-content: center; gap: 10px; margin-bottom: 16px; }
+  #heart, #shareBtn {
+    flex: 0 0 auto;
     min-height: 40px;
-    margin-bottom: 16px;
     padding: 0 22px;
     border-radius: 999px;
     text-transform: none;
     letter-spacing: 0.04em;
-    color: #b0574f;
   }
+  #heart { color: #b0574f; }
   #heart.on { border-color: #dcaaa2; background: #f6e3dc; }
+  #shareBtn { color: var(--blue); }
+  /* T63: the record-claimed moment gets the par-star gold. */
+  .cardTitle.gold { color: #a97c1e; }
 
   /* --- T61: the publish card. ------------------------------------------- */
   #pubBody { margin: 10px 0 14px; color: var(--dim); }
@@ -438,7 +482,10 @@
   <div class="card">
     <h2 id="cardTitle" class="cardTitle">Solved</h2>
     <p id="cardBody"></p>
-    <button id="heart" hidden>♡ 0</button>
+    <div id="pillRow" hidden>
+      <button id="heart" hidden>♡ 0</button>
+      <button id="shareBtn" hidden>Share</button>
+    </div>
     <div id="cardRow">
       <button id="replay">Replay</button>
       <button id="toLevels">Levels</button>
@@ -463,6 +510,7 @@
     <div id="comTabs">
       <button id="comTop" class="comTab on">Top</button>
       <button id="comNew" class="comTab">New</button>
+      <button id="comMine" class="comTab">Mine</button>
     </div>
     <p id="comNote" hidden></p>
     <div id="comList"></div>
@@ -477,6 +525,7 @@
     <p id="pubNote" hidden></p>
     <div id="pubRow">
       <button id="pubCancel">Cancel</button>
+      <button id="pubShare" hidden>Share</button>
       <button id="pubGo" class="primary">Publish</button>
     </div>
   </div>
@@ -2017,9 +2066,10 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 const SAVE_KEY = 'mini-level-v10'; // v10 = T61 community identity: handle +
 // authorToken join the blob, everything else carries over from v9 unchanged.
-// T62 adds hearts (my votes, by server id) - additive, so still v10.
+// T62 adds hearts (my votes, by server id); T63 adds records (the community
+// levels whose best known count I set) - both additive, so still v10.
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
-  hearts: {} };
+  hearts: {}, records: {} };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
 // T38 (Will): every level is open from the start - locks bought nothing here.
@@ -2086,6 +2136,7 @@ function loadProgress() {
       progress.handle = typeof raw.handle === 'string' ? raw.handle.slice(0, 16) : '';
       progress.authorToken = typeof raw.authorToken === 'string' ? raw.authorToken : '';
       progress.hearts = (raw.hearts && typeof raw.hearts === 'object') ? raw.hearts : {};
+      progress.records = (raw.records && typeof raw.records === 'object') ? raw.records : {};
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
@@ -2332,8 +2383,8 @@ function openTrack(t) {
 // state live, so the post-solve return never lands on a stale shelf.
 function openPicker() { openTrack(trackIndex); }
 
-// T62: the Community view. Tabs Top / New (Mine lands in T63), one column
-// of cards, 20 a page behind a "more" tile. Fetches on every open; offline
+// T62: the Community view. Tabs Top / New / Mine (T63), one column of
+// cards, 20 a page behind a "more" tile. Fetches on every open; offline
 // or file:// it quietly shows the levels already cached by playing them.
 let comTab = 'top';
 let comRows = [];   // the rows this visit has fetched (or the offline cache)
@@ -2353,15 +2404,30 @@ function comSwitch(tab, force) {
   comRows = []; comMore = false; comPage = 0;
   $('comTop').classList.toggle('on', tab === 'top');
   $('comNew').classList.toggle('on', tab === 'new');
+  $('comMine').classList.toggle('on', tab === 'mine');
   comRender('Loading…');
   comFetch();
+}
+
+// T63: you hold a record while your claim stands. The flag is set when the
+// server says so (publishing seeds it) and dropped the moment fresher meta
+// shows a best below yours - someone took it.
+function syncRecord(id, bestMoves) {
+  if (!progress.records[id]) return;
+  const mine = progress.best['x:' + id];
+  if (mine === undefined || bestMoves < mine) {
+    delete progress.records[id];
+    saveProgress();
+  }
 }
 
 async function comFetch() {
   const seq = ++comSeq;
   if (!NET) { comOffline(); return; }
   try {
-    const res = await fetch(API + '/levels?sort=' + comTab + '&page=' + comPage);
+    const q = comTab === 'mine'
+      ? 'mine=1&token=' + authorToken() : 'sort=' + comTab;
+    const res = await fetch(API + '/levels?' + q + '&page=' + comPage);
     const data = await res.json();
     if (seq !== comSeq) return;
     if (!res.ok) throw 0;
@@ -2369,10 +2435,15 @@ async function comFetch() {
     comMore = !!data.more;
     // Freshen the cached copy of anything we already hold.
     for (const m of comRows) {
-      if (comCache[m.id]) Object.assign(comCache[m.id], m);
+      syncRecord(m.id, m.bestMoves);
+      if (comCache[m.id]) {
+        Object.assign(comCache[m.id], m, comTab === 'mine' ? { mine: 1 } : {});
+      }
     }
     saveComCache();
-    comRender(comRows.length ? '' : 'Nothing here yet - publish one!');
+    comRender(comRows.length ? ''
+      : comTab === 'mine' ? 'Publish a level and it lands here.'
+      : 'Nothing here yet - publish one!');
   } catch (e) {
     if (seq !== comSeq) return;
     comOffline();
@@ -2381,6 +2452,7 @@ async function comFetch() {
 
 function comOffline() {
   comRows = Object.values(comCache);
+  if (comTab === 'mine') comRows = comRows.filter((m) => m.mine);
   comMore = false;
   comRender(comRows.length
     ? "You're offline - saved levels only." : "You're offline.");
@@ -2412,12 +2484,12 @@ function comRender(note) {
 }
 
 function comCard(m) {
-  const b = document.createElement('button');
+  const b = document.createElement('div');
   b.className = 'comCard';
   const best = progress.best['x:' + m.id];
-  // The star means your best matches the best anyone knows - the same
-  // visual promise the campaign's par star makes.
-  const star = best !== undefined && m.bestMoves > 0 && best <= m.bestMoves;
+  // T63: the star marks a record YOU hold - your claim, not yet beaten.
+  // Merely matching it is a ✓ like any other solve.
+  const star = !!progress.records[m.id];
   const top = document.createElement('div');
   top.className = 'ccTop';
   const nm = document.createElement('span');
@@ -2426,14 +2498,142 @@ function comCard(m) {
   const st = document.createElement('span');
   st.className = 'ccState' + (star ? ' star' : '');
   st.textContent = best === undefined ? '' : star ? '★' : '✓';
-  top.append(nm, st);
+  const dots = document.createElement('button');
+  dots.className = 'ccDots';
+  dots.textContent = '···';
+  dots.setAttribute('aria-label', 'More');
+  top.append(nm, st, dots);
   const meta = document.createElement('div');
   meta.className = 'ccMeta';
-  meta.textContent = 'by ' + m.author + ' · ♥ ' + (m.hearts || 0) +
-    ' · best known ' + m.bestMoves;
+  meta.textContent = (comTab === 'mine'
+    ? (m.hidden ? 'hidden · ' : '') + (m.plays || 0) + ' plays · ' + (m.solves || 0) + ' solves'
+    : 'by ' + m.author) +
+    ' · ♥ ' + (m.hearts || 0) +
+    ' · best known ' + m.bestMoves + ' by ' + m.bestHolder;
   b.append(top, meta);
   b.addEventListener('click', () => { play('ui'); comPlay(m); });
+  dots.addEventListener('click', (e) => {
+    e.stopPropagation();
+    play('ui');
+    comActs(b, m);
+  });
   return b;
+}
+
+// T63: the overflow row a card's dots open. Browse cards offer Report (you
+// report what you browsed past, not what you finished - the win card stays
+// clean); Mine cards offer Rename and Delete.
+function comActs(card, m) {
+  const open = card.querySelector('.ccActs');
+  if (open) { open.remove(); return; }
+  const row = document.createElement('div');
+  row.className = 'ccActs';
+  row.addEventListener('click', (e) => e.stopPropagation());
+  const act = (label, fn) => {
+    const a = document.createElement('button');
+    a.className = 'ccAct';
+    a.textContent = label;
+    a.addEventListener('click', (e) => { e.stopPropagation(); fn(a, row, card, m); });
+    row.appendChild(a);
+  };
+  if (comTab === 'mine') { act('Rename', comRename); act('Delete', comDelete); }
+  else act('Report', comReport);
+  card.appendChild(row);
+}
+
+async function comReport(a, row, card, m) {
+  play('ui');
+  a.disabled = true;
+  a.textContent = '…';
+  try {
+    const res = await fetch(API + '/levels/' + m.id + '/report', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: authorToken() }),
+    });
+    if (!res.ok) throw 0;
+    row.textContent = '';
+    const n = document.createElement('span');
+    n.className = 'note';
+    n.textContent = 'Reported - thank you.';
+    row.appendChild(n);
+  } catch (e) {
+    a.disabled = false;
+    a.textContent = 'Report';
+    comNote('No connection - try again.');
+  }
+}
+
+async function comDelete(a, row, card, m) {
+  play('ui');
+  // Two taps: the first only arms it.
+  if (!a.dataset.sure) { a.dataset.sure = '1'; a.textContent = 'Sure?'; return; }
+  a.disabled = true;
+  a.textContent = '…';
+  try {
+    const res = await fetch(API + '/levels/' + m.id, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: authorToken() }),
+    });
+    if (!res.ok) throw 0;
+    delete comCache[m.id];
+    saveComCache();
+    comRows = comRows.filter((r) => r.id !== m.id);
+    card.remove();
+  } catch (e) {
+    a.disabled = false;
+    a.textContent = 'Delete';
+    delete a.dataset.sure;
+    comNote('No connection - try again.');
+  }
+}
+
+function comRename(a, row, card, m) {
+  play('ui');
+  row.remove();
+  const nm = card.querySelector('.ccName');
+  const input = document.createElement('input');
+  input.className = 'ccEdit';
+  input.maxLength = 28;
+  input.value = m.name;
+  for (const ev of ['click', 'pointerdown']) {
+    input.addEventListener(ev, (e) => e.stopPropagation());
+  }
+  nm.textContent = '';
+  nm.appendChild(input);
+  input.focus();
+  input.select();
+  let done = false;
+  const commit = async () => {
+    if (done) return;
+    done = true;
+    const name = input.value.trim().slice(0, 28);
+    nm.textContent = m.name;
+    if (!name || name === m.name) return;
+    nm.textContent = name;
+    try {
+      const res = await fetch(API + '/levels/' + m.id + '/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: authorToken(), name }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 0);
+      m.name = data.name;
+      nm.textContent = m.name;
+      if (comCache[m.id]) { comCache[m.id].name = m.name; saveComCache(); }
+    } catch (e) {
+      nm.textContent = m.name;
+      comNote(String(e && e.message || 'No connection - try again.'));
+    }
+  };
+  input.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') input.blur();
+    else if (e.key === 'Escape') { input.value = m.name; input.blur(); }
+  });
+  input.addEventListener('blur', commit);
 }
 
 async function comPlay(m) {
@@ -2444,7 +2644,8 @@ async function comPlay(m) {
     const res = await fetch(API + '/levels/' + m.id);
     const data = await res.json();
     if (!res.ok) throw 0;
-    comCache[m.id] = data;
+    // Merge, not replace: a Mine row's `mine` flag must survive the fetch.
+    comCache[m.id] = Object.assign(comCache[m.id] || {}, data);
     saveComCache();
     playCommunity(m.id);
   } catch (e) {
@@ -2454,6 +2655,48 @@ async function comPlay(m) {
 
 $('comTop').addEventListener('click', () => { play('ui'); comSwitch('top'); });
 $('comNew').addEventListener('click', () => { play('ui'); comSwitch('new'); });
+$('comMine').addEventListener('click', () => { play('ui'); comSwitch('mine'); });
+
+// T63: share links. #p=<id> fetches-and-plays a community level; #l=<code>
+// plays a pasted share code directly (kept as a draft, the way Edit keeps a
+// copy). A dud link just leaves the game where it was.
+async function playShared(id) {
+  if (comCache[id] && comCache[id].rows) { playCommunity(id); return; }
+  if (!NET) return;
+  try {
+    const res = await fetch(API + '/levels/' + id);
+    const data = await res.json();
+    if (!res.ok) throw 0;
+    comCache[id] = Object.assign(comCache[id] || {}, data);
+    saveComCache();
+    playCommunity(id);
+  } catch (e) { /* stay put */ }
+}
+
+function openHash() {
+  const p = location.hash.match(/^#p=([a-z0-9]+)$/i);
+  if (p) { playShared(p[1]); return; }
+  const l = location.hash.match(/^#l=([A-Za-z0-9_-]+)$/);
+  if (!l) return;
+  try {
+    const parts = unb64u(l[1]).split('/');
+    const name = parts[0].slice(0, 28);
+    const rows = parts.slice(1);
+    const n = rows.length;
+    if (n < ED_MIN || n > ED_MAX ||
+        rows.some((r) => r.length !== n || !isRow(r))) return;
+    parseLevel(draftDef({ name, rows })); // throws on an unplayable grid
+    const key = rows.join('/');
+    let i = drafts.findIndex((d) => d.rows.join('/') === key);
+    if (i < 0) {
+      drafts.push({ name, rows });
+      i = drafts.length - 1;
+      saveDrafts();
+    }
+    draftIx = i;
+    playDraft(draftDef(drafts[i]));
+  } catch (e) { /* stay put */ }
+}
 
 // Drop any animation and show the current state exactly.
 function settle() {
@@ -2873,9 +3116,10 @@ function showWin() {
   }
 
   // T53: solving at par earns the star right here, not only in the picker.
-  // For a community level the star's promise is the same, against the best
-  // KNOWN moves (nobody BFS'd it, so never 'optimal').
-  const comStar = com && com.bestMoves > 0 && progress.best['x:' + communityId] <= com.bestMoves;
+  // T63: a community star means you HOLD the record - beating it retitles
+  // the card asynchronously, once the server's replay confirms the claim.
+  const comStar = com && !!progress.records[communityId];
+  $('cardTitle').classList.remove('gold');
   $('cardTitle').textContent =
     (com ? comStar : !draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
   let body = 'in ' + moves + ' moves' + (def.par ? ' (optimal ' + def.par + ')' : '');
@@ -2886,6 +3130,8 @@ function showWin() {
   }
   $('cardBody').textContent = body;
   syncHeart();
+  syncShare();
+  $('pillRow').hidden = $('heart').hidden && $('shareBtn').hidden;
   $('next').hidden = com || draft || levelIndex >= TRACKS[trackIndex].levels.length - 1;
   $('toLevels').textContent = draft ? 'Editor' : 'Levels';
   $('overlay').hidden = false;
@@ -2893,8 +3139,8 @@ function showWin() {
 
 // T62: report the solve with the moves actually made - the Worker replays
 // them (the same trust model as publishing), bumps solves, and flips the
-// record if beaten. The record-claimed moment on the card is T63; here the
-// cached meta just freshens quietly.
+// record if beaten. T63: a confirmed record retitles the still-open win
+// card - the claim lands as its own moment, gold like the par star.
 async function comReportSolve(id, log) {
   if (!NET) return;
   try {
@@ -2906,13 +3152,51 @@ async function comReportSolve(id, log) {
     if (!res.ok) return;
     const data = await res.json();
     const com = comCache[id];
+    const was = com && { moves: com.bestMoves, holder: com.bestHolder };
     if (com && typeof data.bestMoves === 'number') {
       com.bestMoves = data.bestMoves;
       com.bestHolder = data.bestHolder;
       saveComCache();
     }
+    syncRecord(id, data.bestMoves); // fresher meta may say someone beat you
+    if (data.record) {
+      progress.records[id] = 1;
+      saveProgress();
+      if (!$('overlay').hidden && communityId === id) {
+        $('cardTitle').textContent = 'Record claimed ★';
+        $('cardTitle').classList.add('gold');
+        if (was) {
+          $('cardBody').textContent = 'in ' + data.moves +
+            ' moves · best known was ' + was.moves + ' by ' + was.holder;
+        }
+        play('win');
+      }
+    }
   } catch (e) { /* offline is fine - the win is already saved locally */ }
 }
+
+// T63: share a community level as a #p= deep link. navigator.share only,
+// and only where the link is worth sending (https) - file:// and localhost
+// keep the editor's paste box instead.
+const CAN_SHARE = !!navigator.share && location.protocol === 'https:';
+const shareUrl = (id) => location.origin + location.pathname + '#p=' + id;
+function shareLevel(m) {
+  navigator.share({
+    title: 'Mini Levels',
+    text: '"' + m.name + '" by ' + m.author + ' - best known ' + m.bestMoves + ' moves.',
+    url: shareUrl(m.id),
+  }).catch(() => { /* declining the sheet is not an error */ });
+}
+function syncShare() {
+  const com = communityId ? comCache[communityId] : null;
+  $('shareBtn').hidden = !com || !CAN_SHARE;
+}
+$('shareBtn').addEventListener('click', () => {
+  const com = communityId && comCache[communityId];
+  if (!com) return;
+  play('ui');
+  shareLevel(com);
+});
 
 // T62: the heart. Only on a community win card, and votes need a network.
 function syncHeart() {
@@ -2959,7 +3243,7 @@ $('heart').addEventListener('click', async () => {
 // recorded solution IS the submission - the Worker replays it through the
 // same engine and stores only what wins. It also seeds the level's "best
 // known" moves (never called "optimal": nobody BFS'd it).
-let proveRun = false, pubLog = '';
+let proveRun = false, pubLog = '', lastPublished = null;
 
 function showPublish() {
   pubLog = moveLog;
@@ -2968,6 +3252,7 @@ function showPublish() {
   $('pubHandle').value = progress.handle || '';
   $('pubHandle').hidden = false;
   $('pubCancel').hidden = false;
+  $('pubShare').hidden = true;
   $('pubNote').hidden = true;
   const go = $('pubGo');
   go.disabled = false;
@@ -2981,6 +3266,13 @@ $('pubCancel').addEventListener('click', () => {
   proveRun = false;
   $('publish').hidden = true;
   showWin(); // the normal draft win card takes over
+});
+
+$('pubShare').addEventListener('click', () => {
+  const com = lastPublished && comCache[lastPublished];
+  if (!com) return;
+  play('ui');
+  shareLevel(com);
 });
 
 $('pubGo').addEventListener('click', async () => {
@@ -3018,10 +3310,24 @@ $('pubGo').addEventListener('click', async () => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'the server said no (' + res.status + ')');
+    // T63: your publish seeds the record, and the local copy makes the level
+    // instantly yours - in Mine, offline, starred as a record you hold.
+    comCache[data.id] = {
+      id: data.id, name: levelDef.name || 'Untitled', author: handle,
+      rows: levelDef.rows.slice(), bestMoves: data.bestMoves, bestHolder: handle,
+      hearts: 0, plays: 0, solves: 0,
+      created: Math.floor(Date.now() / 1000), mine: 1,
+    };
+    saveComCache();
+    progress.best['x:' + data.id] = data.bestMoves;
+    progress.records[data.id] = 1;
+    saveProgress();
+    lastPublished = data.id;
     $('pubBody').textContent =
       '"' + (levelDef.name || 'Untitled') + '" is live · best known ' + data.bestMoves + ', by you';
     $('pubHandle').hidden = true;
     $('pubCancel').hidden = true;
+    $('pubShare').hidden = !CAN_SHARE;
     go.disabled = false;
     go.textContent = 'Done';
     go.dataset.done = '1';
@@ -5205,6 +5511,8 @@ let start = 0;
 while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
 loadLevel(0, start);
 if (location.hash === '#edit') openEditor();
+openHash(); // T63: #p=<id> / #l=<code> share links land straight in the level
+window.addEventListener('hashchange', openHash);
 // T58: the offline shell. Secure contexts only - file:// and plain http skip
 // this and lose nothing. sw.js is network-first, so deploys are never stale.
 if ('serviceWorker' in navigator &&
