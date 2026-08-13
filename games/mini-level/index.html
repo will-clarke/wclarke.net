@@ -696,6 +696,11 @@
       <button id="thLight" class="tog tri">Light</button>
       <button id="thDark" class="tog tri">Dark</button>
     </div>
+    <div class="setRow"><span>Motion</span>
+      <button id="moAuto" class="tog tri">Auto</button>
+      <button id="moOn" class="tog tri">On</button>
+      <button id="moOff" class="tog tri">Off</button>
+    </div>
     <div id="howto">
       <h3>How to play</h3>
       <p>Swipe to move. Every self obeys the same swipe at once - TRY being the important word. Hold a direction to keep walking.</p>
@@ -2225,6 +2230,15 @@ const world = $('world');
 const wctx = world.getContext('2d');
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+// T78: every animation gate asks this instead of the media query directly.
+// Linux browsers mirror the desktop's animations toggle into
+// prefers-reduced-motion, which silently froze the whole game on Will's
+// desktop - so Motion is a Setting now: auto honours the system, On and
+// Off override it either way.
+function calmMotion() {
+  const pref = progress.anim || 'auto';
+  return pref === 'auto' ? reducedMotion.matches : pref === 'off';
+}
 
 // T73: the board's palette, twinned. Bodies (blue selves, butter boxes),
 // the violet window language and the coral doors carry across unchanged -
@@ -2357,7 +2371,7 @@ const SAVE_KEY = 'mini-level-v11'; // v11 = T64 level reshape: Moving In's
 // workshop at 13 - migration below drops/remaps exactly those keys.
 // (v10 = T61 community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
-  hearts: {}, records: {}, at: '', theme: 'auto' };
+  hearts: {}, records: {}, at: '', theme: 'auto', anim: 'auto' };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
 // T38 (Will): every level is open from the start - locks bought nothing here.
@@ -2450,6 +2464,7 @@ function loadProgress() {
       progress.records = (raw.records && typeof raw.records === 'object') ? raw.records : {};
       progress.at = typeof raw.at === 'string' ? raw.at : '';
       progress.theme = raw.theme === 'light' || raw.theme === 'dark' ? raw.theme : 'auto';
+      progress.anim = raw.anim === 'on' || raw.anim === 'off' ? raw.anim : 'auto';
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
@@ -3399,7 +3414,7 @@ function applyMove(dir) {
   if (zoom && prev.blocks.join() !== state.blocks.join()) retractZoom();
 
   const kinds = new Set(r.events.map(e => e.t));
-  if (reducedMotion.matches) {
+  if (calmMotion()) {
     settle();
   } else {
     const { list, flashes, sank } = compileAnim(prev, r.events, dir);
@@ -3416,10 +3431,10 @@ function applyMove(dir) {
 
   if (won) {
     $('hintBtn').hidden = true;
-    bloom = reducedMotion.matches ? null : { t0: performance.now(), p: 0 };
+    bloom = calmMotion() ? null : { t0: performance.now(), p: 0 };
     const at = levelIndex, atTrack = trackIndex;
     setTimeout(() => { if (won && levelIndex === at && trackIndex === atTrack) showWin(); },
-      reducedMotion.matches ? 0 : BLOOM * 0.55);
+      calmMotion() ? 0 : BLOOM * 0.55);
   }
   return true;
 }
@@ -3981,8 +3996,10 @@ function drawBoardFrame(c) {
   const x1 = (w - 1) * CELL + lw / 2, y1 = (h - 1) * CELL + lw / 2;
   c.save();
   c.strokeStyle = 'rgba(154,134,203,0.95)';
-  c.shadowColor = 'rgba(154,134,203,0.35)';
-  c.shadowBlur = CELL * 0.14;
+  if (THEME.glow) { // T79: the frame's halo is lamplight-only; day is flat
+    c.shadowColor = 'rgba(154,134,203,0.35)';
+    c.shadowBlur = CELL * 0.14;
+  }
   c.lineWidth = lw;
   c.lineCap = 'round';
   const edge = (ax, ay, bx, by, side) => {
@@ -4020,20 +4037,25 @@ function drawDoorMouth(c, side) {
   const d = layout.doors[side];
   if (d === null) return;
   const [px, py] = doorMouthPx(side);
-  // Light spilling inward marks where the door lets out (coral since T67).
-  const g = c.createRadialGradient(px, py, 0, px, py, CELL * 1.05);
-  g.addColorStop(0, doorCol(0.45));
-  g.addColorStop(1, doorCol(0));
-  c.fillStyle = g;
-  c.fillRect(px - CELL * 1.05, py - CELL * 1.05, CELL * 2.1, CELL * 2.1);
+  // T79 (Will: "keep it nice and flat 2d"): the light spilling inward is
+  // lamplight-only now - by day the coral arch alone marks the door.
+  if (THEME.glow) {
+    const g = c.createRadialGradient(px, py, 0, px, py, CELL * 1.05);
+    g.addColorStop(0, doorCol(0.45));
+    g.addColorStop(1, doorCol(0));
+    c.fillStyle = g;
+    c.fillRect(px - CELL * 1.05, py - CELL * 1.05, CELL * 2.1, CELL * 2.1);
+  }
   // The mouth: an archway bulging outward through the gap in the frame.
   const a0 = side === 'N' ? Math.PI : side === 'S' ? 0 : side === 'W' ? Math.PI / 2 : -Math.PI / 2;
   const r = Math.max(3, PAD * 0.62);
   c.save();
   c.fillStyle = doorCol(0.35);
   c.strokeStyle = doorCol(0.95);
-  c.shadowColor = doorCol(0.5);
-  c.shadowBlur = CELL * 0.18;
+  if (THEME.glow) {
+    c.shadowColor = doorCol(0.5);
+    c.shadowBlur = CELL * 0.18;
+  }
   c.lineWidth = Math.max(2, CELL * 0.09);
   c.lineCap = 'round';
   c.beginPath();
@@ -4049,7 +4071,7 @@ function drawDoorMouth(c, side) {
 // so the doors glow at every depth for free.
 function drawDoorBreath(c, time) {
   if (!THEME.glow) return; // T75: the breath is a glow - lamplight only
-  const t = reducedMotion.matches ? 0 : (time || 0);
+  const t = calmMotion() ? 0 : (time || 0);
   const a = 0.2 + 0.14 * Math.sin(t * 0.0024);
   const img = spriteImg('doorGlow');
   const r = CELL * 1.1;
@@ -4111,8 +4133,10 @@ function drawMiniShell(c, x, y) {
   const gap = Math.max(m.k * CELL, 3.5);
   c.save();
   c.strokeStyle = 'rgba(154,134,203,0.95)';
-  c.shadowColor = 'rgba(154,134,203,0.35)';
-  c.shadowBlur = CELL * 0.14;
+  if (THEME.glow) { // T79: halo lamplight-only, same as the board frame
+    c.shadowColor = 'rgba(154,134,203,0.35)';
+    c.shadowBlur = CELL * 0.14;
+  }
   c.lineWidth = lw;
   c.lineCap = 'round';
   // Every edge is passed low-to-high along its one varying axis. The gap sits
@@ -4142,7 +4166,8 @@ function drawMiniShell(c, x, y) {
   const r = Math.max(2.75, inset * 0.7);
   c.lineWidth = Math.max(1, lw * 0.9);
   c.strokeStyle = doorCol(0.95);
-  c.shadowColor = doorCol(0.4);
+  // T79: coral halo on the arches is lamplight-only; day stays flat.
+  if (THEME.glow) c.shadowColor = doorCol(0.4);
   for (const side of ['N', 'S', 'W', 'E']) {
     if (layout.doors[side] === null) continue;
     const f = doorFrac(side);
@@ -4315,7 +4340,7 @@ function drawSprite(c, s, p, time) {
       if (Math.abs(mdx) >= Math.abs(mdy)) { kx *= 1 + st; ky *= 1 - st * 0.72; }
       else { ky *= 1 + st; kx *= 1 - st * 0.72; }
     }
-    if (!reducedMotion.matches && bonkAt !== null && !s.fate && !s.birth) {
+    if (!calmMotion() && bonkAt !== null && !s.fate && !s.birth) {
       // Splat: every self flattens against the wall it just walked into.
       const q = Math.min(1, Math.max(0, (time - bonkAt) / 180));
       const k = Math.sin(q * Math.PI);
@@ -4350,7 +4375,7 @@ function squelch(p) {
 // eyes that look where it is going and blink every few seconds. Drawn as a
 // path per frame; the pricey shadowBlur glow stays a cached image underneath.
 function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
-  const t = reducedMotion.matches ? 0 : (time || 0);
+  const t = calmMotion() ? 0 : (time || 0);
   const seed = (s.a * 2.399) % (Math.PI * 2);
   const R = CELL * 0.37;
   // T40: lively right after a move, near-still once it has sat for a moment.
@@ -4395,9 +4420,9 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   // A poked blob grins wide for as long as the wriggle lasts (T72).
   const cheer = Math.min(1, Math.max(0, (crowd - 1) / 8) + sq);
   const yph = (t * 0.001 + seed * 2.1) % 23;
-  const yawn = (!reducedMotion.matches && !won && !(mdx || mdy) && yph < 1.6)
+  const yawn = (!calmMotion() && !won && !(mdx || mdy) && yph < 1.6)
     ? Math.sin(yph / 1.6 * Math.PI) : 0;
-  const blink = (!reducedMotion.matches && ((t * 0.001 + seed) % 3.8) < 0.15)
+  const blink = (!calmMotion() && ((t * 0.001 + seed) % 3.8) < 0.15)
     || yawn > 0.6;
   for (const sx of [-1, 1]) {
     const ex = sx * R * 0.42, ey = -R * 0.2;
@@ -4786,7 +4811,7 @@ function frame(ts) {
   // T39: the amoeba idles - breathe at ~30fps between moves so the wobble and
   // the blinks stay alive, but skip it under reduced motion or a covered board.
   if (!motion && !dirty) {
-    if (reducedMotion.matches || !state || !state.selves.length || overlayOpen()) return;
+    if (calmMotion() || !state || !state.selves.length || overlayOpen()) return;
     if (ts - lastBreath < 33) return;
   }
   lastBreath = ts;
@@ -5270,6 +5295,9 @@ $('setMusic').addEventListener('click', () => setAudio('music', !audio.music));
 $('thAuto').addEventListener('click', () => { play('ui'); setTheme('auto'); });
 $('thLight').addEventListener('click', () => { play('ui'); setTheme('light'); });
 $('thDark').addEventListener('click', () => { play('ui'); setTheme('dark'); });
+$('moAuto').addEventListener('click', () => { play('ui'); setMotion('auto'); });
+$('moOn').addEventListener('click', () => { play('ui'); setMotion('on'); });
+$('moOff').addEventListener('click', () => { play('ui'); setMotion('off'); });
 $('hintBtn').addEventListener('click', () => { play('ui'); showHint(); });
 // The bulb lives inside the stage: a tap on it must not arm a swipe or dive.
 $('hintBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -5456,11 +5484,21 @@ function edPaint() {
 
     if (ch === '~') drawPit(c, px, py);
     if (ch === '-') {
-      const g = c.createRadialGradient(px + C / 2, py + C / 2, 0, px + C / 2, py + C / 2, C * 0.9);
-      g.addColorStop(0, doorCol(0.55));
-      g.addColorStop(1, doorCol(0));
-      c.fillStyle = g;
-      c.fillRect(px - C / 2, py - C / 2, C * 2, C * 2);
+      // T79: a flat coral mark (halo only in lamplight, like the board).
+      if (THEME.glow) {
+        const g = c.createRadialGradient(px + C / 2, py + C / 2, 0, px + C / 2, py + C / 2, C * 0.9);
+        g.addColorStop(0, doorCol(0.55));
+        g.addColorStop(1, doorCol(0));
+        c.fillStyle = g;
+        c.fillRect(px - C / 2, py - C / 2, C * 2, C * 2);
+      }
+      c.fillStyle = doorCol(0.35);
+      c.strokeStyle = doorCol(0.95);
+      c.lineWidth = Math.max(1, C * 0.06);
+      c.beginPath();
+      c.arc(px + C / 2, py + C / 2, C * 0.26, 0, Math.PI * 2);
+      c.fill();
+      c.stroke();
     }
     if (ch === '*' || ch === 'B') {
       c.save();
@@ -5775,6 +5813,7 @@ function openSettings() {
   $('pickerTitle').textContent = 'Settings';
   syncAudioBtns();
   syncThemeBtns();
+  syncMotionBtns();
   pkShow('settings');
 }
 
@@ -5784,6 +5823,20 @@ function syncThemeBtns() {
   for (const [id, v] of [['thAuto', 'auto'], ['thLight', 'light'], ['thDark', 'dark']]) {
     $(id).classList.toggle('on', pref === v);
   }
+}
+
+// T78: the motion control - same shape as the theme's.
+function syncMotionBtns() {
+  const pref = progress.anim || 'auto';
+  for (const [id, v] of [['moAuto', 'auto'], ['moOn', 'on'], ['moOff', 'off']]) {
+    $(id).classList.toggle('on', pref === v);
+  }
+}
+function setMotion(pref) {
+  progress.anim = pref;
+  saveProgress();
+  syncMotionBtns();
+  dirty = true; // the idle wobble starts/stops on the next frame
 }
 
 $('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
@@ -5939,7 +5992,7 @@ window.addEventListener('pointermove', (e) => {
 // dives the camera into it. The picture is the level, so full zoom lands on
 // the exact frame the resting camera shows - the dive goes nowhere, forever.
 function maybeDive(e) {
-  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return false;
+  if (zoom || !state || won || overlayOpen() || calmMotion()) return false;
   const r = board.getBoundingClientRect();
   const cx = Math.floor((e.clientX - r.left - PAD) / CELL) + 1;
   const cy = Math.floor((e.clientY - r.top - PAD) / CELL) + 1;
@@ -5974,7 +6027,7 @@ function maybeSquirm(e) {
 // layer; the advance happens once the paper is mostly down.
 const CONFETTI_COLS = ['#7aaede', '#9a86cb', '#e9bc60', '#93c493', '#d6765f'];
 function winTap(e) {
-  if (reducedMotion.matches) { advanceFromWin(); return; }
+  if (calmMotion()) { advanceFromWin(); return; }
   if (confetti) return; // one burst per solve is plenty
   const r = board.getBoundingClientRect();
   const parts = [];
@@ -6035,7 +6088,7 @@ function drawConfetti(c) {
 // finger if there is one, else the first - the one the outer backdrop
 // already brackets.
 function maybeRise(x, y) {
-  if (zoom || !state || won || overlayOpen() || reducedMotion.matches) return;
+  if (zoom || !state || won || overlayOpen() || calmMotion()) return;
   if (!state.blocks.length) return; // no window on the board = no outside
   const r = board.getBoundingClientRect();
   const cx = Math.floor((x - r.left - PAD) / CELL) + 1;
