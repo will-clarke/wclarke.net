@@ -783,6 +783,12 @@ const INWARD = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] };
 // not merely that the optimal happens to use it. #4 and #7 of Will's drafts
 // were unsolvable as drawn; recut by single-cell mutation search ((3,1)
 // opened in Heavy Goods, the (4,1) target dropped in Moving Day).
+// T85 reshuffle (Will, prompt 25): Moving In becomes the full teaching arc.
+// The campaign's openers (Special Delivery recut, Ashes, Doorstop, The Moat),
+// its multi-self teaches (Twins, Hold Still, Loaves, Removals), the
+// workshop's windowless four (Pinwheel, Postage, Chimneys, Milk Run) and two
+// recut Houses (Service Entrance, Stunt Double) move in; Heavy Goods and
+// Three Doors slide toward the back ("quite an advanced topic").
 const TUTORIAL = [
   { name: 'First Push', par: 1, stretch: false, requires: ['push'], rows: [
     '#####',
@@ -807,6 +813,16 @@ const TUTORIAL = [
     '#.$.#',
     '#.$*#',
     '#####',
+  ]},
+  // T85 (Will): ex-workshop, pure sokoban - the pushing exam before any
+  // window appears.
+  { name: 'Pinwheel', par: 15, stretch: false, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#@..$#',
+    '#$.$*#',
+    '#*...#',
+    '######',
   ]},
   // The enter teach: walk into the little world, pop out of its own W door.
   { name: 'Little World', par: 2, stretch: false, requires: ['enter'], rows: [
@@ -857,10 +873,59 @@ const TUTORIAL = [
     '#.@..#',
     '######',
   ]},
+  // T85 (Will): ex-workshop, "obvs tutorial" - both doors on one stamp-sized
+  // board, consolidating in and out.
+  { name: 'Postage', par: 5, stretch: true, requires: [], rows: [
+    '#####',
+    '#@.$-',
+    '#N###',
+    '-..*#',
+    '#####',
+  ]},
+  // T85: Will's concise recut (prompt 25) - the box posts down the shaft
+  // through the pinned window; walk in after it and shove it home.
+  { name: 'Special Delivery', par: 7, stretch: false, requires: ['boxin', 'enter'], rows: [
+    '###-##',
+    '#@#..#',
+    '#$#..#',
+    '#N#..#',
+    '##*..#',
+    '######',
+  ]},
+  // Ex-campaign (T85): the pit teach - sink one box to bridge, walk the
+  // second across. The lower pit punishes pushing box two right.
+  { name: 'Ashes', par: 11, stretch: false, requires: ['sink'], rows: [
+    '######',
+    '#@...#',
+    '#.$~*#',
+    '#.$~.#',
+    '#....#',
+    '######',
+  ]},
+  // T85 (Will): ex-workshop - two chimneys, three bricks; the spare one
+  // plugs the pit.
+  { name: 'Chimneys', par: 5, stretch: false, requires: [], rows: [
+    '#####',
+    '#*#*#',
+    '#$#$#',
+    '#@$~#',
+    '#####',
+  ]},
+  // T85 (Will): ex-workshop - the errand round the pits, sokoban with
+  // sinking and no windows at all.
+  { name: 'Milk Run', par: 15, stretch: false, requires: [], rows: [
+    '#######',
+    '#@$.~.#',
+    '#####$#',
+    '#~$*#.#',
+    '#$###~#',
+    '#.~.$.#',
+    '#######',
+  ]},
   // OTB-4, Will's T64 recut (prompt 21, also published as Mins' community
   // level): the window's doorless faces push like a crate - park the world
-  // where you need its mouth. blockstep still FORCED. The trickier T43 cut
-  // moved to the campaign as Heavy Goods II.
+  // where you need its mouth. blockstep still FORCED. T85: moved back here -
+  // Will: "quite an advanced topic".
   { name: 'Heavy Goods', par: 11, stretch: false, requires: ['blockstep'], rows: [
     '####-#',
     '-$.$.#',
@@ -868,6 +933,96 @@ const TUTORIAL = [
     '#..N.#',
     '#*@..#',
     '######',
+  ]},
+  // Ex-campaign (T85): the world itself is a pushable. It plugs the only
+  // corridor; shove it into the pit and walk across its roof.
+  { name: 'Doorstop', par: 7, stretch: false, requires: ['blocksink'], rows: [
+    '######',
+    '#@N~.#',
+    '####.#',
+    '#*$..#',
+    '#....#',
+    '######',
+  ]},
+  // T85: Will's recut, moved to lateish tutorial - drive the window over the
+  // box to swallow it, then post it back out onto the target.
+  { name: 'Service Entrance', par: 7, stretch: false,
+    requires: ['boxin', 'boxout', 'blockstep'], rows: [
+    '######',
+    '#.#.*#',
+    '#@N.$#',
+    '#.#..#',
+    '#.#..-',
+    '######',
+  ]},
+  // Ex-campaign (T85). T10 pin: (1,4) walled so the block cannot be scooted
+  // or shoved off the boxin line - the choose-your-face dance survives.
+  { name: 'The Moat', par: 15, stretch: false, requires: ['boxin', 'enter'], rows: [
+    '#####-##',
+    '#..~..*#',
+    '#$.~.#.#',
+    '#N.~...-',
+    '##.~~~~#',
+    '#@.....#',
+    '#......#',
+    '########',
+  ]},
+  // T85: Will's recut, his "intro to mini levels" - three storeys now. Exit
+  // once and your double bridges the pit; exit again and both lanes push home.
+  { name: 'Stunt Double', par: 6, stretch: true,
+    requires: ['exit', 'spawn', 'fill'], rows: [
+    '#######',
+    '#N~$.*#',
+    '#######',
+    '#N@...-',
+    '#######',
+    '#N..$*#',
+    '#######',
+  ]},
+  // Ex-campaign (T85): one exit, two of you - the gentlest spawn lesson.
+  { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
+    '#######',
+    '-..N..#',
+    '#@.$*.#',
+    '#######',
+    '#..N..#',
+    '#..$*.#',
+    '#######',
+  ]},
+  // Ex-campaign (T85). T13 rebuild of Reunion; T20 re-pocket: the self starts
+  // beside the door with walls on every other side, so the shell can never be
+  // pressed and the blocks can never be scooted - the herding dance survives.
+  { name: 'Hold Still', par: 6, stretch: true, requires: ['spawn'], rows: [
+    '########',
+    '#####.##',
+    '##*..B##',
+    '##$B#.N#',
+    '##....N#',
+    '-@######',
+    '########',
+    '########',
+  ]},
+  // Ex-campaign (T85): one box out the south door lands from both windows.
+  { name: 'Loaves', par: 8, stretch: true, requires: ['boxout', 'spawn'], rows: [
+    '#######',
+    '#..@..#',
+    '#.N.N.#',
+    '#*...*#',
+    '#..$..#',
+    '#.....#',
+    '###-###',
+  ]},
+  // Ex-campaign (T85, Will: "removals could be in tut"): push the right
+  // window out the door and it re-emerges from the left one - parked exactly
+  // where the box lane needs a door.
+  { name: 'Removals', par: 11, stretch: true, requires: ['blockout', 'boxin'], rows: [
+    '#-#####',
+    '#.##..#',
+    '#.##$.#',
+    '#*#N..#',
+    '#####.#',
+    '#@..N.-',
+    '#######',
   ]},
   // OTB-5: two parcels, two targets - one posts in, one falls out.
   { name: 'Double Order', par: 11, stretch: false, requires: ['boxout'], rows: [
@@ -889,54 +1044,106 @@ const TUTORIAL = [
   ]},
 ];
 
-// T55 reshape: First Steps deleted (First Push made it redundant), Corners +
-// Through the Looking Glass promoted into Moving In, Open House + Moving Day
-// demoted here from the tutorial (too hard for a teach track), Nest + the
-// campaign's own Out the Back benched to BENCH.md.
-const CAMPAIGN = [
-  // 8x8 -> 7x7: shaft, wall, chamber. The block is pinned by the boundary so
-  // the box posts through it instead of scooting it.
-  { name: 'Special Delivery', par: 9, stretch: false, requires: ['boxin', 'enter'], rows: [
-    '####-##',
-    '#@#...#',
-    '#.#...#',
-    '#$#...#',
-    '#N#...#',
-    '###..*#',
+// T85 merge (Will, prompt 25): the campaign and Around the Houses became one
+// shelf. What the tutorial did not absorb lives here - the Houses' keepers
+// (small boards, one or two ahas, Removals vibes), Will's prompt-25 recuts of
+// Fire Escape / Recoil / Encore, and the campaign's heavies. Nine levels came
+// off the shelf to BENCH.md (Will: "around the houses is general a bit
+// rubbish"). Acts: one window, then the window itself moves, then two.
+const HOUSES = [
+  // Step into the window and the box you were pressing trades places with
+  // you through the world.
+  { name: 'Roundabout', par: 5, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '#..*.#',
+    '#....#',
+    '#.N@$-',
+    '###..#',
+    '######',
+  ]},
+  // The box sits on the east door's own arrival cell - enter the window and
+  // shove it home as you land.
+  { name: 'Doorbell', par: 7, stretch: false, requires: ['enter'], rows: [
+    '######',
+    '#....#',
+    '#.N..#',
+    '#.#*$-',
+    '#@####',
+    '######',
+  ]},
+  // T85: Will's recut (prompt 25) - three boxes, one target, one door: the
+  // parcel goes out the top and the window leans into the drop.
+  { name: 'Recoil', par: 5, stretch: false, requires: ['boxout', 'blockstep'], rows: [
+    '#-####',
+    '#..###',
+    '#$.N*#',
+    '#@$..#',
+    '#...$#',
+    '######',
+  ]},
+  // T85: Will's recut (prompt 25) - the target sits behind the wall, and the
+  // only stair down to it is the window's own south door.
+  { name: 'Fire Escape', par: 10, stretch: false, requires: ['blockstep', 'exit'], rows: [
+    '######',
+    '#....#',
+    '#..@.#',
+    '#.$N.#',
+    '####*#',
+    '####-#',
+  ]},
+  // The box rides the doors twice - east across the wall, then south onto
+  // the target - and you fly out after it.
+  { name: 'Connecting Flight', par: 9, stretch: false, requires: ['boxout', 'exit'], rows: [
+    '#######',
+    '#@$...-',
+    '####..#',
+    '#.....#',
+    '#..N..#',
+    '#..*..#',
+    '#####-#',
+  ]},
+  // Park the window one row down first, so the box posted out the west door
+  // drops out of its mouth exactly on target.
+  { name: 'Removal Van', par: 11, stretch: false, requires: ['boxout', 'blockstep'], rows: [
+    '######',
+    '##...#',
+    '#.N..#',
+    '#*...#',
+    '-.$.@#',
+    '######',
+  ]},
+  // T85: Will's recut (prompt 25) - two targets, one hungry window, and the
+  // second serving needs a shunt.
+  { name: 'Encore', par: 14, stretch: false, requires: ['boxin', 'blockstep'], rows: [
+    '#######',
+    '#..#.*#',
+    '#..$$*-',
+    '#.N.#.#',
+    '#..$@.#',
+    '#.....#',
     '#######',
   ]},
-  // 7x7 -> 6x6, same par: sink one box to bridge, walk the second across.
-  // The lower pit stays as the trap that punishes pushing box two right.
-  { name: 'Ashes', par: 11, stretch: false, requires: ['sink'], rows: [
-    '######',
-    '#@...#',
-    '#.$~*#',
-    '#.$~.#',
-    '#....#',
-    '######',
+  // The box goes out the east door, falls from the window, gets posted back
+  // through it - and you follow it in and chase it home.
+  { name: 'Return Address', par: 12, stretch: false,
+    requires: ['enter', 'boxin', 'boxout'], rows: [
+    '#######',
+    '#@....#',
+    '#*...$-',
+    '#####.#',
+    '#..N..#',
+    '#.....#',
+    '#######',
   ]},
-  // NEW (T10): the world itself is a pushable. It plugs the only corridor;
-  // shove it into the pit and walk across its roof. Plain sokoban after -
-  // sinking the last window just closes the doors.
-  { name: 'Doorstop', par: 7, stretch: false, requires: ['blocksink'], rows: [
+  // T64: the original T43 Heavy Goods cut, demoted when Will's tighter recut
+  // took its Moving In slot (prompt 21: "more tricky, a later V2 level").
+  { name: 'Heavy Goods II', par: 10, stretch: false, requires: ['blockstep'], rows: [
+    '##-###',
+    '-$...#',
+    '###..#',
+    '#..N.#',
+    '#*@..#',
     '######',
-    '#@N~.#',
-    '####.#',
-    '#*$..#',
-    '#....#',
-    '######',
-  ]},
-  // T10 pin: (1,4) walled so the block cannot be scooted or shoved off the
-  // boxin line - the choose-your-face dance survives pushable blocks.
-  { name: 'The Moat', par: 15, stretch: false, requires: ['boxin', 'enter'], rows: [
-    '#####-##',
-    '#..~..*#',
-    '#$.~.#.#',
-    '#N.~...-',
-    '##.~~~~#',
-    '#@.....#',
-    '#......#',
-    '########',
   ]},
   // T55: ex-tutorial OTB-8 (too hard for a teach track) - every face of the
   // house is a door.
@@ -958,27 +1165,7 @@ const CAMPAIGN = [
     '#*.$$#',
     '#-####',
   ]},
-  // T64: the original T43 Heavy Goods cut, demoted here when Will's tighter
-  // recut took its Moving In slot (prompt 21: "the existing one is more
-  // tricky and could be a later V2 level") - same demote path Open House
-  // and Moving Day took at T55.
-  { name: 'Heavy Goods II', par: 10, stretch: false, requires: ['blockstep'], rows: [
-    '##-###',
-    '-$...#',
-    '###..#',
-    '#..N.#',
-    '#*@..#',
-    '######',
-  ]},
-  { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
-    '#######',
-    '-..N..#',
-    '#@.$*.#',
-    '#######',
-    '#..N..#',
-    '#..$*.#',
-    '#######',
-  ]},
+  // --- two windows ------------------------------------------------------
   // T42/T43 (Will, prompt 8): "This is a better puzzle" - his rebuilt
   // Sidestep, verbatim. Same teach (spawn + desync), par re-baked.
   { name: 'Sidestep', par: 10, stretch: true, requires: ['exit', 'spawn'], rows: [
@@ -988,262 +1175,6 @@ const CAMPAIGN = [
     '#######',
     '#..N..#',
     '#..$*.#',
-    '#######',
-  ]},
-  // NEW (T10): blockout. Push the right window out the door and it re-emerges
-  // from the left one (2 -> 2) - parked exactly where the box lane needs a
-  // door. Post the box, follow it through, walk it home.
-  // T24 re-bake: par 11 -> 12 (the old optimal leaned on the removed A5 scoot).
-  // T48 re-bake: back to 11 - universal pop-out opens a one-move-shorter line.
-  { name: 'Removals', par: 11, stretch: true, requires: ['blockout', 'boxin'], rows: [
-    '#-#####',
-    '#.##..#',
-    '#.##$.#',
-    '#*#N..#',
-    '#####.#',
-    '#@..N.-',
-    '#######',
-  ]},
-  // T13 rebuild of Reunion; T20 re-pocket: the self starts beside the door
-  // with walls on every other side, so the shell can never be pressed and the
-  // blocks can never be scooted (A5) - the herding dance survives.
-  { name: 'Hold Still', par: 6, stretch: true, requires: ['spawn'], rows: [
-    '########',
-    '#####.##',
-    '##*..B##',
-    '##$B#.N#',
-    '##....N#',
-    '-@######',
-    '########',
-    '########',
-  ]},
-  // T20 re-bake: par 9 -> 8; the optimal now folds one block push into the
-  // loaves-and-fishes line. boxout + spawn still carry the level.
-  { name: 'Loaves', par: 8, stretch: true, requires: ['boxout', 'spawn'], rows: [
-    '#######',
-    '#..@..#',
-    '#.N.N.#',
-    '#*...*#',
-    '#..$..#',
-    '#.....#',
-    '###-###',
-  ]},
-  // (Nest lived here T14 -> T55; benched to BENCH.md - Will's dislike list.)
-  // --- Guest levels ----------------------------------------------------------
-  // Will's editor draft (2026-08-09), promoted as-is: two sealed storeys, one
-  // box, two targets - the doors and windows are the only way anything moves
-  // between floors. Par baked under the T24 engine.
-  // T42 recut: one new N door above the upper window restores solvability -
-  // and blockout with it (push the window up through its doorless S face).
-  { name: 'Duplex', par: 18, stretch: true, requires: ['boxout', 'blockout'], rows: [
-    '###-###',
-    '-.@N..#',
-    '#..$..-',
-    '#######',
-    '#*.N.*#',
-    '#.....#',
-    '#######',
-  ]},
-];
-
-// T57: Around the Houses - twenty hand-authored levels channeling Removals
-// (Will's favourite): small boards, one or two boxes, short optimals, and one
-// or two ahas each. Every level was designed around a single portal trick and
-// solver-checked: the requires set is in the BFS optimal, and for most levels
-// the trick is FORCED (unsolvable with that mechanic banned). Acts: one
-// window and one trick, then the window itself moves, then two windows.
-const HOUSES = [
-  // The corridor is sealed - leave the level and be born beside the box,
-  // shoving it as you arrive.
-  { name: 'Knock and Run', par: 5, stretch: false, requires: ['exit'], rows: [
-    '######',
-    '#N$.*#',
-    '######',
-    '#@...-',
-    '######',
-    '######',
-  ]},
-  // Step into the window and the box you were pressing trades places with
-  // you through the world.
-  { name: 'Roundabout', par: 5, stretch: false, requires: ['enter'], rows: [
-    '######',
-    '#..*.#',
-    '#....#',
-    '#.N@$-',
-    '###..#',
-    '######',
-  ]},
-  // The box is walled in. Leave by the front door and come up through the
-  // floor beneath it.
-  { name: 'Air Mail', par: 6, stretch: false, requires: ['exit'], rows: [
-    '##-###',
-    '#.*..#',
-    '##$#.#',
-    '##N..#',
-    '####@#',
-    '######',
-  ]},
-  // The yard beside the box is sealed - drop out of the window into it by
-  // leaving through the south door.
-  { name: 'Fire Escape', par: 6, stretch: false, requires: ['exit'], rows: [
-    '#######',
-    '#.....#',
-    '#.N..@#',
-    '##.$.*#',
-    '#####.#',
-    '#####.#',
-    '#####-#',
-  ]},
-  // The box sits on the east door's own arrival cell - enter the window and
-  // shove it home as you land.
-  { name: 'Doorbell', par: 7, stretch: false, requires: ['enter'], rows: [
-    '######',
-    '#....#',
-    '#.N..#',
-    '#.#*$-',
-    '#@####',
-    '######',
-  ]},
-  // Push the box AWAY from the target: out the west door, round the world,
-  // out of the window beside it.
-  { name: 'Wrong Way', par: 7, stretch: false, requires: ['boxout'], rows: [
-    '#######',
-    '#######',
-    '##....#',
-    '-.$@.N#',
-    '###.*.#',
-    '#######',
-    '#######',
-  ]},
-  // The front room is sealed. The window delivers you just inside the west
-  // door - behind the box at last.
-  { name: "Tradesman's Entrance", par: 8, stretch: false, requires: ['enter'], rows: [
-    '######',
-    '-..$*#',
-    '######',
-    '#.N.@#',
-    '#....#',
-    '######',
-  ]},
-  // The box cannot be pushed - drive the window over it and it is swallowed
-  // through the leading door, straight into the east pocket.
-  { name: 'Ferryman', par: 7, stretch: false, requires: ['boxin', 'blockstep'], rows: [
-    '######',
-    '#..#*#',
-    '#@N$.-',
-    '#..#.#',
-    '#....#',
-    '######',
-  ]},
-  // Post the box out the north door: the window's mouth is walled, so it
-  // recoils - and the box lands exactly where the window stood.
-  { name: 'Recoil', par: 6, stretch: false, requires: ['boxout', 'blockstep'], rows: [
-    '#-#####',
-    '#...###',
-    '#$..N*#',
-    '#@....#',
-    '#.....#',
-    '#.....#',
-    '#######',
-  ]},
-  // Two boxes, one gullet: serve the first before the window can swallow
-  // the second - then post it backwards onto the cell you just left.
-  { name: 'Encore', par: 7, stretch: false, requires: ['boxin', 'blockstep'], rows: [
-    '#######',
-    '#....*#',
-    '#@N$$*-',
-    '#.....#',
-    '#######',
-    '#######',
-    '#######',
-  ]},
-  // Park the window one row down first, so the box posted out the west door
-  // drops out of its mouth exactly on target.
-  { name: 'Removal Van', par: 11, stretch: false, requires: ['boxout', 'blockstep'], rows: [
-    '######',
-    '##...#',
-    '#.N..#',
-    '#*...#',
-    '-.$.@#',
-    '######',
-  ]},
-  // The box rides the doors twice - east across the wall, then south onto
-  // the target - and you fly out after it.
-  { name: 'Connecting Flight', par: 9, stretch: false, requires: ['boxout', 'exit'], rows: [
-    '#######',
-    '#@$...-',
-    '####..#',
-    '#.....#',
-    '#..N..#',
-    '#..*..#',
-    '#####-#',
-  ]},
-  // Sink the window into the pit and push the box across the sunken world's
-  // roof.
-  { name: 'Pontoon', par: 10, stretch: false, requires: ['blocksink'], rows: [
-    '######',
-    '#@N~*#',
-    '#.$.##',
-    '#....#',
-    '#....#',
-    '######',
-  ]},
-  // Swallow the box east, then post it out the east door: the walled mouth
-  // recoils the window and the box lands on its old cell - one shove home.
-  { name: 'Service Entrance', par: 10, stretch: false,
-    requires: ['boxin', 'boxout', 'blockstep'], rows: [
-    '#######',
-    '#..#.*#',
-    '#@.#..#',
-    '#..N$.#',
-    '#..#..#',
-    '#..#..-',
-    '#######',
-  ]},
-  // The box goes out the east door, falls from the window, gets posted back
-  // through it - and you follow it in and chase it home.
-  { name: 'Return Address', par: 12, stretch: false,
-    requires: ['enter', 'boxin', 'boxout'], rows: [
-    '#######',
-    '#@....#',
-    '#*...$-',
-    '#####.#',
-    '#..N..#',
-    '#.....#',
-    '#######',
-  ]},
-  // --- two windows ------------------------------------------------------
-  // One box, two targets: push it out the south door and it falls out of
-  // both windows at once.
-  { name: 'Double Drop', par: 6, stretch: true, requires: ['boxout', 'spawn'], rows: [
-    '######',
-    '#@...#',
-    '#N.N$#',
-    '#*.*.#',
-    '####.#',
-    '####-#',
-  ]},
-  // One exit, two corridors: you arrive in both at once, and every swipe
-  // pushes both boxes home together.
-  { name: 'Duet', par: 7, stretch: true, requires: ['exit', 'spawn'], rows: [
-    '#######',
-    '#N$..*#',
-    '#######',
-    '#N$..*#',
-    '#######',
-    '#@....-',
-    '#######',
-  ]},
-  // Exit once - your double falls in the pit and becomes the bridge. Exit
-  // again - the bridge holds, and the box lane is yours.
-  { name: 'Stunt Double', par: 5, stretch: true,
-    requires: ['exit', 'spawn', 'fill'], rows: [
-    '#######',
-    '#N~$.*#',
-    '#######',
-    '#N...@-',
-    '#######',
-    '#######',
     '#######',
   ]},
   // Push the right window out the east door and it re-emerges beside the
@@ -1257,38 +1188,27 @@ const HOUSES = [
     '#.....#',
     '#######',
   ]},
-  // The finale: aim the chimney by posting one window out the north door,
-  // then fire the parcel east - it comes out doubled, one copy on target.
-  { name: 'Removals & Sons', par: 13, stretch: true, requires: ['boxout', 'spawn'], rows: [
+  // Will's editor draft (2026-08-09), promoted as-is: two sealed storeys, one
+  // box, two targets - the doors and windows are the only way anything moves
+  // between floors. T42 recut: one new N door above the upper window restores
+  // solvability - and blockout with it.
+  { name: 'Duplex', par: 18, stretch: true, requires: ['boxout', 'blockout'], rows: [
     '###-###',
-    '#.*...#',
-    '#N....#',
-    '###N..#',
-    '#.$...-',
-    '#..@..#',
+    '-.@N..#',
+    '#..$..-',
+    '#######',
+    '#*.N.*#',
+    '#.....#',
     '#######',
   ]},
 ];
 
 // Will's editor levels (2026-08-10 batch), pars baked under the T32 engine,
 // ordered easy-ish to hard-ish by par (search size breaks ties). No teaching
-// contract - these are puzzles, not lessons. Names are placeholders Will can
-// rename at will.
+// contract - these are puzzles, not lessons. T85 (Will, prompt 25): Pinwheel,
+// Postage, Chimneys and Milk Run promoted to Moving In; Compass and Wings
+// pushed later ("kinda hard"); The Warren (his prompt-25 maze) joins late.
 const WORKSHOP = [
-  { name: 'Postage', par: 5, stretch: true, requires: [], rows: [
-    '#####',
-    '#@.$-',
-    '#N###',
-    '-..*#',
-    '#####',
-  ]},
-  { name: 'Chimneys', par: 5, stretch: true, requires: [], rows: [
-    '#####',
-    '#*#*#',
-    '#$#$#',
-    '#@$~#',
-    '#####',
-  ]},
   { name: 'Trapdoor', par: 5, stretch: true, requires: [], rows: [
     '###-#',
     '#@$.#',
@@ -1339,6 +1259,23 @@ const WORKSHOP = [
     '#..$.*#',
     '###-###',
   ]},
+  { name: 'Backdoor', par: 16, stretch: true, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#...$-',
+    '#$N@*#',
+    '#*.$.#',
+    '##-###',
+  ]},
+  { name: 'Spiral', par: 15, stretch: true, requires: [], rows: [
+    '#-#####',
+    '-*#..*#',
+    '##.*$.#',
+    '#.$N$.#',
+    '#..$.##',
+    '#.@.#*-',
+    '#####-#',
+  ]},
   { name: 'Compass', par: 11, stretch: true, requires: [], rows: [
     '###-###',
     '#N*...#',
@@ -1356,40 +1293,6 @@ const WORKSHOP = [
     '#...###',
     '#*.*N*#',
     '#######',
-  ]},
-  { name: 'Milk Run', par: 15, stretch: true, requires: [], rows: [
-    '#######',
-    '#@$.~.#',
-    '#####$#',
-    '#~$*#.#',
-    '#$###~#',
-    '#.~.$.#',
-    '#######',
-  ]},
-  { name: 'Pinwheel', par: 15, stretch: true, requires: [], rows: [
-    '######',
-    '#.*..#',
-    '#@..$#',
-    '#$.$*#',
-    '#*...#',
-    '######',
-  ]},
-  { name: 'Backdoor', par: 16, stretch: true, requires: [], rows: [
-    '######',
-    '#.*..#',
-    '#...$-',
-    '#$N@*#',
-    '#*.$.#',
-    '##-###',
-  ]},
-  { name: 'Spiral', par: 15, stretch: true, requires: [], rows: [
-    '#-#####',
-    '-*#..*#',
-    '##.*$.#',
-    '#.$N$.#',
-    '#..$.##',
-    '#.@.#*-',
-    '#####-#',
   ]},
   // T64: grafted from the community shelf - Will published it as Mins
   // ("Tight corner", best known 22 there); the BFS par is 18.
@@ -1430,6 +1333,23 @@ const WORKSHOP = [
     '##N#..#',
     '-*$..@-',
     '#######',
+  ]},
+  // T85: Will's prompt-25 grid, sent as "Super tricky maze hmmmmmmmm" -
+  // renamed. Par 45; the long march through the burrows is solver-FORCED
+  // through blockstep + boxout + exit.
+  { name: 'The Warren', par: 45, stretch: true, requires: [], rows: [
+    '##-#########',
+    '#.$......#.#',
+    '###.####.#$-',
+    '#......#.#.#',
+    '#.####@#...#',
+    '#.#.#N*.####',
+    '#.#.###.#.##',
+    '#...#.#.#.##',
+    '###.#.#...##',
+    '###.#.###..#',
+    '-.$.#....$##',
+    '#########-##',
   ]},
   { name: 'Grindstone', par: 47, stretch: true, requires: [], rows: [
     '#######',
@@ -1545,10 +1465,12 @@ const TRACKS = [
   // T55 (Will): 'Tutorial' read aggressively bureaucratic - the teach track
   // is now Moving In, which is also what its levels are about.
   { id: 't', name: 'Moving In', levels: TUTORIAL },
-  { id: 'c', name: 'Campaign', levels: CAMPAIGN },
-  { id: 'a', name: 'Around the Houses', levels: HOUSES },
+  // T85 (Will): the campaign merged into Around the Houses - one shelf, the
+  // old 'c' save id carries on. The 'a' id retired with it (v13 migration).
+  { id: 'c', name: 'Around the Houses', levels: HOUSES },
   { id: 'w', name: 'Workshop', levels: WORKSHOP },
-  { id: 'g', name: 'Generated', levels: GENERATED },
+  // T85 (Will): "rename Gen to Outrageously Difficult or something please lol"
+  { id: 'g', name: 'Outrageously Difficult', levels: GENERATED },
 ];
 // The flat list survives for the dev harnesses (solve.mjs indexes into it).
 const LEVELS = TRACKS.flatMap(t => t.levels);
@@ -2380,12 +2302,12 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v12'; // v12 = T80: Round the Back into the
-// workshop at 6, so w:6+ shift up one. (v11 = T64 level reshape: Moving In's
-// TtLG + Heavy Goods recut in place - their old bests describe retired
-// puzzles - Heavy Goods II into the campaign at 6, Tight Corner into the
-// workshop at 13 - migration below drops/remaps exactly those keys.
-// v10 = T61 community identity; T62 hearts and T63 records were additive.)
+const SAVE_KEY = 'mini-level-v13'; // v13 = T85: the great reshuffle - the
+// campaign merged into Around the Houses (id 'a' retired), fourteen levels
+// moved into Moving In, six recut to Will's prompt-25 grids, nine benched -
+// T85MAP below carries every surviving best to its new key. (v12 = T80
+// Round the Back into the workshop at 6; v11 = T64 level reshape; v10 = T61
+// community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
   hearts: {}, records: {}, at: '', theme: 'auto', anim: 'auto' };
 
@@ -2396,8 +2318,13 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let preT85 = false; // any pre-v13 save gets the T85 reshuffle remap below
     let preT80 = false; // any pre-v12 save needs the T80 workshop shift below
     let preT64 = false; // any pre-v11 save needs the T64 key fixup below
+    if (!raw) {
+      preT85 = true;
+      raw = JSON.parse(localStorage.getItem('mini-level-v12') || 'null');
+    }
     if (!raw) {
       preT80 = true;
       raw = JSON.parse(localStorage.getItem('mini-level-v11') || 'null');
@@ -2480,6 +2407,35 @@ function loadProgress() {
       shift('w', 6, 17);
       const m = /^w:(\d+)$/.exec(raw.at || '');
       if (m && Number(m[1]) >= 6) raw.at = 'w:' + (Number(m[1]) + 1);
+    }
+    if (raw && typeof raw === 'object' && preT85 && raw.best) {
+      // T85 remap: the great reshuffle. Every v12 key that still names the
+      // same puzzle maps to its new home; recut and benched levels drop
+      // (their bests describe retired grids). g:/x: keys never moved.
+      const T85MAP = {
+        't:0': 't:0', 't:1': 't:1', 't:2': 't:2', 't:3': 't:4', 't:4': 't:5',
+        't:5': 't:6', 't:6': 't:7', 't:7': 't:8', 't:8': 't:14',
+        't:9': 't:23', 't:10': 't:24',
+        'c:1': 't:11', 'c:2': 't:15', 'c:3': 't:17', 'c:4': 'c:9',
+        'c:5': 'c:10', 'c:6': 'c:8', 'c:7': 't:19', 'c:8': 'c:11',
+        'c:9': 't:22', 'c:10': 't:20', 'c:11': 't:21', 'c:12': 'c:13',
+        'a:1': 'c:0', 'a:4': 'c:1', 'a:10': 'c:5', 'a:11': 'c:4',
+        'a:14': 'c:7', 'a:18': 'c:12',
+        'w:0': 't:9', 'w:1': 't:12', 'w:2': 'w:0', 'w:3': 'w:1',
+        'w:4': 'w:2', 'w:5': 'w:3', 'w:6': 'w:4', 'w:7': 'w:5',
+        'w:8': 'w:8', 'w:9': 'w:9', 'w:10': 't:13', 'w:11': 't:3',
+        'w:12': 'w:6', 'w:13': 'w:7', 'w:14': 'w:10', 'w:15': 'w:11',
+        'w:16': 'w:12', 'w:17': 'w:13', 'w:18': 'w:15',
+      };
+      const keep = (k) => k.startsWith('g:') || k.startsWith('x:');
+      const best = {};
+      for (const k in raw.best) {
+        const nk = keep(k) ? k : T85MAP[k];
+        if (nk) best[nk] = raw.best[k];
+      }
+      raw.best = best;
+      raw.at = keep(raw.at || '') ? raw.at : (T85MAP[raw.at] || '');
+      raw.coached = {}; // Moving In's indexes shifted wholesale - re-show
     }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
@@ -2625,13 +2581,14 @@ function startLevel(def, spin) {
 // --- Overlays and coach marks -----------------------------------------------
 
 // T43: keyed to the Moving In track (track 0) - one line per new idea.
-// T55 remap: Corners and Through the Looking Glass moved in above these.
+// T85 remap: the track grew to the full teaching arc; multi-self gets a line.
 const COACH = {
   0: 'Swipe to move',
-  3: 'That little world is this one',
-  5: 'Doors go both ways',
-  6: 'Boxes fit through doors too',
-  8: 'The little world pushes like a box',
+  4: 'That little world is this one',
+  6: 'Doors go both ways',
+  7: 'Boxes fit through doors too',
+  14: 'The little world pushes like a box',
+  18: 'One swipe moves every you',
 };
 
 function overlayOpen() {
@@ -4890,10 +4847,23 @@ let lastBreath = 0;
 
 const AC = window.AudioContext || window.webkitAudioContext;
 const ROOT = 146.83;                    // D3, and everything hangs off it
-const SCALE = [0, 3, 5, 7, 10];         // minor pentatonic: no wrong notes
-const CHORDS = [[0, 3, 7, 14], [-4, 0, 3, 7], [3, 7, 10, 14], [-5, 2, 5, 10]];
-const BASS = [-12, -4, -9, -5];
-const STEP = 30 / 68;                   // one eighth note at 68bpm, seconds
+// T86 (Will: "calming music.. almost started valley chill.. every thing is
+// at peace"): the whole soundtrack retuned from a minor drone to a sunny
+// major pentatonic over an 8-chord pastoral loop at a strolling 60bpm.
+// The sfx plucks and win bells hang off the same scale, so they retune too.
+const SCALE = [0, 2, 4, 7, 9];          // major pentatonic: no wrong notes
+const CHORDS = [
+  [0, 4, 9, 14],    // D6/9   - home, feet up
+  [5, 9, 12, 19],   // Gadd9
+  [-3, 0, 4, 7],    // Bm7    - the one soft shadow
+  [-5, 2, 9, 16],   // Asus2  - open fifths, wide sky
+  [2, 5, 9, 12],    // Em7
+  [5, 9, 12, 16],   // Gmaj7
+  [0, 7, 14, 16],   // Dadd9
+  [7, 12, 14, 17],  // A7sus  - leans gently home again
+];
+const BASS = [-12, -7, -15, -5, -10, -7, -12, -5]; // chord roots, D2 lowest
+const STEP = 30 / 60;                   // one eighth note at 60bpm, seconds
 const SFX_LEVEL = 0.5;
 const MUSIC_LEVEL = 0.17;               // well under the sfx, as specified
 
@@ -4967,14 +4937,16 @@ function ensureAudio() {
     const dOut = ac.createGain(); dOut.gain.value = 0.5;
     delay.connect(dOut); dOut.connect(musicBus); dOut.connect(musicWet);
 
-    // The pad breathes through one slow filter sweep, ~22s a cycle.
+    // The pad breathes through one slow filter sweep, ~22s a cycle. T86: the
+    // resonance came right down and the base up - triangle pads are darker
+    // than the old saws, and a Q whistle is not peaceful.
     padFilter = ac.createBiquadFilter();
-    padFilter.type = 'lowpass'; padFilter.Q.value = 1.6;
-    padFilter.frequency.value = 620;
+    padFilter.type = 'lowpass'; padFilter.Q.value = 0.9;
+    padFilter.frequency.value = 900;
     padFilter.connect(musicBus); padFilter.connect(musicWet);
     const lfo = ac.createOscillator();
     lfo.frequency.value = 0.045;
-    const lfoAmt = ac.createGain(); lfoAmt.gain.value = 360;
+    const lfoAmt = ac.createGain(); lfoAmt.gain.value = 420;
     lfo.connect(lfoAmt); lfoAmt.connect(padFilter.frequency);
     lfo.start();
   }
@@ -5206,13 +5178,15 @@ function moveSfx(events, kinds, win) {
 // --- Music ------------------------------------------------------------------
 
 function padVoice(f, t, dur, gain) {
-  const o = ac.createOscillator(); o.type = 'sawtooth';
-  const o2 = ac.createOscillator(); o2.type = 'triangle';
+  // T86: triangle + detuned sine, not sawtooth - warmth without the buzz -
+  // and a slower breath in and out.
+  const o = ac.createOscillator(); o.type = 'triangle';
+  const o2 = ac.createOscillator(); o2.type = 'sine';
   o.frequency.value = f; o2.frequency.value = f * 1.005;
   const g = ac.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.exponentialRampToValueAtTime(gain, t + 2.2);
-  g.gain.setValueAtTime(gain, t + dur - 2.2);
+  g.gain.exponentialRampToValueAtTime(gain, t + 2.8);
+  g.gain.setValueAtTime(gain, t + dur - 2.8);
   g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   o.connect(g); o2.connect(g); g.connect(padFilter);
   o.start(t); o2.start(t); o.stop(t + dur + 0.1); o2.stop(t + dur + 0.1);
@@ -5256,11 +5230,34 @@ function washVoice(t, dur) {
   s.onended = () => g.disconnect();
 }
 
+// T86: the tune strolls instead of jumping - a random walk over the scale
+// wanders a step at a time (rarely two), reflecting off its range.
+let melDeg = 10;
+
+// T86: the brook - a tiny sine bloop that rises a fifth and vanishes into
+// the echo. The "bubbling along" in Will's brief; felt more than heard.
+function dropletVoice(t) {
+  const o = ac.createOscillator();
+  o.type = 'sine';
+  const f = 700 + Math.random() * 500;
+  o.frequency.setValueAtTime(f, t);
+  o.frequency.exponentialRampToValueAtTime(f * 1.5, t + 0.09);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.022, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+  o.connect(g); g.connect(musicBus); g.connect(musicWet);
+  const d = ac.createGain(); d.gain.value = 0.4;
+  g.connect(d); d.connect(delay);
+  o.start(t); o.stop(t + 0.2);
+  o.onended = () => g.disconnect();
+}
+
 function scheduleStep(i, t) {
   const bar = Math.floor(i / 16);
   if (i % 16 === 0) {
     const c = CHORDS[bar % CHORDS.length];
-    for (const n of c) padVoice(semi(n), t, STEP * 16 + 1.4, 0.055);
+    for (const n of c) padVoice(semi(n), t, STEP * 16 + 1.4, 0.09);
     const b = ac.createOscillator();
     b.type = 'sine'; b.frequency.value = semi(BASS[bar % BASS.length]);
     const bg = ac.createGain();
@@ -5270,11 +5267,16 @@ function scheduleStep(i, t) {
     b.onended = () => bg.disconnect();
     if (bar % 2 === 0) washVoice(t, STEP * 16);
   }
-  // Sparse pentatonic pluck: leans onto the beat, never doubles up.
+  // Sparse pentatonic stroll: leans onto the beat, never doubles up.
   if (i - lastPluck >= 2 && Math.random() < (i % 2 === 0 ? 0.22 : 0.1)) {
     lastPluck = i;
-    pluckVoice(scaleHz(7 + Math.floor(Math.random() * 8)), t, 0.07);
+    melDeg += (Math.random() < 0.5 ? -1 : 1) * (Math.random() < 0.2 ? 2 : 1);
+    if (melDeg < 7) melDeg = 14 - melDeg;   // reflect off the bottom...
+    if (melDeg > 14) melDeg = 28 - melDeg;  // ...and off the top
+    pluckVoice(scaleHz(melDeg), t, 0.07);
   }
+  // A rare droplet on an offbeat keeps the brook running.
+  if (i % 2 === 1 && Math.random() < 0.05) dropletVoice(t + STEP * 0.4);
 }
 
 function musicPump() {
