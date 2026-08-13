@@ -35,9 +35,13 @@
     --solved-bg: #e9f0e2; --solved-line: #a9cdb2; --solved-ink: #47825a;
     --par-bg: #f8efd8; --par-line: #e0b45a; --par-ink: #a97c1e;
     --red-ink: #b0574f; --red-line: #dcaaa2; --red-wash: #f6e3dc;
+    --par-glow: none; /* T75: day mode does not glow */
   }
+  /* T75: the theme is toggle-able. Auto follows the system (media query,
+     unless Light is stamped on <html>); an explicit Dark stamp wins outright.
+     The two dark blocks below MUST stay identical - edit both. */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --ground: #211c14;
       --line: #463d2d;
       --ink: #e6ddca;
@@ -57,7 +61,30 @@
       --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
       --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
       --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
+      --par-glow: 0 0 9px rgba(233, 188, 96, 0.5);
     }
+  }
+  :root[data-theme="dark"] {
+    --ground: #211c14;
+    --line: #463d2d;
+    --ink: #e6ddca;
+    --dim: #968b70;
+    --blue: #7aaede;
+    --violet: #ab98d8;
+    --amber: #dcb05e;
+    --btn: #322b1f;
+    --btn-active: #3e3526;
+    --btn2: #3a3226;
+    --card: #2b2519;
+    --field: #1c1811;
+    --pill: rgba(43, 37, 25, 0.92);
+    --accent-wash: #29384a;
+    --scrim: rgba(0, 0, 0, 0.55);
+    --scrim-light: rgba(0, 0, 0, 0.28);
+    --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
+    --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
+    --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
+    --par-glow: 0 0 9px rgba(233, 188, 96, 0.5);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
@@ -86,7 +113,23 @@
     text-transform: uppercase;
     font-size: 13px;
   }
-  #levelName { color: var(--ink); }
+  /* T74: the level name is a door, not a label - it reads as text but taps
+     through to wherever this level came from (hub / community / editor). */
+  #levelName {
+    flex: 0 1 auto;
+    min-height: 0;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: var(--ink);
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    text-align: left;
+  }
+  #levelName::after { content: ' ›'; color: var(--dim); }
+  #levelName:active { background: none; color: var(--dim); }
   #selves { color: var(--blue); }
   #moves { margin-left: auto; color: var(--dim); }
   [hidden] { display: none !important; }
@@ -241,7 +284,7 @@
      AT PAR is the special tier - butter card with a soft gold glow. */
   .lv.solved { border-color: var(--solved-line); background: var(--solved-bg); }
   .lv.solved b, .lv.solved small { color: var(--solved-ink); }
-  .lv.par { border-color: var(--par-line); background: var(--par-bg); box-shadow: 0 0 9px rgba(233,188,96,0.5); }
+  .lv.par { border-color: var(--par-line); background: var(--par-bg); box-shadow: var(--par-glow); }
   .lv.par b, .lv.par small { color: var(--par-ink); }
   .lv.here { border-color: var(--blue); }
   .trackHead {
@@ -291,6 +334,19 @@
     letter-spacing: 0.02em;
   }
   .shelf.here { border-color: var(--blue); }
+  /* T74: the hub's top row - the way back into the level you are on. */
+  .shelf.continue .shName { color: var(--blue); }
+  /* T76: the finished track - butter card, gold name, one big star. */
+  .shelf.allstar { border-color: var(--par-line); background: var(--par-bg); box-shadow: var(--par-glow); }
+  .shelf.allstar .shName, .shelf.allstar .shMeta { color: var(--par-ink); }
+  .shelf.allstar .shChev { color: var(--par-ink); font-size: 24px; }
+  .shelf.allstar.open .shChev { transform: none; }
+  #pkSub {
+    text-align: center;
+    color: var(--par-ink);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+  }
   .shelf .shName { flex: 1; font-weight: 600; font-size: 15px; }
   .shelf .shMeta { color: var(--dim); font-size: 12px; }
   .shelf .shChev { color: var(--dim); font-size: 18px; transition: transform 0.15s; }
@@ -303,6 +359,74 @@
     gap: 10px;
     padding: 0 2px 8px;
   }
+
+  /* --- T77: desktop - mobile-first, but a monitor is not a stretched
+     phone. The chrome gathers into a centred column; the board keeps its
+     own scaling (resize() is already viewport-true) and the outer world
+     gets room to go properly recursive (see drawOuter). ------------------ */
+  @media (min-width: 720px) {
+    #hud, #bar { width: 100%; max-width: 560px; margin-inline: auto; }
+    #shelves, #gridWrap, #community, #settings { width: min(480px, 100%); }
+    #editor { padding-inline: max(12px, calc((100vw - 640px) / 2)); }
+  }
+  /* Pointed at with a mouse, the game says so: cursors, hovers, keycaps. */
+  @media (hover: hover) and (pointer: fine) {
+    button, .comCard { cursor: pointer; }
+    #edName { cursor: text; }
+    #undo:hover, #reset:hover, #levels:hover, .tog:hover:not(.on),
+    .comTab:hover:not(.on), #edPal button:hover:not(.on),
+    .card button:not(.primary):hover { background: var(--btn-active); }
+    .primary:hover { background: #4d82b6; }
+    .shelf:not(.allstar):hover, .lv:not(.par):not(.solved):hover,
+    div.comCard:hover { border-color: var(--dim); }
+    .icon:hover { color: var(--ink); }
+    #levelName:hover { background: none; color: var(--dim); }
+    #bar button kbd { display: inline-block; } /* outranks the base display:none below */
+  }
+  /* The keycap hints live in the footer buttons, hidden from touch. */
+  #bar button { position: relative; }
+  #bar kbd {
+    display: none;
+    position: absolute;
+    right: 7px;
+    bottom: 5px;
+    padding: 0 5px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    background: var(--btn2);
+    color: var(--dim);
+    font: 600 10px/1.5 ui-monospace, monospace;
+  }
+
+  /* --- T74: the Settings page - the hub's fourth shelf. ------------------- */
+  #settings {
+    flex: 1;
+    overflow-y: auto;
+    width: min(420px, 100%);
+    margin: 0 auto;
+    padding: 8px 2px;
+  }
+  .setRow { display: flex; align-items: center; gap: 10px; min-height: 56px; }
+  .setRow > span { flex: 1; font-weight: 600; }
+  .tog {
+    flex: 0 0 84px;
+    min-height: 40px;
+    font-size: 13px;
+    text-transform: none;
+    letter-spacing: 0.04em;
+    color: var(--dim);
+  }
+  .tog.on { border-color: var(--blue); color: var(--blue); background: var(--accent-wash); }
+  .tog.tri { flex-basis: 64px; }
+  #howto { margin-top: 20px; color: var(--dim); font-size: 13px; line-height: 1.5; }
+  #howto h3 {
+    margin-bottom: 8px;
+    color: var(--violet);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  #howto p { margin-bottom: 10px; }
 
   /* --- T62: the Community view - the picker's third page. ---------------- */
   #community {
@@ -490,7 +614,7 @@
 
 <div id="app">
   <header id="hud">
-    <span id="levelName">MINI LEVELS</span>
+    <button id="levelName" aria-label="Change level">MINI LEVELS</button>
     <span id="selves" hidden></span>
     <span id="moves">0</span>
     <button id="editBtn" class="icon" aria-label="Open this level in the editor">
@@ -516,9 +640,11 @@
   <footer id="bar">
     <button id="undo" aria-label="Undo">
       <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+      <kbd>Z</kbd>
     </button>
     <button id="reset" aria-label="Restart level">
       <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.8-6.5L3 8"/><path d="M3 3v5h5"/></svg>
+      <kbd>R</kbd>
     </button>
     <button id="levels">Levels</button>
   </footer>
@@ -550,6 +676,7 @@
       <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
   </div>
+  <div id="pkSub" hidden></div>
   <div id="shelves" hidden></div>
   <div id="gridWrap" hidden><div id="grid"></div></div>
   <div id="community" hidden>
@@ -560,6 +687,25 @@
     </div>
     <p id="comNote" hidden></p>
     <div id="comList"></div>
+  </div>
+  <div id="settings" hidden>
+    <div class="setRow"><span>Sound effects</span><button id="setSfx" class="tog">On</button></div>
+    <div class="setRow"><span>Music</span><button id="setMusic" class="tog">On</button></div>
+    <div class="setRow"><span>Theme</span>
+      <button id="thAuto" class="tog tri">Auto</button>
+      <button id="thLight" class="tog tri">Light</button>
+      <button id="thDark" class="tog tri">Dark</button>
+    </div>
+    <div id="howto">
+      <h3>How to play</h3>
+      <p>Swipe to move. Every self obeys the same swipe at once - TRY being the important word. Hold a direction to keep walking.</p>
+      <p>Push the boxes onto the round targets. Cover every target and the level is solved; beat par for a star ★.</p>
+      <p>The framed window is this same level, live. Doors lead into and out of it - one world, seen at every size.</p>
+      <p>Two selves meeting through a door merge into one. Pits swallow whatever falls in.</p>
+      <p>Undo is generous: tap for one step back, hold to rewind. Reset starts the level over.</p>
+      <p>Just for fun: tap a window to dive in, poke a self to make it wriggle, long-press the board to climb out a level.</p>
+      <p>Keyboard: arrows or WASD move, Z undoes, R resets.</p>
+    </div>
   </div>
 </div>
 
@@ -2094,6 +2240,12 @@ const THEMES = {
     mergeRing: 'rgba(74,67,54,0.9)', dieRing: 'rgba(153,144,124,0.95)',
     blockTop: '#cfc2ea', blockBot: '#b2a2d8',
     bezelTop: '#d7ccee', bezelBot: '#bcaede',
+    // T75: the bodies live here too now. Day keeps the classic T22 values
+    // and does not glow; lamplight dims them so they stop searing.
+    self: '#7aaede', selfRgb: '122,174,222',
+    box: '#e9bc60', boxLine: 'rgba(146,103,26,0.5)', boxGlow: 'rgba(233,188,96,0.4)',
+    boxOn: '#93c493', boxOnLine: 'rgba(58,110,58,0.5)', boxOnGlow: 'rgba(147,196,147,0.4)',
+    glow: 0,
   },
   dark: {
     ground: '#211c14', groundRgb: '33,28,20',
@@ -2104,12 +2256,23 @@ const THEMES = {
     mergeRing: 'rgba(230,221,202,0.9)', dieRing: 'rgba(153,144,124,0.95)',
     blockTop: '#6f6099', blockBot: '#57497c',
     bezelTop: '#79699f', bezelBot: '#5f5284',
+    self: '#6b96c2', selfRgb: '107,150,194',
+    box: '#c99c50', boxLine: 'rgba(94,68,20,0.6)', boxGlow: 'rgba(201,156,80,0.4)',
+    boxOn: '#7dab7d', boxOnLine: 'rgba(40,80,40,0.55)', boxOnGlow: 'rgba(125,171,125,0.4)',
+    glow: 1,
   },
 };
 let THEME = THEMES.light;
 const darkMq = window.matchMedia('(prefers-color-scheme: dark)');
+// T75: progress.theme is 'auto' | 'light' | 'dark'. Auto follows the system;
+// an explicit choice is stamped on <html> so the CSS token guards land on
+// the same side the canvas does.
 function applyTheme() {
-  THEME = darkMq.matches ? THEMES.dark : THEMES.light;
+  const pref = progress.theme || 'auto';
+  if (pref === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = pref;
+  THEME = (pref === 'dark' || (pref === 'auto' && darkMq.matches))
+    ? THEMES.dark : THEMES.light;
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', THEME.ground);
   tileLayout = null;
@@ -2119,6 +2282,12 @@ function applyTheme() {
   if (!$('editor').hidden) edPaint();
 }
 darkMq.addEventListener('change', applyTheme);
+function setTheme(pref) {
+  progress.theme = pref;
+  saveProgress();
+  applyTheme();
+  syncThemeBtns();
+}
 
 const TWEEN = 100;   // ms per tick of animation
 const PORTAL = 240;  // ...but going through a door is worth watching (T45)
@@ -2188,7 +2357,7 @@ const SAVE_KEY = 'mini-level-v11'; // v11 = T64 level reshape: Moving In's
 // workshop at 13 - migration below drops/remaps exactly those keys.
 // (v10 = T61 community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
-  hearts: {}, records: {} };
+  hearts: {}, records: {}, at: '', theme: 'auto' };
 
 const bestKey = (t, i) => TRACKS[t].id + ':' + i;
 // T38 (Will): every level is open from the start - locks bought nothing here.
@@ -2279,6 +2448,8 @@ function loadProgress() {
       progress.authorToken = typeof raw.authorToken === 'string' ? raw.authorToken : '';
       progress.hearts = (raw.hearts && typeof raw.hearts === 'object') ? raw.hearts : {};
       progress.records = (raw.records && typeof raw.records === 'object') ? raw.records : {};
+      progress.at = typeof raw.at === 'string' ? raw.at : '';
+      progress.theme = raw.theme === 'light' || raw.theme === 'dark' ? raw.theme : 'auto';
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
   } catch (e) { /* private mode or a corrupt blob: start fresh */ }
@@ -2329,6 +2500,9 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function loadLevel(t, i) {
   communityId = null;
   trackIndex = t; levelIndex = i;
+  // T74: remember where you are - the hub's Continue and next boot land here.
+  progress.at = bestKey(t, i);
+  saveProgress();
   startLevel(TRACKS[t].levels[i]);
 }
 
@@ -2436,8 +2610,10 @@ let shelf = null;
 function pkShow(which) {
   shelf = which;
   $('shelves').hidden = which !== null;
-  $('gridWrap').hidden = which === null || which === 'community';
+  $('gridWrap').hidden = which === null || which === 'community' || which === 'settings';
   $('community').hidden = which !== 'community';
+  $('settings').hidden = which !== 'settings';
+  $('pkSub').hidden = which !== null;
   $('pkBack').style.visibility = which === null ? 'hidden' : 'visible';
   $('overlay').hidden = true;
   $('picker').hidden = false;
@@ -2479,14 +2655,30 @@ function shelfRow(name, meta, onPick) {
 // own sub-pages (tabs and drafts need the room).
 function openShelves(expand) {
   $('shelves').textContent = '';
-  $('pickerTitle').textContent = 'Levels';
+  // T74: this screen is the hub now - it greets at boot, so it wears the
+  // game's name, a star tally, and a Continue row back into the level.
+  $('pickerTitle').textContent = 'Mini Levels';
+  const where = communityId ? 'Community · ' + levelDef.name
+    : levelIndex < 0 ? 'Draft · ' + levelDef.name
+    : TRACKS[trackIndex].name + ' ' + (levelIndex + 1) + ' · ' + levelDef.name;
+  shelfRow('Continue', where, () => { play('ui'); $('picker').hidden = true; })
+    .classList.add('continue');
+  let totStars = 0, totPar = 0;
   TRACKS.forEach((tr, t) => {
     if (!tr.levels.length) return;
     const s = trackStats(t);
+    const parable = tr.levels.filter((d) => d.par > 0).length;
+    totStars += s.stars;
+    totPar += parable;
     const meta = s.solved + '/' + tr.levels.length + (s.stars ? ' · ★' + s.stars : '');
     const b = shelfRow(tr.name, meta, () => { play('ui'); accToggle(t); });
     b.dataset.track = t;
     if (t === trackIndex && levelIndex >= 0 && !communityId) b.classList.add('here');
+    // T76: every level in the track at par - the shelf wears one big star.
+    if (parable && s.stars === parable) {
+      b.classList.add('allstar');
+      b.querySelector('.shChev').textContent = '★';
+    }
     const g = document.createElement('div');
     g.className = 'accGrid';
     g.dataset.track = t;
@@ -2499,6 +2691,8 @@ function openShelves(expand) {
   if (communityId) cb.classList.add('here');
   shelfRow('Yours', drafts.length + (drafts.length === 1 ? ' draft' : ' drafts'),
     () => { play('ui'); openDrafts(); });
+  shelfRow('Settings', 'sound · theme · help', () => { play('ui'); openSettings(); });
+  $('pkSub').textContent = '★ ' + totStars + ' / ' + totPar;
   pkShow(null);
   if (expand !== undefined && expand !== null) accToggle(expand, true);
 }
@@ -3279,6 +3473,7 @@ function showWin() {
   // earns the heart button. Everything else on the card stays the same.
   const com = communityId ? comCache[communityId] : null;
   const draft = levelIndex < 0 && !com;
+  let trackDone = false; // T76: did this win place the track's last star?
   if (com) {
     const key = 'x:' + communityId;
     const prev = progress.best[key];
@@ -3288,8 +3483,12 @@ function showWin() {
   } else if (!draft) {
     const key = bestKey(trackIndex, levelIndex);
     const prevBest = progress.best[key];
+    const parable = TRACKS[trackIndex].levels.filter((d) => d.par > 0).length;
+    const starsBefore = trackStats(trackIndex).stars;
     if (prevBest === undefined || moves < prevBest) progress.best[key] = moves;
     saveProgress();
+    trackDone = parable > 0 && starsBefore < parable &&
+      trackStats(trackIndex).stars === parable;
   }
 
   // T53: solving at par earns the star right here, not only in the picker.
@@ -3304,6 +3503,11 @@ function showWin() {
   else if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
     body += ' · best ' + progress.best[bestKey(trackIndex, levelIndex)];
+  }
+  // T76: the win that places the track's last star gets the gold moment.
+  if (trackDone) {
+    $('cardTitle').classList.add('gold');
+    body += ' · ' + TRACKS[trackIndex].name + ': every star ★';
   }
   $('cardBody').textContent = body;
   syncHeart();
@@ -3562,6 +3766,7 @@ function placeOuter() {
   outer = {
     x: board.offsetLeft - dx * s, y: board.offsetTop - dy * s,
     w: viewW() * s, h: viewH() * s,
+    dx, dy, // T77: the window's view offset - drawOuter climbs generations with it
   };
 }
 
@@ -3843,6 +4048,7 @@ function drawDoorMouth(c, side) {
 // the amoeba). The feedback blit carries it into every window's miniature,
 // so the doors glow at every depth for free.
 function drawDoorBreath(c, time) {
+  if (!THEME.glow) return; // T75: the breath is a glow - lamplight only
   const t = reducedMotion.matches ? 0 : (time || 0);
   const a = 0.2 + 0.14 * Math.sin(t * 0.0024);
   const img = spriteImg('doorGlow');
@@ -4161,8 +4367,8 @@ function drawSelf(c, s, cx, cy, kx, ky, alpha, time, mdx, mdy) {
   c.scale(kx, ky);
   const gs = CELL * (0.5 + SPRITE_PAD);
   c.globalAlpha = alpha;
-  c.drawImage(spriteImg('glow'), -gs, -gs, gs * 2, gs * 2);
-  c.fillStyle = '#7aaede';
+  if (THEME.glow) c.drawImage(spriteImg('glow'), -gs, -gs, gs * 2, gs * 2);
+  c.fillStyle = THEME.self;
   c.beginPath();
   const N = 24;
   for (let i = 0; i <= N; i++) {
@@ -4291,10 +4497,11 @@ function spriteImg(kind) {
   const r = Math.max(2, base * 0.26);
   if (kind === 'glow') {
     // The amoeba's halo: baked once so the live body never pays shadowBlur.
+    // T75: lamplight only - day mode skips the blit entirely.
     const g = c.createRadialGradient(cx, cy, 0, cx, cy, pad + CELL / 2);
-    g.addColorStop(0, 'rgba(122,174,222,0.38)');
-    g.addColorStop(0.55, 'rgba(122,174,222,0.16)');
-    g.addColorStop(1, 'rgba(122,174,222,0)');
+    g.addColorStop(0, 'rgba(' + THEME.selfRgb + ',0.38)');
+    g.addColorStop(0.55, 'rgba(' + THEME.selfRgb + ',0.16)');
+    g.addColorStop(1, 'rgba(' + THEME.selfRgb + ',0)');
     c.fillStyle = g;
     c.fillRect(0, 0, CELL + pad * 2, CELL + pad * 2);
   } else if (kind === 'doorGlow') {
@@ -4307,13 +4514,15 @@ function spriteImg(kind) {
     c.fillRect(0, 0, CELL + pad * 2, CELL + pad * 2);
   } else {
     const on = kind === 'boxOn';
-    c.shadowColor = on ? 'rgba(147,196,147,0.4)' : 'rgba(233,188,96,0.4)';
-    c.shadowBlur = CELL * 0.12;
-    c.fillStyle = on ? '#93c493' : '#e9bc60';
+    if (THEME.glow) { // T75: boxes glow in lamplight only
+      c.shadowColor = on ? THEME.boxOnGlow : THEME.boxGlow;
+      c.shadowBlur = CELL * 0.12;
+    }
+    c.fillStyle = on ? THEME.boxOn : THEME.box;
     roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.fill();
     c.shadowBlur = 0;
-    c.strokeStyle = on ? 'rgba(58,110,58,0.5)' : 'rgba(146,103,26,0.5)';
+    c.strokeStyle = on ? THEME.boxOnLine : THEME.boxLine;
     c.lineWidth = Math.max(1, base * 0.08);
     roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.stroke();
@@ -4410,24 +4619,60 @@ function drawOuter(time) {
   const zz = zoom ? Math.exp(zoom.logZ * zoom.e) : 1;
   const fx = board.offsetLeft + (zoom ? zoom.fx : 0);
   const fy = board.offsetTop + (zoom ? zoom.fy : 0);
-  drawScene(wctx, time, curBuf, true, DPR, {
-    tx: fx * (1 - zz) + zz * outer.x,
-    ty: fy * (1 - zz) + zz * outer.y,
-    z: s * zz,
-    sz: zz,
-  });
   const cssW = world.width / DPR, cssH = world.height / DPR;
-  wctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  // Wash the parent world toward the ground colour (the page IS that
-  // colour, so this reads as the old 24% alpha did).
-  wctx.globalCompositeOperation = 'source-atop';
-  wctx.fillStyle = 'rgba(' + THEME.groundRgb + ',' + OUTER_WASH + ')';
-  wctx.fillRect(0, 0, cssW, cssH);
-  // Erase the far field so only the cell we live in reads as a shape.
+  // T77: a big stage lives INSIDE the giant - the parent reads clearly
+  // (lighter wash) and the far-field fade starts much further out. Phones
+  // keep the classic numbers exactly.
+  const big = Math.min(cssW, cssH) >= 640;
+  const wash = big ? 0.6 : OUTER_WASH;
+  // T77: generations up. Gen 1 is the classic parent; while the newest one
+  // still leaves stage pixels bare (wide desktops, edge windows) climb to
+  // the grandparents. Same recurrence as placeOuter: the next world is s
+  // times bigger, shifted so this one lands exactly in its window cell.
+  const gens = [{ x: outer.x, y: outer.y, z: s }];
+  while (gens.length < 3) {
+    const g0 = gens[gens.length - 1];
+    const sx = fx * (1 - zz) + zz * g0.x, sy = fy * (1 - zz) + zz * g0.y;
+    const zk = g0.z * zz;
+    if (sx <= 0 && sy <= 0 &&
+        sx + viewW() * zk >= cssW && sy + viewH() * zk >= cssH) break;
+    gens.push({ x: g0.x - g0.z * s * outer.dx,
+      y: g0.y - g0.z * s * outer.dy, z: g0.z * s });
+  }
+  // Farthest first, so each nearer world paints over its elder's window cell.
+  for (let i = gens.length - 1; i >= 0; i--) {
+    const g0 = gens[i];
+    drawScene(wctx, time, curBuf, true, DPR, {
+      tx: fx * (1 - zz) + zz * g0.x,
+      ty: fy * (1 - zz) + zz * g0.y,
+      z: g0.z * zz,
+      sz: zz,
+    });
+  }
   const cx = board.offsetLeft + viewW() / 2;
   const cy = board.offsetTop + viewH() / 2;
-  const g = wctx.createRadialGradient(cx, cy, viewW() * 0.6,
-    cx, cy, Math.max(cssW, cssH) * 0.8);
+  // Wash the outside toward the ground colour (the page IS that colour, so
+  // this reads as the old 24% alpha did)...
+  wctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  wctx.globalCompositeOperation = 'source-atop';
+  wctx.fillStyle = 'rgba(' + THEME.groundRgb + ',' + wash + ')';
+  wctx.fillRect(0, 0, cssW, cssH);
+  // ...and on a big stage add distance fog on top: the further from home,
+  // the deeper into the ground colour, so the generations recede smoothly
+  // instead of stepping where one world ends and its elder begins.
+  if (big) {
+    const fog = wctx.createRadialGradient(cx, cy, viewW() * 0.55,
+      cx, cy, Math.max(cssW, cssH) * 1.1);
+    fog.addColorStop(0, 'rgba(' + THEME.groundRgb + ',0)');
+    fog.addColorStop(1, 'rgba(' + THEME.groundRgb + ',0.85)');
+    wctx.fillStyle = fog;
+    wctx.fillRect(0, 0, cssW, cssH);
+  }
+  wctx.globalCompositeOperation = 'source-over';
+  // Erase the far field so only the cell we live in reads as a shape.
+  const far = big ? 2.2 : 1;
+  const g = wctx.createRadialGradient(cx, cy, viewW() * 0.6 * far,
+    cx, cy, Math.max(cssW, cssH) * 0.8 * far);
   g.addColorStop(0, 'rgba(0,0,0,0)');
   g.addColorStop(1, 'rgba(0,0,0,1)');
   wctx.globalCompositeOperation = 'destination-out';
@@ -4996,6 +5241,11 @@ function stopMusic() {
 function syncAudioBtns() {
   $('sfxBtn').classList.toggle('off', !audio.sfx);
   $('musicBtn').classList.toggle('off', !audio.music);
+  // T74: the Settings page carries the same two switches.
+  for (const [id, on] of [['setSfx', audio.sfx], ['setMusic', audio.music]]) {
+    $(id).textContent = on ? 'On' : 'Off';
+    $(id).classList.toggle('on', !!on);
+  }
 }
 
 function setAudio(which, on) {
@@ -5015,6 +5265,11 @@ function setAudio(which, on) {
 
 $('sfxBtn').addEventListener('click', () => setAudio('sfx', !audio.sfx));
 $('musicBtn').addEventListener('click', () => setAudio('music', !audio.music));
+$('setSfx').addEventListener('click', () => setAudio('sfx', !audio.sfx));
+$('setMusic').addEventListener('click', () => setAudio('music', !audio.music));
+$('thAuto').addEventListener('click', () => { play('ui'); setTheme('auto'); });
+$('thLight').addEventListener('click', () => { play('ui'); setTheme('light'); });
+$('thDark').addEventListener('click', () => { play('ui'); setTheme('dark'); });
 $('hintBtn').addEventListener('click', () => { play('ui'); showHint(); });
 // The bulb lives inside the stage: a tap on it must not arm a swipe or dive.
 $('hintBtn').addEventListener('pointerdown', (e) => e.stopPropagation());
@@ -5230,7 +5485,7 @@ function edPaint() {
     if (ch === '@' || ch === '$' || ch === 'B') {
       const pad = C * 0.15, s = C - pad * 2, r = Math.max(2, s * 0.26);
       const isSelf = ch === '@';
-      c.fillStyle = isSelf ? '#7aaede' : ch === 'B' ? '#93c493' : '#e9bc60';
+      c.fillStyle = isSelf ? THEME.self : ch === 'B' ? THEME.boxOn : THEME.box;
       roundRect(c, px + pad, py + pad, s, s, r);
       c.fill();
       if (isSelf) {
@@ -5245,7 +5500,7 @@ function edPaint() {
         c.lineWidth = Math.max(1, s * 0.07);
         c.beginPath(); c.arc(ex, py + C / 2 + s * 0.1, s * 0.18, Math.PI * 0.2, Math.PI * 0.8); c.stroke();
       } else {
-        c.strokeStyle = ch === 'B' ? 'rgba(58,110,58,0.5)' : 'rgba(146,103,26,0.5)';
+        c.strokeStyle = ch === 'B' ? THEME.boxOnLine : THEME.boxLine;
         c.lineWidth = Math.max(1, s * 0.08);
         roundRect(c, px + pad, py + pad, s, s, r);
         c.stroke();
@@ -5512,6 +5767,23 @@ function openDrafts() {
     openEditor();
   });
   pkShow('yours');
+}
+
+// T74: the Settings page - the audio toggles' long-form twins plus the
+// how-to-play reference (static markup; the toggles sync on open).
+function openSettings() {
+  $('pickerTitle').textContent = 'Settings';
+  syncAudioBtns();
+  syncThemeBtns();
+  pkShow('settings');
+}
+
+// T75: the theme control - three .tog buttons, one lit.
+function syncThemeBtns() {
+  const pref = progress.theme || 'auto';
+  for (const [id, v] of [['thAuto', 'auto'], ['thLight', 'light'], ['thDark', 'dark']]) {
+    $(id).classList.toggle('on', pref === v);
+  }
 }
 
 $('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
@@ -5848,6 +6120,8 @@ const goBack = () => {
 }
 $('reset').addEventListener('click', reset);
 $('levels').addEventListener('click', goBack);
+// T74: the level name in the HUD is a door to wherever this level came from.
+$('levelName').addEventListener('click', goBack);
 // T38: crack the current level open in the editor - as a draft COPY, so Solve
 // and tinkering never touch the real level. Reopening reuses the same copy.
 $('editBtn').addEventListener('click', () => {
@@ -5885,12 +6159,23 @@ loadProgress();
 loadDrafts();
 syncAudioBtns();
 applyTheme(); // T73: pick the palette before the first render
-// Resume at the tutorial's first unsolved level that is already unlocked.
-let start = 0;
-while (start < unlockedIn(0) - 1 && progress.best[bestKey(0, start)] !== undefined) start++;
-loadLevel(0, start);
+// T74: resume where you left off (progress.at); a fresh save falls back to
+// the tutorial's first unsolved level.
+let startT = -1, startI = -1;
+{
+  const m = /^([a-z]+):(\d+)$/.exec(progress.at);
+  const t = m ? TRACKS.findIndex((tr) => tr.id === m[1]) : -1;
+  if (t >= 0 && +m[2] < TRACKS[t].levels.length) { startT = t; startI = +m[2]; }
+}
+if (startT < 0) {
+  startT = 0; startI = 0;
+  while (startI < unlockedIn(0) - 1 && progress.best[bestKey(0, startI)] !== undefined) startI++;
+}
+loadLevel(startT, startI);
 if (location.hash === '#edit') openEditor();
 openHash(); // T63: #p=<id> / #l=<code> share links land straight in the level
+// T74: no deep link means the hub greets - your track open, scrolled to you.
+if (!location.hash) openPicker();
 window.addEventListener('hashchange', openHash);
 // T58: the offline shell. Secure contexts only - file:// and plain http skip
 // this and lose nothing. sw.js is network-first, so deploys are never stale.
