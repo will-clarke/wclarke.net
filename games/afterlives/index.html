@@ -171,6 +171,17 @@ function endingsUnder(id){
 }
 function allFound(set){ for (const e of set) if (!S.found[e]) return false; return true; }
 function storyEndings(id){ return Object.keys(L.endings).filter(e => L.endings[e].story === id); }
+/* a door is finished when its whole subtree is found - including any guest
+   storyline entered through its nodes (the piper) and any event that can
+   surface inside it (the drum). The mark never lies. */
+function doorFinished(d){
+  if (!d.authored) return false;
+  const set = new Set(endingsUnder(d.start));
+  for (const g of L.storylines)
+    if (g.hosts && g.hosts.includes(d.id))
+      for (const eid of storyEndings(g.id)) set.add(eid);
+  return allFound(set);
+}
 /* snapshot of every door's state, for the lit-glow when one improves */
 function doorStates(){
   const m = {};
@@ -209,7 +220,7 @@ function renderMorning(){
     if (st === 'hidden') continue;
     const open = st === 'open';
     const label = d.secret && !open ? '???' : d.door;
-    const fin = d.authored && allFound(new Set(storyEndings(d.id)));
+    const fin = doorFinished(d);
     const b = el('<button class="door"></button>');
     b.textContent = label;
     if (!open){
@@ -259,6 +270,15 @@ function renderMorning(){
 
 function startLife(story){
   doorsAtLifeStart = doorStates();
+  /* the drum (forced-state event): on RE-entering a host life - the first visit
+     is always the host's own - the world imposes, while it has anything new */
+  const drum = L.storylines.find(g => g.hosts && g.hosts.includes(story.id));
+  if (drum && canPass(drum.gate) &&
+      storyEndings(story.id).some(e => S.found[e]) &&
+      L.nodes[drum.start].opts.some(o => !S.found[o.to] && canPass(o.gate))){
+    playNode(drum.start);
+    return;
+  }
   playNode(story.start);
 }
 
@@ -330,10 +350,12 @@ function showEnding(eid, remember){
   card.appendChild(el('<h2>' + e.title + '</h2>'));
   if (remember) card.appendChild(el('<div class="again">a life you lived, once</div>'));
   else if (!isNew) card.appendChild(el('<div class="again">you have been here before</div>'));
-  card.appendChild(el('<div class="answers">' +
-    answerRow('WHAT IT FELT LIKE', e.felt) +
-    answerRow('WHO IT MATTERED TO', e.mattered) +
-    answerRow('WHAT IT COST', e.cost) + '</div>'));
+  /* the finale breaks format: some things aren't summed */
+  if (!e.noAnswers)
+    card.appendChild(el('<div class="answers">' +
+      answerRow('WHAT IT FELT LIKE', e.felt) +
+      answerRow('WHO IT MATTERED TO', e.mattered) +
+      answerRow('WHAT IT COST', e.cost) + '</div>'));
   card.appendChild(el('<p class="sum">' + e.sum + '</p>'));
   card.appendChild(el('<div class="carved">' + e.line + '</div>'));
   card.appendChild(el('<div class="shelfline">on the shelf: ' + e.shelf + '</div>'));
@@ -345,6 +367,28 @@ function showEnding(eid, remember){
   const btn = el('<button class="bigbtn primary">' + (remember ? 'back to the shelf' : 'let go') + '</button>');
   btn.onclick = () => renderAfterlife(!remember);
   app.appendChild(btn);
+
+  /* the finale's second question, offered once, on the first finding only:
+     a real reset, heavily confirmed - holding is the only confirmation */
+  if (e.offerReset && isNew){
+    const wipe = el('<button class="bigbtn">begin again, truly</button>');
+    const note = el('<div class="again">hold, and every life is forgotten - the shelf empties, the doors close</div>');
+    let holdT = null;
+    wipe.ontouchstart = wipe.onmousedown = () => {
+      clearTimeout(holdT);
+      wipe.textContent = 'hold…';
+      holdT = setTimeout(() => {
+        localStorage.removeItem(SAVE_KEY);
+        S = load(); doorsAtLifeStart = {};
+        renderMorning();
+      }, 2600);
+    };
+    wipe.ontouchend = wipe.onmouseup = wipe.onmouseleave = () => {
+      clearTimeout(holdT); wipe.textContent = 'begin again, truly';
+    };
+    app.appendChild(wipe);
+    app.appendChild(note);
+  }
 }
 
 /* ================= the afterlife ================= */

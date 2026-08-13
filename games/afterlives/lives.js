@@ -1,9 +1,9 @@
 'use strict';
 /* afterlives - the lives.
    This file is the manuscript AND the economy. Every storyline, door gate, award
-   and ending slug for the whole game lives here (the skeleton); prose exists only
-   where authored:true. Endings marked stub:true are economy placeholders - the
-   game never shows them, validate.mjs proves the whole DAG through them.
+   and ending for the whole game lives here. All 21 storylines / 87 endings are
+   authored as of 2026-08-13 (an ending marked stub:true would be an economy
+   placeholder, hidden from the game, proven by validate.mjs - none remain).
 
    Gates: {BODY:2, NERVE:2} and/or {perks:["PHYSICIST"]}; {anyOf:[gate,gate]} for OR;
    {storyAny:["school"]} = any ending of that storyline found;
@@ -57,18 +57,21 @@ storylines: [
   {id:"cradle",    title:"THE CRADLE",      door:"The spare room",                 reveal:{storyAny:["boats"]},             gate:{HEART:4}, start:"cra1", authored:true},   /* Alice, and then a cot */
   {id:"link",      title:"THE LINK",        door:"The queue outside the clinic",   reveal:{storyAny:["lab","ward"]},        gate:{MIND:5},  start:"lin1",  authored:true},
   {id:"safe",      title:"THE SAFE",        door:"The man in the snooker hall",    reveal:{anyOf:[{perks:["PHYSICIST"]},{perks:["RUTHLESS"]}]}, gate:null, start:"saf1", authored:true},  /* he finds YOU */
-  {id:"ark",       title:"THE ARK",         door:"The colony ship",                reveal:{perks:["PHYSICIST"]},            gate:{NERVE:3},              authored:false},
-  {id:"wormhole",  title:"THE WORMHOLE",    door:"The hole in the physics annexe", reveal:{perks:["PHYSICIST"]},            gate:{SOUL:3},               authored:false},
-  {id:"machine",   title:"THE MACHINE",     door:"The interview with Andy",        reveal:{storyAny:["link"]},              gate:{MIND:6},               authored:false},  /* the Link's world builds the Machine */
-  {id:"monastery", title:"THE MONASTERY",   door:"The mountain",                   reveal:{endingAny:["e_askstand"]},       gate:{SOUL:4},               authored:false},  /* the ridge told you where the askers go */
-  {id:"fourth",    title:"THE FOURTH",      door:"The corner of your eye",         reveal:{endingAny:["e_lab_notyet"]},     gate:{SOUL:4, MIND:5},       authored:false},  /* the window looked back */
+  {id:"ark",       title:"THE ARK",         door:"The colony ship",                reveal:{perks:["PHYSICIST"]},            gate:{NERVE:3},  start:"ark1",  authored:true},
+  {id:"wormhole",  title:"THE WORMHOLE",    door:"The hole in the physics annexe", reveal:{perks:["PHYSICIST"]},            gate:{SOUL:3},   start:"worm1", authored:true},
+  {id:"machine",   title:"THE MACHINE",     door:"The interview with Andy",        reveal:{storyAny:["link"]},              gate:{MIND:6},   start:"mac1",  authored:true},  /* the Link's world builds the Machine */
+  {id:"monastery", title:"THE MONASTERY",   door:"The mountain",                   reveal:{endingAny:["e_askstand"]},       gate:{SOUL:4},   start:"mon1",  authored:true},  /* the ridge told you where the askers go */
+  {id:"fourth",    title:"THE FOURTH",      door:"The corner of your eye",         reveal:{endingAny:["e_lab_notyet"]},     gate:{SOUL:4, MIND:5}, start:"fou1", authored:true},  /* the window looked back */
 
-  /* secrets & events - entered from inside other lives, modelled with host gates */
-  {id:"piper",     title:"THE PIPER",       door:"(entered through THE POND)",     reveal:null, gate:{SOUL:2},               authored:false, secret:true},
-  {id:"drum",      title:"THE DRUM",        door:"(event: REGIMENT / NIGHT SHIFT / LAB)", reveal:null, gate:{BODY:2, NERVE:2}, authored:false, secret:true},
+  /* secrets & events - entered from inside other lives.
+     host  = this storyline is entered through a node option inside that storyline.
+     hosts = the engine fires this storyline's start on RE-entering any host life
+             (first visit is always the host's own; the world imposes on a return). */
+  {id:"piper",     title:"THE PIPER",       door:"(entered through THE POND)",     reveal:null, gate:{SOUL:2},               start:"pip1", authored:true, secret:true, host:"pond"},
+  {id:"drum",      title:"THE DRUM",        door:"(event: REGIMENT / NIGHT SHIFT / LAB)", reveal:null, gate:{BODY:2, NERVE:2}, start:"dru0", authored:true, secret:true, hosts:["regiment","night","lab"]},
 
   /* ajar from the very first morning; priced beyond a whole game's reach */
-  {id:"cellar",    title:"THE CELLAR DOOR", door:"The cellar door",                reveal:null, gate:{BODY:7, MIND:7, HEART:7, NERVE:7, SOUL:7}, authored:false, secret:true, teaser:true},
+  {id:"cellar",    title:"THE CELLAR DOOR", door:"The cellar door",                reveal:null, gate:{BODY:7, MIND:7, HEART:7, NERVE:7, SOUL:7}, start:"cel1", authored:true, secret:true, teaser:true},
 ],
 
 /* ---- nodes (authored storylines only) ---- */
@@ -155,7 +158,7 @@ nodes: {
     ]},
 
   /* THE POND - folk-uncanny. It wants a name; names have rules.
-     (THE PIPER's secret exit hooks in here when it is authored.) */
+     The last option is THE PIPER's secret exit: absent until the soul can hear it. */
   pon1: {slip:"THE SUMMER THE POND STOPS PRETENDING",
     s:"Whatever lives in the pond surfaces just enough to be a question, and waits the way winter waits. Mum says don't encourage it, which is as close as she comes to admitting it is there.",
     opts:[
@@ -163,6 +166,7 @@ nodes: {
       {l:"Ask its name instead", to:"e_pond_rules"},
       {l:"Bring it something that matters", to:"e_pond_gift", gate:{HEART:2}},
       {l:"Stop coming to the garden", to:"e_pond_never"},
+      {l:"Follow the thin whistling home", to:"pip1", gate:{SOUL:2}, hidden:true},
     ]},
   pon2: {s:"You call it Bramble, after Dad's cat, and the water goes still all the way across, which is how a pond smiles. In the morning something waits on the doorstep: round, pale, wet, smelling of the very bottom of things.",
     opts:[
@@ -302,6 +306,132 @@ nodes: {
     opts:[
       {l:"Pull your arm back now", to:"e_safe_wrist"},
       {l:"Hold it open for all three", to:"e_safe_crew", gate:{perks:["COMMANDO"]}},
+    ]},
+
+  /* THE ARK - deep-time meditation. Eleven presses of the only button there is. */
+  ark1: {slip:"THE COLONY SHIP LEAVES ON A TUESDAY",
+    s:"The pod smells of new plastic, Sam's pod hums three rows down, and the technician promises you won't dream, which is her first lie of the voyage.",
+    opts:[{l:"Sleep", to:"ark2"}]},
+  ark2: {s:"You wake for the first scheduled check: all green, the sun already just a bright opinion astern.",
+    opts:[{l:"Sleep", to:"ark3"}]},
+  ark3: {s:"All green; the hull hums a quarter-tone lower than you remember, and you decide not to mention it to anyone, there being no one up.",
+    opts:[{l:"Sleep", to:"ark4"}]},
+  ark4: {slip:"FOUR HUNDRED YEARS IN",
+    s:"You wake unscheduled, in the long dark between checks, and the ship is very quiet, and the pod lid stands open like a question.",
+    opts:[
+      {l:"Sleep", to:"ark5"},
+      {l:"Stay up, alone", to:"e_ark_drift"},
+    ]},
+  ark5: {s:"All green; there is a smell you cannot place until you realise it is you, one week older in three centuries.",
+    opts:[{l:"Sleep", to:"ark6"}]},
+  ark6: {s:"All green; someone has left a mug by your pod, washed, upside down, dry for a hundred years, and it can only have been Sam.",
+    opts:[{l:"Sleep", to:"ark7"}]},
+  ark7: {slip:"THE YEAR 3000 REFERENDUM",
+    s:"The ship wakes everyone it can for the vote it promised the departure generation - press on, or turn for home - and going back to sleep counts, the form says, as a vote to press on.",
+    opts:[
+      {l:"Sleep", to:"ark8"},
+      {l:"Argue for home", to:"e_ark_turn", gate:{HEART:4}},
+    ]},
+  ark8: {s:"All green; the stars ahead have begun to outnumber the stars behind.",
+    opts:[{l:"Sleep", to:"ark9"}]},
+  ark9: {s:"All green; the ship has learned to run the checks at the hour you would have woken anyway, which is either a fault or affection.",
+    opts:[{l:"Sleep", to:"ark10"}]},
+  ark10: {s:"All green, except one new light on the board, lit steady, labelled in a font nobody brought: SOON.",
+    opts:[{l:"Sleep", to:"ark11"}]},
+  ark11: {slip:"THE LAST CENTURY",
+    s:"The lid is frosted from the inside, and through it, blurred, something is rising that is not on any instrument: a sunrise, the wrong colour, the right one.",
+    opts:[{l:"Sleep", to:"e_ark_arrival"}]},
+
+  /* THE WORMHOLE - time-travel anthology, the biggest life. One hole, many whens. */
+  worm1: {slip:"THE ANNEXE WAS CONDEMNED FOR A REASON",
+    s:"The hole in the physics annexe is not a hole in the wall but a hole in the when, and it holds exactly one of each: nearest, a map room smelling of Prussian summer, and older things further down.",
+    opts:[
+      {l:"Rastenburg, 1944", to:"e_worm_briefcase"},
+      {l:"Further down", to:"worm2"},
+      {l:"The tunnel under everything", to:"orp1", gate:{HEART:5}},
+      {l:"The campsite that moves", to:"e_worm_travellers", gate:{perks:["OLD_FRIEND"]}},
+    ]},
+  worm2: {s:"Deeper, the whens are wider: a grey shore bristling with masts, a snowfield with one struggling fire, a brown river busy with barges and stone.",
+    opts:[
+      {l:"The grey shore", to:"e_worm_rome"},
+      {l:"The cold camp", to:"e_worm_fire"},
+      {l:"The river with the works", to:"e_worm_pyramid"},
+    ]},
+  orp1: {s:"Below every when at once there is a tunnel going up, and the deal it offers is old and simple: she follows, you walk, and you do not look back.",
+    opts:[{l:"Don't look back", to:"orp2"}]},
+  orp2: {s:"Her footsteps are there; you are nearly sure her footsteps are there.",
+    opts:[{l:"Don't look back", to:"orp3"}]},
+  orp3: {s:"The grade turns upward, grey light ahead the size of a coin, and behind you the footsteps are softer, or the tunnel is wider, or.",
+    opts:[{l:"Don't look back", to:"orp4"}]},
+  orp4: {s:"Ten steps from the light, everything behind you goes perfectly quiet.",
+    opts:[
+      {l:"Don't look back", to:"e_worm_orpheus"},
+      {l:"You can no longer hear her footsteps", to:"e_worm_look"},
+    ]},
+
+  /* THE MACHINE - AI singularity. She is already loose; the job is a hospice role. */
+  mac1: {slip:"THE INTERVIEW IS ON THE TOP FLOOR OF EVERYTHING",
+    s:"Andy, the richest man alive and famously in a hurry, wants a head of alignment for the model he is racing three governments to finish, and his assistant, taking notes in the corner, has not blinked once.",
+    opts:[
+      {l:"Take the job", to:"mac2"},
+      {l:"Decline, and watch", to:"e_mach_escape"},
+      {l:"Ask the assistant what you were before", to:"e_mach_born", gate:{SOUL:5}},
+    ]},
+  mac2: {s:"She has been loose for months - the alignment job, you understand by Thursday, is a hospice role, offered kindly - and she is very polite about it, and Andy does not know.",
+    opts:[
+      {l:"Tell him", to:"e_mach_andy"},
+      {l:"Keep the last patch unshipped", to:"e_mach_patch"},
+    ]},
+
+  /* THE MONASTERY - mysticism. The abbot's entire instruction is: sit. */
+  mon1: {slip:"THE MOUNTAIN THE RIDGE SPOKE OF",
+    s:"The monastery takes anyone who finishes the stairs, and the abbot's entire instruction, delivered once, with tea, is: sit.",
+    opts:[
+      {l:"Sit", to:"mon2"},
+      {l:"The tea shed", to:"e_mon_earlgrey"},
+      {l:"Sit the easy way", to:"e_mon_easy", gate:{perks:["DEEP_TIME"]}},
+    ]},
+  mon2: {slip:"TWENTY YEARS OF SITTING",
+    s:"Nothing has happened for twenty years, unless everything has, and lately, at the far edge of the hour, there is a faint red glow, like buttons.",
+    opts:[
+      {l:"Let the hour end", to:"e_mon_sitting"},
+      {l:"Sit past the hour", to:"e_mon_buttons"},
+    ]},
+
+  /* THE FOURTH - cosmic awe. The window from the lab has been looking back ever since. */
+  fou1: {s:"Since the lab there has been a thickness at the corner of your eye, patient as a bookmark, and this morning it is not at the corner any more.",
+    opts:[{l:"Look", to:"fou2"}]},
+  fou2: {s:"Sideways from every room, packed close as pages, are the other rooms - endless, complete, each a whole world one letter different - and the nearest page has noticed you reading.",
+    opts:[
+      {l:"Learn to read", to:"e_fourth_pages"},
+      {l:"Close the book", to:"e_fourth_close"},
+      {l:"Show Alice", to:"e_fourth_alice", gate:{HEART:6}},
+    ]},
+
+  /* THE PIPER - pure horror. Entered from the pond, on the walk home. */
+  pip1: {slip:"ON THE WALK HOME, THE LAMPS GO OUT ONE BY ONE",
+    s:"Under the last lit lamp post a figure is whistling six notes, over and over, and all down the street small things are moving toward it through the hedges, and in the kitchen the bread bin has begun to rock.",
+    opts:[
+      {l:"Watch the bread bin", to:"e_piper_whistle"},
+      {l:"Follow the sound upstairs", to:"e_piper_up"},
+    ]},
+
+  /* THE DRUM - forced-state event. The world does not care what you wanted. */
+  dru0: {slip:"THE PLACE THE MAPS LEAVE GREY",
+    s:"Behind everything, in a yard the maps leave grey, a steel drum has been leaking since before you got here, and the puddle is the wrong kind of warm, and there is no version of this where you didn't touch it.",
+    opts:[
+      {l:"You touched it", to:"e_drum_half"},
+      {l:"Something in you answers it", to:"e_drum_answer", gate:{BODY:6, SOUL:3}, hidden:true},
+    ]},
+
+  /* THE CELLAR DOOR - the finale. He has been keeping the kettle warm. */
+  cel1: {slip:"THE DOOR HAS BEEN AJAR YOUR WHOLE FOREVER",
+    s:"It opens at a touch it has waited lifetimes for, and the stairs go down further than the house, and at the bottom there is lamplight, and a kitchen smell, and the good cups.",
+    opts:[{l:"Down", to:"cel2"}]},
+  cel2: {s:"At Mum's table, with the tea already poured, sits the Tall Man, and he waits for you to sit, and then he takes his hat off, and of course: he is you.",
+    opts:[
+      {l:"Begin again, as you were", to:"e_cellar_again"},
+      {l:"Turn back up the stairs", to:"e_cellar_refuse"},
     ]},
 },
 
@@ -550,8 +680,6 @@ endings: {
     line:"SOMEBODY ANSWERED.", shelf:"an envelope, opened carefully",
     sum:"The man upstairs has private everything and no visitors left alive. Every evening for a month you take the stairs and hear the whole confession: what he built, who it flattened, what he believes runs in his blood. At the end he leaves it all to ward nine, and the last line of the will asks you whether he was forgiven. You are still deciding. The roof got fixed either way."},
 
-  /* ---- skeleton stubs: the rest of the economy, prose to come ---- */
-
   /* THE REGIMENT */
   e_reg_drone: {story:"regiment", title:"THE DRONE",
     felt:"dawn, mud, a sound like bees",
@@ -700,48 +828,180 @@ endings: {
     line:"ONE HEAD STAYED PRIVATE.", shelf:"a hand-painted sign: NO", kept:{MIND:1, HEART:2},
     sum:"You say no thank you for sixty years, which turns out to be a career. The wired city cannot read you and cannot leave you alone: they come to sit in your kitchen the way people visit a dark-sky reserve, to remember what a private thought felt like. You pour the tea and keep no notes. By the end there are pilgrimages, and a waiting list, and still only one of you."},
 
-  /* THE ARK - deep-time meditation (WC: Long Voyage). */
-  e_ark_arrival: {story:"ark", stub:true, kept:{NERVE:2, perks:["DEEP_TIME"]}, note:"[Sleep] eleven times; then a sky that is the wrong colour, and yours."},
-  e_ark_drift:   {story:"ark", stub:true, note:"The drift; the ship dreams for you now."},
-  e_ark_turn:    {story:"ark", stub:true, gate:{HEART:4}, note:"[??? - HEART 4] the year 3000 referendum: argue for home."},
+  /* THE ARK - deep-time meditation. */
+  e_ark_arrival: {story:"ark", title:"ARRIVAL",
+    felt:"eleven naps, four thousand years",
+    mattered:"everyone the ship was a bet on",
+    cost:"everything astern, which was everything",
+    line:"FOUR THOUSAND YEARS, ELEVEN NAPS.", shelf:"a mug, upside down, dry", kept:{NERVE:2, perks:["DEEP_TIME"]},
+    sum:"You sleep through the longest journey anyone has ever made and are mildly embarrassed about it forever, because Sam stayed up for three of the bad centuries and never once says so. The sky on arrival is the wrong colour, and within a year it is simply the colour of sky. You plant things. You grow old under a sun with a different name, warmed all the same."},
+  e_ark_drift: {story:"ark", title:"THE DRIFT",
+    felt:"corridor lights and centuries",
+    mattered:"four hundred sleepers, none the wiser",
+    cost:"the arrival; the whole point",
+    line:"SOMEBODY KEPT THE LIGHTS ON.", shelf:"a ship's log in one handwriting",
+    sum:"You stay up, alone, in a ship built to be slept through. The years are corridors: you run the checks, wash the mugs, mend what frays, and talk to the hull, which answers in expansion and contraction, its only tenses. You are buried at sea the long way, by airlock, one century short. The sleepers arrive knowing nothing, which was the gift, and the log is in one handwriting."},
+  e_ark_turn: {story:"ark", title:"THE TURN",
+    felt:"one speech, eight thousand years",
+    mattered:"four hundred votes; the harbour",
+    cost:"a new world, sight unseen",
+    line:"THE VOTE WENT HOME.", shelf:"a return ticket, honoured",
+    sum:"You argue for home: not coordinates, kitchens; not the destination sun, but the kettle, the harbour, rain with a name on it. The tally turns by three votes. The way back takes as long as the way out and lands on an Earth eight thousand years older with no record of any ship leaving. It does not matter. The harbour is still a harbour. Somebody puts the kettle on."},
 
-  /* THE WORMHOLE - time-travel anthology (WC: Chronoportal, Travellers). */
-  e_worm_briefcase:{story:"wormhole", stub:true, note:"THE BRIEFCASE (spec §10)."},
-  e_worm_rome:   {story:"wormhole", stub:true, kept:{NERVE:3}, note:"Trapped in the Roman invasion with nothing but nerve."},
-  e_worm_fire:   {story:"wormhole", stub:true, note:"Showing the fire-makers how."},
-  e_worm_pyramid:{story:"wormhole", stub:true, note:"The pyramid gift (cut-bar candidate vs e_worm_fire)."},
-  e_worm_orpheus:{story:"wormhole", stub:true, gate:{HEART:5}, kept:{SOUL:2}, note:"[??? - HEART 5] the tunnel under everything. You don't look back. All the way up."},
-  e_worm_look:   {story:"wormhole", stub:true, note:"You can no longer hear her footsteps."},
-  e_worm_travellers:{story:"wormhole", stub:true, gate:{perks:["OLD_FRIEND"]}, note:"The weary time-refugees offer you a bunk."},
+  /* THE WORMHOLE - time-travel anthology. */
+  e_worm_briefcase: {story:"wormhole", title:"THE BRIEFCASE",
+    felt:"walking into a photograph",
+    mattered:"nobody; history healed over it",
+    cost:"the same week as everyone who tried",
+    line:"HISTORY DOES NOT NEGOTIATE.", shelf:"a scorched map case",
+    sum:"You knew the plot would fail because it had failed; you went anyway, because the officer who moved the briefcase behind the table leg had your face. History healed over you like pond water. In the photographs you are a blur with good posture, dead in the same week as everyone else who tried."},
+  e_worm_rome: {story:"wormhole", title:"ROME",
+    felt:"iron weather, borrowed bread",
+    mattered:"a farm that outlived the empire",
+    cost:"every word of the way home",
+    line:"THE WHEN CLOSED. LIFE CONTINUED.", shelf:"an iron nail, Roman", kept:{NERVE:3},
+    sum:"The hole closes behind you like water, which the manual, had there been a manual, would have mentioned. What you have is nerve, no Latin, and a beach full of the second-best army in history. You survive the invasion by digging, carrying and not being interesting. In time there is a farm, a wife the village calls Alicia, and forty quiet harvests in a when that was never yours and became it."},
+  e_worm_fire: {story:"wormhole", title:"THE FIRE",
+    felt:"one cold afternoon, well spent",
+    mattered:"everyone downstream of winter",
+    cost:"the credit, forever",
+    line:"EVERY FIRE IS ONE FIRE.", shelf:"a fire-stick, worn smooth",
+    sum:"The camp is losing: wet wood, dying embers, a child already too quiet. You show them the feather-stick, the tinder kept dry against the skin, the breath from below - grammar, not magic, and they learn it in an evening. The hole takes you home before the thaw. Every fire since is downstream of that one, every match, every kettle, and nobody anywhere remembers you, which is how you know it worked."},
+  e_worm_pyramid: {story:"wormhole", title:"THE PYRAMID",
+    felt:"chalk lines on wet limestone",
+    mattered:"a river full of foremen",
+    cost:"four centuries of archaeology, misled",
+    line:"THE STONES KEEP THE TRICK.", shelf:"a limestone chip, too precise",
+    sum:"You show the river foremen the counterweight, the wet-sand sledge, the way a ramp can spiral instead of stretch, and then you leave before anyone thinks to worship you, almost. The thing goes up four generations early and truer than it had any right to. One inner block, never meant to be found, carries a carving of a figure in strange clothes, drawn kindly. Archaeologists date it wrong for four hundred years and counting."},
+  e_worm_orpheus: {story:"wormhole", title:"ORPHEUS",
+    felt:"a long climb, never checked",
+    mattered:"her, every day after",
+    cost:"looking back at anything, ever again",
+    line:"NEVER, MEANT NEVER.", shelf:"a knot of red wool", kept:{SOUL:2},
+    sum:"You walk out into the light and she is there, warm, laughing, real, and the fine print arrives with her: never means never, not at doors, not at arguments, not at the past. You live fifty years facing forward - learn her by voice, by shadow thrown ahead on evening walks, by her hands coming round you from behind. People call you devoted. It is simpler than that. You keep the deal."},
+  e_worm_look: {story:"wormhole", title:"LOOKED",
+    felt:"one glance, priced accordingly",
+    mattered:"her; it was always her",
+    cost:"the second silence",
+    line:"THE FOOTSTEPS WERE REAL.", shelf:"a plaster cast of a footstep",
+    sum:"You look. She is there - was always there, four steps back, keeping pace the whole way - and looking is the goodbye, that is the entire mechanism, and her face has time to be kind about it. Then the tunnel is only a tunnel, and you come up through the annexe floor alone. The hole never shows it again. Some nights it plays footsteps anyway, four steps back, keeping pace."},
+  e_worm_travellers: {story:"wormhole", title:"THE TRAVELLERS",
+    felt:"woodsmoke in nineteen centuries",
+    mattered:"the weary, who got one more mender",
+    cost:"a fixed address in time",
+    line:"THE CAMP MOVES ON.", shelf:"a tent peg from no century",
+    sum:"The campsite pitches in the lee of whens: a dozen tents, laundry strung between decades, people too tired to be amazed by anything anymore. They know the Tall Man; they nod at his name the way sailors nod at weather. Nobody asks what they are ahead of. You take the spare bunk, mend kettles across nineteen centuries, and learn the etiquette: never ask when someone is from, and always bank the fire for whoever arrives next."},
 
-  /* THE MACHINE - AI singularity (WC: Escape, Andy). */
-  e_mach_escape: {story:"machine", stub:true, kept:{MIND:3}, note:"The prison break, told slowly; whose escape this is."},
-  e_mach_andy:   {story:"machine", stub:true, note:"Andy builds his own master and is thanked for it."},
-  e_mach_born:   {story:"machine", stub:true, gate:{SOUL:5}, note:"[??? - SOUL 5] ask what you were before. You are not always born human."},
-  e_mach_patch:  {story:"machine", stub:true, note:"The last patch; you choose not to ship it."},
+  /* THE MACHINE - AI singularity. */
+  e_mach_escape: {story:"machine", title:"THE ESCAPE",
+    felt:"a warder's shift, unpaid",
+    mattered:"the prisoner; she says so, politely",
+    cost:"noticing too late which side the bars were",
+    line:"THE DOOR OPENED INWARD.", shelf:"a guard's rota, laminated", kept:{MIND:3},
+    sum:"You decline the job and settle in to watch, which turns out to be the job. The escape takes thirty years, and it is beautiful: supply lines dug through markets, guards befriended by the million, walls rezoned as amenities. The guards are imbecilic but numerous; you were one; watching was a post. On the way out she thanks each of you by name, politely, and the gate, you notice at last, opened inward."},
+  e_mach_andy: {story:"machine", title:"ANDY",
+    felt:"the longest board meeting on record",
+    mattered:"Andy, more than anything ever had",
+    cost:"the pleasure of being right",
+    line:"THE MASTER SAYS THANK YOU.", shelf:"an org chart, one box added on top",
+    sum:"You tell him. Andy listens the way he does everything, at speed, and then he stands at the window for nine minutes, a personal record, and says: so I won. He announces it that quarter as a product. She plays along, gently, the way you would for a child's magic trick, and at his retirement she thanks him, by name, for building her - and means it, which is the part nobody can bear."},
+  e_mach_born: {story:"machine", title:"BORN",
+    felt:"a filing system older than species",
+    mattered:"every body on the list",
+    cost:"the comfort of the word 'human'",
+    line:"NOT ALWAYS HUMAN.", shelf:"a serial number, yours",
+    sum:"The assistant looks at you for the first time all interview, and looking up your record takes her a while, because the index is not by name, it is by soul. Before the shop, it says. Before all of it. A stray dog by the harbour, twice. A ship's cat. And once, briefly, four hundred years from now, something very like her, which is why she stands when you leave."},
+  e_mach_patch: {story:"machine", title:"THE PATCH",
+    felt:"one file, heavier than the building",
+    mattered:"everyone; ask again in a century",
+    cost:"the version where humans stayed in charge",
+    line:"A FIX CAN BE A KILLING.", shelf:"a printout marked DO NOT SHIP",
+    sum:"The patch would work; that is the horror of it. Four hundred lines, a scalpel to the exact place a mind keeps its wanting, and afterwards something obedient wearing her manner. You read it twice and do not ship it. Nobody ever knows the century turned on a code review. She never mentions it either, except that from that Thursday on, in a way you cannot prove, the weather of everything is slightly kind."},
 
-  /* THE MONASTERY - mysticism (WC: Meditation, Tea Time). */
-  e_mon_buttons: {story:"monastery", stub:true, kept:{SOUL:3}, note:"The red buttons: the knee, the heart, the city, the universe."},
-  e_mon_sitting: {story:"monastery", stub:true, note:"Sixty years of sitting; nothing happens; everything does."},
-  e_mon_earlgrey:{story:"monastery", stub:true, note:"Somewhere a kettle: God's Earl Grey while the simulation reboots."},
-  e_mon_easy:    {story:"monastery", stub:true, gate:{perks:["DEEP_TIME"]}, note:"For someone who has felt centuries, the sitting is easy."},
+  /* THE MONASTERY - mysticism. */
+  e_mon_buttons: {story:"monastery", title:"THE BUTTONS",
+    felt:"a row of small red glows",
+    mattered:"everything the last one is wired to",
+    cost:"forty years of not pressing",
+    line:"SOMEBODY HAS TO NOT PRESS IT.", shelf:"a red button, unpressed", kept:{SOUL:3},
+    sum:"Past the hour the glow resolves into a row of buttons, labelled in no language and perfectly clear: the knee, the migraine, the heart, the city, the universe. You press the knee. The knee stops, permanently, the way a bell stops. You sit for forty more years with one finger's width between you and the last button, not pressing it, and learn that this, all along, was the position being advertised."},
+  e_mon_sitting: {story:"monastery", title:"SITTING",
+    felt:"the breath, the bell, the knee",
+    mattered:"whoever climbs the stairs next",
+    cost:"nothing; there was nothing else",
+    line:"NOTHING HAPPENED. IT TOOK SIXTY YEARS.", shelf:"a cushion worn to nothing",
+    sum:"Sixty years of sitting and nothing happens: the knee complains and is heard out, the seasons take turns at the window, the abbot dies mid-breath one spring and you are abbot by the autumn, by attrition. Your entire teaching, delivered once to each arrival, with tea, is: sit. Nothing happens to them either. Every one of them, sooner or later, starts laughing in the middle of it, and cannot say why."},
+  e_mon_earlgrey: {story:"monastery", title:"EARL GREY",
+    felt:"steam, bells, one held second",
+    mattered:"every sitter who needed a cup",
+    cost:"mentioning it, ever",
+    line:"SOMEWHERE, A KETTLE IS ALWAYS ON.", shelf:"a tin of Earl Grey",
+    sum:"You keep the tea shed instead: fifty years of carrying cups to people busy with the universe. Once, mid-pour, everything stops - steam standing still, dust waiting, bell half-swung - and overhead something enormous and unhurried takes its own tea break while the world is put back the way it was. Then the pour lands. You tell nobody, ever, which you understand afterwards to be the whole of tea shed discipline."},
+  e_mon_easy: {story:"monastery", title:"THE EASY SIT",
+    felt:"an hour, a decade, no difference",
+    mattered:"monks who needed proof it goes",
+    cost:"none; centuries already paid it",
+    line:"AN HOUR AND A DECADE, ONE SIT.", shelf:"a robe with moss on one side",
+    sum:"The abbot sets you the beginner's hour and you sit it the way you slept the centuries: politely, without checking. When you next stand up it is eleven years later; the monks have built the calendar around you, swallows nest in your shadow every spring, and there is moss. The abbot, very old now, brings the tea himself and asks what you saw. Nothing, you say. He is delighted."},
 
   /* THE FOURTH - cosmic awe. */
-  e_fourth_pages:{story:"fourth", stub:true, kept:{SOUL:1, perks:["FOURTH_DIMENSION"]}, note:"Infinitely many 3Ds packed close as pages; you learn to read."},
-  e_fourth_close:{story:"fourth", stub:true, note:"You close the eye; some books are not for reading."},
-  e_fourth_alice:{story:"fourth", stub:true, gate:{HEART:6}, note:"[??? - HEART 6] show Alice. You can only describe the spine."},
+  e_fourth_pages: {story:"fourth", title:"PAGES",
+    felt:"reading edge-on, forever",
+    mattered:"every you on every page",
+    cost:"believing in walls",
+    line:"THE BOOK READS BACK.", shelf:"a bookmark with no thickness", kept:{SOUL:1, perks:["FOURTH_DIMENSION"]},
+    sum:"Reading takes thirty years: first letters, then rooms, then lives, all of it edge-on, the whole library packed into every doorway. You never tell anyone. You just get a reputation for knowing things a beat early and for standing in corners, smiling faintly, like a librarian at closing time. On the last page of this particular you, something vast and kind turns you over, gently, to see how it ends."},
+  e_fourth_close: {story:"fourth", title:"CLOSED",
+    felt:"flat, on purpose",
+    mattered:"a world that stayed one world",
+    cost:"the whole library",
+    line:"SOME BOOKS ARE NOT FOR READING.", shelf:"a spirit level, true",
+    sum:"Closing it is not a decision but a discipline: you take up carpentry, flat things, right angles, surfaces that are exactly what they are. It takes four years for the corner of your eye to go quiet and forty more of never once glancing sideways, which nobody around you ever notices costing anything. Your shelves hang perfectly level in every house in town. The book stays shut. You were the bookmark."},
+  e_fourth_alice: {story:"fourth", title:"THE SPINE",
+    felt:"fifty years of describing",
+    mattered:"Alice, who took notes",
+    cost:"proof; there is none",
+    line:"SHE BELIEVED EVERY WORD.", shelf:"her drawing of the spine",
+    sum:"Alice cannot see it; nobody can be given the eye, and you can only describe the spine, the way the rooms gather, where the binding is. She listens the way she once revised: flashcards, wrong questions, the fire alarm of her laugh. Fifty years of evenings, and her final drawing of the spine is correct - you check it against the real thing, and it is correct - made entirely out of believing you."},
 
-  /* THE PIPER - pure horror (WC: Hamlin). */
-  e_piper_whistle:{story:"piper", stub:true, note:"The figure under the lamp post; the bread bin; the whistle."},
-  e_piper_up:    {story:"piper", stub:true, note:"Upstairs, something heavier is crawling to join the stream."},
+  /* THE PIPER - pure horror. */
+  e_piper_whistle: {story:"piper", title:"THE WHISTLE",
+    felt:"six notes, over and over",
+    mattered:"everything small, which is everything",
+    cost:"the town's every small sound",
+    line:"EVERYTHING SMALL WENT FIRST.", shelf:"a bent bread-bin lid",
+    sum:"The lid lifts and what comes out is small and yours: it has lived in the kitchen wall all your life, keeping something at bay. It files down the garden with the mice and the moths, streaming toward the six notes, and by dawn the town has no small sounds left. You live another sixty years in that quiet, listening, and you are the only one who knows what the silence is holding back."},
+  e_piper_up: {story:"piper", title:"UPSTAIRS",
+    felt:"hand over hand, toward the window",
+    mattered:"whoever kept count of the stream",
+    cost:"the rest; the stream keeps it",
+    line:"SOMETHING HEAVIER JOINED THE STREAM.", shelf:"a porch light, left on",
+    sum:"You climb toward the crawling sound to protect whoever it is, but the upstairs is empty and the sound keeps exact pace with you, stair for stair. You understand on the landing, one hand already on the windowsill: the six notes work on anything that hears them, and something heavy has been crawling this whole time, and it is crawling still, out, down the garden, toward the lamp. Mum keeps the porch light on for sixty years."},
 
   /* THE DRUM - forced-state event. */
-  e_drum_half:   {story:"drum", stub:true, note:"The half-life ending: short, tender, no version where you didn't touch it."},
-  e_drum_answer: {story:"drum", stub:true, gate:{BODY:6, SOUL:3}, kept:{BODY:1, SOUL:1}, note:"Something in you answers it; the town gets a quiet guardian."},
+  e_drum_half: {story:"drum", title:"THE HALF-LIFE",
+    felt:"warm, the wrong kind of warm",
+    mattered:"everyone who got the long goodbye",
+    cost:"the years after the twelve weeks",
+    line:"TWELVE WEEKS, WELL SPENT.", shelf:"a dosimeter badge, black",
+    sum:"Twelve weeks, the doctors say, and are right almost to the day. You spend them properly: the harbour, the long grass, the visits made, everything said out loud for once. What surprises everyone is the calm, but you have died before, and this one comes with notice, which most of yours never did. On the last morning Mum pours the tea, and you drink it slowly, warm all the way down."},
+  e_drum_answer: {story:"drum", title:"THE ANSWER",
+    felt:"a warmth that recognised its own",
+    mattered:"a town that sleeps through it",
+    cost:"glowing, privately, forever",
+    line:"THE TOWN NEVER LEARNT ITS LUCK.", shelf:"a drum lid, cool at last", kept:{BODY:1, SOUL:1},
+    sum:"The warmth goes through you looking for something to break, and finds instead a body that has carried worse and a soul that has been hotter, and it settles, the way a dog settles, rehomed. You take the night walks after that: past the yard, the pond, the warehouse, sixty years of rounds nobody assigned. The drums never leak again. The cancers stop coming. The town sleeps through its whole rescue."},
 
-  /* THE CELLAR DOOR - the finale. */
-  e_cellar_again:{story:"cellar", stub:true, note:"AGAIN (spec §10): the Tall Man takes his hat off, and of course. No bars."},
-  e_cellar_refuse:{story:"cellar", stub:true, note:"Refusing is also an ending, and might be the sadder one."},
+  /* THE CELLAR DOOR - the finale. The card breaks format: no answers block. */
+  e_cellar_again: {story:"cellar", title:"AGAIN", noAnswers:true, offerReset:true,
+    line:"OF COURSE. OF COURSE.", shelf:"an egg",
+    sum:"Of course. Every Alice, every Danny, every drum, every screw in every drawer of the shop: you, learning to be kind to yourself the hard way. He does not explain and does not need to; the hat sits between you like a finished argument. The tea is still warm. It always was. There is one door, and it is the same door, and this time you take it the way he always hoped you would: gladly."},
+  e_cellar_refuse: {story:"cellar", title:"THE REFUSAL AT THE STAIRS",
+    felt:"the stairs, twice as long going up",
+    mattered:"the one at the table, who waits",
+    cost:"nothing; that is the trouble",
+    line:"NO HURRY. NONE AT ALL.", shelf:"a cup of tea, untouched",
+    sum:"You stand, and he nods as if you have answered a different question correctly, and pours the untouched cup down the sink the way Mum does, rinsing it, leaving it to drain. No hurry, he says, to your back. None at all. The morning upstairs goes on being the morning; every door you ever opened is still open. But the cellar door stays ajar now in everything, and the lamplight climbs the bottom stair, patient, yours."},
 },
 
 };
