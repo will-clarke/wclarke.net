@@ -90,8 +90,9 @@ home from any depth.
 
 **Useful cells to know.** `'0,0'` = the about room (inside it:
 `'0,0|1,1'` the day jobs, `'0,0|2,0'` code (github + real projects),
-`'0,0|-1,2'` philosophical musings (the retired armchair sits
-commented out beside it in `js/content.js`), `'0,0|1,-1'` interests →
+`'0,0|-1,2'` unpopular opinions (all 18 slots full, so the overflow
+sits in a "more opinions" sub-room at its centre cell; the retired
+armchair sits commented out beside it in `js/content.js`), `'0,0|1,-1'` interests →
 films / books / listening / games-i-play - the deepest curated
 branch); `'1,0'` games (only `DECENT_SLUGS` games sit in the room; the rest sink
 into a "rough games" sub-room at its centre cell, and the `WORST_SLUGS`
