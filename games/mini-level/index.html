@@ -148,7 +148,9 @@
      its intrinsic (device-pixel) size. */
   #world { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
   #board { display: block; position: relative; }
-  /* T56: the lightbulb - appears after three restarts, breathing gently. */
+  /* T56: the lightbulb - appears when you read as stuck, breathing gently.
+     T96: its first appearance on a level pops in (skipped under calm motion)
+     so the small silent icon stops being missable, then hands to the breath. */
   #hintBtn {
     position: absolute;
     top: 10px;
@@ -158,6 +160,14 @@
     border-radius: 999px;
     background: var(--pill);
     animation: breathe 2.4s ease-in-out infinite;
+  }
+  #hintBtn.wake {
+    animation: hintWake 0.9s ease-out, breathe 2.4s ease-in-out 0.9s infinite;
+  }
+  @keyframes hintWake {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.18); opacity: 1; }
+    100% { transform: scale(1); }
   }
   #toast, #coach, #hintTip {
     position: absolute;
@@ -1566,6 +1576,134 @@ const QUITE = [
     '#@*##.#',
     '##-####',
   ]},
+  // T94 (Will, prompt 36): ten more, each starring one mechanic no level
+  // had properly shown - the exit-swap, the enter-flush, the mouth-pit
+  // fan-out, the stacked-window exit, the swallow-disposal, the conga
+  // sacrifice, the pit-arrival boxin, the k=1 blockout vanish, the boxout
+  // double-delivery, and the body-arithmetic mint. Requires baked from
+  // banned-mechanic BFS as before.
+  // The classic impossibility: you cannot pass a box in a one-wide
+  // corridor. Walking out the door swaps you through the world (A10).
+  { name: 'After You', par: 6, stretch: false, requires: [], note: 'You cannot pass a box in a corridor. The door can.',
+    rows: [
+    '##-####',
+    '##P####',
+    '##$.###',
+    '##N.###',
+    '###.###',
+    '###.$*#',
+    '#######',
+  ]},
+  // Enter-flush: the arrival is plugged, but the enter chain-shoves the
+  // plug into the pit behind it - the flush IS the bridge in.
+  { name: 'Plughole', par: 8, stretch: false, requires: ['enter', 'sink'], note: 'The doorway is blocked. Luckily there is a hole behind it.',
+    rows: [
+    '#######',
+    '####.N#',
+    '-$~#..#',
+    '#.$*#.#',
+    '#####.#',
+    '#####@#',
+    '#######',
+  ]},
+  // Fan-out with one mouth on a pit: the same swipe spawns the worker at
+  // one window and lays the bridge at the other.
+  { name: 'Doormat', par: 6, stretch: true, requires: ['spawn', 'die', 'fill'], note: 'One swipe: a copy lands, a copy lays the bridge.',
+    rows: [
+    '#######',
+    '-@...N#',
+    '##$####',
+    '##.####',
+    '##~N###',
+    '##*####',
+    '#######',
+  ]},
+  // Stacked windows exited along their axis: the far mouth fires clean,
+  // the near window recoils, and two selves land on interleaved lanes.
+  { name: 'Bunk Beds', par: 5, stretch: true, requires: ['exit', 'spawn', 'blockstep'], note: 'Two windows stacked. One exit, two of you.',
+    rows: [
+    '#######',
+    '##.####',
+    '##N$.*#',
+    '##N..##',
+    '##.$.##',
+    '##@#*##',
+    '##-####',
+  ]},
+  // Swallow-disposal (A9): the swallowed box lands on the pit arrival and
+  // sinks - the window eats the clutter blocking the delivery.
+  { name: 'Spring Clean', par: 10, stretch: false, requires: ['boxin', 'blockstep', 'sink'], note: 'Too much clutter. The window eats what blocks the way.',
+    rows: [
+    '#######',
+    '-~*####',
+    '#.$$N@#',
+    '#.##.##',
+    '#....##',
+    '#######',
+    '#######',
+  ]},
+  // Two selves, one input: the queue marches through the window and the
+  // front body dies filling the pit arrival for the one behind.
+  { name: 'Dead Letter', par: 9, stretch: false, requires: ['die', 'fill'], note: 'March together. The front of the queue never arrives.',
+    rows: [
+    '#######',
+    '-~*..N#',
+    '###.$##',
+    '###...#',
+    '###@#@#',
+    '#######',
+    '#######',
+  ]},
+  // The pit arrival, pressed three times: the first box sinks and fills,
+  // the second lands on the fill, the enter shoves it home.
+  { name: 'Posthole', par: 15, stretch: false, requires: ['boxin', 'sink'], note: 'Post into the hole three times. Each landing differs.',
+    rows: [
+    '#######',
+    '-~*.$N#',
+    '###.$##',
+    '###..##',
+    '####.##',
+    '####@##',
+    '#######',
+  ]},
+  // The k=1 blockout: push the only window out the door and it is GONE -
+  // the lane opens, and the doors become walls behind it.
+  { name: 'Demolition', par: 17, stretch: false, requires: ['blockout', 'blockstep'], note: 'The window blocks the lane. No pit this time - lose it for good.',
+    rows: [
+    '#######',
+    '-*N@$.#',
+    '###.#.#',
+    '###.#.#',
+    '###.#.#',
+    '###...#',
+    '#######',
+  ]},
+  // One mouth, two targets: the first parcel lands at the mouth, your own
+  // exit shoves it onward, and the second parcel takes its place.
+  { name: 'Second Post', par: 18, stretch: false, requires: ['boxout'], note: 'One mouth, two deliveries. Squeeze out to nudge the first.',
+    rows: [
+    '#######',
+    '#.....#',
+    '#@$.$.-',
+    '#.#####',
+    '#.N**.#',
+    '#######',
+    '#######',
+  ]},
+  // Body arithmetic on a nine-board: four holes on the lane, three windows
+  // and one of you - somebody has to get minted.
+  { name: 'Headcount', par: 22, stretch: true, requires: ['blockstep', 'spawn', 'die', 'fill'], note: 'Four holes, three windows, one of you. Mint more.',
+    rows: [
+    '#########',
+    '#...@...#',
+    '#.N#N#N.#',
+    '#..#.#.##',
+    '#..#.#.##',
+    '-.......#',
+    '#......##',
+    '#.$~~~~*#',
+    '#########',
+  ]},
 ];
 
 // T36: generator levels that survived the pruned BFS + portal-integrity
@@ -2821,10 +2959,20 @@ function startLevel(def, spin) {
   zoom = null;
   confetti = null;
   resets = 0;
+  scrubs = 0;
+  hintStuck = false;
+  hintWoke = false;
   hintPlan = null;
   hintSearch++;
+  // T96 (F6): parked on one level for a while without the win also reads as
+  // stuck - the third way the bulb arrives.
+  clearTimeout(hintStuckTimer);
+  if (levelIndex >= 0) {
+    hintStuckTimer = setTimeout(() => { hintStuck = true; offerHint(); }, HINT_STUCK);
+  }
   $('hintBtn').hidden = true;
   $('hintBtn').disabled = false;
+  $('hintBtn').classList.remove('wake');
   hideHintTip();
   closeOverlays();
   hideToast();
@@ -3429,25 +3577,45 @@ function buzz(pattern) {
   if (navigator.vibrate) navigator.vibrate(pattern);
 }
 
-// --- Hints (T56, reworked T59) -------------------------------------------------
+// --- Hints (T56, reworked T59, T96) ------------------------------------------
 
-// The lightbulb: three restarts on a level reads as stuck, so offer help that
-// reads the board the player is actually on. A tap runs the editor's chunked
-// BFS from the CURRENT state (T30 pruning keeps every shipped level far under
-// the cap): if a win is reachable the bulb MAKES the next optimal move for
-// the player, one step per tap; if none is reachable the tip says restart
-// and the restart button pulses. Undo takes a hinted step back like any other.
-const HINT_AFTER = 3; // restarts before the bulb appears
+// The lightbulb: looking stuck offers help that reads the board the player is
+// actually on. Stuck is any of: three restarts, two undo-scrubs back to the
+// start (scrubbers never trip the reset counter - reset() early-returns at
+// the start position), or ninety seconds on one level without the win. A tap
+// runs the editor's chunked BFS from the CURRENT state (T30 pruning keeps
+// every shipped level far under the cap): if a win is reachable the bulb
+// DRAWS the next optimal move as an arrow on every self - the aha stays
+// yours - and a second tap while the arrow stands takes the step for the
+// truly stuck; if no win is reachable the tip says restart and the restart
+// button pulses. Undo takes a hinted step back like any other.
+const HINT_AFTER = 3;      // restarts before the bulb appears...
+const HINT_SCRUBS = 2;     // ...or undo-scrubs back to the start position
+const HINT_STUCK = 90000;  // ...or ms parked on one level without winning
+const HINT_ARROW = 5000;   // how long a drawn arrow waits for its second tap
 let resets = 0;        // real restarts on the current level
+let scrubs = 0;        // undo chains that walked all the way back to the start
+let hintStuck = false; // the stuck-timer fired on this level
+let hintStuckTimer = 0;
+let hintWoke = false;  // the bulb already did its arrival pop this level
 let hintSearch = 0;    // token: bumping it abandons a running search
 let hintPlan = null;   // Map: state hash -> remaining optimal move string
+let hintArrow = null;  // { mv, hash, until }: the shown next step, awaiting tap 2
 
 function offerHint() {
-  $('hintBtn').hidden = !(resets >= HINT_AFTER && levelIndex >= 0 && !won);
+  const due = resets >= HINT_AFTER || scrubs >= HINT_SCRUBS || hintStuck;
+  const show = due && levelIndex >= 0 && !won;
+  const btn = $('hintBtn');
+  if (show && btn.hidden && !hintWoke) {
+    hintWoke = true;
+    if (!calmMotion()) btn.classList.add('wake');
+  }
+  btn.hidden = !show;
 }
 function hideHintTip() {
   $('hintTip').hidden = true;
   $('reset').classList.remove('pulse');
+  if (hintArrow) { hintArrow = null; dirty = true; }
 }
 
 function stateHash(s) {
@@ -3463,10 +3631,23 @@ function presentDeadEnd() {
   $('reset').classList.add('pulse');
 }
 
+// T96 (F6): the first tap points, it never plays. The arrow is keyed to the
+// exact state it was computed for and lapses after a few seconds, so a stale
+// arrow can only ever be redrawn, never executed.
+function presentArrow(mv) {
+  hintArrow = { mv, hash: stateHash(state), until: performance.now() + HINT_ARROW };
+  dirty = true;
+}
+
 function showHint() {
   const h = stateHash(state);
+  // A second tap while the arrow stands takes the step it points.
+  if (hintArrow && hintArrow.hash === h && performance.now() < hintArrow.until) {
+    applyMove(hintArrow.mv); // applyMove's hideHintTip retires the arrow
+    return;
+  }
   const rest = hintPlan && hintPlan.get(h);
-  if (rest) { applyMove(rest[0]); return; } // known optimal line: take the step
+  if (rest) { presentArrow(rest[0]); return; } // known optimal line: point at it
   if (isDoomed(layout, deadSet, state)) { presentDeadEnd(); return; }
   const token = ++hintSearch;
   const lay = layout, start = state, dead = deadSet;
@@ -3504,9 +3685,9 @@ function showHint() {
             hintPlan.set(line[i].hash, tail);
           }
           done();
-          // Only auto-step if the board hasn't moved since the tap; if the
+          // Only point if the board hasn't moved since the tap; if the
           // player kept playing, the cached plan serves the next tap instead.
-          if (stateHash(state) === h) applyMove(line[0].mv);
+          if (stateHash(state) === h) presentArrow(line[0].mv);
           return;
         }
         if (seen.size > ED_CAP) { done(); btn.hidden = true; return; } // never true of a shipped level
@@ -3787,6 +3968,10 @@ function undo() {
   bloom = null;
   confetti = null;
   hideHintTip();
+  // T96 (F6): an undo chain that walks all the way home is a restart in
+  // spirit - it counts toward the bulb (only the bottom history entry holds
+  // the initial reference, so this fires once per excursion).
+  if (state === initial) { scrubs++; offerHint(); }
   retractZoom();
   closeOverlays();
   settle();
@@ -4970,7 +5155,37 @@ function drawScene(c, time, inner, bg, dpr, cam) {
   for (const s of sprites) if (s.kind !== 'block') drawSprite(c, s, p, time);
   if (bg) return;
   drawFlashes(c, time);
+  drawHintArrow(c, time);
   drawBloom(c);
+}
+
+// T96 (F6): the bulb's first tap draws the next optimal move on every self
+// (one input drives them all, so they all wear it). Rides the same passes as
+// the flashes, so the arrow shows in every window's miniature too. The idle
+// breath loop keeps its little bob alive; calm motion holds it still.
+function drawHintArrow(c, time) {
+  if (!hintArrow) return;
+  const [dx, dy] = DIRS[hintArrow.mv];
+  const bob = calmMotion() ? 0 : Math.sin((time || 0) * 0.006) * CELL * 0.06;
+  const off = CELL * 0.92 + bob; // clear of the blob: the arrow sits in the cell it points at
+  const s = CELL * 0.24;
+  c.save();
+  c.fillStyle = THEME.self;
+  c.strokeStyle = THEME.selfLine;
+  c.lineWidth = Math.max(1, CELL * 0.05);
+  c.lineJoin = 'round';
+  for (const i of state.selves) {
+    const cx = xOf(i) * CELL + CELL / 2 + dx * off;
+    const cy = yOf(i) * CELL + CELL / 2 + dy * off;
+    c.beginPath();
+    c.moveTo(cx + dx * s, cy + dy * s);
+    c.lineTo(cx - dx * s * 0.7 - dy * s * 0.85, cy - dy * s * 0.7 - dx * s * 0.85);
+    c.lineTo(cx - dx * s * 0.7 + dy * s * 0.85, cy - dy * s * 0.7 + dx * s * 0.85);
+    c.closePath();
+    c.fill();
+    c.stroke();
+  }
+  c.restore();
 }
 
 // One pass up instead of down: the same level again, huge and faint, with
@@ -5139,6 +5354,8 @@ function frame(ts) {
       if (p >= 1) zoom = null;
     }
   }
+  // T96: an unanswered hint arrow lapses - the next tap redraws, never plays.
+  if (hintArrow && ts > hintArrow.until) { hintArrow = null; dirty = true; }
   if (bonkAt !== null) {
     motion = true; // the blob is mid-splat, keep frames coming
     const p = (ts - bonkAt) / 180;
