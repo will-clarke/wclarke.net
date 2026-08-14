@@ -789,6 +789,11 @@ const INWARD = { N: [0, 1], S: [0, -1], W: [1, 0], E: [-1, 0] };
 // workshop's windowless four (Pinwheel, Postage, Chimneys, Milk Run) and two
 // recut Houses (Service Entrance, Stunt Double) move in; Heavy Goods and
 // Three Doors slide toward the back ("quite an advanced topic").
+// T89 (F1, the 2026-08-14 review): the early arc reordered so the window
+// lands at slot 3 and the first self-copy (Twins) at slot 9. Corners slides
+// behind the window act, Pinwheel returns to the Workshop (an exam, not a
+// lesson), Milk Run becomes the late errand. Grids untouched - reorder only,
+// so every FORCED lesson carries; save v14 T89MAP carries earned bests.
 const TUTORIAL = [
   { name: 'First Push', par: 1, stretch: false, requires: ['push'], rows: [
     '#####',
@@ -805,25 +810,6 @@ const TUTORIAL = [
     '#...#',
     '#####',
   ]},
-  // T55: promoted from the campaign - corners eat boxes, undo is your friend,
-  // taught before any portal appears.
-  { name: 'Corners', par: 9, stretch: false, requires: ['push'], rows: [
-    '#####',
-    '#*.@#',
-    '#.$.#',
-    '#.$*#',
-    '#####',
-  ]},
-  // T85 (Will): ex-workshop, pure sokoban - the pushing exam before any
-  // window appears.
-  { name: 'Pinwheel', par: 15, stretch: false, requires: [], rows: [
-    '######',
-    '#.*..#',
-    '#@..$#',
-    '#$.$*#',
-    '#*...#',
-    '######',
-  ]},
   // The enter teach: walk into the little world, pop out of its own W door.
   { name: 'Little World', par: 2, stretch: false, requires: ['enter'], rows: [
     '#####',
@@ -831,6 +817,16 @@ const TUTORIAL = [
     '#####',
     '-.$*#',
     '#####',
+  ]},
+  // Will's OTB-1: the only legal first move is out the back door - and you
+  // fall out of the window across the board. Doors go both ways.
+  { name: 'Out the Back', par: 9, stretch: false, requires: ['exit'], rows: [
+    '######',
+    '-@#..#',
+    '##.*.#',
+    '#.$.N#',
+    '#....#',
+    '######',
   ]},
   // T55: promoted from the campaign - the same enter lesson at full size:
   // walk in, pop out across the map. T64: Will's condensed 6x6 recut (prompt
@@ -841,16 +837,6 @@ const TUTORIAL = [
     '###.*-',
     '##.$.#',
     '##...#',
-    '######',
-  ]},
-  // Will's OTB-1: the only legal first move is out the back door - and you
-  // fall out of the window across the board. Doors go both ways.
-  { name: 'Out the Back', par: 9, stretch: false, requires: ['exit'], rows: [
-    '######',
-    '-@#..#',
-    '##.*.#',
-    '#.$.N#',
-    '#....#',
     '######',
   ]},
   // OTB-2: boxes fit through doors too - post the box into the window,
@@ -882,6 +868,28 @@ const TUTORIAL = [
     '-..*#',
     '#####',
   ]},
+  // Ex-campaign (T85): one exit, two of you - the gentlest spawn lesson.
+  // T89 (F1): pulled up from slot 20 - one-becomes-many is the game's best
+  // trick, and par 4 is gentle enough to be the first taste.
+  { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
+    '#######',
+    '-..N..#',
+    '#@.$*.#',
+    '#######',
+    '#..N..#',
+    '#..$*.#',
+    '#######',
+  ]},
+  // T55: promoted from the campaign - corners eat boxes, undo is your friend.
+  // T89 (F1): moved behind the window act - a pure-sokoban discipline beat
+  // once the player is hooked, not a wall in front of the hook.
+  { name: 'Corners', par: 9, stretch: false, requires: ['push'], rows: [
+    '#####',
+    '#*.@#',
+    '#.$.#',
+    '#.$*#',
+    '#####',
+  ]},
   // T85: Will's concise recut (prompt 25) - the box posts down the shaft
   // through the pinned window; walk in after it and shove it home.
   { name: 'Special Delivery', par: 7, stretch: false, requires: ['boxin', 'enter'], rows: [
@@ -910,17 +918,6 @@ const TUTORIAL = [
     '#$#$#',
     '#@$~#',
     '#####',
-  ]},
-  // T85 (Will): ex-workshop - the errand round the pits, sokoban with
-  // sinking and no windows at all.
-  { name: 'Milk Run', par: 15, stretch: false, requires: [], rows: [
-    '#######',
-    '#@$.~.#',
-    '#####$#',
-    '#~$*#.#',
-    '#$###~#',
-    '#.~.$.#',
-    '#######',
   ]},
   // OTB-4, Will's T64 recut (prompt 21, also published as Mins' community
   // level): the window's doorless faces push like a crate - park the world
@@ -955,20 +952,10 @@ const TUTORIAL = [
     '#.#..-',
     '######',
   ]},
-  // Ex-campaign (T85). T10 pin: (1,4) walled so the block cannot be scooted
-  // or shoved off the boxin line - the choose-your-face dance survives.
-  { name: 'The Moat', par: 15, stretch: false, requires: ['boxin', 'enter'], rows: [
-    '#####-##',
-    '#..~..*#',
-    '#$.~.#.#',
-    '#N.~...-',
-    '##.~~~~#',
-    '#@.....#',
-    '#......#',
-    '########',
-  ]},
   // T85: Will's recut, his "intro to mini levels" - three storeys now. Exit
   // once and your double bridges the pit; exit again and both lanes push home.
+  // T89 (F1): opens the spawn act, after the pit levels on purpose - the
+  // bridging double needs Ashes taught first (requires includes fill).
   { name: 'Stunt Double', par: 6, stretch: true,
     requires: ['exit', 'spawn', 'fill'], rows: [
     '#######',
@@ -977,16 +964,6 @@ const TUTORIAL = [
     '#N@...-',
     '#######',
     '#N..$*#',
-    '#######',
-  ]},
-  // Ex-campaign (T85): one exit, two of you - the gentlest spawn lesson.
-  { name: 'Twins', par: 4, stretch: true, requires: ['exit', 'spawn'], rows: [
-    '#######',
-    '-..N..#',
-    '#@.$*.#',
-    '#######',
-    '#..N..#',
-    '#..$*.#',
     '#######',
   ]},
   // Ex-campaign (T85). T13 rebuild of Reunion; T20 re-pocket: the self starts
@@ -1012,6 +989,18 @@ const TUTORIAL = [
     '#.....#',
     '###-###',
   ]},
+  // Ex-campaign (T85). T10 pin: (1,4) walled so the block cannot be scooted
+  // or shoved off the boxin line - the choose-your-face dance survives.
+  { name: 'The Moat', par: 15, stretch: false, requires: ['boxin', 'enter'], rows: [
+    '#####-##',
+    '#..~..*#',
+    '#$.~.#.#',
+    '#N.~...-',
+    '##.~~~~#',
+    '#@.....#',
+    '#......#',
+    '########',
+  ]},
   // Ex-campaign (T85, Will: "removals could be in tut"): push the right
   // window out the door and it re-emerges from the left one - parked exactly
   // where the box lane needs a door.
@@ -1032,6 +1021,18 @@ const TUTORIAL = [
     '#*.N.#',
     '#...*#',
     '######',
+  ]},
+  // T85 (Will): ex-workshop - the errand round the pits, sokoban with
+  // sinking and no windows at all. T89 (F1): the late errand before the
+  // finale, out of the early flow.
+  { name: 'Milk Run', par: 15, stretch: false, requires: [], rows: [
+    '#######',
+    '#@$.~.#',
+    '#####$#',
+    '#~$*#.#',
+    '#$###~#',
+    '#.~.$.#',
+    '#######',
   ]},
   // OTB-6: a third door and a third target join the house.
   { name: 'Three Doors', par: 15, stretch: false, requires: ['boxout'], rows: [
@@ -1208,6 +1209,8 @@ const HOUSES = [
 // contract - these are puzzles, not lessons. T85 (Will, prompt 25): Pinwheel,
 // Postage, Chimneys and Milk Run promoted to Moving In; Compass and Wings
 // pushed later ("kinda hard"); The Warren (his prompt-25 maze) joins late.
+// T89 (F1): Pinwheel returns, slotted by par - it is an exam, not a lesson,
+// and it was a wall at tutorial slot 4.
 const WORKSHOP = [
   { name: 'Trapdoor', par: 5, stretch: true, requires: [], rows: [
     '###-#',
@@ -1258,6 +1261,15 @@ const WORKSHOP = [
     '#~~~~~#',
     '#..$.*#',
     '###-###',
+  ]},
+  // T89 (F1): back from Moving In - pure sokoban, the pushing exam.
+  { name: 'Pinwheel', par: 15, stretch: false, requires: [], rows: [
+    '######',
+    '#.*..#',
+    '#@..$#',
+    '#$.$*#',
+    '#*...#',
+    '######',
   ]},
   { name: 'Backdoor', par: 16, stretch: true, requires: [], rows: [
     '######',
@@ -1359,6 +1371,135 @@ const WORKSHOP = [
     '#*$#$*#',
     '#.$...#',
     '#######',
+  ]},
+];
+
+// T89 (Will, prompt 28): the middleground between the Workshop and the
+// Outrageously Difficult shelf - ten hand-authored levels a stage harder
+// than the Workshop. Same discipline as the good easy levels (small square
+// boards, few pieces, one readable idea each), but the ideas are the
+// late-game verbs the earlier tracks only brush: the shut door (T51), the
+// pop-out recoil (A12/A13), the swallow (A9), blockout parking (A7), box
+// duplication and the sacrificial twin. Every level BFS-verified; requires
+// sets are the solver-FORCED mechanics (banned-mechanic BFS), so the trick
+// is load-bearing, not decorative.
+const QUITE = [
+  // Post the parcel through the window into the sealed room, then squeeze
+  // in after it - your own arrival shoves it home (T15 chain).
+  { name: 'Cat Flap', par: 11, stretch: false, requires: ['boxin', 'enter'], rows: [
+    '#######',
+    '#@.#..#',
+    '#..#*.-',
+    '##.####',
+    '#N.$..#',
+    '#.....#',
+    '#######',
+  ]},
+  // One exit makes two of you; the second walks into the moat so the first
+  // can push the box across. Duplication of the box is geometrically
+  // impossible, so the sacrifice is forced.
+  { name: 'Understudy', par: 9, stretch: true, requires: ['spawn', 'die', 'fill'], rows: [
+    '#######',
+    '-@..N##',
+    '#.#####',
+    '#.#####',
+    '#.$.~*#',
+    '###.N##',
+    '#######',
+  ]},
+  // The strongroom has no entrance. Squeeze out of the door against the
+  // vault wall and the window recoils - first the parcel tunnels in, then
+  // you do (A13 pop-out, twice).
+  { name: 'The Vault', par: 6, stretch: false, requires: ['exit', 'boxout', 'blockstep'], rows: [
+    '#######',
+    '#*#####',
+    '#N..###',
+    '#..####',
+    '#######',
+    '-.$@..#',
+    '#######',
+  ]},
+  // Boxin the parcel into the one-cell pocket: delivery and door-plug in
+  // one. The shut door then pushes like a crate (T51) - sink the window
+  // and walk across its roof to the back room.
+  { name: 'Latchkey', par: 10, stretch: false, requires: ['boxin', 'blocksink'], rows: [
+    '########',
+    '-*#@$N~#',
+    '######.#',
+    '###....#',
+    '###.##.#',
+    '###$...#',
+    '###*####',
+    '########',
+  ]},
+  // Push the right window out the east door and it re-parks beside the
+  // left one; exiting after it shoves the box through the relocated pair.
+  { name: 'Revolving Door', par: 10, stretch: true, requires: [], rows: [
+    '#######',
+    '#..#.*#',
+    '#..#..#',
+    '#N.$.N-',
+    '#..#..#',
+    '#..@..#',
+    '#######',
+  ]},
+  // Two parcels, one moat: the first sinks as the bridge, the window is
+  // the shortcut back, the second rides over the top.
+  { name: 'Aqueduct', par: 14, stretch: false, requires: ['sink'], rows: [
+    '#######',
+    '###N###',
+    '#..~.*#',
+    '#....##',
+    '#.$.$.#',
+    '#..@..#',
+    '###-###',
+  ]},
+  // The target pocket is sealed to walkers and pushers alike. Drive the
+  // window up over the box and it is swallowed through the north door,
+  // straight onto the target (A9).
+  { name: 'Letterbox', par: 14, stretch: false, requires: ['boxin', 'blockstep'], rows: [
+    '###-###',
+    '###*###',
+    '#...$.#',
+    '#.#N#.#',
+    '#.#.#.#',
+    '#..@..#',
+    '#######',
+  ]},
+  // One box, two targets: the arithmetic forces the photocopier. Out the
+  // south door it goes, and both copies want different escorts.
+  { name: 'Carbon Copy', par: 15, stretch: true, requires: ['boxout', 'spawn'], rows: [
+    '#######',
+    '#*....#',
+    '#.N.N.#',
+    '#....*#',
+    '#..$..#',
+    '#..@..#',
+    '###-###',
+  ]},
+  // Two storeys, one input stream: the chambers disagree about every move,
+  // and only the desync solves both.
+  { name: 'In Step', par: 17, stretch: true, requires: ['exit', 'spawn'], rows: [
+    '########',
+    '-@..N..#',
+    '#.$....#',
+    '#...#*.#',
+    '########',
+    '#...N..#',
+    '#.$..*.#',
+    '########',
+  ]},
+  // The capstone chain: boxin plugs the north pocket (and covers its
+  // target), the shut door turns the window into a crate (T51), and the
+  // drive down swallows the second box onto the south arrival (A9).
+  { name: 'Double Booking', par: 10, stretch: false, requires: ['boxin', 'blockstep'], rows: [
+    '###-###',
+    '#..*..#',
+    '#..##$#',
+    '#..##N#',
+    '#..##$#',
+    '#@*##.#',
+    '##-####',
   ]},
 ];
 
@@ -1469,6 +1610,10 @@ const TRACKS = [
   // old 'c' save id carries on. The 'a' id retired with it (v13 migration).
   { id: 'c', name: 'Around the Houses', levels: HOUSES },
   { id: 'w', name: 'Workshop', levels: WORKSHOP },
+  // T90 (Will): the middleground - "the GEN-1 ones ARE outrageously
+  // difficult. Maybe there should be a nice middleground." A stage harder
+  // than the Workshop, named to sit under its big sibling.
+  { id: 'q', name: 'Quite Difficult', levels: QUITE },
   // T85 (Will): "rename Gen to Outrageously Difficult or something please lol"
   { id: 'g', name: 'Outrageously Difficult', levels: GENERATED },
 ];
@@ -2302,12 +2447,12 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v13'; // v13 = T85: the great reshuffle - the
-// campaign merged into Around the Houses (id 'a' retired), fourteen levels
-// moved into Moving In, six recut to Will's prompt-25 grids, nine benched -
-// T85MAP below carries every surviving best to its new key. (v12 = T80
-// Round the Back into the workshop at 6; v11 = T64 level reshape; v10 = T61
-// community identity; T62 hearts and T63 records were additive.)
+const SAVE_KEY = 'mini-level-v14'; // v14 = T89 (F1): the early-arc reorder -
+// Moving In reshuffled (window at slot 3, Twins at 9), Pinwheel back to the
+// workshop at 7 - T89MAP below carries every best to its new key. (v13 =
+// T85 great reshuffle, T85MAP; v12 = T80 Round the Back into the workshop
+// at 6; v11 = T64 level reshape; v10 = T61 community identity; T62 hearts
+// and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
   hearts: {}, records: {}, at: '', theme: 'auto', anim: 'auto' };
 
@@ -2318,9 +2463,14 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let preT89 = false; // any pre-v14 save gets the T89 early-arc remap below
     let preT85 = false; // any pre-v13 save gets the T85 reshuffle remap below
     let preT80 = false; // any pre-v12 save needs the T80 workshop shift below
     let preT64 = false; // any pre-v11 save needs the T64 key fixup below
+    if (!raw) {
+      preT89 = true;
+      raw = JSON.parse(localStorage.getItem('mini-level-v13') || 'null');
+    }
     if (!raw) {
       preT85 = true;
       raw = JSON.parse(localStorage.getItem('mini-level-v12') || 'null');
@@ -2436,6 +2586,33 @@ function loadProgress() {
       raw.best = best;
       raw.at = keep(raw.at || '') ? raw.at : (T85MAP[raw.at] || '');
       raw.coached = {}; // Moving In's indexes shifted wholesale - re-show
+    }
+    if (raw && typeof raw === 'object' && preT89 && raw.best) {
+      // T89 remap (F1): the early-arc reorder. Same grids, new homes -
+      // every t: and w: key maps across (t:3 Pinwheel becomes w:6);
+      // c:/g:/x: keys never moved. Pre-v13 saves arrive here already
+      // T85-mapped, so this composes on top.
+      const T89MAP = {
+        't:0': 't:0', 't:1': 't:1', 't:2': 't:9', 't:3': 'w:6', 't:4': 't:2',
+        't:5': 't:4', 't:6': 't:3', 't:7': 't:5', 't:8': 't:6', 't:9': 't:7',
+        't:10': 't:10', 't:11': 't:11', 't:12': 't:12', 't:13': 't:22',
+        't:14': 't:13', 't:15': 't:14', 't:16': 't:15', 't:17': 't:19',
+        't:18': 't:16', 't:19': 't:8', 't:20': 't:17', 't:21': 't:18',
+        't:22': 't:20', 't:23': 't:21', 't:24': 't:23',
+        'w:0': 'w:0', 'w:1': 'w:1', 'w:2': 'w:2', 'w:3': 'w:3', 'w:4': 'w:4',
+        'w:5': 'w:5', 'w:6': 'w:7', 'w:7': 'w:8', 'w:8': 'w:9', 'w:9': 'w:10',
+        'w:10': 'w:11', 'w:11': 'w:12', 'w:12': 'w:13', 'w:13': 'w:14',
+        'w:14': 'w:15', 'w:15': 'w:16',
+      };
+      const keep = (k) => !(k.startsWith('t:') || k.startsWith('w:'));
+      const best = {};
+      for (const k in raw.best) {
+        const nk = keep(k) ? k : T89MAP[k];
+        if (nk) best[nk] = raw.best[k];
+      }
+      raw.best = best;
+      raw.at = keep(raw.at || '') ? raw.at : (T89MAP[raw.at] || '');
+      raw.coached = {}; // Moving In's indexes shifted again - re-show
     }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
@@ -2582,13 +2759,15 @@ function startLevel(def, spin) {
 
 // T43: keyed to the Moving In track (track 0) - one line per new idea.
 // T85 remap: the track grew to the full teaching arc; multi-self gets a line.
+// T89 remap (F1): the early-arc reorder - and the multi-self line moves to
+// Twins, now the first spawn level.
 const COACH = {
   0: 'Swipe to move',
-  4: 'That little world is this one',
-  6: 'Doors go both ways',
-  7: 'Boxes fit through doors too',
-  14: 'The little world pushes like a box',
-  18: 'One swipe moves every you',
+  2: 'That little world is this one',
+  3: 'Doors go both ways',
+  5: 'Boxes fit through doors too',
+  8: 'One swipe moves every you',
+  13: 'The little world pushes like a box',
 };
 
 function overlayOpen() {
