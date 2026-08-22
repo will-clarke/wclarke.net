@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b0e1a">
+<title>Pocket</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; background:#0b0e1a; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color:#e8e9f3; user-select:none; -webkit-user-select:none; touch-action:none;
+  }
+  #app {
+    height:100%; max-width:480px; margin:0 auto; display:flex; flex-direction:column;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+    gap:8px;
+  }
+  /* ---------- header ---------- */
+  #hdr { display:flex; align-items:center; gap:8px; }
+  #chips { display:flex; gap:6px; flex:1; }
+  .chip {
+    flex:1; text-align:center; padding:7px 0 6px; border-radius:10px;
+    background:#151a2e; color:#8f95b5; font-weight:700; font-size:14px;
+    border:1px solid #232948; transition: all .18s ease; letter-spacing:.5px;
+  }
+  .chip.on {
+    background:#241f4d; color:#c9bfff; border-color:#6d5fd0;
+    box-shadow:0 0 14px #6d5fd066, inset 0 0 8px #6d5fd033;
+  }
+  .tbtn {
+    padding:7px 10px 6px; border-radius:10px; background:#151a2e; border:1px solid #232948;
+    color:#8f95b5; font-size:12px; font-weight:700; letter-spacing:.5px;
+  }
+  .tbtn.off { color:#454b6b; text-decoration:line-through; }
+  #bpm { font-size:11px; color:#575e83; font-weight:700; }
+  /* ---------- sections ---------- */
+  section { display:flex; flex-direction:column; gap:5px; min-height:0; }
+  .shead { display:flex; align-items:center; gap:8px; }
+  .slabel { font-size:11px; font-weight:800; letter-spacing:2px; }
+  .spacer { flex:1; }
+  .mini {
+    width:30px; height:24px; border-radius:8px; background:#151a2e; border:1px solid #232948;
+    color:#8f95b5; font-size:12px; font-weight:800; display:flex; align-items:center;
+    justify-content:center;
+  }
+  .mini.muted { color:#454b6b; background:#10131f; }
+  #melodySec { flex:5; }
+  #bassSec   { flex:0 0 auto; }
+  canvas { display:block; width:100%; border-radius:14px; background:#0e1224; touch-action:none; }
+  #mel  { flex:1; min-height:0; }
+  #bass { height:56px; }
+  /* ---------- drums ---------- */
+  #pads { display:flex; gap:8px; }
+  .pad {
+    flex:1; border-radius:16px; padding:10px 0 12px; text-align:center;
+    background:#151a2e; border:1px solid #232948; position:relative; overflow:hidden;
+    transition: transform .06s ease;
+  }
+  .pad:active { transform:scale(.97); }
+  .pad .pname { font-size:13px; font-weight:800; letter-spacing:2px; margin-top:26px; }
+  .pad canvas { position:absolute; top:8px; left:8px; right:8px; width:calc(100% - 16px);
+    height:14px; background:transparent; border-radius:0; }
+  .pad.hit { border-color:currentColor; box-shadow:0 0 18px currentColor; }
+  #padK { color:#ff5d73; } #padS { color:#ffb45d; } #padH { color:#5de0ff; }
+  .pad .pname { color:inherit; }
+  /* ---------- start overlay ---------- */
+  #start {
+    position:fixed; inset:0; background:#0b0e1acc; backdrop-filter:blur(6px);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:14px; z-index:10;
+  }
+  #start h1 { font-size:44px; letter-spacing:10px; font-weight:900;
+    background:linear-gradient(180deg,#ffd166,#ff5d73); -webkit-background-clip:text;
+    background-clip:text; color:transparent; }
+  #start p { color:#8f95b5; font-size:14px; letter-spacing:1px; animation:pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity:.4; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr">
+    <div id="chips"></div>
+    <div class="tbtn" id="padMute">PAD</div>
+    <div id="bpm">96</div>
+  </div>
+
+  <section id="melodySec">
+    <div class="shead">
+      <div class="slabel" style="color:#ffd166">MELODY</div><div class="spacer"></div>
+      <div class="mini" id="melMute">M</div><div class="mini" id="melClear">✕</div>
+    </div>
+    <canvas id="mel"></canvas>
+  </section>
+
+  <section id="bassSec">
+    <div class="shead">
+      <div class="slabel" style="color:#4cc9f0">BASS · tap the groove</div><div class="spacer"></div>
+      <div class="mini" id="bassMute">M</div><div class="mini" id="bassClear">✕</div>
+    </div>
+    <canvas id="bass"></canvas>
+  </section>
+
+  <section id="drumSec">
+    <div class="shead">
+      <div class="slabel" style="color:#ff5d73">DRUMS · tap along</div><div class="spacer"></div>
+      <div class="mini" id="drumMute">M</div><div class="mini" id="drumClear">✕</div>
+    </div>
+    <div id="pads">
+      <div class="pad" id="padK"><canvas></canvas><div class="pname">THUMP</div></div>
+      <div class="pad" id="padS"><canvas></canvas><div class="pname">CRACK</div></div>
+      <div class="pad" id="padH"><canvas></canvas><div class="pname">TICK</div></div>
+    </div>
+  </section>
+</div>
+
+<div id="start"><h1>POCKET</h1><p>tap anywhere to start the loop</p></div>
+
+<script>
+'use strict';
+/* ================= music model ================= */
+const BPM = 96;
+const BEAT = 60 / BPM;            // 0.625s
+const S16 = BEAT / 4;             // one 16th
+const SLOTS = 64;                 // master loop: 4 bars of 16ths
+const LOOKAHEAD = 0.10, TICK = 25;
+
+// A minor. Progression: Am F C G, one bar each.
+const CHORDS = [
+  { name:'Am', root:45, tones:[9,0,4] },   // pitch classes A C E
+  { name:'F',  root:41, tones:[5,9,0] },   // F A C
+  { name:'C',  root:48, tones:[0,4,7] },   // C E G
+  { name:'G',  root:43, tones:[7,11,2] },  // G B D
+];
+const PAD_VOICINGS = [ [57,60,64], [53,57,60], [55,60,64], [55,59,62] ];
+// melody rungs, low→high, A-minor scale tones C4..E5
+const RUNGS = [60,62,64,65,67,69,71,72,74,76];
+
+/* ================= state ================= */
+const state = {
+  drums: { k:Array(16).fill(0), s:Array(16).fill(0), h:Array(16).fill(0) },
+  bass:  Array(16).fill(0),
+  melody: Array(32).fill(null),   // 4 bars of 8ths → rung index or null
+  mute: { pad:false, mel:false, bass:false, drums:false },
+};
+const SAVE_KEY = 'pocket-v1';
+try {
+  const s = JSON.parse(localStorage.getItem(SAVE_KEY));
+  if (s && s.drums && s.bass && s.melody) Object.assign(state, s);
+} catch (e) {}
+let saveT = null;
+function save() {
+  clearTimeout(saveT);
+  saveT = setTimeout(() => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }, 400);
+}
+
+/* ================= audio graph ================= */
+let AC = null, master, delaySend, noiseBuf;
+function initAudio() {
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor();
+  comp.threshold.value = -14; comp.ratio.value = 4;
+  comp.connect(AC.destination);
+  master = AC.createGain(); master.gain.value = 0.9; master.connect(comp);
+  // tempo-synced dotted-8th delay for the melody
+  const dl = AC.createDelay(1); dl.delayTime.value = BEAT * 0.75;
+  const fb = AC.createGain(); fb.gain.value = 0.34;
+  const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
+  const wet = AC.createGain(); wet.gain.value = 0.28;
+  dl.connect(lp); lp.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(master);
+  delaySend = dl;
+  noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+}
+const hz = m => 440 * Math.pow(2, (m - 69) / 12);
+function env(t, a, peak, d) {
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + a);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
+  g.connect(master);
+  return g;
+}
+function playKick(t) {
+  const o = AC.createOscillator();
+  o.frequency.setValueAtTime(160, t);
+  o.frequency.exponentialRampToValueAtTime(44, t + 0.11);
+  o.connect(env(t, 0.002, 0.95, 0.26));
+  o.start(t); o.stop(t + 0.3);
+}
+function playSnare(t) {
+  const n = AC.createBufferSource(); n.buffer = noiseBuf;
+  const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.9;
+  n.connect(bp); bp.connect(env(t, 0.001, 0.55, 0.16));
+  n.start(t); n.stop(t + 0.2);
+  const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = 190;
+  o.connect(env(t, 0.001, 0.4, 0.09));
+  o.start(t); o.stop(t + 0.12);
+}
+function playHat(t) {
+  const n = AC.createBufferSource(); n.buffer = noiseBuf;
+  const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7200;
+  n.connect(hp); hp.connect(env(t, 0.001, 0.28, 0.05));
+  n.start(t); n.stop(t + 0.08);
+}
+function playBass(t, midi) {
+  const o = AC.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz(midi);
+  const sub = AC.createOscillator(); sub.type = 'sine'; sub.frequency.value = hz(midi - 12);
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 6;
+  f.frequency.setValueAtTime(1100, t);
+  f.frequency.exponentialRampToValueAtTime(160, t + 0.28);
+  const g = env(t, 0.004, 0.5, 0.38);
+  o.connect(f); f.connect(g);
+  sub.connect(env(t, 0.004, 0.35, 0.34));
+  o.start(t); o.stop(t + 0.45); sub.start(t); sub.stop(t + 0.45);
+}
+function playMel(t, midi) {
+  const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(midi);
+  const g = env(t, 0.004, 0.5, 0.34);
+  o.connect(g);
+  const send = AC.createGain(); send.gain.value = 0.5;
+  g.connect(send); send.connect(delaySend);
+  o.start(t); o.stop(t + 0.45);
+}
+function playPad(t, tones) {
+  for (const m of tones) for (const det of [-6, 6]) {
+    const o = AC.createOscillator(); o.type = 'sawtooth';
+    o.frequency.value = hz(m); o.detune.value = det;
+    const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 780;
+    const g = AC.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.045, t + 0.5);
+    g.gain.setValueAtTime(0.045, t + BEAT * 4 - 0.4);
+    g.gain.linearRampToValueAtTime(0.0001, t + BEAT * 4);
+    o.connect(f); f.connect(g); g.connect(master);
+    o.start(t); o.stop(t + BEAT * 4 + 0.05);
+  }
+}
+
+/* ================= scheduler ================= */
+let slot = 0, nextTime = 0, running = false;
+let anchorSlot = 0, anchorTime = 0;          // for the visual playhead
+const suppress = {};                          // 'layer:slot' → ctx time of manual hit
+const flashes = { k:0, s:0, h:0 };            // pad flash timestamps (ctx time)
+
+function manual(layer, s) { suppress[layer + ':' + s] = AC.currentTime; }
+function suppressed(layer, s, t) {
+  const m = suppress[layer + ':' + s];
+  return m !== undefined && Math.abs(t - m) < 0.2;
+}
+const chordAt = s16 => CHORDS[(s16 >> 4) & 3];
+
+function scheduleSlot(s, t) {
+  anchorSlot = s; anchorTime = t;
+  const bar = s >> 4, in16 = s & 15;
+  if (in16 === 0 && !state.mute.pad) playPad(t, PAD_VOICINGS[bar]);
+  if (!state.mute.drums) {
+    if (state.drums.k[in16] && !suppressed('k', in16, t)) { playKick(t);  flashes.k = t; }
+    if (state.drums.s[in16] && !suppressed('s', in16, t)) { playSnare(t); flashes.s = t; }
+    if (state.drums.h[in16] && !suppressed('h', in16, t)) { playHat(t);   flashes.h = t; }
+  }
+  if (!state.mute.bass && state.bass[in16] && !suppressed('b', in16, t))
+    playBass(t, CHORDS[bar].root);
+  if (s % 2 === 0) {
+    const m8 = s >> 1;
+    if (touch.down) {
+      const rung = rungForTouch(m8);
+      state.melody[m8] = rung; save();
+      if (!state.mute.mel && !suppressed('m', m8, t)) playMel(t, RUNGS[rung]);
+    } else if (state.melody[m8] !== null && !state.mute.mel && !suppressed('m', m8, t)) {
+      playMel(t, RUNGS[state.melody[m8]]);
+    }
+  }
+}
+function schedulerTick() {
+  while (nextTime < AC.currentTime + LOOKAHEAD) {
+    scheduleSlot(slot, nextTime);
+    slot = (slot + 1) % SLOTS;
+    nextTime += S16;
+  }
+}
+function playhead() {  // current master position in 16ths, fractional
+  return running ? (anchorSlot + (AC.currentTime - anchorTime) / S16 + SLOTS) % SLOTS : 0;
+}
+const nearest = (pos, mod) => Math.round(pos) % mod;
+
+/* ================= melody touch ================= */
+const touch = { down:false, y:0 };
+function rungForY(y, rect) {
+  const frac = 1 - Math.min(Math.max((y - rect.top) / rect.height, 0), 1);
+  return Math.min(RUNGS.length - 1, Math.max(0, Math.round(frac * (RUNGS.length - 1))));
+}
+// chord-tone magnetism on beats 1 and 3
+function rungForTouch(m8) {
+  let r = touch.rung;
+  if (m8 % 8 === 0 || m8 % 8 === 4) {
+    const tones = CHORDS[(m8 >> 3) & 3].tones;
+    let best = r, bestDist = 99;
+    for (let i = 0; i < RUNGS.length; i++) {
+      if (tones.includes(RUNGS[i] % 12) && Math.abs(i - r) < bestDist) {
+        best = i; bestDist = Math.abs(i - r);
+      }
+    }
+    r = best;
+  }
+  return r;
+}
+
+/* ================= UI wiring ================= */
+const $ = id => document.getElementById(id);
+const melCv = $('mel'), bassCv = $('bass');
+const chipsEl = $('chips');
+CHORDS.forEach(c => {
+  const d = document.createElement('div');
+  d.className = 'chip'; d.textContent = c.name; chipsEl.appendChild(d);
+});
+const chips = [...chipsEl.children];
+
+function bindMute(btnId, key) {
+  $(btnId).addEventListener('pointerdown', e => {
+    e.preventDefault();
+    state.mute[key] = !state.mute[key];
+    $(btnId).classList.toggle('muted', state.mute[key]);
+    $(btnId).classList.toggle('off', state.mute[key]);
+    save();
+  });
+}
+bindMute('padMute', 'pad'); bindMute('melMute', 'mel');
+bindMute('bassMute', 'bass'); bindMute('drumMute', 'drums');
+['padMute','melMute','bassMute','drumMute'].forEach((id, i) => {
+  const key = ['pad','mel','bass','drums'][i];
+  $(id).classList.toggle('muted', state.mute[key]);
+  $(id).classList.toggle('off', state.mute[key]);
+});
+$('melClear').addEventListener('pointerdown', e => { e.preventDefault(); state.melody.fill(null); save(); });
+$('bassClear').addEventListener('pointerdown', e => { e.preventDefault(); state.bass.fill(0); save(); });
+$('drumClear').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.drums.k.fill(0); state.drums.s.fill(0); state.drums.h.fill(0); save();
+});
+
+// drum pads
+const PADS = [ ['padK','k',playKick], ['padS','s',playSnare], ['padH','h',playHat] ];
+for (const [id, key, fn] of PADS) {
+  const el = $(id);
+  el.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (!running) return;
+    fn(AC.currentTime);
+    const s = nearest(playhead(), 16);
+    state.drums[key][s] = 1; manual(key, s); save();
+    el.classList.add('hit'); flashes[key] = AC.currentTime;
+    setTimeout(() => el.classList.remove('hit'), 90);
+  });
+}
+// bass lane: tap = perform, pitch automatic
+bassCv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!running) return;
+  const pos = playhead();
+  playBass(AC.currentTime, chordAt(Math.floor(pos)).root);
+  const s = nearest(pos, 16);
+  state.bass[s] = 1; manual('b', s); save();
+});
+// melody ribbon
+function melPointer(e) {
+  const rect = melCv.getBoundingClientRect();
+  touch.y = e.clientY;
+  touch.rung = rungForY(e.clientY, rect);
+}
+melCv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  if (!running) return;
+  try { melCv.setPointerCapture(e.pointerId); } catch (err) {}
+  melPointer(e);
+  touch.down = true;
+  // immediate feel: sound now, write at the nearest 8th
+  const pos8 = playhead() / 2;
+  const m8 = nearest(pos8, 32);
+  const rung = rungForTouch(m8);
+  state.melody[m8] = rung; manual('m', m8); save();
+  if (!state.mute.mel) playMel(AC.currentTime, RUNGS[rung]);
+});
+melCv.addEventListener('pointermove', e => { if (touch.down) melPointer(e); });
+const melUp = e => { touch.down = false; };
+melCv.addEventListener('pointerup', melUp);
+melCv.addEventListener('pointercancel', melUp);
+
+/* ================= rendering ================= */
+function fitCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect();
+  if (r.width === 0) return null;
+  if (cv.width !== Math.round(r.width * dpr) || cv.height !== Math.round(r.height * dpr)) {
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+const GOLD = '#ffd166', CYAN = '#4cc9f0';
+const DRUMC = { k:'#ff5d73', s:'#ffb45d', h:'#5de0ff' };
+
+function drawMelody(pos) {
+  const f = fitCanvas(melCv); if (!f) return;
+  const { ctx, w, h } = f;
+  ctx.clearRect(0, 0, w, h);
+  const pad = 14, ih = h - pad * 2;
+  const rungY = i => pad + ih * (1 - i / (RUNGS.length - 1));
+  const bar = Math.floor(pos / 16) & 3;
+  const tones = CHORDS[bar].tones;
+  // bar lines
+  for (let b = 1; b < 4; b++) {
+    ctx.strokeStyle = '#1c2240'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(w * b / 4, 0); ctx.lineTo(w * b / 4, h); ctx.stroke();
+  }
+  // rungs
+  for (let i = 0; i < RUNGS.length; i++) {
+    const ct = tones.includes(RUNGS[i] % 12);
+    ctx.strokeStyle = ct ? '#8a6bd455' : '#232948';
+    ctx.lineWidth = ct ? 2.5 : 1;
+    ctx.beginPath(); ctx.moveTo(6, rungY(i)); ctx.lineTo(w - 6, rungY(i)); ctx.stroke();
+  }
+  // recorded notes
+  for (let m = 0; m < 32; m++) {
+    if (state.melody[m] === null) continue;
+    const x = w * (m + 0.5) / 32, y = rungY(state.melody[m]);
+    ctx.fillStyle = GOLD;
+    ctx.shadowColor = GOLD; ctx.shadowBlur = 8;
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+  // playhead
+  const px = w * pos / 64;
+  const grad = ctx.createLinearGradient(px - 14, 0, px, 0);
+  grad.addColorStop(0, '#ffd16600'); grad.addColorStop(1, '#ffd16633');
+  ctx.fillStyle = grad; ctx.fillRect(px - 14, 0, 14, h);
+  ctx.strokeStyle = '#ffd166cc'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+  // finger ghost
+  if (touch.down) {
+    const y = rungY(touch.rung);
+    ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(px, y, 9, 0, 7); ctx.stroke();
+  }
+}
+function drawLane(cv, pat, color, pos16) {
+  const f = fitCanvas(cv); if (!f) return;
+  const { ctx, w, h } = f;
+  ctx.clearRect(0, 0, w, h);
+  const n = pat.length, cw = w / n;
+  for (let i = 0; i < n; i++) {
+    const x = i * cw + 2, bw = cw - 4;
+    ctx.fillStyle = i % 4 === 0 ? '#1a2038' : '#141830';
+    ctx.beginPath(); ctx.roundRect(x, 3, bw, h - 6, 3); ctx.fill();
+    if (pat[i]) {
+      ctx.fillStyle = color; ctx.shadowColor = color; ctx.shadowBlur = 6;
+      ctx.beginPath(); ctx.roundRect(x, 3, bw, h - 6, 3); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+  }
+  const px = w * (pos16 % n) / n;
+  ctx.strokeStyle = '#ffffff55'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
+}
+function render() {
+  const pos = playhead();
+  const bar = Math.floor(pos / 16) & 3;
+  chips.forEach((c, i) => c.classList.toggle('on', running && i === bar));
+  drawMelody(pos);
+  drawLane(bassCv, state.bass, CYAN, pos);
+  PADS.forEach(([id, key]) => {
+    const el = $(id);
+    drawLane(el.querySelector('canvas'), state.drums[key], DRUMC[key], pos);
+    if (running && AC.currentTime - flashes[key] < 0.09) el.classList.add('hit');
+    else if (!el.matches(':active')) el.classList.remove('hit');
+  });
+  requestAnimationFrame(render);
+}
+
+/* ================= start ================= */
+$('start').addEventListener('pointerdown', () => {
+  if (running) return;
+  initAudio();
+  AC.resume().then(() => {
+    slot = 0; nextTime = AC.currentTime + 0.08;
+    anchorSlot = 0; anchorTime = nextTime;
+    running = true;
+    setInterval(schedulerTick, TICK);
+    $('start').style.display = 'none';
+  });
+});
+requestAnimationFrame(render);
+
+// debug hook for headless testing
+window.__dbg = { state, playhead: () => playhead(), isRunning: () => running,
+  ctxState: () => AC && AC.state };
+</script>
+</body>
+</html>
