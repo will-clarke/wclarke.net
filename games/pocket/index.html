@@ -34,6 +34,7 @@
   .tbtn {
     padding:7px 9px 6px; border-radius:10px; background:#151a2e; border:1px solid #232948;
     color:#8f95b5; font-size:12px; font-weight:700; letter-spacing:.5px; white-space:nowrap;
+    display:flex; align-items:center; gap:5px;
   }
   .tbtn.off { color:#454b6b; text-decoration:line-through; }
   /* ---------- sections ---------- */
@@ -52,6 +53,14 @@
   canvas { display:block; width:100%; border-radius:14px; background:#0e1224; touch-action:none; }
   #mel  { flex:1; min-height:0; }
   #bass { height:56px; }
+  /* voice dots */
+  #vdots { display:flex; gap:7px; align-items:center; margin-right:2px; }
+  .vdot {
+    width:16px; height:16px; border-radius:50%; border:2px solid var(--c);
+    background:transparent; transition:all .15s ease;
+  }
+  .vdot.has { background:color-mix(in srgb, var(--c) 40%, transparent); }
+  .vdot.act { background:var(--c); box-shadow:0 0 9px var(--c); }
   /* ---------- drums ---------- */
   #pads { display:flex; gap:8px; }
   .pad {
@@ -66,6 +75,38 @@
   .pad.hit { border-color:currentColor; box-shadow:0 0 18px currentColor; }
   #padK { color:#ff5d73; } #padS { color:#ffb45d; } #padH { color:#5de0ff; }
   .pad .pname { color:inherit; }
+  /* ---------- chord picker overlay ---------- */
+  #chordOv { position:fixed; inset:0; background:#06081299; backdrop-filter:blur(4px);
+    z-index:9; display:flex; }
+  #chordOv[hidden] { display:none; }
+  #ovCard {
+    margin:auto auto 0; width:100%; max-width:480px; background:#12162b;
+    border:1px solid #232948; border-bottom:none; border-radius:20px 20px 0 0;
+    padding:16px 14px calc(16px + env(safe-area-inset-bottom));
+    display:flex; flex-direction:column; gap:12px;
+  }
+  #ovHead { display:flex; align-items:center; gap:8px; }
+  #ovHead .slabel { flex:1; color:#c9bfff; }
+  #ovSlots { display:flex; gap:6px; }
+  .oslot {
+    flex:1; text-align:center; padding:12px 2px; border-radius:12px; background:#151a2e;
+    border:1px solid #232948; font-weight:800; font-size:15px; color:#8f95b5;
+    transition:all .15s ease; white-space:nowrap; overflow:hidden;
+  }
+  .oslot .bno { display:block; font-size:9px; font-weight:700; letter-spacing:2px;
+    color:#575e83; margin-bottom:3px; }
+  .oslot.sel { color:#fff; border-color:var(--mc); box-shadow:0 0 12px
+    color-mix(in srgb, var(--mc) 45%, transparent); }
+  #ovPal { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+  .ptile {
+    padding:13px 2px; text-align:center; border-radius:12px; background:#151a2e;
+    border:1px solid #232948; font-weight:800; font-size:14px; color:#aab0d0;
+    transition:all .12s ease; white-space:nowrap; overflow:hidden;
+  }
+  .ptile:active { transform:scale(.95); }
+  .ptile.rec { border-color:#ffd16699; box-shadow:0 0 10px #ffd16633; color:#ffd166; }
+  .ptile.cur { background:#241f4d; border-color:#6d5fd0; color:#c9bfff; }
+  #ovHint { font-size:11px; color:#575e83; line-height:1.5; }
   /* ---------- start overlay ---------- */
   #start {
     position:fixed; inset:0; background:#0b0e1acc; backdrop-filter:blur(6px);
@@ -85,13 +126,14 @@
     <div id="chips"></div>
     <div class="tbtn" id="padMute">PAD</div>
     <div class="tbtn" id="mood">MOODY</div>
+    <div class="tbtn" id="muteAll"></div>
   </div>
 
   <section id="melodySec">
     <div class="shead">
       <div class="slabel" style="color:#ffd166">MELODY</div><div class="spacer"></div>
-      <div class="mini" id="melMode">RIBBON</div>
-      <div class="mini" id="melMute">M</div><div class="mini" id="melClear">✕</div>
+      <div id="vdots"></div>
+      <div class="mini" id="melMute"></div><div class="mini" id="melClear">✕</div>
     </div>
     <canvas id="mel"></canvas>
   </section>
@@ -99,7 +141,7 @@
   <section id="bassSec">
     <div class="shead">
       <div class="slabel" style="color:#4cc9f0">BASS · tap the groove</div><div class="spacer"></div>
-      <div class="mini" id="bassMute">M</div><div class="mini" id="bassClear">✕</div>
+      <div class="mini" id="bassMute"></div><div class="mini" id="bassClear">✕</div>
     </div>
     <canvas id="bass"></canvas>
   </section>
@@ -107,7 +149,7 @@
   <section id="drumSec">
     <div class="shead">
       <div class="slabel" style="color:#ff5d73">DRUMS · hold a pad to wipe it</div><div class="spacer"></div>
-      <div class="mini" id="drumMute">M</div><div class="mini" id="drumClear">✕</div>
+      <div class="mini" id="drumMute"></div><div class="mini" id="drumClear">✕</div>
     </div>
     <div id="pads">
       <div class="pad" id="padK"><canvas></canvas><div class="pname">THUMP</div></div>
@@ -117,64 +159,104 @@
   </section>
 </div>
 
+<div id="chordOv" hidden>
+  <div id="ovCard">
+    <div id="ovHead">
+      <div class="slabel">CHORDS</div>
+      <div class="tbtn" id="ovReset">RESET</div>
+      <div class="tbtn" id="ovDone" style="color:#c9bfff">DONE</div>
+    </div>
+    <div id="ovSlots"></div>
+    <div id="ovPal"></div>
+    <p id="ovHint">Tap a bar, then tap chords to hear them in the loop. Glowing chords
+      follow nicely from the bar before.</p>
+  </div>
+</div>
+
 <div id="start"><h1>POCKET</h1><p>tap anywhere to start the loop</p></div>
 
 <script>
 'use strict';
 /* ================= moods ================= */
-// Rung index arrays are always 10 long so recorded melody contours
-// transfer intact when the mood (key/progression/tempo) changes.
+// Each mood: a palette of chords in its key (name, bass root, pitch-class tones,
+// pad voicing, and which palette chords follow it nicely) plus a default
+// progression as palette indices. Rung arrays are always 10 long so recorded
+// melody contours transfer intact when the mood changes.
 const MOODS = [
   { name:'SUNNY', color:'#ffd166', bpm:100, swing:0.10, fb:0.30, wet:0.25,
-    chords:[
-      { name:'C',  root:48, tones:[0,4,7],  pad:[55,60,64] },
-      { name:'G',  root:43, tones:[7,11,2], pad:[55,59,62] },
-      { name:'Am', root:45, tones:[9,0,4],  pad:[57,60,64] },
-      { name:'F',  root:41, tones:[5,9,0],  pad:[53,57,60] },
-    ],
-    rungs:[60,62,64,65,67,69,71,72,74,76] },
+    rungs:[60,62,64,65,67,69,71,72,74,76], def:[0,4,5,3],
+    palette:[
+      { name:'C',     root:48, tones:[0,4,7],    pad:[55,60,64],    next:['F','G','Am','Dm'] },
+      { name:'Dm',    root:38, tones:[2,5,9],    pad:[53,57,62],    next:['G','G7','Em'] },
+      { name:'Em',    root:40, tones:[4,7,11],   pad:[55,59,64],    next:['F','Am','Dm'] },
+      { name:'F',     root:41, tones:[5,9,0],    pad:[53,57,60],    next:['G','C','G7','Dm'] },
+      { name:'G',     root:43, tones:[7,11,2],   pad:[55,59,62],    next:['C','Am','Em'] },
+      { name:'Am',    root:45, tones:[9,0,4],    pad:[57,60,64],    next:['F','Dm','G'] },
+      { name:'G7',    root:43, tones:[7,11,2,5], pad:[55,59,62,65], next:['C','Am'] },
+      { name:'Fmaj7', root:41, tones:[5,9,0,4],  pad:[53,57,60,64], next:['G','C','Em'] },
+    ] },
   { name:'MOODY', color:'#9d8cff', bpm:96, swing:0.08, fb:0.34, wet:0.28,
-    chords:[
-      { name:'Am', root:45, tones:[9,0,4],  pad:[57,60,64] },
-      { name:'F',  root:41, tones:[5,9,0],  pad:[53,57,60] },
-      { name:'C',  root:48, tones:[0,4,7],  pad:[55,60,64] },
-      { name:'G',  root:43, tones:[7,11,2], pad:[55,59,62] },
-    ],
-    rungs:[60,62,64,65,67,69,71,72,74,76] },
+    rungs:[60,62,64,65,67,69,71,72,74,76], def:[0,5,1,6],
+    palette:[
+      { name:'Am',  root:45, tones:[9,0,4],    pad:[57,60,64],    next:['F','C','G','Dm','E'] },
+      { name:'C',   root:48, tones:[0,4,7],    pad:[55,60,64],    next:['G','F','Dm'] },
+      { name:'Dm',  root:38, tones:[2,5,9],    pad:[53,57,62],    next:['E','Em','G','Am'] },
+      { name:'Em',  root:40, tones:[4,7,11],   pad:[55,59,64],    next:['Am','F'] },
+      { name:'E',   root:40, tones:[4,8,11],   pad:[56,59,64],    next:['Am'] },
+      { name:'F',   root:41, tones:[5,9,0],    pad:[53,57,60],    next:['G','C','Dm','E'] },
+      { name:'G',   root:43, tones:[7,11,2],   pad:[55,59,62],    next:['Am','C','F'] },
+      { name:'Am7', root:45, tones:[9,0,4,7],  pad:[57,60,64,67], next:['Dm','F'] },
+    ] },
   { name:'DREAM', color:'#5de0ff', bpm:80, swing:0.14, fb:0.45, wet:0.36,
-    chords:[
-      { name:'Fmaj7', root:41, tones:[5,9,0,4],  pad:[53,57,60,64] },
-      { name:'G',     root:43, tones:[7,11,2],   pad:[55,59,62] },
-      { name:'Em7',   root:40, tones:[4,7,11,2], pad:[52,55,59,62] },
-      { name:'Am7',   root:45, tones:[9,0,4,7],  pad:[57,60,64,67] },
-    ],
-    rungs:[64,65,67,69,71,72,74,76,77,79] },
+    rungs:[64,65,67,69,71,72,74,76,77,79], def:[3,5,2,7],
+    palette:[
+      { name:'Cmaj7', root:48, tones:[0,4,7,11], pad:[55,60,64,71], next:['Fmaj7','Am7','Dm7','Em7'] },
+      { name:'Dm7',   root:38, tones:[2,5,9,0],  pad:[50,53,57,60], next:['G','Gsus','Em7','Cmaj7'] },
+      { name:'Em7',   root:40, tones:[4,7,11,2], pad:[52,55,59,62], next:['Am7','Fmaj7'] },
+      { name:'Fmaj7', root:41, tones:[5,9,0,4],  pad:[53,57,60,64], next:['G','Em7','Fm','Cmaj7'] },
+      { name:'Fm',    root:41, tones:[5,8,0],    pad:[53,56,60],    next:['Cmaj7'] },
+      { name:'G',     root:43, tones:[7,11,2],   pad:[55,59,62],    next:['Cmaj7','Am7','Fmaj7'] },
+      { name:'Gsus',  root:43, tones:[7,0,2],    pad:[55,60,62],    next:['G','Cmaj7'] },
+      { name:'Am7',   root:45, tones:[9,0,4,7],  pad:[57,60,64,67], next:['Fmaj7','Dm7','Gsus'] },
+    ] },
   { name:'DRIVE', color:'#ff5d73', bpm:112, swing:0.04, fb:0.22, wet:0.18,
-    chords:[
-      { name:'Dm', root:38, tones:[2,5,9],  pad:[50,53,57] },
-      { name:'Bb', root:46, tones:[10,2,5], pad:[53,58,62] },
-      { name:'F',  root:41, tones:[5,9,0],  pad:[53,57,60] },
-      { name:'C',  root:48, tones:[0,4,7],  pad:[52,55,60] },
-    ],
-    rungs:[62,64,65,67,69,70,72,74,76,77] },
+    rungs:[62,64,65,67,69,70,72,74,76,77], def:[0,5,1,6],
+    palette:[
+      { name:'Dm',  root:38, tones:[2,5,9],    pad:[50,53,57],    next:['Bb','F','C','Gm','A'] },
+      { name:'F',   root:41, tones:[5,9,0],    pad:[53,57,60],    next:['C','Bb','Gm'] },
+      { name:'Gm',  root:43, tones:[7,10,2],   pad:[55,58,62],    next:['A','C','Dm','Bb'] },
+      { name:'Am',  root:45, tones:[9,0,4],    pad:[57,60,64],    next:['Dm','Bb','F'] },
+      { name:'A',   root:45, tones:[9,1,4],    pad:[57,61,64],    next:['Dm'] },
+      { name:'Bb',  root:46, tones:[10,2,5],   pad:[53,58,62],    next:['C','F','A','Gm'] },
+      { name:'C',   root:48, tones:[0,4,7],    pad:[52,55,60],    next:['Dm','F','Bb'] },
+      { name:'Dm7', root:38, tones:[2,5,9,0],  pad:[50,53,57,60], next:['Gm','Bb'] },
+    ] },
 ];
+const VC = ['#ffd166', '#ff8fab', '#7ef0c1', '#b79cff'];  // melody voice colours
 
 /* ================= state ================= */
+const A32 = () => Array(32).fill(null);
 const state = {
   drums: { k:Array(16).fill(0), s:Array(16).fill(0), h:Array(16).fill(0) },
   bass:  Array(16).fill(0),
-  melody: Array(32).fill(null),   // 4 bars of 8ths → rung index or null
+  melody: [A32(), A32(), A32(), A32()],  // 4 voices × 4 bars of 8ths → rung index or null
+  voice: 0,
   mute: { pad:false, mel:false, bass:false, drums:false },
-  mood: 1,                        // MOODY
-  melMode: 'ribbon',              // 'ribbon' | 'flick'
+  mood: 1,
+  progs: [null, null, null, null],       // per-mood custom progression (palette indices)
 };
 const SAVE_KEY = 'pocket-v1';
 try {
   const s = JSON.parse(localStorage.getItem(SAVE_KEY));
   if (s && s.drums && s.bass && s.melody) {
+    if (s.melody.length === 32) s.melody = [s.melody, A32(), A32(), A32()];  // pre-voices save
+    delete s.melMode;
     Object.assign(state, s);
     if (!MOODS[state.mood]) state.mood = 1;
-    if (state.melMode !== 'flick') state.melMode = 'ribbon';
+    if (!(state.voice >= 0 && state.voice < 4)) state.voice = 0;
+    if (!Array.isArray(state.progs) || state.progs.length !== 4) state.progs = [null, null, null, null];
+    state.progs = state.progs.map(p =>
+      Array.isArray(p) && p.length === 4 && p.every(i => Number.isInteger(i) && i >= 0 && i < 8) ? p : null);
   }
 } catch (e) {}
 let saveT = null;
@@ -183,13 +265,18 @@ function save() {
   saveT = setTimeout(() => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }, 400);
 }
 
-/* ================= timing (mood-dependent) ================= */
+/* ================= timing + progression (mood-dependent) ================= */
 let MOOD = MOODS[state.mood];
 let BEAT = 60 / MOOD.bpm, S16 = BEAT / 4;
+let PROG = [];
+function rebuildProg() {
+  PROG = (state.progs[state.mood] || MOOD.def).map(i => MOOD.palette[i]);
+}
 const SLOTS = 64, LOOKAHEAD = 0.10, TICK = 25;
 
 /* ================= audio graph ================= */
 let AC = null, master, delaySend, delayNode, fbGain, wetGain, noiseBuf;
+let allMuted = false;
 function initAudio() {
   AC = new (window.AudioContext || window.webkitAudioContext)();
   const comp = AC.createDynamicsCompressor();
@@ -250,27 +337,37 @@ function playBass(t, midi) {
   sub.connect(env(t, 0.004, 0.35, 0.34));
   o.start(t); o.stop(t + 0.45); sub.start(t); sub.stop(t + 0.45);
 }
-function playMel(t, midi) {
+const VPAN = [-0.25, 0.25, -0.08, 0.08];
+function playMel(t, midi, voice = 0) {
   const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(midi);
-  const g = env(t, 0.004, 0.5, 0.34);
+  const g = AC.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.45, t + 0.004);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
   o.connect(g);
+  let out = g;
+  if (AC.createStereoPanner) {
+    const p = AC.createStereoPanner(); p.pan.value = VPAN[voice];
+    g.connect(p); out = p;
+  }
+  out.connect(master);
   const send = AC.createGain(); send.gain.value = 0.5;
-  g.connect(send); send.connect(delaySend);
+  out.connect(send); send.connect(delaySend);
   o.start(t); o.stop(t + 0.45);
 }
-function playPad(t, tones) {
-  const barLen = BEAT * 4;
+function playPad(t, tones, len) {
+  len = len || BEAT * 4;
   for (const m of tones) for (const det of [-6, 6]) {
     const o = AC.createOscillator(); o.type = 'sawtooth';
     o.frequency.value = hz(m); o.detune.value = det;
     const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 780;
     const g = AC.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.linearRampToValueAtTime(0.045, t + 0.5);
-    g.gain.setValueAtTime(0.045, t + barLen - 0.4);
-    g.gain.linearRampToValueAtTime(0.0001, t + barLen);
+    g.gain.linearRampToValueAtTime(0.045, t + Math.min(0.5, len * 0.3));
+    g.gain.setValueAtTime(0.045, t + len - Math.min(0.4, len * 0.25));
+    g.gain.linearRampToValueAtTime(0.0001, t + len);
     o.connect(f); f.connect(g); g.connect(master);
-    o.start(t); o.stop(t + barLen + 0.05);
+    o.start(t); o.stop(t + len + 0.05);
   }
 }
 
@@ -285,13 +382,13 @@ function suppressed(layer, s, t) {
   const m = suppress[layer + ':' + s];
   return m !== undefined && Math.abs(t - m) < 0.2;
 }
-const chordAt = s16 => MOOD.chords[(s16 >> 4) & 3];
+const chordAt = s16 => PROG[(s16 >> 4) & 3];
 const drumsActive = () =>
   state.drums.k.some(Boolean) || state.drums.s.some(Boolean) || state.drums.h.some(Boolean);
 
 // last 8th of a bar walks chromatically into the next chord's root
 function bassMidi(bar, in16) {
-  const cur = MOOD.chords[bar], next = MOOD.chords[(bar + 1) & 3];
+  const cur = PROG[bar], next = PROG[(bar + 1) & 3];
   if (in16 === 15 && next.root !== cur.root) return next.root - 1;
   return cur.root;
 }
@@ -300,7 +397,7 @@ function scheduleSlot(s, t) {
   anchorSlot = s; anchorTime = t;
   const swung = t + ((s & 1) ? MOOD.swing * S16 : 0);
   const bar = s >> 4, in16 = s & 15;
-  if (in16 === 0 && !state.mute.pad) playPad(t, MOOD.chords[bar].pad);
+  if (in16 === 0 && !state.mute.pad) playPad(t, PROG[bar].pad);
   if (!state.mute.drums) {
     if (state.drums.k[in16] && !suppressed('k', in16, t)) { playKick(swung);  flashes.k = t; }
     if (state.drums.s[in16] && !suppressed('s', in16, t)) { playSnare(swung); flashes.s = t; }
@@ -315,12 +412,15 @@ function scheduleSlot(s, t) {
     playBass(swung, bassMidi(bar, in16));
   if (s % 2 === 0) {
     const m8 = s >> 1;
-    if (state.melMode === 'ribbon' && touch.down) {
-      const rung = rungForTouch(m8);
-      state.melody[m8] = rung; save();
-      if (!state.mute.mel && !suppressed('m', m8, t)) playMel(t, MOOD.rungs[rung]);
-    } else if (state.melody[m8] !== null && !state.mute.mel && !suppressed('m', m8, t)) {
-      playMel(t, MOOD.rungs[state.melody[m8]]);
+    for (let v = 0; v < 4; v++) {
+      const live = v === state.voice && touch.down;
+      if (live) {
+        const rung = rungForTouch(m8);
+        state.melody[v][m8] = rung; save();
+        if (!state.mute.mel && !suppressed('m' + v, m8, t)) playMel(t, MOOD.rungs[rung], v);
+      } else if (state.melody[v][m8] !== null && !state.mute.mel && !suppressed('m' + v, m8, t)) {
+        playMel(t, MOOD.rungs[state.melody[v][m8]], v);
+      }
     }
   }
 }
@@ -340,6 +440,7 @@ const nearest = (pos, mod) => Math.round(pos) % mod;
 function setMood(i) {
   state.mood = i; MOOD = MOODS[i];
   BEAT = 60 / MOOD.bpm; S16 = BEAT / 4;
+  rebuildProg();
   if (AC) {
     const now = AC.currentTime;
     delayNode.delayTime.setTargetAtTime(BEAT * 0.75, now, 0.1);
@@ -350,21 +451,22 @@ function setMood(i) {
   const mb = document.getElementById('mood');
   mb.textContent = MOOD.name + ' ' + MOOD.bpm;
   mb.style.color = MOOD.color; mb.style.borderColor = MOOD.color + '66';
+  document.getElementById('ovCard').style.setProperty('--mc', MOOD.color);
+  if (!document.getElementById('chordOv').hidden) buildOverlay();
   save();
 }
 
 /* ================= melody touch ================= */
 const touch = { down:false, y:0, rung:5 };
-let curRung = 5;                              // flick mode's held position
 function rungForY(y, rect) {
   const frac = 1 - Math.min(Math.max((y - rect.top) / rect.height, 0), 1);
   return Math.min(9, Math.max(0, Math.round(frac * 9)));
 }
-// chord-tone magnetism on beats 1 and 3 (ribbon mode)
+// chord-tone magnetism on beats 1 and 3
 function rungForTouch(m8) {
   let r = touch.rung;
   if (m8 % 8 === 0 || m8 % 8 === 4) {
-    const tones = MOOD.chords[(m8 >> 3) & 3].tones;
+    const tones = PROG[(m8 >> 3) & 3].tones;
     let best = r, bestDist = 99;
     for (let i = 0; i < 10; i++) {
       if (tones.includes(MOOD.rungs[i] % 12) && Math.abs(i - r) < bestDist) {
@@ -375,13 +477,6 @@ function rungForTouch(m8) {
   }
   return r;
 }
-// nearest chord-tone rung strictly in one direction (flick leaps)
-function chordToneFrom(r, dir) {
-  const tones = chordAt(Math.floor(playhead())).tones;
-  for (let i = r + dir; i >= 0 && i < 10; i += dir)
-    if (tones.includes(MOOD.rungs[i] % 12)) return i;
-  return Math.max(0, Math.min(9, r + dir));
-}
 
 /* ================= UI wiring ================= */
 const $ = id => document.getElementById(id);
@@ -390,30 +485,60 @@ let chips = [];
 function buildChips() {
   const el = $('chips');
   el.innerHTML = '';
-  MOOD.chords.forEach(c => {
+  PROG.forEach((c, i) => {
     const d = document.createElement('div');
-    d.className = 'chip'; d.textContent = c.name; el.appendChild(d);
+    d.className = 'chip'; d.textContent = c.name;
+    d.addEventListener('pointerdown', e => { e.preventDefault(); openOverlay(i); });
+    el.appendChild(d);
   });
   chips = [...el.children];
 }
 
+// speaker icons for mute buttons
+const SPK = muted =>
+  '<svg width="15" height="14" viewBox="0 0 16 14"><path d="M1 4.5h3l4-4v13l-4-4H1z" fill="currentColor"/>' +
+  (muted
+    ? '<path d="M10.5 4.5l4 5M14.5 4.5l-4 5" stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round"/>'
+    : '<path d="M10.5 4.5a4 4 0 010 5" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round"/>' +
+      '<path d="M12.7 2.6a7 7 0 010 8.8" stroke="currentColor" fill="none" stroke-width="1.5" stroke-linecap="round"/>') +
+  '</svg>';
+
 function bindMute(btnId, key) {
+  const paint = () => {
+    $(btnId).innerHTML = SPK(state.mute[key]);
+    $(btnId).classList.toggle('muted', state.mute[key]);
+  };
   $(btnId).addEventListener('pointerdown', e => {
     e.preventDefault();
     state.mute[key] = !state.mute[key];
-    $(btnId).classList.toggle('muted', state.mute[key]);
-    $(btnId).classList.toggle('off', state.mute[key]);
-    save();
+    paint(); save();
   });
+  paint();
 }
-bindMute('padMute', 'pad'); bindMute('melMute', 'mel');
-bindMute('bassMute', 'bass'); bindMute('drumMute', 'drums');
-['padMute','melMute','bassMute','drumMute'].forEach((id, i) => {
-  const key = ['pad','mel','bass','drums'][i];
-  $(id).classList.toggle('muted', state.mute[key]);
-  $(id).classList.toggle('off', state.mute[key]);
+bindMute('melMute', 'mel'); bindMute('bassMute', 'bass'); bindMute('drumMute', 'drums');
+$('padMute').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.mute.pad = !state.mute.pad;
+  $('padMute').classList.toggle('off', state.mute.pad);
+  save();
 });
-$('melClear').addEventListener('pointerdown', e => { e.preventDefault(); state.melody.fill(null); save(); });
+$('padMute').classList.toggle('off', state.mute.pad);
+// global mute: silences everything, the loop keeps running
+const paintAll = () => {
+  $('muteAll').innerHTML = SPK(allMuted);
+  $('muteAll').classList.toggle('muted', allMuted);
+};
+$('muteAll').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  allMuted = !allMuted;
+  if (master) master.gain.setTargetAtTime(allMuted ? 0 : 0.9, AC.currentTime, 0.03);
+  paintAll();
+});
+paintAll();
+
+$('melClear').addEventListener('pointerdown', e => {
+  e.preventDefault(); state.melody[state.voice].fill(null); save();
+});
 $('bassClear').addEventListener('pointerdown', e => { e.preventDefault(); state.bass.fill(0); save(); });
 $('drumClear').addEventListener('pointerdown', e => {
   e.preventDefault();
@@ -423,14 +548,15 @@ $('mood').addEventListener('pointerdown', e => {
   e.preventDefault();
   setMood((state.mood + 1) % MOODS.length);
 });
-$('melMode').addEventListener('pointerdown', e => {
-  e.preventDefault();
-  state.melMode = state.melMode === 'ribbon' ? 'flick' : 'ribbon';
-  touch.down = false;
-  $('melMode').textContent = state.melMode.toUpperCase();
-  save();
-});
-$('melMode').textContent = state.melMode.toUpperCase();
+
+// melody voice dots
+const vdots = [];
+for (let v = 0; v < 4; v++) {
+  const d = document.createElement('div');
+  d.className = 'vdot'; d.style.setProperty('--c', VC[v]);
+  d.addEventListener('pointerdown', e => { e.preventDefault(); state.voice = v; save(); });
+  $('vdots').appendChild(d); vdots.push(d);
+}
 
 // drum pads: tap = perform, hold = wipe that instrument's lane
 const PADS = [ ['padK','k',playKick], ['padS','s',playSnare], ['padH','h',playHat] ];
@@ -464,46 +590,81 @@ bassCv.addEventListener('pointerdown', e => {
   playBass(AC.currentTime, bassMidi(Math.floor(pos) >> 4, s));
   state.bass[s] = 1; manual('b', s); save();
 });
-// melody ribbon / flick
-const gesture = { y0:0, x0:0 };
+// melody ribbon
 function melPointer(e) {
   const rect = melCv.getBoundingClientRect();
   touch.y = e.clientY;
   touch.rung = rungForY(e.clientY, rect);
-}
-function fireMelNote(rung) {
-  const m8 = nearest(playhead() / 2, 32);
-  state.melody[m8] = rung; manual('m', m8); save();
-  if (!state.mute.mel) playMel(AC.currentTime, MOOD.rungs[rung]);
 }
 melCv.addEventListener('pointerdown', e => {
   e.preventDefault();
   if (!running) return;
   try { melCv.setPointerCapture(e.pointerId); } catch (err) {}
   melPointer(e);
-  gesture.y0 = e.clientY;
-  if (state.melMode === 'ribbon') {
-    touch.down = true;
-    // immediate feel: sound now, write at the nearest 8th
-    const m8 = nearest(playhead() / 2, 32);
-    const rung = rungForTouch(m8);
-    state.melody[m8] = rung; manual('m', m8); save();
-    if (!state.mute.mel) playMel(AC.currentTime, MOOD.rungs[rung]);
-  }
+  touch.down = true;
+  // immediate feel: sound now, write at the nearest 8th
+  const m8 = nearest(playhead() / 2, 32);
+  const rung = rungForTouch(m8);
+  state.melody[state.voice][m8] = rung; manual('m' + state.voice, m8); save();
+  if (!state.mute.mel) playMel(AC.currentTime, MOOD.rungs[rung], state.voice);
 });
 melCv.addEventListener('pointermove', e => { if (touch.down) melPointer(e); });
-function melUp(e) {
-  if (state.melMode === 'flick' && running && e.type === 'pointerup') {
-    const dy = gesture.y0 - e.clientY;             // up = positive
-    const mag = Math.abs(dy);
-    if (mag >= 64) curRung = chordToneFrom(curRung, dy > 0 ? 1 : -1);
-    else if (mag >= 16) curRung = Math.max(0, Math.min(9, curRung + (dy > 0 ? 1 : -1)));
-    fireMelNote(curRung);
-  }
-  touch.down = false;
-}
+const melUp = () => { touch.down = false; };
 melCv.addEventListener('pointerup', melUp);
 melCv.addEventListener('pointercancel', melUp);
+
+/* ================= chord picker overlay ================= */
+let ovSel = 0;
+function previewChord(c) {
+  if (!AC || !running) return;
+  const t = AC.currentTime;
+  playPad(t, c.pad, 1.1);
+  playBass(t, c.root);
+}
+function buildOverlay() {
+  const slots = $('ovSlots');
+  slots.innerHTML = '';
+  PROG.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'oslot' + (i === ovSel ? ' sel' : '');
+    d.innerHTML = '<span class="bno">BAR ' + (i + 1) + '</span>' + c.name;
+    d.addEventListener('pointerdown', e => { e.preventDefault(); ovSel = i; buildOverlay(); });
+    slots.appendChild(d);
+  });
+  const pal = $('ovPal');
+  pal.innerHTML = '';
+  const prev = PROG[(ovSel + 3) & 3];  // the bar before, wrapping (bar 1 follows bar 4)
+  MOOD.palette.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'ptile'
+      + (prev.next.includes(c.name) ? ' rec' : '')
+      + (PROG[ovSel] === c ? ' cur' : '');
+    d.textContent = c.name;
+    d.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      const cur = state.progs[state.mood] || [...MOOD.def];
+      cur[ovSel] = i;
+      state.progs[state.mood] = cur;
+      rebuildProg(); buildChips(); buildOverlay(); save();
+      previewChord(c);
+    });
+    pal.appendChild(d);
+  });
+}
+function openOverlay(barIdx) {
+  ovSel = barIdx;
+  buildOverlay();
+  $('chordOv').hidden = false;
+}
+$('ovDone').addEventListener('pointerdown', e => { e.preventDefault(); $('chordOv').hidden = true; });
+$('chordOv').addEventListener('pointerdown', e => {
+  if (e.target === $('chordOv')) $('chordOv').hidden = true;
+});
+$('ovReset').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.progs[state.mood] = null;
+  rebuildProg(); buildChips(); buildOverlay(); save();
+});
 
 /* ================= rendering ================= */
 function fitCanvas(cv) {
@@ -517,7 +678,7 @@ function fitCanvas(cv) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return { ctx, w: r.width, h: r.height };
 }
-const GOLD = '#ffd166', CYAN = '#4cc9f0';
+const CYAN = '#4cc9f0';
 const DRUMC = { k:'#ff5d73', s:'#ffb45d', h:'#5de0ff' };
 
 function drawMelody(pos) {
@@ -527,7 +688,7 @@ function drawMelody(pos) {
   const pad = 14, ih = h - pad * 2;
   const rungY = i => pad + ih * (1 - i / 9);
   const bar = Math.floor(pos / 16) & 3;
-  const tones = MOOD.chords[bar].tones;
+  const tones = PROG[bar].tones;
   // bar lines
   for (let b = 1; b < 4; b++) {
     ctx.strokeStyle = '#1c2240'; ctx.lineWidth = 1;
@@ -540,22 +701,20 @@ function drawMelody(pos) {
     ctx.lineWidth = ct ? 2.5 : 1;
     ctx.beginPath(); ctx.moveTo(6, rungY(i)); ctx.lineTo(w - 6, rungY(i)); ctx.stroke();
   }
-  // flick mode: the held rung glows
-  if (state.melMode === 'flick') {
-    ctx.strokeStyle = '#ffffff66'; ctx.lineWidth = 2;
-    ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 6;
-    ctx.beginPath(); ctx.moveTo(6, rungY(curRung)); ctx.lineTo(w - 6, rungY(curRung)); ctx.stroke();
-    ctx.shadowBlur = 0;
+  // recorded notes, all voices (active voice on top, brighter)
+  for (const v of [0, 1, 2, 3].sort((a, b) => (a === state.voice) - (b === state.voice))) {
+    const act = v === state.voice;
+    ctx.globalAlpha = act ? 1 : 0.5;
+    for (let m = 0; m < 32; m++) {
+      if (state.melody[v][m] === null) continue;
+      const x = w * (m + 0.5) / 32, y = rungY(state.melody[v][m]);
+      ctx.fillStyle = VC[v];
+      ctx.shadowColor = VC[v]; ctx.shadowBlur = act ? 8 : 0;
+      ctx.beginPath(); ctx.arc(x, y, act ? 5 : 4, 0, 7); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
   }
-  // recorded notes
-  for (let m = 0; m < 32; m++) {
-    if (state.melody[m] === null) continue;
-    const x = w * (m + 0.5) / 32, y = rungY(state.melody[m]);
-    ctx.fillStyle = GOLD;
-    ctx.shadowColor = GOLD; ctx.shadowBlur = 8;
-    ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill();
-    ctx.shadowBlur = 0;
-  }
+  ctx.globalAlpha = 1;
   // playhead
   const px = w * pos / 64;
   const grad = ctx.createLinearGradient(px - 14, 0, px, 0);
@@ -563,8 +722,8 @@ function drawMelody(pos) {
   ctx.fillStyle = grad; ctx.fillRect(px - 14, 0, 14, h);
   ctx.strokeStyle = '#ffd166cc'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
-  // finger ghost (ribbon)
-  if (touch.down && state.melMode === 'ribbon') {
+  // finger ghost
+  if (touch.down) {
     const y = rungY(touch.rung);
     ctx.strokeStyle = '#ffffff88'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(px, y, 9, 0, 7); ctx.stroke();
@@ -593,6 +752,10 @@ function render() {
   const pos = playhead();
   const bar = Math.floor(pos / 16) & 3;
   chips.forEach((c, i) => c.classList.toggle('on', running && i === bar));
+  vdots.forEach((d, v) => {
+    d.classList.toggle('act', v === state.voice);
+    d.classList.toggle('has', state.melody[v].some(m => m !== null));
+  });
   drawMelody(pos);
   drawLane(bassCv, state.bass, CYAN, pos);
   PADS.forEach(([id, key]) => {
@@ -622,7 +785,7 @@ requestAnimationFrame(render);
 // debug hook for headless testing
 window.__dbg = { state, playhead: () => playhead(), isRunning: () => running,
   ctxState: () => AC && AC.state, setMood, mood: () => MOOD.name, bpm: () => MOOD.bpm,
-  curRung: () => curRung, bassMidi };
+  prog: () => PROG.map(c => c.name), bassMidi, masterGain: () => master && master.gain.value };
 </script>
 </body>
 </html>
