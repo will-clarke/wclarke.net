@@ -33,6 +33,8 @@
     --scrim: rgba(84, 73, 56, 0.45);
     --scrim-light: rgba(84, 73, 56, 0.18);
     --solved-bg: #e9f0e2; --solved-line: #a9cdb2; --solved-ink: #47825a;
+    /* T99 (F10): the silver tier - solved within a couple of optimal. */
+    --near-bg: #ecebe4; --near-line: #b6b4a6; --near-ink: #71705f;
     --par-bg: #f8efd8; --par-line: #e0b45a; --par-ink: #a97c1e;
     --red-ink: #b0574f; --red-line: #dcaaa2; --red-wash: #f6e3dc;
     --par-glow: none; /* T75: day mode does not glow */
@@ -59,6 +61,7 @@
       --scrim: rgba(0, 0, 0, 0.55);
       --scrim-light: rgba(0, 0, 0, 0.28);
       --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
+      --near-bg: #2a2a23; --near-line: #565648; --near-ink: #b3b29c;
       --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
       --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
       --par-glow: none; /* T83: lamplight is flat too - no glow anywhere */
@@ -82,6 +85,7 @@
     --scrim: rgba(0, 0, 0, 0.55);
     --scrim-light: rgba(0, 0, 0, 0.28);
     --solved-bg: #232e1e; --solved-line: #41603d; --solved-ink: #93c493;
+    --near-bg: #2a2a23; --near-line: #565648; --near-ink: #b3b29c;
     --par-bg: #342b15; --par-line: #8a6b2a; --par-ink: #dcb05e;
     --red-ink: #e08a7e; --red-line: #7a4a42; --red-wash: #3a2622;
     --par-glow: none; /* T83: lamplight is flat too - no glow anywhere */
@@ -282,18 +286,38 @@
   }
   .lv {
     display: block;
+    position: relative; /* T97: anchors the board thumbnail on the right */
     min-height: 60px;
-    padding: 8px 6px;
+    padding: 8px 56px 8px 6px;
     text-align: left;
     letter-spacing: 0.02em;
     text-transform: none;
   }
   .lv b { display: block; color: var(--blue); font-size: 12px; letter-spacing: 0.1em; }
   .lv small { color: var(--dim); font-size: 11px; }
+  /* T97 (F7): every tile and community card wears a tiny canonical-
+     orientation render of its board - a level you half-remember is
+     recognisable at a glance even under the random deal. */
+  .thumb {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+  .lv .thumb {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
   /* T46: win states. Solved is unmistakably solved (sage, checked); solved
      AT PAR is the special tier - butter card with a soft gold glow. */
   .lv.solved { border-color: var(--solved-line); background: var(--solved-bg); }
   .lv.solved b, .lv.solved small { color: var(--solved-ink); }
+  /* T99 (F10): within a couple of optimal - silver, the tier the chase
+     lives in between "solved" and the gold star. */
+  .lv.near { border-color: var(--near-line); background: var(--near-bg); }
+  .lv.near b, .lv.near small { color: var(--near-ink); }
   .lv.par { border-color: var(--par-line); background: var(--par-bg); box-shadow: var(--par-glow); }
   .lv.par b, .lv.par small { color: var(--par-ink); }
   .lv.here { border-color: var(--blue); }
@@ -387,7 +411,7 @@
     .comTab:hover:not(.on), #edPal button:hover:not(.on),
     .card button:not(.primary):hover { background: var(--btn-active); }
     .primary:hover { background: #4d82b6; }
-    .shelf:not(.allstar):hover, .lv:not(.par):not(.solved):hover,
+    .shelf:not(.allstar):hover, .lv:not(.par):not(.solved):not(.near):hover,
     div.comCard:hover { border-color: var(--dim); }
     .icon:hover { color: var(--ink); }
     #levelName:hover { background: none; color: var(--dim); }
@@ -458,6 +482,10 @@
      a <button> may not), so they carry the button look themselves. */
   .comCard {
     flex: 0 0 auto;
+    display: flex; /* T97: thumb on the left, text body fills the rest */
+    flex-wrap: wrap; /* the T63 action row drops below, full width */
+    gap: 12px;
+    align-items: center;
     min-height: 56px;
     padding: 10px 14px;
     border: 1px solid var(--line);
@@ -467,6 +495,8 @@
     text-transform: none;
     letter-spacing: 0.02em;
   }
+  .comCard .ccBody { flex: 1; min-width: 0; }
+  .comCard.more { display: block; }
   div.comCard:active { background: var(--btn-active); }
   .comCard .ccTop { display: flex; align-items: baseline; gap: 8px; }
   .comCard .ccName { flex: 1; font-weight: 600; font-size: 15px; }
@@ -486,7 +516,7 @@
     font-size: 15px;
     letter-spacing: 0.08em;
   }
-  .ccActs { display: flex; gap: 8px; margin-top: 8px; }
+  .ccActs { display: flex; flex-basis: 100%; gap: 8px; margin-top: 8px; }
   .ccActs .note { color: var(--dim); font-size: 12px; padding: 6px 0; }
   .ccAct {
     flex: 0 0 auto;
@@ -2584,6 +2614,7 @@ function applyTheme() {
   tileLayout = null;
   shellCache = { layout: null, cell: 0 };
   spriteCache = { cell: 0 };
+  thumbCache.clear(); // T97: picker thumbnails re-bake in the new palette
   dirty = true;
   if (!$('editor').hidden) edPaint();
 }
@@ -3027,9 +3058,118 @@ function dismissCoach() {
   saveProgress();
 }
 
+// T97 (F7): the picker earns its levels - a tiny CANONICAL-orientation
+// render of the board on every tile and community card. Baked lazily on
+// first scroll into view (102 tiles stay cheap), cached per rows+theme at
+// thumb size (applyTheme clears the cache; every list rebuilds on open, so
+// a theme flip re-stamps on the next look). A pure glyph read of the rows -
+// no engine, no parseLevel: floor, walls, pits, target diamonds, the violet
+// frame with coral door notches, and the start entities.
+// T99 (F10): solved within this many moves of optimal earns the silver tier -
+// the binary solved/starred economy read as failure for mortals whose best is
+// one cheeky swap away. Computed from existing data at render time, no save
+// change; the T76 track mega-star stays gold-only.
+const NEAR = 2;
+
+const THUMB = 44; // css px, square
+const thumbCache = new Map();      // theme|rows -> baked canvas
+const thumbRows = new WeakMap();   // canvas element -> its level rows
+const thumbIO = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        thumbIO.unobserve(e.target);
+        stampThumb(e.target);
+      }
+    })
+  : null;
+
+function thumbEl(rows) {
+  const cv = document.createElement('canvas');
+  cv.className = 'thumb';
+  cv.width = THUMB * DPR;
+  cv.height = THUMB * DPR;
+  cv.setAttribute('aria-hidden', 'true');
+  thumbRows.set(cv, rows);
+  if (thumbIO) thumbIO.observe(cv);
+  else stampThumb(cv);
+  return cv;
+}
+
+function stampThumb(cv) {
+  const rows = thumbRows.get(cv);
+  if (!rows) return;
+  const key = (THEME === THEMES.dark ? 'd|' : 'l|') + rows.join('/');
+  let bake = thumbCache.get(key);
+  if (!bake) { bake = bakeThumb(rows); thumbCache.set(key, bake); }
+  cv.getContext('2d').drawImage(bake, 0, 0);
+}
+
+function bakeThumb(rows) {
+  const h = rows.length, w = rows[0].length;
+  const px = THUMB * DPR;
+  const cell = px / Math.max(w, h);
+  const cv = document.createElement('canvas');
+  cv.width = px; cv.height = px;
+  const c = cv.getContext('2d');
+  const ox = (px - w * cell) / 2, oy = (px - h * cell) / 2;
+  c.fillStyle = THEME.ground;
+  c.fillRect(0, 0, px, px);
+  const at = (gx, gy) => [ox + gx * cell, oy + gy * cell];
+  const dot = (gx, gy, k, col, round) => {
+    const [x, y] = at(gx, gy);
+    const s = cell * k, o = (cell - s) / 2;
+    c.fillStyle = col;
+    if (round) {
+      c.beginPath();
+      c.arc(x + cell / 2, y + cell / 2, s / 2, 0, Math.PI * 2);
+      c.fill();
+    } else c.fillRect(x + o, y + o, s, s);
+  };
+  for (let gy = 1; gy < h - 1; gy++) {
+    for (let gx = 1; gx < w - 1; gx++) {
+      const ch = rows[gy][gx];
+      const [x, y] = at(gx, gy);
+      c.fillStyle = ch === '#' ? THEME.wall : THEME.floor;
+      c.fillRect(x, y, cell, cell);
+      if (ch === '~') dot(gx, gy, 0.84, THEME.pit);
+      if (ch === '*' || ch === 'B' || ch === 'P') { // target diamond peeks
+        c.save();
+        c.translate(x + cell / 2, y + cell / 2);
+        c.rotate(Math.PI / 4);
+        c.fillStyle = THEME.target;
+        c.fillRect(-cell * 0.32, -cell * 0.32, cell * 0.64, cell * 0.64);
+        c.restore();
+      }
+      if (ch === 'N') dot(gx, gy, 0.9, THEME.blockTop);
+      if (ch === '$') dot(gx, gy, 0.7, THEME.box);
+      if (ch === 'B') dot(gx, gy, 0.7, THEME.boxOn);
+      if (ch === '@' || ch === 'P') dot(gx, gy, 0.78, THEME.self, true);
+    }
+  }
+  // The frame speaks the game's language: violet shell, coral door notches.
+  const lw = Math.max(1, cell * 0.3);
+  c.strokeStyle = 'rgba(154,134,203,0.95)';
+  c.lineWidth = lw;
+  const [fx, fy] = at(1, 1);
+  c.strokeRect(fx - lw / 2, fy - lw / 2, (w - 2) * cell + lw, (h - 2) * cell + lw);
+  c.fillStyle = doorCol(0.95);
+  for (let gy = 0; gy < h; gy++) {
+    for (let gx = 0; gx < w; gx++) {
+      if (rows[gy][gx] !== '-') continue;
+      const [x, y] = at(gx, gy);
+      c.beginPath();
+      c.arc(x + cell / 2, y + cell / 2, cell * 0.55, 0, Math.PI * 2);
+      c.fill();
+    }
+  }
+  return cv;
+}
+
 // One tile-maker for all lists: the accordion's track grids, the drafts
 // shelf, wherever. `box` defaults to the classic #grid page (drafts).
-function tile(num, title, note, onPick, box) {
+// T97: pass `rows` and the tile wears its board thumbnail.
+function tile(num, title, note, onPick, box, rows) {
   const b = document.createElement('button');
   b.className = 'lv';
   b.innerHTML = '<b>' + num + '</b>';
@@ -3038,6 +3178,7 @@ function tile(num, title, note, onPick, box) {
   const small = document.createElement('small');
   small.textContent = note;
   b.appendChild(small);
+  if (rows) b.appendChild(thumbEl(rows));
   if (onPick) b.addEventListener('click', onPick);
   (box || $('grid')).appendChild(b);
   return b;
@@ -3147,12 +3288,15 @@ function fillTrackGrid(t, box) {
   TRACKS[t].levels.forEach((def, i) => {
     const best = progress.best[bestKey(t, i)];
     // T46: solved reads solved; solved at par is the tier above.
+    // T97 (F7): unsolved tiles say how deep the water is (T54 vocabulary).
+    // T99 (F10): within NEAR of optimal is the silver ☆ tier in between.
     const atPar = best !== undefined && def.par > 0 && best <= def.par;
-    const note = best === undefined ? 'unsolved'
+    const near = !atPar && best !== undefined && def.par > 0 && best <= def.par + NEAR;
+    const note = best === undefined ? (def.par > 0 ? 'optimal ' + def.par : 'unsolved')
       : atPar ? '★ optimal ' + best
-      : '✓ best ' + best;
-    const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); }, box);
-    if (best !== undefined) b.classList.add(atPar ? 'par' : 'solved');
+      : (near ? '☆ best ' : '✓ best ') + best;
+    const b = tile(i + 1, def.name, note, () => { play('ui'); loadLevel(t, i); }, box, def.rows);
+    if (best !== undefined) b.classList.add(atPar ? 'par' : near ? 'near' : 'solved');
     if (t === trackIndex && i === levelIndex) b.classList.add('here');
   });
 }
@@ -3306,7 +3450,14 @@ function comCard(m) {
     : 'by ' + m.author) +
     ' · ♥ ' + (m.hearts || 0) +
     ' · best known ' + m.bestMoves + ' by ' + m.bestHolder;
-  b.append(top, meta);
+  // T97 (F7): the card wears the board. List payloads carry rows now; older
+  // caches and an un-deployed server degrade to the plain card.
+  const rows = m.rows || (comCache[m.id] && comCache[m.id].rows);
+  const body = document.createElement('div');
+  body.className = 'ccBody';
+  body.append(top, meta);
+  if (rows) b.appendChild(thumbEl(rows));
+  b.appendChild(body);
   b.addEventListener('click', () => { play('ui'); comPlay(m); });
   dots.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -4036,6 +4187,12 @@ function showWin() {
   else if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
     body += ' · best ' + progress.best[bestKey(trackIndex, levelIndex)];
+  }
+  // T99 (F10): landing within NEAR of optimal gets a warm nudge instead of
+  // the neutral shrug; over the threshold keeps today's copy exactly.
+  const gap = !com && !draft && def.par > 0 ? moves - def.par : 0;
+  if (gap > 0 && gap <= NEAR) {
+    body += ' · ' + gap + ' from optimal - there is a shorter way';
   }
   // T76: the win that places the track's last star gets the gold moment.
   if (trackDone) {
@@ -6572,7 +6729,7 @@ function openDrafts() {
   $('grid').textContent = '';
   drafts.forEach((d, i) => {
     const b = tile(i + 1, d.name || 'Untitled', d.rows.length + '×' + d.rows.length,
-      () => { play('ui'); draftIx = i; openEditor(); });
+      () => { play('ui'); draftIx = i; openEditor(); }, undefined, d.rows);
     if (i === draftIx) b.classList.add('here');
     if (drafts.length < 2) return;
     const x = document.createElement('span');
@@ -7010,6 +7167,11 @@ syncAudioBtns();
 applyTheme(); // T73: pick the palette before the first render
 // T74: resume where you left off (progress.at); a fresh save falls back to
 // the tutorial's first unsolved level.
+// T98 (F8): a brand-new player's first decision should be a swipe, not a
+// hub with 100+ levels - so a fully fresh save skips the hub and lands in
+// Moving In 1 (checked before loadLevel stamps progress.at). Every later
+// boot greets with the T74 hub as before.
+const freshBoot = !progress.at && !Object.keys(progress.best).length;
 let startT = -1, startI = -1;
 {
   const m = /^([a-z]+):(\d+)$/.exec(progress.at);
@@ -7024,7 +7186,7 @@ loadLevel(startT, startI);
 if (location.hash === '#edit') openEditor();
 openHash(); // T63: #p=<id> / #l=<code> share links land straight in the level
 // T74: no deep link means the hub greets - your track open, scrolled to you.
-if (!location.hash) openPicker();
+if (!location.hash && !freshBoot) openPicker();
 window.addEventListener('hashchange', openHash);
 // T58: the offline shell. Secure contexts only - file:// and plain http skip
 // this and lose nothing. sw.js is network-first, so deploys are never stale.
