@@ -37,6 +37,7 @@
     display:flex; align-items:center; gap:5px;
   }
   .tbtn.off { color:#454b6b; text-decoration:line-through; }
+  .tbtn.muted { color:#454b6b; }
   /* ---------- sections ---------- */
   section { display:flex; flex-direction:column; gap:5px; min-height:0; }
   .shead { display:flex; align-items:center; gap:8px; }
@@ -54,13 +55,14 @@
   #mel  { flex:1; min-height:0; }
   #bass { height:56px; }
   /* voice dots */
-  #vdots { display:flex; gap:7px; align-items:center; margin-right:2px; }
+  #vdots { display:flex; gap:9px; align-items:center; margin-right:2px; }
   .vdot {
-    width:16px; height:16px; border-radius:50%; border:2px solid var(--c);
+    width:24px; height:24px; border-radius:50%; border:2px solid var(--c);
     background:transparent; transition:all .15s ease;
   }
   .vdot.has { background:color-mix(in srgb, var(--c) 40%, transparent); }
   .vdot.act { background:var(--c); box-shadow:0 0 9px var(--c); }
+  .mini.octon { border-color:currentColor; box-shadow:0 0 8px currentColor; background:#1a1f3a; }
   /* ---------- drums ---------- */
   #pads { display:flex; gap:8px; }
   .pad {
@@ -75,18 +77,29 @@
   .pad.hit { border-color:currentColor; box-shadow:0 0 18px currentColor; }
   #padK { color:#ff5d73; } #padS { color:#ffb45d; } #padH { color:#5de0ff; }
   .pad .pname { color:inherit; }
-  /* ---------- chord picker overlay ---------- */
-  #chordOv { position:fixed; inset:0; background:#06081299; backdrop-filter:blur(4px);
+  /* ---------- bottom sheets (chords / mood / mixer) ---------- */
+  .ov { position:fixed; inset:0; background:#06081299; backdrop-filter:blur(4px);
     z-index:9; display:flex; }
-  #chordOv[hidden] { display:none; }
-  #ovCard {
+  .ov[hidden] { display:none; }
+  .ovcard {
     margin:auto auto 0; width:100%; max-width:480px; background:#12162b;
     border:1px solid #232948; border-bottom:none; border-radius:20px 20px 0 0;
     padding:16px 14px calc(16px + env(safe-area-inset-bottom));
     display:flex; flex-direction:column; gap:12px;
   }
-  #ovHead { display:flex; align-items:center; gap:8px; }
-  #ovHead .slabel { flex:1; color:#c9bfff; }
+  .ovhead { display:flex; align-items:center; gap:8px; }
+  .ovhead .slabel { flex:1; color:#c9bfff; }
+  .ovhint { font-size:11px; color:#575e83; line-height:1.5; }
+  .mrow { display:flex; align-items:center; gap:10px; min-height:28px; }
+  .mlab { width:64px; flex:0 0 auto; font-size:11px; font-weight:800; letter-spacing:1px; }
+  input[type=range] { flex:1; touch-action:auto; height:28px; background:transparent; }
+  #moodTiles { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
+  .ptile .mbpm { display:block; font-size:9px; font-weight:700; letter-spacing:1px;
+    color:#575e83; margin-top:2px; }
+  #mixVoices { display:flex; gap:14px; align-items:center; }
+  .mvd { width:22px; height:22px; border-radius:50%; background:var(--c);
+    transition:all .15s ease; }
+  .mvd.off { background:transparent; border:2px solid var(--c); opacity:.35; }
   #ovSlots { display:flex; gap:6px; }
   .oslot {
     flex:1; text-align:center; padding:12px 2px; border-radius:12px; background:#151a2e;
@@ -106,7 +119,6 @@
   .ptile:active { transform:scale(.95); }
   .ptile.rec { border-color:#ffd16699; box-shadow:0 0 10px #ffd16633; color:#ffd166; }
   .ptile.cur { background:#241f4d; border-color:#6d5fd0; color:#c9bfff; }
-  #ovHint { font-size:11px; color:#575e83; line-height:1.5; }
   /* ---------- start overlay ---------- */
   #start {
     position:fixed; inset:0; background:#0b0e1acc; backdrop-filter:blur(6px);
@@ -131,8 +143,9 @@
 
   <section id="melodySec">
     <div class="shead">
-      <div class="slabel" style="color:#ffd166">MELODY</div><div class="spacer"></div>
       <div id="vdots"></div>
+      <div class="mini" id="octDn">▼</div><div class="mini" id="octUp">▲</div>
+      <div class="spacer"></div>
       <div class="mini" id="melMute"></div><div class="mini" id="melClear">✕</div>
     </div>
     <canvas id="mel"></canvas>
@@ -140,7 +153,7 @@
 
   <section id="bassSec">
     <div class="shead">
-      <div class="slabel" style="color:#4cc9f0">BASS · tap the groove</div><div class="spacer"></div>
+      <div class="slabel" style="color:#4cc9f0">BASS</div><div class="spacer"></div>
       <div class="mini" id="bassMute"></div><div class="mini" id="bassClear">✕</div>
     </div>
     <canvas id="bass"></canvas>
@@ -159,17 +172,53 @@
   </section>
 </div>
 
-<div id="chordOv" hidden>
-  <div id="ovCard">
-    <div id="ovHead">
+<div id="chordOv" class="ov" hidden>
+  <div id="ovCard" class="ovcard">
+    <div class="ovhead">
       <div class="slabel">CHORDS</div>
       <div class="tbtn" id="ovReset">RESET</div>
       <div class="tbtn" id="ovDone" style="color:#c9bfff">DONE</div>
     </div>
     <div id="ovSlots"></div>
     <div id="ovPal"></div>
-    <p id="ovHint">Tap a bar, then tap chords to hear them in the loop. Glowing chords
+    <p class="ovhint">Tap a bar, then tap chords to hear them in the loop. Glowing chords
       follow nicely from the bar before.</p>
+  </div>
+</div>
+
+<div id="moodOv" class="ov" hidden>
+  <div class="ovcard">
+    <div class="ovhead">
+      <div class="slabel">MOOD &amp; TEMPO</div>
+      <div class="tbtn" id="moodDone" style="color:#c9bfff">DONE</div>
+    </div>
+    <div id="moodTiles"></div>
+    <div class="mrow">
+      <span class="mlab" id="tempoVal"></span>
+      <input type="range" id="tempo" min="60" max="160" step="1">
+      <div class="tbtn" id="tempoReset">RESET</div>
+    </div>
+    <p class="ovhint">Each mood remembers its own tempo and chords.</p>
+  </div>
+</div>
+
+<div id="mixOv" class="ov" hidden>
+  <div class="ovcard">
+    <div class="ovhead">
+      <div class="slabel">MIXER</div>
+      <div class="tbtn" id="mixMuteAll"></div>
+      <div class="tbtn" id="mixDone" style="color:#c9bfff">DONE</div>
+    </div>
+    <div class="mrow"><span class="mlab" style="color:#ffd166">MELODY</span>
+      <input type="range" id="volMel" min="0" max="1" step="0.01"></div>
+    <div class="mrow"><span class="mlab"></span><div id="mixVoices"></div></div>
+    <div class="mrow"><span class="mlab" style="color:#4cc9f0">BASS</span>
+      <input type="range" id="volBass" min="0" max="1" step="0.01"></div>
+    <div class="mrow"><span class="mlab" style="color:#ff5d73">DRUMS</span>
+      <input type="range" id="volDrums" min="0" max="1" step="0.01"></div>
+    <div class="mrow"><span class="mlab" style="color:#c9bfff">PAD</span>
+      <input type="range" id="volPad" min="0" max="1" step="0.01"></div>
+    <p class="ovhint">Sliders set each layer's level. Dots mute single melody voices.</p>
   </div>
 </div>
 
@@ -244,6 +293,10 @@ const state = {
   mute: { pad:false, mel:false, bass:false, drums:false },
   mood: 1,
   progs: [null, null, null, null],       // per-mood custom progression (palette indices)
+  bpms: [null, null, null, null],        // per-mood tempo override
+  vol: { pad:1, mel:1, bass:1, drums:1 },
+  vmute: [false, false, false, false],   // per melody voice
+  oct: [0, 0, 0, 0],                     // per melody voice octave offset (-1..1)
 };
 const SAVE_KEY = 'pocket-v1';
 try {
@@ -257,6 +310,16 @@ try {
     if (!Array.isArray(state.progs) || state.progs.length !== 4) state.progs = [null, null, null, null];
     state.progs = state.progs.map(p =>
       Array.isArray(p) && p.length === 4 && p.every(i => Number.isInteger(i) && i >= 0 && i < 8) ? p : null);
+    if (!Array.isArray(state.bpms) || state.bpms.length !== 4) state.bpms = [null, null, null, null];
+    state.bpms = state.bpms.map(b => Number.isFinite(b) && b >= 60 && b <= 160 ? Math.round(b) : null);
+    if (!Array.isArray(state.vmute) || state.vmute.length !== 4) state.vmute = [false, false, false, false];
+    state.vmute = state.vmute.map(Boolean);
+    if (!Array.isArray(state.oct) || state.oct.length !== 4) state.oct = [0, 0, 0, 0];
+    state.oct = state.oct.map(o => o === -1 || o === 1 ? o : 0);
+    const vol = { pad:1, mel:1, bass:1, drums:1 };
+    for (const k in vol)
+      if (state.vol && Number.isFinite(state.vol[k]) && state.vol[k] >= 0 && state.vol[k] <= 1) vol[k] = state.vol[k];
+    state.vol = vol;
   }
 } catch (e) {}
 let saveT = null;
@@ -267,15 +330,22 @@ function save() {
 
 /* ================= timing + progression (mood-dependent) ================= */
 let MOOD = MOODS[state.mood];
-let BEAT = 60 / MOOD.bpm, S16 = BEAT / 4;
+function curBpm() { return state.bpms[state.mood] || MOOD.bpm; }
+let BEAT = 60 / curBpm(), S16 = BEAT / 4;
 let PROG = [];
+function applyTempo() {
+  BEAT = 60 / curBpm(); S16 = BEAT / 4;
+  if (AC) delayNode.delayTime.setTargetAtTime(BEAT * 0.75, AC.currentTime, 0.1);
+}
 function rebuildProg() {
   PROG = (state.progs[state.mood] || MOOD.def).map(i => MOOD.palette[i]);
+  paintMoodBtn();
 }
 const SLOTS = 64, LOOKAHEAD = 0.10, TICK = 25;
 
 /* ================= audio graph ================= */
 let AC = null, master, delaySend, delayNode, fbGain, wetGain, noiseBuf;
+const buses = {};   // per-layer gains: pad / mel / bass / drums → master
 let allMuted = false;
 function initAudio() {
   AC = new (window.AudioContext || window.webkitAudioContext)();
@@ -283,47 +353,50 @@ function initAudio() {
   comp.threshold.value = -14; comp.ratio.value = 4;
   comp.connect(AC.destination);
   master = AC.createGain(); master.gain.value = 0.9; master.connect(comp);
+  for (const k of ['pad', 'mel', 'bass', 'drums']) {
+    buses[k] = AC.createGain(); buses[k].gain.value = state.vol[k]; buses[k].connect(master);
+  }
   // tempo-synced dotted-8th delay for the melody
   delayNode = AC.createDelay(1); delayNode.delayTime.value = BEAT * 0.75;
   fbGain = AC.createGain(); fbGain.gain.value = MOOD.fb;
   const lp = AC.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2400;
   wetGain = AC.createGain(); wetGain.gain.value = MOOD.wet;
   delayNode.connect(lp); lp.connect(fbGain); fbGain.connect(delayNode);
-  delayNode.connect(wetGain); wetGain.connect(master);
+  delayNode.connect(wetGain); wetGain.connect(buses.mel);
   delaySend = delayNode;
   noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
   const d = noiseBuf.getChannelData(0);
   for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
 }
 const hz = m => 440 * Math.pow(2, (m - 69) / 12);
-function env(t, a, peak, d) {
+function env(t, a, peak, d, bus) {
   const g = AC.createGain();
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(peak, t + a);
   g.gain.exponentialRampToValueAtTime(0.0001, t + a + d);
-  g.connect(master);
+  g.connect(bus);
   return g;
 }
 function playKick(t) {
   const o = AC.createOscillator();
   o.frequency.setValueAtTime(160, t);
   o.frequency.exponentialRampToValueAtTime(44, t + 0.11);
-  o.connect(env(t, 0.002, 0.95, 0.26));
+  o.connect(env(t, 0.002, 0.95, 0.26, buses.drums));
   o.start(t); o.stop(t + 0.3);
 }
 function playSnare(t, vel = 1) {
   const n = AC.createBufferSource(); n.buffer = noiseBuf;
   const bp = AC.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.9;
-  n.connect(bp); bp.connect(env(t, 0.001, 0.55 * vel, 0.16));
+  n.connect(bp); bp.connect(env(t, 0.001, 0.55 * vel, 0.16, buses.drums));
   n.start(t); n.stop(t + 0.2);
   const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = 190;
-  o.connect(env(t, 0.001, 0.4 * vel, 0.09));
+  o.connect(env(t, 0.001, 0.4 * vel, 0.09, buses.drums));
   o.start(t); o.stop(t + 0.12);
 }
 function playHat(t, vel = 1) {
   const n = AC.createBufferSource(); n.buffer = noiseBuf;
   const hp = AC.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7200;
-  n.connect(hp); hp.connect(env(t, 0.001, 0.3 * vel, 0.05));
+  n.connect(hp); hp.connect(env(t, 0.001, 0.3 * vel, 0.05, buses.drums));
   n.start(t); n.stop(t + 0.08);
 }
 function playBass(t, midi) {
@@ -332,14 +405,15 @@ function playBass(t, midi) {
   const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.Q.value = 6;
   f.frequency.setValueAtTime(1100, t);
   f.frequency.exponentialRampToValueAtTime(160, t + 0.28);
-  const g = env(t, 0.004, 0.5, 0.38);
+  const g = env(t, 0.004, 0.5, 0.38, buses.bass);
   o.connect(f); f.connect(g);
-  sub.connect(env(t, 0.004, 0.35, 0.34));
+  sub.connect(env(t, 0.004, 0.35, 0.34, buses.bass));
   o.start(t); o.stop(t + 0.45); sub.start(t); sub.stop(t + 0.45);
 }
 const VPAN = [-0.25, 0.25, -0.08, 0.08];
 function playMel(t, midi, voice = 0) {
-  const o = AC.createOscillator(); o.type = 'triangle'; o.frequency.value = hz(midi);
+  const o = AC.createOscillator(); o.type = 'triangle';
+  o.frequency.value = hz(midi + 12 * state.oct[voice]);
   const g = AC.createGain();
   g.gain.setValueAtTime(0.0001, t);
   g.gain.linearRampToValueAtTime(0.45, t + 0.004);
@@ -350,7 +424,7 @@ function playMel(t, midi, voice = 0) {
     const p = AC.createStereoPanner(); p.pan.value = VPAN[voice];
     g.connect(p); out = p;
   }
-  out.connect(master);
+  out.connect(buses.mel);
   const send = AC.createGain(); send.gain.value = 0.5;
   out.connect(send); send.connect(delaySend);
   o.start(t); o.stop(t + 0.45);
@@ -366,7 +440,7 @@ function playPad(t, tones, len) {
     g.gain.linearRampToValueAtTime(0.045, t + Math.min(0.5, len * 0.3));
     g.gain.setValueAtTime(0.045, t + len - Math.min(0.4, len * 0.25));
     g.gain.linearRampToValueAtTime(0.0001, t + len);
-    o.connect(f); f.connect(g); g.connect(master);
+    o.connect(f); f.connect(g); g.connect(buses.pad);
     o.start(t); o.stop(t + len + 0.05);
   }
 }
@@ -414,11 +488,12 @@ function scheduleSlot(s, t) {
     const m8 = s >> 1;
     for (let v = 0; v < 4; v++) {
       const live = v === state.voice && touch.down;
+      const audible = !state.mute.mel && !state.vmute[v] && !suppressed('m' + v, m8, t);
       if (live) {
         const rung = rungForTouch(m8);
         state.melody[v][m8] = rung; save();
-        if (!state.mute.mel && !suppressed('m' + v, m8, t)) playMel(t, MOOD.rungs[rung], v);
-      } else if (state.melody[v][m8] !== null && !state.mute.mel && !suppressed('m' + v, m8, t)) {
+        if (audible) playMel(t, MOOD.rungs[rung], v);
+      } else if (state.melody[v][m8] !== null && audible) {
         playMel(t, MOOD.rungs[state.melody[v][m8]], v);
       }
     }
@@ -439,21 +514,24 @@ const nearest = (pos, mod) => Math.round(pos) % mod;
 /* ================= mood switching ================= */
 function setMood(i) {
   state.mood = i; MOOD = MOODS[i];
-  BEAT = 60 / MOOD.bpm; S16 = BEAT / 4;
+  applyTempo();
   rebuildProg();
   if (AC) {
     const now = AC.currentTime;
-    delayNode.delayTime.setTargetAtTime(BEAT * 0.75, now, 0.1);
     fbGain.gain.setTargetAtTime(MOOD.fb, now, 0.1);
     wetGain.gain.setTargetAtTime(MOOD.wet, now, 0.1);
   }
   buildChips();
-  const mb = document.getElementById('mood');
-  mb.textContent = MOOD.name + ' ' + MOOD.bpm;
-  mb.style.color = MOOD.color; mb.style.borderColor = MOOD.color + '66';
   document.getElementById('ovCard').style.setProperty('--mc', MOOD.color);
   if (!document.getElementById('chordOv').hidden) buildOverlay();
   save();
+}
+// header button always tells the truth: live bpm, * when tempo/chords customized
+function paintMoodBtn() {
+  const mb = document.getElementById('mood');
+  const custom = state.progs[state.mood] || state.bpms[state.mood];
+  mb.textContent = MOOD.name + ' ' + curBpm() + (custom ? '*' : '');
+  mb.style.color = MOOD.color; mb.style.borderColor = MOOD.color + '66';
 }
 
 /* ================= melody touch ================= */
@@ -527,14 +605,94 @@ $('padMute').classList.toggle('off', state.mute.pad);
 const paintAll = () => {
   $('muteAll').innerHTML = SPK(allMuted);
   $('muteAll').classList.toggle('muted', allMuted);
+  $('mixMuteAll').innerHTML = SPK(allMuted) + '<span>ALL</span>';
+  $('mixMuteAll').classList.toggle('muted', allMuted);
 };
-$('muteAll').addEventListener('pointerdown', e => {
-  e.preventDefault();
+function toggleAllMute() {
   allMuted = !allMuted;
   if (master) master.gain.setTargetAtTime(allMuted ? 0 : 0.9, AC.currentTime, 0.03);
   paintAll();
-});
+}
+// tap = global mute; hold = mixer sheet (same hold gesture as the drum pads)
+{
+  let holdT = null, held = false;
+  $('muteAll').addEventListener('pointerdown', e => {
+    e.preventDefault(); held = false;
+    holdT = setTimeout(() => { held = true; openMix(); }, 450);
+  });
+  const up = e => {
+    clearTimeout(holdT);
+    if (e.type === 'pointerup' && !held) toggleAllMute();
+  };
+  $('muteAll').addEventListener('pointerup', up);
+  $('muteAll').addEventListener('pointercancel', up);
+  $('muteAll').addEventListener('pointerleave', up);
+}
+$('mixMuteAll').addEventListener('pointerdown', e => { e.preventDefault(); toggleAllMute(); });
 paintAll();
+
+/* ================= mixer sheet ================= */
+const VOLS = [['volMel','mel','#ffd166'], ['volBass','bass','#4cc9f0'],
+              ['volDrums','drums','#ff5d73'], ['volPad','pad','#c9bfff']];
+for (const [id, k, col] of VOLS) {
+  const el = $(id);
+  el.style.accentColor = col;
+  el.value = state.vol[k];
+  el.addEventListener('input', () => {
+    state.vol[k] = parseFloat(el.value);
+    if (buses[k]) buses[k].gain.setTargetAtTime(state.vol[k], AC.currentTime, 0.05);
+    save();
+  });
+}
+const mvds = [];
+for (let v = 0; v < 4; v++) {
+  const d = document.createElement('div');
+  d.className = 'mvd'; d.style.setProperty('--c', VC[v]);
+  d.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    state.vmute[v] = !state.vmute[v]; paintMvd(); save();
+  });
+  $('mixVoices').appendChild(d); mvds.push(d);
+}
+function paintMvd() { mvds.forEach((d, v) => d.classList.toggle('off', state.vmute[v])); }
+paintMvd();
+function openMix() {
+  for (const [id, k] of VOLS) $(id).value = state.vol[k];
+  paintMvd(); paintAll();
+  $('mixOv').hidden = false;
+}
+
+/* ================= mood sheet ================= */
+function buildMoodTiles() {
+  const el = $('moodTiles');
+  el.innerHTML = '';
+  MOODS.forEach((m, i) => {
+    const d = document.createElement('div');
+    d.className = 'ptile' + (i === state.mood ? ' cur' : '');
+    d.innerHTML = m.name + '<span class="mbpm">' + m.bpm + '</span>';
+    if (i === state.mood) { d.style.color = m.color; d.style.borderColor = m.color + '99'; }
+    d.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      setMood(i); buildMoodTiles(); syncTempoUI();
+    });
+    el.appendChild(d);
+  });
+}
+function syncTempoUI() {
+  $('tempo').value = curBpm();
+  $('tempo').style.accentColor = MOOD.color;
+  $('tempoVal').textContent = curBpm() + ' BPM';
+  $('tempoVal').style.color = MOOD.color;
+}
+$('tempo').addEventListener('input', () => {
+  state.bpms[state.mood] = parseInt($('tempo').value, 10);
+  applyTempo(); paintMoodBtn(); syncTempoUI(); save();
+});
+$('tempoReset').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.bpms[state.mood] = null;
+  applyTempo(); paintMoodBtn(); syncTempoUI(); save();
+});
 
 $('melClear').addEventListener('pointerdown', e => {
   e.preventDefault(); state.melody[state.voice].fill(null); save();
@@ -546,17 +704,41 @@ $('drumClear').addEventListener('pointerdown', e => {
 });
 $('mood').addEventListener('pointerdown', e => {
   e.preventDefault();
-  setMood((state.mood + 1) % MOODS.length);
+  buildMoodTiles(); syncTempoUI();
+  $('moodOv').hidden = false;
 });
+$('moodDone').addEventListener('pointerdown', e => { e.preventDefault(); $('moodOv').hidden = true; });
+$('mixDone').addEventListener('pointerdown', e => { e.preventDefault(); $('mixOv').hidden = true; });
+for (const id of ['moodOv', 'mixOv'])
+  $(id).addEventListener('pointerdown', e => { if (e.target === $(id)) $(id).hidden = true; });
 
 // melody voice dots
 const vdots = [];
 for (let v = 0; v < 4; v++) {
   const d = document.createElement('div');
   d.className = 'vdot'; d.style.setProperty('--c', VC[v]);
-  d.addEventListener('pointerdown', e => { e.preventDefault(); state.voice = v; save(); });
+  d.addEventListener('pointerdown', e => { e.preventDefault(); state.voice = v; paintOct(); save(); });
   $('vdots').appendChild(d); vdots.push(d);
 }
+// active voice octave: ▲/▼ shift by one, lit in the voice's colour when engaged
+function paintOct() {
+  const o = state.oct[state.voice];
+  $('octUp').classList.toggle('octon', o > 0);
+  $('octDn').classList.toggle('octon', o < 0);
+  $('octUp').style.color = o > 0 ? VC[state.voice] : '';
+  $('octDn').style.color = o < 0 ? VC[state.voice] : '';
+}
+$('octUp').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.oct[state.voice] = Math.min(1, state.oct[state.voice] + 1);
+  paintOct(); save();
+});
+$('octDn').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  state.oct[state.voice] = Math.max(-1, state.oct[state.voice] - 1);
+  paintOct(); save();
+});
+paintOct();
 
 // drum pads: tap = perform, hold = wipe that instrument's lane
 const PADS = [ ['padK','k',playKick], ['padS','s',playSnare], ['padH','h',playHat] ];
@@ -606,7 +788,8 @@ melCv.addEventListener('pointerdown', e => {
   const m8 = nearest(playhead() / 2, 32);
   const rung = rungForTouch(m8);
   state.melody[state.voice][m8] = rung; manual('m' + state.voice, m8); save();
-  if (!state.mute.mel) playMel(AC.currentTime, MOOD.rungs[rung], state.voice);
+  if (!state.mute.mel && !state.vmute[state.voice])
+    playMel(AC.currentTime, MOOD.rungs[rung], state.voice);
 });
 melCv.addEventListener('pointermove', e => { if (touch.down) melPointer(e); });
 const melUp = () => { touch.down = false; };
@@ -704,7 +887,7 @@ function drawMelody(pos) {
   // recorded notes, all voices (active voice on top, brighter)
   for (const v of [0, 1, 2, 3].sort((a, b) => (a === state.voice) - (b === state.voice))) {
     const act = v === state.voice;
-    ctx.globalAlpha = act ? 1 : 0.5;
+    ctx.globalAlpha = (act ? 1 : 0.5) * (state.vmute[v] ? 0.3 : 1);
     for (let m = 0; m < 32; m++) {
       if (state.melody[v][m] === null) continue;
       const x = w * (m + 0.5) / 32, y = rungY(state.melody[v][m]);
@@ -782,9 +965,19 @@ $('start').addEventListener('pointerdown', () => {
 });
 requestAnimationFrame(render);
 
+// backgrounded tab = silence; suspend freezes AC.currentTime so the scheduler resumes cleanly
+function setBackgrounded(hidden) {
+  if (!AC || !running) return;
+  if (hidden) AC.suspend(); else AC.resume();
+}
+document.addEventListener('visibilitychange', () => setBackgrounded(document.hidden));
+window.addEventListener('pagehide', () => setBackgrounded(true));
+window.addEventListener('pageshow', () => setBackgrounded(document.hidden));
+
 // debug hook for headless testing
 window.__dbg = { state, playhead: () => playhead(), isRunning: () => running,
-  ctxState: () => AC && AC.state, setMood, mood: () => MOOD.name, bpm: () => MOOD.bpm,
+  ctxState: () => AC && AC.state, setMood, mood: () => MOOD.name, bpm: () => curBpm(),
+  s16: () => S16, busGain: k => buses[k] && buses[k].gain.value,
   prog: () => PROG.map(c => c.name), bassMidi, masterGain: () => master && master.gain.value };
 </script>
 </body>
