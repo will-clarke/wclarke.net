@@ -117,10 +117,18 @@
   .wrow { display:flex; align-items:center; gap:8px; padding:10px 12px;
     border-radius:10px; background:#151a2e; border:1px solid #232948; flex:0 0 auto; }
   .wrow.playing { border-color:#6d5fd0; box-shadow:0 0 10px #6d5fd044; }
+  .wrow.mine { border-color:#7ef0c144; }
   .wname { flex:1; font-size:13px; font-weight:700; color:#c9d0f0; overflow:hidden;
     text-overflow:ellipsis; white-space:nowrap; }
   .wmeta { font-size:10px; color:#575e83; font-weight:700; letter-spacing:.5px;
     white-space:nowrap; }
+  .wlike { display:flex; align-items:center; gap:4px; font-size:12px; font-weight:800;
+    color:#575e83; padding:5px 8px; margin:-5px -2px; border-radius:8px;
+    border:1px solid transparent; white-space:nowrap; }
+  .wlike.on { color:#ff8fab; border-color:#ff8fab55; }
+  .wdel { color:#575e83; font-size:12px; font-weight:800; padding:5px 6px; margin:-5px -4px;
+    white-space:nowrap; }
+  .wdel.arm { color:#ff5d73; }
   #ovSlots { display:flex; gap:6px; }
   .oslot {
     flex:1; text-align:center; padding:12px 2px; border-radius:12px; background:#151a2e;
@@ -269,12 +277,15 @@
     </div>
     <div class="mrow" style="margin-top:2px">
       <div class="slabel" style="color:#8f95b5">THE WALL</div>
+      <div class="mini" id="wallNew">NEW</div>
+      <div class="mini" id="wallTop">TOP</div>
       <div class="spacer"></div>
       <div class="tbtn" id="wallKeep" hidden>KEEP THIS LOOP</div>
     </div>
     <div id="wallList"></div>
     <p class="ovhint">Tap a loop to hear it in place - yours comes back when you close
-      this sheet, unless you keep it.</p>
+      this sheet, unless you keep it. ♥ upvotes; loops you posted are marked and
+      carry a ✕.</p>
   </div>
 </div>
 
@@ -933,9 +944,11 @@ function melPointer(e) {
 }
 
 // DRAW: finger X = slot, Y = rung; the loop keeps playing.
-// tap empty = place · drag empty = paint contour · tap a note = delete
-// drag right from a note = hold · tail on another rung = slide there
-const draw = { active:false, edit:false, head:0, r:0, len:1, to:null, lastM:0, moved:false, rect:null };
+// tap empty = place · drag empty = paint contour · tap a note head = delete
+// tap inside a hold's tail = split it (hold truncates, new note lands there)
+// drag right from a note head = hold · tail on another rung = slide there
+const draw = { active:false, edit:false, head:0, r:0, len:1, to:null, lastM:0, moved:false,
+  rect:null, x0:0, y0:0, armed:false };
 const slotAt = (x, rect) =>
   Math.min(31, Math.max(0, Math.floor((x - rect.left) / rect.width * 32)));
 function previewNote(r, m) {
@@ -949,13 +962,16 @@ function drawDown(e) {
   const r = rungForY(e.clientY, draw.rect);
   const h = headAt(state.voice, m);
   draw.active = true; draw.moved = false; draw.lastM = m;
-  if (h >= 0) {
+  draw.x0 = e.clientX; draw.y0 = e.clientY; draw.armed = false;
+  if (h === m) {
     const c = state.melody[state.voice][h];
     draw.edit = true; draw.head = h;
     draw.r = typeof c === 'number' ? c : c.r;
     draw.len = typeof c === 'number' ? 1 : c.len;
     draw.to = typeof c === 'number' ? null : c.to;
   } else {
+    // empty, or inside a hold's tail: writeNote truncates the hold at this
+    // slot, so a tap mid-glissando splits it and drops a fresh note there
     draw.edit = false; draw.head = m;
     draw.r = magnetRung(r, m); draw.len = 1; draw.to = null;
     writeNote(state.voice, m, draw.r);
@@ -963,6 +979,11 @@ function drawDown(e) {
   }
 }
 function drawMove(e) {
+  // dead zone: press-and-hold jitter must never reshape or paint
+  if (!draw.armed) {
+    if (Math.hypot(e.clientX - draw.x0, e.clientY - draw.y0) < 9) return;
+    draw.armed = true;
+  }
   const m = slotAt(e.clientX, draw.rect);
   const r = rungForY(e.clientY, draw.rect);
   draw.lastM = m;
@@ -1243,7 +1264,22 @@ $('shareLink').addEventListener('pointerdown', async e => {
 
 /* ================= the wall (community loops, bop-wall worker) ================= */
 const WALL_API = 'https://bop-wall.wmmclarke.workers.dev';
-let wallPlayingId = null, wallBusy = false;
+let wallPlayingId = null, wallBusy = false, wallSort = 'new';
+// anonymous device token: proves "this device posted / liked that" - no accounts
+const wallToken = (() => { try {
+  let t = localStorage.getItem('bop-wall-token');
+  if (!t) {
+    t = Array.from(crypto.getRandomValues(new Uint8Array(16)),
+      b => b.toString(16).padStart(2, '0')).join('');
+    localStorage.setItem('bop-wall-token', t);
+  }
+  return t;
+} catch (e) { return 'anon'; } })();
+const loadIds = k => { try { return new Set(JSON.parse(localStorage.getItem(k) || '[]')); }
+  catch (e) { return new Set(); } };
+const saveIds = (k, s) => { try { localStorage.setItem(k, JSON.stringify([...s].slice(-300))); }
+  catch (e) {} };
+const wallMine = loadIds('bop-wall-mine'), wallLiked = loadIds('bop-wall-liked');
 function fmtAge(t) {
   const s = (Date.now() - t) / 1000;
   if (s < 3600) return Math.max(1, Math.round(s / 60)) + 'm';
@@ -1270,11 +1306,43 @@ function restoreMine() {
   paintWallRows(null);
 }
 function wallRow(l) {
+  const mine = wallMine.has(l.id);
   const d = document.createElement('div');
-  d.className = 'wrow'; d.dataset.id = l.id;
+  d.className = 'wrow' + (mine ? ' mine' : ''); d.dataset.id = l.id;
   d.innerHTML = '<span class="wname"></span><span class="wmeta">' +
-    fmtAge(l.created) + ' · ' + l.plays + ' ▶</span>';
+    fmtAge(l.created) + ' · ' + l.plays + ' ▶</span>' +
+    '<div class="wlike">♥<span></span></div>' + (mine ? '<div class="wdel">✕</div>' : '');
   d.querySelector('.wname').textContent = l.name;
+  const likeEl = d.querySelector('.wlike'), likeN = likeEl.querySelector('span');
+  likeN.textContent = l.likes || 0;
+  likeEl.classList.toggle('on', wallLiked.has(l.id));
+  likeEl.addEventListener('pointerdown', async e => {
+    e.preventDefault(); e.stopPropagation();
+    try {
+      const j = await wallFetch('/loops/' + l.id + '/like', { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: wallToken }) });
+      likeN.textContent = j.likes;
+      likeEl.classList.toggle('on', j.liked);
+      if (j.liked) wallLiked.add(l.id); else wallLiked.delete(l.id);
+      saveIds('bop-wall-liked', wallLiked);
+    } catch (err) { showToast('the wall is unreachable'); }
+  });
+  const del = d.querySelector('.wdel');
+  if (del) del.addEventListener('pointerdown', async e => {
+    e.preventDefault(); e.stopPropagation();
+    if (!del.classList.contains('arm')) {   // two taps to take a loop down
+      del.classList.add('arm'); del.textContent = 'SURE?';
+      setTimeout(() => { del.classList.remove('arm'); del.textContent = '✕'; }, 2000);
+      return;
+    }
+    try {
+      await wallFetch('/loops/' + l.id, { method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: wallToken }) });
+      wallMine.delete(l.id); saveIds('bop-wall-mine', wallMine);
+      if (wallPlayingId === l.id) restoreMine();
+      d.remove(); showToast('taken down');
+    } catch (err) { showToast(err.message || 'the wall is unreachable'); }
+  });
   d.addEventListener('pointerdown', async e => {
     e.preventDefault();
     try {
@@ -1292,7 +1360,7 @@ async function loadWall(page) {
   const list = $('wallList');
   if (page === 0) list.innerHTML = '';
   try {
-    const j = await wallFetch('/loops?page=' + page);
+    const j = await wallFetch('/loops?page=' + page + '&sort=' + wallSort);
     if (!j.loops.length && page === 0)
       list.innerHTML = '<p class="ovhint">nothing here yet - post the first loop</p>';
     for (const l of j.loops) list.appendChild(wallRow(l));
@@ -1319,14 +1387,27 @@ $('wallPost').addEventListener('pointerdown', async e => {
   if (wallSnap) { showToast('keep it or close first'); return; }
   wallBusy = true;
   try {
-    await wallFetch('/loops', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: $('wallName').value, code: encodeShare() }) });
+    const j = await wallFetch('/loops', { method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: $('wallName').value, code: encodeShare(), owner: wallToken }) });
+    if (j.id) { wallMine.add(j.id); saveIds('bop-wall-mine', wallMine); }
     showToast('posted to the wall');
     $('wallName').value = '';
     loadWall(0);
   } catch (err) { showToast(err.message || 'the wall is unreachable'); }
   wallBusy = false;
 });
+function paintWallTabs() {
+  $('wallNew').classList.toggle('on', wallSort === 'new');
+  $('wallTop').classList.toggle('on', wallSort === 'top');
+}
+for (const [id, s] of [['wallNew', 'new'], ['wallTop', 'top']])
+  $(id).addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (wallSort === s) return;
+    wallSort = s; paintWallTabs(); loadWall(0);
+  });
+paintWallTabs();
 function closeShare() { $('shareOv').hidden = true; restoreMine(); }
 $('share').addEventListener('pointerdown', e => {
   e.preventDefault();
