@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "voicebox",
+      "name": "Voicebox",
+      "accent": "#ffb648",
+      "tagline": "Three fingers on a piano. A chord symbol appears - move your fingers to spell it, and the fewest semitones travelled is par. Hold the common tone, let the others lean, and the inversions every pianist actually plays turn out to be the cheap answer. Lock the last chord and your voicings play back as the song they were all along."
+    },
+    {
       "slug": "bop",
       "name": "Bop",
       "accent": "#ffd166",

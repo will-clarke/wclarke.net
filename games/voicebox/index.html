@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#171420">
+<title>voicebox</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { height:100%; overscroll-behavior:none; }
+  body {
+    background:#171420; color:#f2ead9;
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    user-select:none; -webkit-user-select:none; touch-action:manipulation;
+    display:flex; flex-direction:column; align-items:center;
+  }
+  .screen { width:100%; max-width:520px; min-height:100dvh; padding:max(14px, env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; }
+  [hidden] { display:none !important; }
+  button { font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+
+  /* ---- menu ---- */
+  #menu h1 { font-size:34px; letter-spacing:0.28em; font-weight:800; margin-top:22px; text-align:center; }
+  #menu h1 span { color:#ffb648; }
+  #menu .tag { text-align:center; color:#8f87a3; margin:10px 0 6px; font-size:14px; }
+  #menu .chap { text-align:center; color:#5f5876; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:18px; }
+  #grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .card { background:#221e30; border:1px solid #2f2942; border-radius:14px; padding:12px 12px 10px; text-align:left; min-height:86px; display:flex; flex-direction:column; gap:3px; }
+  .card:active { background:#2a2540; }
+  .card .num { color:#5f5876; font-size:11px; letter-spacing:0.15em; }
+  .card .nm { font-weight:700; font-size:15px; }
+  .card .pg { color:#8f87a3; font-size:12px; }
+  .card .bs { font-size:12px; margin-top:auto; color:#8f87a3; }
+  .card .bs.perfect { color:#ffd97a; font-weight:700; }
+  .card .bs.done { color:#3ec9b8; }
+  .card.locked { opacity:0.38; }
+  #menu .foot { text-align:center; color:#5f5876; font-size:12px; margin-top:auto; padding-top:22px; }
+
+  /* ---- play ---- */
+  #top { display:flex; align-items:center; gap:8px; }
+  #top .icon { width:42px; height:42px; border-radius:12px; background:#221e30; border:1px solid #2f2942; font-size:19px; color:#c9c2d8; display:flex; align-items:center; justify-content:center; }
+  #top .icon:active { background:#2a2540; }
+  #ltitle { flex:1; text-align:left; padding-left:4px; }
+  #ltitle .n { color:#5f5876; font-size:11px; letter-spacing:0.15em; }
+  #ltitle .t { font-weight:700; font-size:16px; }
+
+  #strip { display:flex; justify-content:center; align-items:center; gap:5px; margin:16px 0 4px; flex-wrap:wrap; }
+  .chip { background:#221e30; border:1px solid #2f2942; border-radius:10px; padding:6px 9px; font-size:13px; font-weight:700; color:#5f5876; transition:all .2s; }
+  .chip.locked { color:#f2ead9; border-color:#3a3355; }
+  .chip.cur { color:#ffb648; border-color:#ffb648; box-shadow:0 0 12px #ffb64833; }
+  .arrow { color:#4a4362; font-size:12px; }
+
+  #hud { text-align:center; color:#8f87a3; font-size:13px; height:20px; margin-bottom:2px; }
+  #hud b { color:#f2ead9; font-weight:700; }
+
+  #targ { text-align:center; margin:10px 0 14px; min-height:96px; }
+  #targ .lead { color:#5f5876; font-size:11px; letter-spacing:0.24em; text-transform:uppercase; }
+  #targ .sym { font-size:58px; font-weight:800; line-height:1.15; }
+  #targ .sym.gold { color:#ffd97a; }
+  #targ .lets { color:#8f87a3; font-size:16px; letter-spacing:0.1em; }
+  #targ .cap { color:#ffb648; font-size:13px; height:18px; }
+
+  #kbwrap { position:relative; }
+  #kb { width:100%; display:block; border-radius:14px; touch-action:none; }
+  #playhint { text-align:center; color:#4a4362; font-size:12px; margin-top:12px; }
+</style>
+</head>
+<body>
+
+<div id="menu" class="screen">
+  <h1>VOICE<span>BOX</span></h1>
+  <div class="tag">spell the chord. move your fingers as little as you can.</div>
+  <div class="chap">chapter one · c major triads</div>
+  <div id="grid"></div>
+  <div class="foot">sound on 🔊 · inversions are the cheap answer</div>
+</div>
+
+<div id="play" class="screen" hidden>
+  <div id="top">
+    <button class="icon" id="back">‹</button>
+    <div id="ltitle"><div class="n"></div><div class="t"></div></div>
+    <button class="icon" id="undo">↶</button>
+    <button class="icon" id="reset">⟳</button>
+  </div>
+  <div id="strip"></div>
+  <div id="hud"></div>
+  <div id="targ">
+    <div class="lead">spell</div>
+    <div class="sym"></div>
+    <div class="lets"></div>
+    <div class="cap"></div>
+  </div>
+  <div id="kbwrap"><canvas id="kb"></canvas></div>
+  <div id="playhint">drag a dot to a key · or tap a dot, then a key</div>
+</div>
+
+<script>
+'use strict';
+/* ================= data ================= */
+const NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const CHORDS = {
+  C:  { root:0, pcs:[0,4,7]  },
+  F:  { root:5, pcs:[5,9,0]  },
+  G:  { root:7, pcs:[7,11,2] },
+  Am: { root:9, pcs:[9,0,4]  },
+};
+const RANGE = [59, 76]; // B3..E5
+// pars verified by lab/solve.mjs - the harness is ground truth
+const LEVELS = [
+  { name:'first shape', prog:['C'],                  scatter:[62,66,71], hint:true,
+    blurb:'cover all three letters' },
+  { name:'two shapes',  prog:['F','G'],              scatter:[60,68,73],
+    blurb:'no ghost lights this time' },
+  { name:'the pivot',   prog:['C','G'],              start:[60,64,67], par:3 },
+  { name:'lean',        prog:['C','F'],              start:[60,64,67], par:3 },
+  { name:'the twin',    prog:['C','Am'],             start:[60,64,67], par:2 },
+  { name:'round trip',  prog:['C','F','G','C'],      start:[60,64,67], par:12 },
+  { name:'the fifties', prog:['C','Am','F','G'],     start:[60,64,67], par:9 },
+  { name:'homeward',    prog:['C','G','Am','F','C'], start:[60,64,67], par:12 },
+];
+const FCOL = ['#ff6b5e', '#3ec9b8', '#ffb648']; // finger dot colours
+
+/* ================= persistence ================= */
+const SKEY = 'voicebox-v1';
+let save = { best:{} };
+try { const s = JSON.parse(localStorage.getItem(SKEY)); if (s && s.best) save = s; } catch (e) {}
+function persist() { try { localStorage.setItem(SKEY, JSON.stringify(save)); } catch (e) {} }
+const unlocked = (i) => i === 0 || !!save.best[i - 1] || !!save.best[i];
+
+/* ================= music helpers ================= */
+const PERMS = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
+function matchCost(a, b) { // a,b: 3 midis; returns {cost, map} map[i]=index in a matched to b[i]
+  let best = Infinity, map = null;
+  for (const p of PERMS) {
+    let s = 0;
+    for (let i = 0; i < 3; i++) s += Math.abs(a[p[i]] - b[i]);
+    if (s < best) { best = s; map = p; }
+  }
+  return { cost: best, map };
+}
+function invName(sym, v) {
+  const low = Math.min(...v) % 12;
+  return low === CHORDS[sym].root ? sym : sym + '/' + NOTE[low];
+}
+function invCaption(sym, v) {
+  const { root, pcs } = CHORDS[sym];
+  const low = Math.min(...v) % 12;
+  if (low === root) return 'root position';
+  if (low === pcs[1]) return 'first inversion';
+  return 'second inversion';
+}
+const fq = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+/* ================= audio (bop recipes) ================= */
+let AC = null, master = null, noiseBuf = null;
+function audio() {
+  if (!AC) {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0.9; master.connect(AC.destination);
+    noiseBuf = AC.createBuffer(1, AC.sampleRate, AC.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  if (AC.state === 'suspended') AC.resume();
+  return AC;
+}
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) AC.suspend(); else AC.resume();
+});
+function audition(m) {
+  const ac = audio(), t = ac.currentTime;
+  const o = ac.createOscillator(); o.type = 'triangle'; o.frequency.value = fq(m);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.15, t + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.4);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + 0.45);
+}
+function pad(m, t, dur, peak, dest) {
+  const ac = AC;
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.4;
+  lp.frequency.setValueAtTime(2200, t);
+  lp.frequency.exponentialRampToValueAtTime(900, t + Math.max(dur, 0.3));
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(peak, t + 0.05);
+  g.gain.setTargetAtTime(peak * 0.75, t + 0.06, 0.4);
+  g.gain.setTargetAtTime(0.0001, t + dur, 0.22);
+  lp.connect(g); g.connect(dest || master);
+  for (const d of [-7, 7]) {
+    const o = ac.createOscillator(); o.type = 'sawtooth';
+    o.frequency.value = fq(m); o.detune.value = d;
+    o.connect(lp); o.start(t); o.stop(t + dur + 1.4);
+  }
+}
+function strum(v) {
+  const ac = audio(), t = ac.currentTime;
+  v.slice().sort((a, b) => a - b).forEach((m, i) => pad(m, t + i * 0.05, 1.25, 0.1));
+}
+function bassNote(m, t, dur, dest) {
+  const ac = AC;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+  g.gain.setTargetAtTime(0.0001, t + dur * 0.7, 0.12);
+  g.connect(dest || master);
+  const o = ac.createOscillator(); o.type = 'sine'; o.frequency.value = fq(m);
+  o.connect(g); o.start(t); o.stop(t + dur + 0.5);
+  const o2 = ac.createOscillator(); o2.type = 'triangle'; o2.frequency.value = fq(m + 12);
+  const g2 = ac.createGain(); g2.gain.value = 0.3;
+  o2.connect(g2); g2.connect(g); o2.start(t); o2.stop(t + dur + 0.5);
+}
+function kick(t, dest) {
+  const ac = AC;
+  const o = ac.createOscillator(); o.type = 'sine';
+  o.frequency.setValueAtTime(150, t);
+  o.frequency.exponentialRampToValueAtTime(44, t + 0.11);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.5, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  o.connect(g); g.connect(dest || master); o.start(t); o.stop(t + 0.35);
+}
+function hat(t, dest, vol) {
+  const ac = AC;
+  const s = ac.createBufferSource(); s.buffer = noiseBuf;
+  const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000;
+  const g = ac.createGain();
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  s.connect(hp); hp.connect(g); g.connect(dest || master); s.start(t); s.stop(t + 0.08);
+}
+
+/* ================= keyboard geometry ================= */
+const cv = document.getElementById('kb');
+const ctx = cv.getContext('2d');
+let KB = null; // {W,H,keys:[{m,black,x,w,y,h}],byMidi:{}}
+const isBlack = (m) => NOTE[m % 12].includes('#');
+function layoutKB() {
+  const cssW = cv.clientWidth;
+  const cssH = Math.min(260, Math.max(190, Math.round(window.innerHeight * 0.32)));
+  const dpr = window.devicePixelRatio || 1;
+  cv.style.height = cssH + 'px';
+  cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const whites = [];
+  for (let m = RANGE[0]; m <= RANGE[1]; m++) if (!isBlack(m)) whites.push(m);
+  const ww = cssW / whites.length, bw = ww * 0.6, bh = cssH * 0.58;
+  const keys = [], byMidi = {};
+  whites.forEach((m, i) => {
+    const k = { m, black:false, x:i * ww, w:ww, y:0, h:cssH };
+    keys.push(k); byMidi[m] = k;
+  });
+  for (let m = RANGE[0]; m <= RANGE[1]; m++) if (isBlack(m)) {
+    const li = whites.indexOf(m - 1);
+    const k = { m, black:true, x:(li + 1) * ww - bw / 2, w:bw, y:0, h:bh };
+    keys.push(k); byMidi[m] = k;
+  }
+  KB = { W:cssW, H:cssH, keys, byMidi, bh };
+}
+function hitKey(x, y) {
+  for (const k of KB.keys) if (k.black && y < k.h && x >= k.x && x < k.x + k.w) return k.m;
+  for (const k of KB.keys) if (!k.black && x >= k.x && x < k.x + k.w) return k.m;
+  return null;
+}
+function keyCenter(m) {
+  const k = KB.byMidi[m];
+  return k.black ? { x:k.x + k.w / 2, y:k.h * 0.62 } : { x:k.x + k.w / 2, y:KB.H * 0.8 };
+}
+
+/* ================= game state ================= */
+let G = null;
+const $ = (s) => document.querySelector(s);
+const menuEl = $('#menu'), playEl = $('#play');
+
+function startLevel(li) {
+  const lv = LEVELS[li];
+  G = {
+    li, lv,
+    fingers: (lv.scatter || lv.start).slice(),
+    locked: lv.par != null ? [lv.start.slice()] : [],
+    costs: [],
+    busy: false, done: false, sel: null, drag: null,
+    effects: [], flash: {}, playback: null,
+  };
+  menuEl.hidden = true; playEl.hidden = false;
+  layoutKB();
+  $('#ltitle .n').textContent = 'LEVEL ' + (li + 1);
+  $('#ltitle .t').textContent = lv.name;
+  renderStrip(); renderTarget();
+}
+const curTarget = () => G.lv.prog[G.locked.length];
+
+function renderStrip() {
+  const el = $('#strip'); el.innerHTML = '';
+  G.lv.prog.forEach((sym, i) => {
+    if (i) { const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; el.appendChild(a); }
+    const c = document.createElement('span'); c.className = 'chip';
+    if (i < G.locked.length) { c.classList.add('locked'); c.textContent = invName(sym, G.locked[i]); }
+    else if (i === G.locked.length && !G.done) { c.classList.add('cur'); c.textContent = sym; }
+    else c.textContent = sym;
+    el.appendChild(c);
+  });
+  const hud = $('#hud');
+  if (G.lv.par != null) {
+    const total = G.costs.reduce((a, b) => a + b, 0);
+    hud.innerHTML = 'cost <b>' + total + '</b> · par ' + G.lv.par;
+  } else hud.textContent = G.lv.blurb || '';
+}
+function renderTarget() {
+  const sym = curTarget();
+  const t = $('#targ');
+  if (!sym) return;
+  t.querySelector('.lead').textContent = 'spell';
+  const se = t.querySelector('.sym'); se.textContent = sym; se.classList.remove('gold');
+  t.querySelector('.lets').textContent = CHORDS[sym].pcs.map((p) => NOTE[p]).join(' · ');
+  t.querySelector('.cap').textContent = '';
+}
+function showLockedTarget(sym, v) {
+  const t = $('#targ');
+  t.querySelector('.lead').textContent = 'locked';
+  const se = t.querySelector('.sym'); se.textContent = invName(sym, v); se.classList.add('gold');
+  t.querySelector('.lets').textContent = v.slice().sort((a, b) => a - b)
+    .map((m) => NOTE[m % 12] + (Math.floor(m / 12) - 1)).join(' · ');
+  t.querySelector('.cap').textContent = invCaption(sym, v);
+}
+
+/* ================= spelling & locking ================= */
+function spelled() {
+  const sym = curTarget(); if (!sym) return false;
+  const have = G.fingers.map((m) => m % 12).sort((a, b) => a - b).join(',');
+  const want = CHORDS[sym].pcs.slice().sort((a, b) => a - b).join(',');
+  return have === want && new Set(G.fingers).size === 3;
+}
+function checkSpell() {
+  if (!G || G.busy || G.done || G.playback) return;
+  if (spelled()) lock();
+}
+function lock() {
+  const sym = curTarget();
+  const v = G.fingers.slice().sort((a, b) => a - b);
+  const prev = G.locked[G.locked.length - 1];
+  G.busy = true; G.sel = null;
+  if (prev) {
+    const { cost, map } = matchCost(prev, v);
+    G.costs.push(cost);
+    const now = performance.now();
+    v.forEach((m, i) => {
+      const d = Math.abs(m - prev[map[i]]);
+      if (d === 0) G.flash[m] = { t0: now, col: '#ffd97a' };
+      else {
+        const c = keyCenter(m);
+        G.effects.push({ x: c.x, y: c.y - 28, txt: '+' + d, t0: now });
+        G.flash[m] = { t0: now, col: '#ffffff' };
+      }
+    });
+  } else {
+    const now = performance.now();
+    v.forEach((m) => { G.flash[m] = { t0: now, col: '#ffd97a' }; });
+  }
+  strum(v);
+  G.locked.push(v);
+  renderStrip(); showLockedTarget(sym, v);
+  setTimeout(() => {
+    G.busy = false;
+    if (G.locked.length >= G.lv.prog.length) complete();
+    else renderTarget();
+  }, 900);
+}
+function undo() {
+  if (!G || G.busy || G.done || G.playback) return;
+  const floor = G.lv.par != null ? 1 : 0;
+  if (G.locked.length <= floor) return;
+  G.locked.pop(); G.costs.pop(); G.sel = null;
+  renderStrip(); renderTarget();
+}
+function resetLevel() {
+  if (!G || G.playback) return;
+  startLevel(G.li);
+}
+
+/* ================= completion & playback ================= */
+function complete() {
+  G.done = true;
+  const total = G.costs.reduce((a, b) => a + b, 0);
+  const lv = G.lv;
+  if (lv.par != null) {
+    const prev = save.best[G.li];
+    if (!prev || total < prev.cost) save.best[G.li] = { cost: total, perfect: total === lv.par };
+  } else save.best[G.li] = { done: 1 };
+  persist();
+  renderStrip();
+  const t = $('#targ');
+  t.querySelector('.lead').textContent = 'your take';
+  const se = t.querySelector('.sym'); se.textContent = '♪'; se.classList.add('gold');
+  t.querySelector('.lets').textContent = 'tap the keys to skip';
+  t.querySelector('.cap').textContent = '';
+  startPlayback();
+}
+function startPlayback() {
+  const ac = audio();
+  const pb = ac.createGain(); pb.gain.value = 1; pb.connect(master);
+  const beat = 60 / 88, bar = 4 * beat;
+  const t0 = ac.currentTime + 0.2;
+  const seq = G.locked, prog = G.lv.prog;
+  seq.forEach((v, i) => {
+    const bt = t0 + i * bar;
+    v.forEach((m, j) => pad(m, bt + j * 0.03, bar * 0.92, 0.09, pb));
+    const bm = 36 + CHORDS[prog[i]].root;
+    bassNote(bm, bt, beat * 1.7, pb);
+    bassNote(bm, bt + 2 * beat, beat * 1.7, pb);
+    kick(bt, pb); kick(bt + 2 * beat, pb);
+    for (let k = 0; k < 8; k++) hat(bt + k * beat / 2, pb, k % 2 ? 0.02 : 0.045);
+  });
+  const ringT = t0 + seq.length * bar;
+  seq[seq.length - 1].forEach((m, j) => pad(m, ringT + j * 0.04, 2.1, 0.1, pb));
+  kick(ringT, pb);
+  G.playback = { t0, bar, n: seq.length, pb,
+    timer: setTimeout(showResult, (seq.length * bar + 2.8) * 1000) };
+}
+function skipPlayback() {
+  const p = G && G.playback; if (!p) return;
+  clearTimeout(p.timer);
+  p.pb.gain.setTargetAtTime(0.0001, AC.currentTime, 0.05);
+  G.playback = null;
+  showResult();
+}
+function showResult() {
+  G.playback = null;
+  const lv = G.lv, total = G.costs.reduce((a, b) => a + b, 0);
+  const t = $('#targ');
+  const perfect = lv.par != null && total === lv.par;
+  t.querySelector('.lead').textContent = perfect ? '★ ★ ★' : 'solved';
+  const se = t.querySelector('.sym');
+  se.textContent = perfect ? 'PERFECT' : (lv.par != null ? 'cost ' + total : 'nice');
+  se.classList.toggle('gold', perfect);
+  t.querySelector('.lets').textContent =
+    lv.par != null ? (perfect ? 'not a semitone wasted' : 'par is ' + lv.par + ' - undo-proof it or ⟳') : 'shape learned';
+  t.querySelector('.cap').textContent = '';
+  const hint = $('#playhint');
+  hint.innerHTML = '';
+  const mk = (txt, fn) => {
+    const b = document.createElement('button'); b.textContent = txt; b.onclick = fn;
+    b.style.cssText = 'margin:0 7px;padding:10px 16px;border-radius:12px;background:#221e30;border:1px solid #3a3355;font-weight:700;font-size:14px;color:#f2ead9;';
+    hint.appendChild(b);
+  };
+  mk('⟳ again', () => { restoreHint(); resetLevel(); });
+  if (G.li + 1 < LEVELS.length) mk('next ›', () => { restoreHint(); startLevel(G.li + 1); });
+  mk('menu', () => { restoreHint(); showMenu(); });
+}
+function restoreHint() {
+  $('#playhint').textContent = 'drag a dot to a key · or tap a dot, then a key';
+}
+
+/* ================= drawing ================= */
+function draw() {
+  requestAnimationFrame(draw);
+  if (playEl.hidden || !KB) return;
+  const now = performance.now();
+  const { W, H, keys } = KB;
+  ctx.clearRect(0, 0, W, H);
+  // playback lighting
+  let lit = null;
+  if (G && G.playback && AC) {
+    const i = Math.floor((AC.currentTime - G.playback.t0) / G.playback.bar);
+    lit = new Set(G.locked[Math.max(0, Math.min(i, G.playback.n - 1))]);
+  }
+  // ghost hints (level 1 only)
+  let ghost = null;
+  if (G && G.lv.hint && !G.done) {
+    const sym = curTarget();
+    if (sym) ghost = new Set(CHORDS[sym].pcs);
+  }
+  const paint = (k) => {
+    const r = 6;
+    ctx.beginPath();
+    ctx.roundRect(k.x + 1, k.y, k.w - 2, k.h - 2, k.black ? [0, 0, r, r] : [0, 0, r, r]);
+    ctx.fillStyle = k.black ? '#241f2e' : '#f5efe2';
+    ctx.fill();
+    if (k.black) { ctx.strokeStyle = '#3a3355'; ctx.lineWidth = 1; ctx.stroke(); }
+    const fl = G && G.flash[k.m];
+    if (fl) {
+      const a = 1 - (now - fl.t0) / 700;
+      if (a <= 0) delete G.flash[k.m];
+      else { ctx.fillStyle = fl.col; ctx.globalAlpha = a * 0.55; ctx.fill(); ctx.globalAlpha = 1; }
+    }
+    if (lit && lit.has(k.m)) { ctx.fillStyle = '#ffb648'; ctx.globalAlpha = 0.45; ctx.fill(); ctx.globalAlpha = 1; }
+    if (ghost && ghost.has(k.m % 12)) { ctx.fillStyle = '#ffb648'; ctx.globalAlpha = 0.32; ctx.fill(); ctx.globalAlpha = 1; }
+  };
+  keys.filter((k) => !k.black).forEach(paint);
+  keys.filter((k) => k.black).forEach(paint);
+  // C landmarks
+  ctx.fillStyle = '#8f87a3'; ctx.font = '10px sans-serif'; ctx.textAlign = 'center';
+  for (const k of keys) if (!k.black && k.m % 12 === 0)
+    ctx.fillText('C' + (Math.floor(k.m / 12) - 1), k.x + k.w / 2, H - 6);
+  if (!G) return;
+  // fingers
+  G.fingers.forEach((m, fi) => {
+    let p = keyCenter(m), r = 14;
+    if (G.drag && G.drag.fi === fi && G.drag.moved) { p = { x: G.drag.px, y: G.drag.py }; r = 18; }
+    // nudge overlapping dots apart
+    G.fingers.forEach((m2, fj) => { if (fj < fi && m2 === m) p = { x: p.x, y: p.y - 26 }; });
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+    ctx.fillStyle = FCOL[fi]; ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = G.sel === fi ? '#f2ead9' : 'rgba(23,20,32,0.55)';
+    ctx.stroke();
+  });
+  // floating +n tags
+  G.effects = G.effects.filter((e) => now - e.t0 < 900);
+  for (const e of G.effects) {
+    const a = 1 - (now - e.t0) / 900;
+    ctx.globalAlpha = a; ctx.fillStyle = '#171420';
+    ctx.font = 'bold 15px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(e.txt, e.x, e.y - (1 - a) * 22);
+    ctx.globalAlpha = 1;
+  }
+}
+requestAnimationFrame(draw);
+
+/* ================= input ================= */
+cv.addEventListener('pointerdown', (ev) => {
+  ev.preventDefault(); audio();
+  if (!G) return;
+  if (G.playback) { skipPlayback(); return; }
+  if (G.busy || G.done) return;
+  const rect = cv.getBoundingClientRect();
+  const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+  // nearest finger within reach
+  let bi = -1, bd = 40;
+  G.fingers.forEach((m, fi) => {
+    const c = keyCenter(m);
+    const d = Math.hypot(c.x - x, c.y - y);
+    if (d < bd) { bd = d; bi = fi; }
+  });
+  // an armed finger takes priority: any tap off its own key places it there
+  if (G.sel != null) {
+    const k = hitKey(x, y);
+    if (k != null && k !== G.fingers[G.sel]) {
+      G.fingers[G.sel] = k; G.sel = null; audition(k); checkSpell();
+      return;
+    }
+  }
+  if (bi >= 0) {
+    G.drag = { fi: bi, sx: x, sy: y, px: x, py: y, moved: false };
+    try { cv.setPointerCapture(ev.pointerId); } catch (e) {}
+    return;
+  }
+  const k = hitKey(x, y);
+  if (k == null) return;
+  audition(k);
+});
+cv.addEventListener('pointermove', (ev) => {
+  if (!G || !G.drag) return;
+  const rect = cv.getBoundingClientRect();
+  const x = Math.max(0, Math.min(KB.W - 1, ev.clientX - rect.left));
+  const y = Math.max(0, Math.min(KB.H - 1, ev.clientY - rect.top));
+  const d = G.drag;
+  d.px = x; d.py = y;
+  if (!d.moved && Math.hypot(x - d.sx, y - d.sy) > 7) d.moved = true;
+  if (d.moved) {
+    const k = hitKey(x, y);
+    if (k != null && k !== G.fingers[d.fi]) { G.fingers[d.fi] = k; audition(k); }
+  }
+});
+cv.addEventListener('pointerup', (ev) => {
+  if (!G || !G.drag) return;
+  const d = G.drag; G.drag = null;
+  if (!d.moved) G.sel = (G.sel === d.fi) ? null : d.fi;
+  else { G.sel = null; checkSpell(); }
+});
+cv.addEventListener('pointercancel', () => { if (G) G.drag = null; });
+
+$('#undo').onclick = undo;
+$('#reset').onclick = () => { restoreHint(); resetLevel(); };
+$('#back').onclick = () => { if (G && G.playback) skipPlayback(); restoreHint(); showMenu(); };
+
+/* ================= menu ================= */
+function showMenu() {
+  G = null;
+  playEl.hidden = true; menuEl.hidden = false;
+  const grid = $('#grid'); grid.innerHTML = '';
+  LEVELS.forEach((lv, i) => {
+    const b = document.createElement('button');
+    b.className = 'card' + (unlocked(i) ? '' : ' locked');
+    const best = save.best[i];
+    let bs = '—', cls = '';
+    if (best) {
+      if (lv.par == null) { bs = 'done ✓'; cls = 'done'; }
+      else if (best.perfect) { bs = 'PERFECT ★'; cls = 'perfect'; }
+      else { bs = 'best ' + best.cost + ' · par ' + lv.par; cls = 'done'; }
+    } else if (lv.par != null) bs = 'par ' + lv.par;
+    b.innerHTML = '<div class="num">' + (i + 1) + (unlocked(i) ? '' : ' 🔒') + '</div>' +
+      '<div class="nm">' + lv.name + '</div>' +
+      '<div class="pg">' + lv.prog.join(' → ') + '</div>' +
+      '<div class="bs ' + cls + '">' + bs + '</div>';
+    b.onclick = () => { if (unlocked(i)) { audio(); startLevel(i); } };
+    grid.appendChild(b);
+  });
+}
+window.addEventListener('resize', () => { if (!playEl.hidden) layoutKB(); });
+showMenu();
+
+/* debug hook for headless verification */
+window.__vb = {
+  start: startLevel,
+  set: (a) => { G.fingers = a.slice(); checkSpell(); },
+  skip: skipPlayback,
+  state: () => G && {
+    li: G.li, locked: G.locked.map((v) => v.slice()), fingers: G.fingers.slice(),
+    costs: G.costs.slice(), busy: G.busy, done: G.done, playback: !!G.playback,
+  },
+  save: () => save,
+};
+</script>
+</body>
+</html>
