@@ -24,6 +24,7 @@
   #menu .tag { text-align:center; color:#8f87a3; margin:10px 0 6px; font-size:14px; }
   #menu .chap { text-align:center; color:#5f5876; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; margin-bottom:18px; }
   #grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .sect { grid-column:1/-1; color:#5f5876; font-size:11px; letter-spacing:0.22em; text-transform:uppercase; text-align:center; margin:8px 0 0; }
   .card { background:#221e30; border:1px solid #2f2942; border-radius:14px; padding:12px 12px 10px; text-align:left; min-height:86px; display:flex; flex-direction:column; gap:3px; }
   .card:active { background:#2a2540; }
   .card .num { color:#5f5876; font-size:11px; letter-spacing:0.15em; }
@@ -59,6 +60,31 @@
   #targ .lets { color:#8f87a3; font-size:16px; letter-spacing:0.1em; }
   #targ .cap { color:#ffb648; font-size:13px; height:18px; }
 
+  /* ---- codex ---- */
+  #codexbtn { display:block; margin:16px auto 0; padding:11px 20px; border-radius:12px;
+    background:#221e30; border:1px solid #3a3355; font-weight:700; font-size:14px; color:#ffb648; }
+  #codexbtn:active { background:#2a2540; }
+  #codex .icon { width:42px; height:42px; border-radius:12px; background:#221e30; border:1px solid #2f2942; font-size:19px; color:#c9c2d8; display:flex; align-items:center; justify-content:center; }
+  .cxhint { text-align:center; color:#5f5876; font-size:12px; margin:12px 0 4px; }
+  .ptext { color:#c9c2d8; font-size:13px; line-height:1.55; }
+  .ptext p { margin:0 0 9px; }
+  .ptext b { color:#ffb648; font-weight:700; }
+  .dgl2 { color:#8f87a3; font-size:11px; margin:1px 0 5px; }
+  .dgl2 b { color:#f2ead9; }
+  .mini + .mini { margin-top:8px; }
+  #cards { display:flex; flex-direction:column; gap:12px; margin-top:8px; padding-bottom:20px; }
+  .ccard { background:#221e30; border:1px solid #2f2942; border-radius:16px; padding:14px; }
+  .ccard.dim { opacity:0.35; }
+  .ccard .hd { display:flex; align-items:baseline; gap:10px; margin-bottom:8px; }
+  .ccard .hd .s { font-size:26px; font-weight:800; }
+  .ccard .hd .l { color:#8f87a3; font-size:13px; }
+  .ccard .hd .n { margin-left:auto; color:#5f5876; font-size:12px; letter-spacing:0.08em; }
+  .ccard .row { display:flex; gap:10px; align-items:stretch; }
+  .ccard svg { display:block; }
+  .ccard .dg { background:#1a1626; border-radius:10px; padding:6px; }
+  .ccard .dg:active { background:#241f36; }
+  .ccard .dgl { text-align:center; color:#5f5876; font-size:10px; letter-spacing:0.14em; text-transform:uppercase; margin-top:2px; }
+
   #kbwrap { position:relative; }
   #kb { width:100%; display:block; border-radius:14px; touch-action:none; }
   #playhint { text-align:center; color:#4a4362; font-size:12px; margin-top:12px; }
@@ -69,15 +95,28 @@
 <div id="menu" class="screen">
   <h1>VOICE<span>BOX</span></h1>
   <div class="tag">spell the chord. move your fingers as little as you can.</div>
-  <div class="chap">chapter one · c major triads</div>
   <div id="grid"></div>
+  <button id="codexbtn"></button>
   <div class="foot">sound on 🔊 · inversions are the cheap answer</div>
+</div>
+
+<div id="codex" class="screen" hidden>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <button class="icon" id="cxback">‹</button>
+    <div style="flex:1;padding-left:4px;">
+      <div style="color:#5f5876;font-size:11px;letter-spacing:0.15em;">CHORD CODEX</div>
+      <div style="font-weight:700;font-size:16px;">every chord, three ways</div>
+    </div>
+  </div>
+  <div class="cxhint">tap any diagram to hear it</div>
+  <div id="cards"></div>
 </div>
 
 <div id="play" class="screen" hidden>
   <div id="top">
     <button class="icon" id="back">‹</button>
     <div id="ltitle"><div class="n"></div><div class="t"></div></div>
+    <button class="icon" id="help">?</button>
     <button class="icon" id="undo">↶</button>
     <button class="icon" id="reset">⟳</button>
   </div>
@@ -98,12 +137,29 @@
 /* ================= data ================= */
 const NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const CHORDS = {
-  C:  { root:0, pcs:[0,4,7]  },
-  F:  { root:5, pcs:[5,9,0]  },
-  G:  { root:7, pcs:[7,11,2] },
-  Am: { root:9, pcs:[9,0,4]  },
+  C:  { root:0, pcs:[0,4,7],  long:'C major' },
+  F:  { root:5, pcs:[5,9,0],  long:'F major' },
+  G:  { root:7, pcs:[7,11,2], long:'G major' },
+  Am: { root:9, pcs:[9,0,4],  long:'A minor' },
+  Em: { root:4, pcs:[4,7,11], long:'E minor' },
+  Cmaj7: { root:0, pcs:[0,4,7,11],  long:'C major seventh' },
+  Dm7:   { root:2, pcs:[2,5,9,0],   long:'D minor seventh' },
+  Em7:   { root:4, pcs:[4,7,11,2],  long:'E minor seventh' },
+  Fmaj7: { root:5, pcs:[5,9,0,4],   long:'F major seventh' },
+  G7:    { root:7, pcs:[7,11,2,5],  long:'G dominant seventh' },
+  Am7:   { root:9, pcs:[9,0,4,7],   long:'A minor seventh' },
+  E7:    { root:4, pcs:[4,8,11,2],  long:'E dominant seventh' },
 };
-const RANGE = [59, 76]; // B3..E5
+const RANGE = [59, 76]; // B3..E5 (levels may override)
+// a target may pin the bass: 'G/B'; 'X/rootOfX' displays plain but locks the bass
+function parseTarget(t) {
+  const [s, b] = t.split('/');
+  return { sym:s, pcs:CHORDS[s].pcs, root:CHORDS[s].root, bass: b != null ? NOTE.indexOf(b) : null };
+}
+function dispTarget(t) {
+  const p = parseTarget(t);
+  return (p.bass == null || p.bass === p.root) ? p.sym : p.sym + '/' + NOTE[p.bass];
+}
 // pars verified by lab/solve.mjs - the harness is ground truth
 const LEVELS = [
   { name:'first shape', prog:['C'],                  scatter:[62,66,71], hint:true,
@@ -116,23 +172,62 @@ const LEVELS = [
   { name:'round trip',  prog:['C','F','G','C'],      start:[60,64,67], par:12 },
   { name:'the fifties', prog:['C','Am','F','G'],     start:[60,64,67], par:9 },
   { name:'homeward',    prog:['C','G','Am','F','C'], start:[60,64,67], par:12 },
+  // ---- chapter two: name the shapes ----
+  { name:'three doors', prog:['C/C','C/E','C/G'],    start:[60,64,67], par:24 },
+  { name:'the shadow',  prog:['C','Em','Am','F'],    start:[60,64,67], par:5 },
+  { name:'the walkdown',prog:['C/C','G/B','Am/A','C/G','F/F'], start:[60,64,67], par:19,
+    range:[53,76] },
+  { name:'canon',       prog:['C/C','G/B','Am/A','Em/G','F/F','G/G'], start:[60,64,67], par:27,
+    range:[53,76] },
+  // ---- chapter three: four fingers ----
+  { name:'the seventh', prog:['Cmaj7','G7'],  scatter:[61,63,68,74], hint:true,
+    blurb:'four fingers now - one more third on top' },
+  { name:'two and five',prog:['Cmaj7','Dm7','G7'],          start:[60,64,67,71], par:9,  range:[59,76] },
+  { name:'the collapse',prog:['Cmaj7','G7','Cmaj7'],        start:[60,64,67,71], par:6,  range:[59,76] },
+  { name:'two five one',prog:['Cmaj7','Dm7','G7','Cmaj7'],  start:[60,64,67,71], par:12, range:[60,72] },
+  { name:'the circle',  prog:['Cmaj7','Em7','Am7','Dm7','G7','Cmaj7'], start:[60,64,67,71], par:20, range:[60,74] },
+  { name:'royal road',  prog:['Cmaj7','Fmaj7','G7','Em7','Am7'], start:[60,64,67,71], par:16, range:[60,74] },
+  { name:'the borrowed note', prog:['Am7','Dm7','E7','Am7'], start:[57,60,64,67], par:12, range:[55,76] },
 ];
-const FCOL = ['#ff6b5e', '#3ec9b8', '#ffb648']; // finger dot colours
+const CHAPTERS = [
+  { at:0, label:'chapter one · triads' },
+  { at:8, label:'chapter two · name the shapes' },
+  { at:12, label:'chapter three · four fingers' },
+];
+const FCOL = ['#ff6b5e', '#3ec9b8', '#ffb648', '#b48cff']; // finger dot colours
 
 /* ================= persistence ================= */
 const SKEY = 'voicebox-v1';
 let save = { best:{} };
 try { const s = JSON.parse(localStorage.getItem(SKEY)); if (s && s.best) save = s; } catch (e) {}
+// migrate index-keyed saves (pre-ch3) to name keys, so inserting levels never shifts progress
+if (Object.keys(save.best).some((k) => /^\d+$/.test(k))) {
+  const nb = {};
+  for (const [k, v] of Object.entries(save.best)) {
+    if (/^\d+$/.test(k)) { if (LEVELS[+k]) nb[LEVELS[+k].name] = v; }
+    else nb[k] = v;
+  }
+  save.best = nb;
+  persist();
+}
 function persist() { try { localStorage.setItem(SKEY, JSON.stringify(save)); } catch (e) {} }
-const unlocked = (i) => i === 0 || !!save.best[i - 1] || !!save.best[i];
+const best = (i) => save.best[LEVELS[i].name];
+const unlocked = (i) => i === 0 || !!best(i - 1) || !!best(i);
 
 /* ================= music helpers ================= */
-const PERMS = [[0,1,2],[0,2,1],[1,0,2],[1,2,0],[2,0,1],[2,1,0]];
-function matchCost(a, b) { // a,b: 3 midis; returns {cost, map} map[i]=index in a matched to b[i]
+function perms(n) {
+  if (n === 1) return [[0]];
+  const out = [];
+  for (const p of perms(n - 1))
+    for (let i = 0; i < n; i++) out.push([...p.slice(0, i), n - 1, ...p.slice(i)]);
+  return out;
+}
+const PERMS = { 3: perms(3), 4: perms(4) };
+function matchCost(a, b) { // returns {cost, map} map[i]=index in a matched to b[i]
   let best = Infinity, map = null;
-  for (const p of PERMS) {
+  for (const p of PERMS[a.length]) {
     let s = 0;
-    for (let i = 0; i < 3; i++) s += Math.abs(a[p[i]] - b[i]);
+    for (let i = 0; i < a.length; i++) s += Math.abs(a[p[i]] - b[i]);
     if (s < best) { best = s; map = p; }
   }
   return { cost: best, map };
@@ -142,11 +237,9 @@ function invName(sym, v) {
   return low === CHORDS[sym].root ? sym : sym + '/' + NOTE[low];
 }
 function invCaption(sym, v) {
-  const { root, pcs } = CHORDS[sym];
+  const { pcs } = CHORDS[sym];
   const low = Math.min(...v) % 12;
-  if (low === root) return 'root position';
-  if (low === pcs[1]) return 'first inversion';
-  return 'second inversion';
+  return ['root position', 'first inversion', 'second inversion', 'third inversion'][pcs.indexOf(low)];
 }
 const fq = (m) => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -242,15 +335,16 @@ function layoutKB() {
   cv.style.height = cssH + 'px';
   cv.width = Math.round(cssW * dpr); cv.height = Math.round(cssH * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const R = (G && G.lv.range) || RANGE;
   const whites = [];
-  for (let m = RANGE[0]; m <= RANGE[1]; m++) if (!isBlack(m)) whites.push(m);
+  for (let m = R[0]; m <= R[1]; m++) if (!isBlack(m)) whites.push(m);
   const ww = cssW / whites.length, bw = ww * 0.6, bh = cssH * 0.58;
   const keys = [], byMidi = {};
   whites.forEach((m, i) => {
     const k = { m, black:false, x:i * ww, w:ww, y:0, h:cssH };
     keys.push(k); byMidi[m] = k;
   });
-  for (let m = RANGE[0]; m <= RANGE[1]; m++) if (isBlack(m)) {
+  for (let m = R[0]; m <= R[1]; m++) if (isBlack(m)) {
     const li = whites.indexOf(m - 1);
     const k = { m, black:true, x:(li + 1) * ww - bw / 2, w:bw, y:0, h:bh };
     keys.push(k); byMidi[m] = k;
@@ -270,7 +364,7 @@ function keyCenter(m) {
 /* ================= game state ================= */
 let G = null;
 const $ = (s) => document.querySelector(s);
-const menuEl = $('#menu'), playEl = $('#play');
+const menuEl = $('#menu'), playEl = $('#play'), codexEl = $('#codex');
 
 function startLevel(li) {
   const lv = LEVELS[li];
@@ -282,7 +376,8 @@ function startLevel(li) {
     busy: false, done: false, sel: null, drag: null,
     effects: [], flash: {}, playback: null,
   };
-  menuEl.hidden = true; playEl.hidden = false;
+  menuEl.hidden = true; codexEl.hidden = true; playEl.hidden = false;
+  restoreHint();
   layoutKB();
   $('#ltitle .n').textContent = 'LEVEL ' + (li + 1);
   $('#ltitle .t').textContent = lv.name;
@@ -292,12 +387,12 @@ const curTarget = () => G.lv.prog[G.locked.length];
 
 function renderStrip() {
   const el = $('#strip'); el.innerHTML = '';
-  G.lv.prog.forEach((sym, i) => {
+  G.lv.prog.forEach((t, i) => {
     if (i) { const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→'; el.appendChild(a); }
     const c = document.createElement('span'); c.className = 'chip';
-    if (i < G.locked.length) { c.classList.add('locked'); c.textContent = invName(sym, G.locked[i]); }
-    else if (i === G.locked.length && !G.done) { c.classList.add('cur'); c.textContent = sym; }
-    else c.textContent = sym;
+    if (i < G.locked.length) { c.classList.add('locked'); c.textContent = invName(parseTarget(t).sym, G.locked[i]); }
+    else if (i === G.locked.length && !G.done) { c.classList.add('cur'); c.textContent = dispTarget(t); }
+    else c.textContent = dispTarget(t);
     el.appendChild(c);
   });
   const hud = $('#hud');
@@ -307,13 +402,14 @@ function renderStrip() {
   } else hud.textContent = G.lv.blurb || '';
 }
 function renderTarget() {
-  const sym = curTarget();
+  const tg = curTarget();
   const t = $('#targ');
-  if (!sym) return;
+  if (!tg) return;
+  const p = parseTarget(tg);
   t.querySelector('.lead').textContent = 'spell';
-  const se = t.querySelector('.sym'); se.textContent = sym; se.classList.remove('gold');
-  t.querySelector('.lets').textContent = CHORDS[sym].pcs.map((p) => NOTE[p]).join(' · ');
-  t.querySelector('.cap').textContent = '';
+  const se = t.querySelector('.sym'); se.textContent = dispTarget(tg); se.classList.remove('gold');
+  t.querySelector('.lets').textContent = p.pcs.map((pc) => NOTE[pc]).join(' · ');
+  t.querySelector('.cap').textContent = p.bass != null ? NOTE[p.bass] + ' in the bass' : '';
 }
 function showLockedTarget(sym, v) {
   const t = $('#targ');
@@ -326,17 +422,20 @@ function showLockedTarget(sym, v) {
 
 /* ================= spelling & locking ================= */
 function spelled() {
-  const sym = curTarget(); if (!sym) return false;
+  const t = curTarget(); if (!t) return false;
+  const p = parseTarget(t);
+  if (G.fingers.length !== p.pcs.length) return false;
   const have = G.fingers.map((m) => m % 12).sort((a, b) => a - b).join(',');
-  const want = CHORDS[sym].pcs.slice().sort((a, b) => a - b).join(',');
-  return have === want && new Set(G.fingers).size === 3;
+  const want = p.pcs.slice().sort((a, b) => a - b).join(',');
+  if (have !== want || new Set(G.fingers).size !== G.fingers.length) return false;
+  return p.bass == null || Math.min(...G.fingers) % 12 === p.bass;
 }
 function checkSpell() {
   if (!G || G.busy || G.done || G.playback) return;
   if (spelled()) lock();
 }
 function lock() {
-  const sym = curTarget();
+  const sym = parseTarget(curTarget()).sym;
   const v = G.fingers.slice().sort((a, b) => a - b);
   const prev = G.locked[G.locked.length - 1];
   G.busy = true; G.sel = null;
@@ -384,28 +483,41 @@ function complete() {
   const total = G.costs.reduce((a, b) => a + b, 0);
   const lv = G.lv;
   if (lv.par != null) {
-    const prev = save.best[G.li];
-    if (!prev || total < prev.cost) save.best[G.li] = { cost: total, perfect: total === lv.par };
-  } else save.best[G.li] = { done: 1 };
+    const prev = save.best[lv.name];
+    if (!prev || total < prev.cost) save.best[lv.name] = { cost: total, perfect: total === lv.par };
+  } else save.best[lv.name] = { done: 1 };
   persist();
   renderStrip();
-  const t = $('#targ');
-  t.querySelector('.lead').textContent = 'your take';
-  const se = t.querySelector('.sym'); se.textContent = '♪'; se.classList.add('gold');
-  t.querySelector('.lets').textContent = 'tap the keys to skip';
-  t.querySelector('.cap').textContent = '';
+  playbackUI();
   startPlayback();
+}
+function playbackUI() {
+  const t = $('#targ');
+  t.querySelector('.lead').textContent = 'your take · tap the keys to skip';
+  const se = t.querySelector('.sym'); se.textContent = '♪'; se.classList.add('gold');
+  t.querySelector('.lets').textContent = '';
+  t.querySelector('.cap').textContent = '';
+}
+function stripPlayhead(i) {
+  $('#strip').querySelectorAll('.chip').forEach((c, j) => c.classList.toggle('cur', j === i));
 }
 function startPlayback() {
   const ac = audio();
   const pb = ac.createGain(); pb.gain.value = 1; pb.connect(master);
   const beat = 60 / 88, bar = 4 * beat;
   const t0 = ac.currentTime + 0.2;
-  const seq = G.locked, prog = G.lv.prog;
+  const seq = G.locked;
+  let prevBass = null;
   seq.forEach((v, i) => {
     const bt = t0 + i * bar;
     v.forEach((m, j) => pad(m, bt + j * 0.03, bar * 0.92, 0.09, pb));
-    const bm = 36 + CHORDS[prog[i]].root;
+    // bass follows the voicing's own bottom note, staying near the last bass
+    const pc = Math.min(...v) % 12;
+    let bm;
+    if (prevBass == null) { bm = pc + 48; if (bm > 55) bm -= 12; }
+    else bm = [pc + 36, pc + 48, pc + 60]
+      .reduce((a, b) => Math.abs(b - prevBass) < Math.abs(a - prevBass) ? b : a);
+    prevBass = bm;
     bassNote(bm, bt, beat * 1.7, pb);
     bassNote(bm, bt + 2 * beat, beat * 1.7, pb);
     kick(bt, pb); kick(bt + 2 * beat, pb);
@@ -414,7 +526,7 @@ function startPlayback() {
   const ringT = t0 + seq.length * bar;
   seq[seq.length - 1].forEach((m, j) => pad(m, ringT + j * 0.04, 2.1, 0.1, pb));
   kick(ringT, pb);
-  G.playback = { t0, bar, n: seq.length, pb,
+  G.playback = { t0, bar, n: seq.length, pb, ui: -1,
     timer: setTimeout(showResult, (seq.length * bar + 2.8) * 1000) };
 }
 function skipPlayback() {
@@ -426,6 +538,7 @@ function skipPlayback() {
 }
 function showResult() {
   G.playback = null;
+  stripPlayhead(-1);
   const lv = G.lv, total = G.costs.reduce((a, b) => a + b, 0);
   const t = $('#targ');
   const perfect = lv.par != null && total === lv.par;
@@ -443,6 +556,7 @@ function showResult() {
     b.style.cssText = 'margin:0 7px;padding:10px 16px;border-radius:12px;background:#221e30;border:1px solid #3a3355;font-weight:700;font-size:14px;color:#f2ead9;';
     hint.appendChild(b);
   };
+  mk('▶ hear it', () => { hint.innerHTML = ''; playbackUI(); startPlayback(); });
   mk('⟳ again', () => { restoreHint(); resetLevel(); });
   if (G.li + 1 < LEVELS.length) mk('next ›', () => { restoreHint(); startLevel(G.li + 1); });
   mk('menu', () => { restoreHint(); showMenu(); });
@@ -458,17 +572,27 @@ function draw() {
   const now = performance.now();
   const { W, H, keys } = KB;
   ctx.clearRect(0, 0, W, H);
-  // playback lighting
+  // playback lighting + live now-playing readout
   let lit = null;
   if (G && G.playback && AC) {
-    const i = Math.floor((AC.currentTime - G.playback.t0) / G.playback.bar);
-    lit = new Set(G.locked[Math.max(0, Math.min(i, G.playback.n - 1))]);
+    const p = G.playback;
+    const ci = Math.max(0, Math.min(Math.floor((AC.currentTime - p.t0) / p.bar), p.n - 1));
+    lit = new Set(G.locked[ci]);
+    if (p.ui !== ci) {
+      p.ui = ci;
+      const sym = parseTarget(G.lv.prog[ci]).sym, v = G.locked[ci];
+      const t = $('#targ');
+      const se = t.querySelector('.sym'); se.textContent = invName(sym, v); se.classList.add('gold');
+      t.querySelector('.lets').textContent = v.map((m) => NOTE[m % 12] + (Math.floor(m / 12) - 1)).join(' · ');
+      t.querySelector('.cap').textContent = invCaption(sym, v);
+      stripPlayhead(ci);
+    }
   }
   // ghost hints (level 1 only)
   let ghost = null;
   if (G && G.lv.hint && !G.done) {
-    const sym = curTarget();
-    if (sym) ghost = new Set(CHORDS[sym].pcs);
+    const t = curTarget();
+    if (t) ghost = new Set(parseTarget(t).pcs);
   }
   const paint = (k) => {
     const r = 6;
@@ -574,28 +698,193 @@ $('#undo').onclick = undo;
 $('#reset').onclick = () => { restoreHint(); resetLevel(); };
 $('#back').onclick = () => { if (G && G.playback) skipPlayback(); restoreHint(); showMenu(); };
 
+/* ================= chord codex ================= */
+const CODEX = ['C', 'F', 'G', 'Am', 'Em', 'Cmaj7', 'Dm7', 'Em7', 'Fmaj7', 'G7', 'Am7', 'E7'];
+const CARDV = {
+  C:[60,64,67], F:[65,69,72], G:[67,71,74], Am:[69,72,76], Em:[64,67,71],
+  Cmaj7:[60,64,67,71], Dm7:[62,65,69,72], Em7:[64,67,71,74], Fmaj7:[65,69,72,76],
+  G7:[67,71,74,77], Am7:[69,72,76,79], E7:[64,68,71,74],
+};
+const GUITAR = {
+  C: { f:'x32010' }, F: { f:'133211', barre:1 }, G: { f:'320003' },
+  Am: { f:'x02210' }, Em: { f:'022000' },
+  Cmaj7: { f:'x32000' }, Dm7: { f:'xx0211' }, Em7: { f:'020000' },
+  Fmaj7: { f:'xx3210' }, G7: { f:'320001' }, Am7: { f:'x02010' }, E7: { f:'020100' },
+};
+const GSTR = [40, 45, 50, 55, 59, 64]; // EADGBE
+
+function seenChords() {
+  const s = new Set();
+  LEVELS.forEach((lv) => {
+    if (save.best[lv.name]) lv.prog.forEach((t) => s.add(parseTarget(t).sym));
+  });
+  return s;
+}
+// diatonic step index for staff placement (naturals only in this chapter)
+const diat = (m) => Math.floor(m / 12) * 7 + [0,0,1,1,2,3,3,4,4,5,5,6][m % 12];
+
+function pianoSVG(v) {
+  const set = new Set(v);
+  let s = '<svg viewBox="0 0 288 64" width="100%" height="58">';
+  const whites = [];
+  for (let m = 60; m <= 79; m++) if (!isBlack(m)) whites.push(m);
+  whites.forEach((m, i) => {
+    s += `<rect x="${i * 24 + 0.5}" y="0" width="23" height="63" rx="3" fill="#f5efe2"/>`;
+    if (set.has(m)) s += `<circle cx="${i * 24 + 12}" cy="50" r="7" fill="#ffb648" stroke="#1a1626" stroke-width="2"/>`;
+  });
+  for (let m = 60; m <= 79; m++) if (isBlack(m)) {
+    const li = whites.indexOf(m - 1);
+    s += `<rect x="${(li + 1) * 24 - 7}" y="0" width="14" height="38" rx="2" fill="#241f2e" stroke="#3a3355"/>`;
+    if (set.has(m)) s += `<circle cx="${(li + 1) * 24}" cy="28" r="6" fill="#ffb648" stroke="#1a1626" stroke-width="2"/>`;
+  }
+  return s + '</svg>';
+}
+function staffSVG(v) {
+  let s = '<svg viewBox="0 0 150 96" width="100%" height="86">';
+  for (let i = 0; i < 5; i++)
+    s += `<line x1="8" y1="${24 + i * 10}" x2="142" y2="${24 + i * 10}" stroke="#8f87a3" stroke-width="1"/>`;
+  s += '<text x="10" y="67" font-size="56" fill="#f2ead9">\u{1D11E}</text>';
+  for (const m of v) {
+    const y = 64 - (diat(m) - 37) * 5;
+    if (diat(m) <= 35) s += `<line x1="93" y1="${64 - (35 - 37) * 5}" x2="117" y2="${64 - (35 - 37) * 5}" stroke="#8f87a3" stroke-width="1"/>`;
+    if (isBlack(m)) s += `<text x="88" y="${y + 4.5}" font-size="13" fill="#f2ead9" text-anchor="middle">♯</text>`;
+    s += `<ellipse cx="105" cy="${y}" rx="7.5" ry="5.5" fill="#f2ead9" transform="rotate(-12 105 ${y})"/>`;
+  }
+  return s + '</svg>';
+}
+function guitarSVG(sym) {
+  const { f, barre } = GUITAR[sym];
+  let s = '<svg viewBox="0 0 104 132" width="100%" height="110">';
+  for (let i = 0; i < 6; i++)
+    s += `<line x1="${17 + i * 14}" y1="26" x2="${17 + i * 14}" y2="122" stroke="#8f87a3" stroke-width="1"/>`;
+  s += '<line x1="16" y1="26" x2="88" y2="26" stroke="#f2ead9" stroke-width="4"/>';
+  for (let r = 1; r <= 4; r++)
+    s += `<line x1="17" y1="${26 + r * 24}" x2="87" y2="${26 + r * 24}" stroke="#8f87a3" stroke-width="1"/>`;
+  if (barre) s += '<rect x="11" y="31" width="82" height="14" rx="7" fill="#ffb648"/>';
+  f.split('').forEach((c, i) => {
+    const x = 17 + i * 14;
+    if (c === 'x') s += `<text x="${x}" y="18" font-size="12" fill="#8f87a3" text-anchor="middle">×</text>`;
+    else if (c === '0') s += `<circle cx="${x}" cy="13" r="4.5" fill="none" stroke="#8f87a3" stroke-width="1.5"/>`;
+    else if (!(barre && c === '1'))
+      s += `<circle cx="${x}" cy="${26 + (+c - 0.5) * 24}" r="6.5" fill="#ffb648"/>`;
+  });
+  return s + '</svg>';
+}
+function pluck(m, t, dest) {
+  const ac = AC;
+  const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.6;
+  lp.frequency.setValueAtTime(2600, t);
+  lp.frequency.exponentialRampToValueAtTime(500, t + 0.5);
+  const g = ac.createGain();
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(0.13, t + 0.006);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.9);
+  lp.connect(g); g.connect(dest || master);
+  const o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = fq(m);
+  o.connect(lp); o.start(t); o.stop(t + 1);
+}
+function strumGuitar(sym) {
+  const ac = audio(), t = ac.currentTime;
+  let i = 0;
+  GUITAR[sym].f.split('').forEach((c, si) => {
+    if (c === 'x') return;
+    pluck(GSTR[si] + +c, t + i * 0.045); i++;
+  });
+}
+let codexFrom = 'menu';
+function showCodex(from) {
+  codexFrom = from === 'play' ? 'play' : 'menu';
+  menuEl.hidden = true; playEl.hidden = true; codexEl.hidden = false;
+  const seen = seenChords();
+  const el = $('#cards'); el.innerHTML = '';
+  // the cheat sheet
+  const mini = (v, label) =>
+    '<div class="dg mini" data-v="' + v.join(',') + '"><div class="dgl2">' + label + '</div>' + pianoSVG(v) + '</div>';
+  const prim = document.createElement('div');
+  prim.className = 'ccard';
+  prim.innerHTML =
+    '<div class="hd"><span class="s">?</span><span class="l">the cheat sheet</span></div>' +
+    '<div class="ptext">' +
+    '<p><b>C</b> is a chord: three notes played together - the <b>root</b> it is named after (C), a <b>third</b> (E) and a <b>fifth</b> (G). Any octaves count.</p>' +
+    '<p><b>C/E</b> - say &ldquo;C over E&rdquo; - is the <i>same three notes</i> with <b>E as the lowest one</b>. The letter after the slash is just the bass note.</p>' +
+    '<p>Which note sits at the bottom gives the shape its old name. Tap each to hear the flavour change:</p>' +
+    '</div>' +
+    mini([60, 64, 67], '<b>C</b> · root position · C at the bottom') +
+    mini([64, 67, 72], '<b>C/E</b> · first inversion · the third at the bottom') +
+    mini([67, 72, 76], '<b>C/G</b> · second inversion · the fifth at the bottom') +
+    '<div class="ptext" style="margin-top:10px">' +
+    '<p>Stack one more third on top and you get a <b>seventh chord</b> - four notes. <b>maj7</b> is dreamy, <b>m7</b> is mellow, and a bare <b>7</b> (the &ldquo;dominant&rdquo;) is tense: two of its notes sit a squeezed-in tritone apart and want to collapse onto the home chord.</p>' +
+    '</div>' +
+    mini([60, 64, 67, 71], '<b>Cmaj7</b> · root · third · fifth · seventh') +
+    '<div class="ptext" style="margin-top:10px">' +
+    '<p><b>par</b> is the fewest total semitones a level can be solved in. Notes that stay put glow <b>gold</b> and cost nothing - the slash shapes are usually the cheap answer, and they let the bass walk in steps. From chapter three the cheapest move <i>now</i> can cost you later: plan the whole trip.</p>' +
+    '</div>';
+  el.appendChild(prim);
+  for (const sym of CODEX) {
+    const card = document.createElement('div');
+    if (!seen.has(sym)) {
+      card.className = 'ccard dim';
+      card.innerHTML = '<div class="hd"><span class="s">?</span><span class="l">spell it in a level to unlock</span></div>';
+      el.appendChild(card); continue;
+    }
+    const v = CARDV[sym];
+    card.className = 'ccard';
+    card.innerHTML =
+      '<div class="hd"><span class="s">' + sym + '</span><span class="l">' + CHORDS[sym].long + '</span>' +
+      '<span class="n">' + CHORDS[sym].pcs.map((p) => NOTE[p]).join(' · ') + '</span></div>' +
+      '<div class="row">' +
+      '<div class="dg" style="flex:1.5" data-act="staff" data-sym="' + sym + '">' + staffSVG(v) + '<div class="dgl">staff</div></div>' +
+      '<div class="dg" style="flex:1" data-act="guitar" data-sym="' + sym + '">' + guitarSVG(sym) + '<div class="dgl">guitar</div></div>' +
+      '</div>' +
+      '<div class="dg" style="margin-top:10px" data-act="piano" data-sym="' + sym + '">' + pianoSVG(v) + '<div class="dgl">piano</div></div>';
+    el.appendChild(card);
+  }
+}
+$('#cards').addEventListener('click', (e) => {
+  const dg = e.target.closest('.dg'); if (!dg) return;
+  audio();
+  if (dg.dataset.v) { strum(dg.dataset.v.split(',').map(Number)); return; }
+  const sym = dg.dataset.sym, v = CARDV[sym];
+  if (dg.dataset.act === 'piano') strum(v);
+  else if (dg.dataset.act === 'staff') { const t = AC.currentTime + 0.02; v.forEach((m) => pad(m, t, 1.3, 0.1)); }
+  else strumGuitar(sym);
+});
+$('#codexbtn').onclick = () => showCodex('menu');
+$('#cxback').onclick = () => {
+  if (codexFrom === 'play' && G) { codexEl.hidden = true; playEl.hidden = false; }
+  else showMenu();
+};
+$('#help').onclick = () => { if (G && !G.playback) showCodex('play'); };
+
 /* ================= menu ================= */
 function showMenu() {
   G = null;
-  playEl.hidden = true; menuEl.hidden = false;
+  playEl.hidden = true; codexEl.hidden = true; menuEl.hidden = false;
   const grid = $('#grid'); grid.innerHTML = '';
   LEVELS.forEach((lv, i) => {
+    const ch = CHAPTERS.find((c) => c.at === i);
+    if (ch) {
+      const h = document.createElement('div'); h.className = 'sect';
+      h.textContent = ch.label; grid.appendChild(h);
+    }
     const b = document.createElement('button');
     b.className = 'card' + (unlocked(i) ? '' : ' locked');
-    const best = save.best[i];
+    const b0 = save.best[lv.name];
     let bs = '—', cls = '';
-    if (best) {
+    if (b0) {
       if (lv.par == null) { bs = 'done ✓'; cls = 'done'; }
-      else if (best.perfect) { bs = 'PERFECT ★'; cls = 'perfect'; }
-      else { bs = 'best ' + best.cost + ' · par ' + lv.par; cls = 'done'; }
+      else if (b0.perfect) { bs = 'PERFECT ★'; cls = 'perfect'; }
+      else { bs = 'best ' + b0.cost + ' · par ' + lv.par; cls = 'done'; }
     } else if (lv.par != null) bs = 'par ' + lv.par;
     b.innerHTML = '<div class="num">' + (i + 1) + (unlocked(i) ? '' : ' 🔒') + '</div>' +
       '<div class="nm">' + lv.name + '</div>' +
-      '<div class="pg">' + lv.prog.join(' → ') + '</div>' +
+      '<div class="pg">' + lv.prog.map(dispTarget).join(' → ') + '</div>' +
       '<div class="bs ' + cls + '">' + bs + '</div>';
     b.onclick = () => { if (unlocked(i)) { audio(); startLevel(i); } };
     grid.appendChild(b);
   });
+  const seen = seenChords();
+  $('#codexbtn').textContent = '◈ codex & cheat sheet · ' + seen.size + '/' + CODEX.length;
 }
 window.addEventListener('resize', () => { if (!playEl.hidden) layoutKB(); });
 showMenu();
