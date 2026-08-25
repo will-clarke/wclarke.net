@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#0b0e1a">
-<title>Pocket</title>
+<title>Bop</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html, body { height:100%; overflow:hidden; background:#0b0e1a; }
@@ -101,6 +101,24 @@
   .mvd { width:22px; height:22px; border-radius:50%; background:var(--c);
     transition:all .15s ease; }
   .mvd.off { background:transparent; border:2px solid var(--c); opacity:.35; }
+  /* share sheet + the wall */
+  .tbtn[hidden] { display:none; }
+  .tbtn.wide { flex:1; justify-content:center; padding:11px; }
+  #wallName { flex:1; min-width:0; background:#0e1224; border:1px solid #232948;
+    color:#e8e9f3; border-radius:10px; padding:9px 10px; font-size:13px; font-weight:600;
+    outline:none; -webkit-user-select:text; user-select:text; }
+  #wallName:focus { border-color:#6d5fd0; }
+  #wallName::placeholder { color:#575e83; }
+  #wallKeep { color:#7ef0c1; border-color:#7ef0c188; }
+  #wallList { display:flex; flex-direction:column; gap:6px; max-height:36vh;
+    overflow-y:auto; touch-action:pan-y; }
+  .wrow { display:flex; align-items:center; gap:8px; padding:10px 12px;
+    border-radius:10px; background:#151a2e; border:1px solid #232948; flex:0 0 auto; }
+  .wrow.playing { border-color:#6d5fd0; box-shadow:0 0 10px #6d5fd044; }
+  .wname { flex:1; font-size:13px; font-weight:700; color:#c9d0f0; overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap; }
+  .wmeta { font-size:10px; color:#575e83; font-weight:700; letter-spacing:.5px;
+    white-space:nowrap; }
   #ovSlots { display:flex; gap:6px; }
   .oslot {
     flex:1; text-align:center; padding:12px 2px; border-radius:12px; background:#151a2e;
@@ -235,7 +253,29 @@
   </div>
 </div>
 
-<div id="start"><h1>POCKET</h1><p id="startHint">tap anywhere to start the loop</p>
+<div id="shareOv" class="ov" hidden>
+  <div class="ovcard">
+    <div class="ovhead">
+      <div class="slabel">SHARE</div>
+      <div class="tbtn" id="shareDone" style="color:#c9bfff">DONE</div>
+    </div>
+    <div class="mrow"><div class="tbtn wide" id="shareLink">SHARE A LINK</div></div>
+    <div class="mrow">
+      <input id="wallName" maxlength="24" placeholder="name this loop" autocomplete="off">
+      <div class="tbtn" id="wallPost">POST</div>
+    </div>
+    <div class="mrow" style="margin-top:2px">
+      <div class="slabel" style="color:#8f95b5">THE WALL</div>
+      <div class="spacer"></div>
+      <div class="tbtn" id="wallKeep" hidden>KEEP THIS LOOP</div>
+    </div>
+    <div id="wallList"></div>
+    <p class="ovhint">Tap a loop to hear it in place - yours comes back when you close
+      this sheet, unless you keep it.</p>
+  </div>
+</div>
+
+<div id="start"><h1>BOP</h1><p id="startHint">tap anywhere to start the loop</p>
   <div id="shareChoice" hidden>
     <div class="tbtn" id="loadShared">PLAY THE SHARED LOOP</div>
     <div class="tbtn" id="keepMine">KEEP MY LOOP</div>
@@ -320,7 +360,8 @@ const state = {
   vmute: [false, false, false, false],   // per melody voice
   oct: [0, 0, 0, 0],                     // per melody voice octave offset (-1..1)
 };
-const SAVE_KEY = 'pocket-v1';
+const SAVE_KEY = 'bop-v1';
+const OLD_SAVE_KEY = 'pocket-v1';   // pre-rename saves migrate on first load
 let hadSave = false;
 // used for both localStorage saves and (untrusted) share-link payloads
 function hydrate(s) {
@@ -363,9 +404,13 @@ function hydrate(s) {
     state.vol = vol;
   }
 }
-try { hydrate(JSON.parse(localStorage.getItem(SAVE_KEY))); } catch (e) {}
+try {
+  hydrate(JSON.parse(localStorage.getItem(SAVE_KEY) || localStorage.getItem(OLD_SAVE_KEY)));
+} catch (e) {}
 let saveT = null;
+let wallSnap = null;      // your loop, parked while auditioning wall loops
 function save() {
+  if (wallSnap) return;   // auditioning a wall loop: previews must not persist
   clearTimeout(saveT);
   saveT = setTimeout(() => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(state)); } catch (e) {} }, 400);
 }
@@ -1165,11 +1210,11 @@ $('share').innerHTML =
   'stroke="currentColor" fill="none" stroke-width="1.6" stroke-linecap="round" ' +
   'stroke-linejoin="round"/><path d="M5 7.5H3v8h10v-8h-2" stroke="currentColor" fill="none" ' +
   'stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-$('share').addEventListener('pointerdown', async e => {
+$('shareLink').addEventListener('pointerdown', async e => {
   e.preventDefault();
   const url = location.href.split('#')[0] + '#' + encodeShare();
   try {
-    if (navigator.share) { await navigator.share({ title: 'Pocket loop', url }); return; }
+    if (navigator.share) { await navigator.share({ title: 'Bop loop', url }); return; }
   } catch (e2) { if (e2 && e2.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(url); showToast('link copied'); return; } catch (e3) {}
   const ta = document.createElement('textarea');
@@ -1178,6 +1223,101 @@ $('share').addEventListener('pointerdown', async e => {
   catch (e4) { showToast('copy failed'); }
   ta.remove();
 });
+
+/* ================= the wall (community loops, bop-wall worker) ================= */
+const WALL_API = 'https://bop-wall.wmmclarke.workers.dev';
+let wallPlayingId = null, wallBusy = false;
+function fmtAge(t) {
+  const s = (Date.now() - t) / 1000;
+  if (s < 3600) return Math.max(1, Math.round(s / 60)) + 'm';
+  if (s < 86400) return Math.round(s / 3600) + 'h';
+  return Math.round(s / 86400) + 'd';
+}
+async function wallFetch(path, opts) {
+  const res = await fetch(WALL_API + path, opts);
+  const j = await res.json();
+  if (!res.ok) throw new Error(j.error || 'wall error');
+  return j;
+}
+function paintWallRows(playingId) {
+  wallPlayingId = playingId;
+  for (const el of document.querySelectorAll('.wrow'))
+    el.classList.toggle('playing', el.dataset.id === playingId);
+  $('wallKeep').hidden = !playingId;
+}
+function restoreMine() {
+  if (!wallSnap) return;
+  const snap = wallSnap; wallSnap = null;
+  hydrate(snap);
+  setMood(state.mood); paintOct(); paintMvd(); save();
+  paintWallRows(null);
+}
+function wallRow(l) {
+  const d = document.createElement('div');
+  d.className = 'wrow'; d.dataset.id = l.id;
+  d.innerHTML = '<span class="wname"></span><span class="wmeta">' +
+    fmtAge(l.created) + ' · ' + l.plays + ' ▶</span>';
+  d.querySelector('.wname').textContent = l.name;
+  d.addEventListener('pointerdown', async e => {
+    e.preventDefault();
+    try {
+      const full = await wallFetch('/loops/' + l.id);
+      const j = decodeShare(full.code);
+      if (!j) { showToast('bad loop'); return; }
+      if (!wallSnap) wallSnap = JSON.parse(JSON.stringify(state));  // suspends save()
+      applyShared(j);
+      paintWallRows(l.id);
+    } catch (err) { showToast('the wall is unreachable'); }
+  });
+  return d;
+}
+async function loadWall(page) {
+  const list = $('wallList');
+  if (page === 0) list.innerHTML = '';
+  try {
+    const j = await wallFetch('/loops?page=' + page);
+    if (!j.loops.length && page === 0)
+      list.innerHTML = '<p class="ovhint">nothing here yet - post the first loop</p>';
+    for (const l of j.loops) list.appendChild(wallRow(l));
+    if (j.more) {
+      const m = document.createElement('div');
+      m.className = 'tbtn wide'; m.textContent = 'MORE';
+      m.addEventListener('pointerdown', e => { e.preventDefault(); m.remove(); loadWall(page + 1); });
+      list.appendChild(m);
+    }
+    paintWallRows(wallPlayingId);
+  } catch (err) {
+    if (page === 0) list.innerHTML = '<p class="ovhint">the wall is unreachable</p>';
+  }
+}
+$('wallKeep').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  wallSnap = null; save();
+  paintWallRows(null);
+  showToast("kept - it's yours now");
+});
+$('wallPost').addEventListener('pointerdown', async e => {
+  e.preventDefault();
+  if (wallBusy) return;
+  if (wallSnap) { showToast('keep it or close first'); return; }
+  wallBusy = true;
+  try {
+    await wallFetch('/loops', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: $('wallName').value, code: encodeShare() }) });
+    showToast('posted to the wall');
+    $('wallName').value = '';
+    loadWall(0);
+  } catch (err) { showToast(err.message || 'the wall is unreachable'); }
+  wallBusy = false;
+});
+function closeShare() { $('shareOv').hidden = true; restoreMine(); }
+$('share').addEventListener('pointerdown', e => {
+  e.preventDefault();
+  $('shareOv').hidden = false;
+  loadWall(0);
+});
+$('shareDone').addEventListener('pointerdown', e => { e.preventDefault(); closeShare(); });
+$('shareOv').addEventListener('pointerdown', e => { if (e.target === $('shareOv')) closeShare(); });
 
 /* ================= start ================= */
 setMood(state.mood);

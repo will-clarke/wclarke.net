@@ -6,6 +6,7 @@ https://wclarke.net/games/allotmatic/
 https://wclarke.net/games/ants/
 https://wclarke.net/games/antwar-factions/
 https://wclarke.net/games/antwar/
+https://wclarke.net/games/bop/
 https://wclarke.net/games/cascade/
 https://wclarke.net/games/debt/
 https://wclarke.net/games/drip/
@@ -22,7 +23,6 @@ https://wclarke.net/games/lumen/
 https://wclarke.net/games/mini-level/
 https://wclarke.net/games/mirror/
 https://wclarke.net/games/paint-machine/
-https://wclarke.net/games/pocket/
 https://wclarke.net/games/polyhedra/
 https://wclarke.net/games/recurr/
 https://wclarke.net/games/recursive-sokoban/
