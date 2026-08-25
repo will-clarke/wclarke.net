@@ -97,9 +97,11 @@
   #moodTiles { display:grid; grid-template-columns:repeat(4, 1fr); gap:8px; }
   .ptile .mbpm { display:block; font-size:9px; font-weight:700; letter-spacing:1px;
     color:#575e83; margin-top:2px; }
-  #mixVoices { display:flex; gap:14px; align-items:center; }
+  #mixVoices { display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; flex:1; min-width:0; }
+  .vcell { display:flex; align-items:center; gap:8px; min-width:0; }
+  .vcell input { width:100%; min-width:0; }
   .mvd { width:22px; height:22px; border-radius:50%; background:var(--c);
-    transition:all .15s ease; }
+    flex:0 0 auto; transition:all .15s ease; }
   .mvd.off { background:transparent; border:2px solid var(--c); opacity:.35; }
   /* share sheet + the wall */
   .tbtn[hidden] { display:none; }
@@ -249,7 +251,8 @@
     <div class="mrow"><span class="mlab" style="color:#c9bfff">PAD</span>
       <input type="range" id="volPad" min="0" max="1" step="0.01">
       <div class="mini" id="padMute"></div></div>
-    <p class="ovhint">Sliders set each layer's level. Dots mute single melody voices.</p>
+    <p class="ovhint">Sliders set each layer's level. Dots mute single melody voices;
+      the slider beside each dot sets that voice's level - great for quiet harmonies.</p>
   </div>
 </div>
 
@@ -358,6 +361,7 @@ const state = {
   bpms: [null, null, null, null],        // per-mood tempo override
   vol: { pad:1, mel:1, bass:1, drums:1 },
   vmute: [false, false, false, false],   // per melody voice
+  vvol: [1, 1, 1, 1],                    // per melody voice level (harmony sits quieter)
   oct: [0, 0, 0, 0],                     // per melody voice octave offset (-1..1)
 };
 const SAVE_KEY = 'bop-v1';
@@ -396,6 +400,8 @@ function hydrate(s) {
     state.bpms = state.bpms.map(b => Number.isFinite(b) && b >= 60 && b <= 160 ? Math.round(b) : null);
     if (!Array.isArray(state.vmute) || state.vmute.length !== 4) state.vmute = [false, false, false, false];
     state.vmute = state.vmute.map(Boolean);
+    if (!Array.isArray(state.vvol) || state.vvol.length !== 4) state.vvol = [1, 1, 1, 1];
+    state.vvol = state.vvol.map(x => Number.isFinite(x) && x >= 0 && x <= 1 ? x : 1);
     if (!Array.isArray(state.oct) || state.oct.length !== 4) state.oct = [0, 0, 0, 0];
     state.oct = state.oct.map(o => o === -1 || o === 1 ? o : 0);
     const vol = { pad:1, mel:1, bass:1, drums:1 };
@@ -501,16 +507,17 @@ const VPAN = [-0.25, 0.25, -0.08, 0.08];
 // len8 > 1 sustains for len8 8th-slots; toMidi glides the pitch there across the hold
 function playMel(t, midi, voice = 0, len8 = 1, toMidi = null) {
   const oct = 12 * state.oct[voice];
+  const peak = Math.max(0.45 * state.vvol[voice], 0.0012);
   const o = AC.createOscillator(); o.type = 'triangle';
   o.frequency.setValueAtTime(hz(midi + oct), t);
   const g = AC.createGain();
   g.gain.setValueAtTime(0.0001, t);
-  g.gain.linearRampToValueAtTime(0.45, t + 0.004);
+  g.gain.linearRampToValueAtTime(peak, t + 0.004);
   let stop = t + 0.45;
   if (len8 > 1) {
     const dur = len8 * S16 * 2;
     if (toMidi != null) o.frequency.exponentialRampToValueAtTime(hz(toMidi + oct), t + dur);
-    g.gain.setValueAtTime(0.45, t + dur);
+    g.gain.setValueAtTime(peak, t + dur);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.15);
     stop = t + dur + 0.2;
   } else {
@@ -771,20 +778,28 @@ for (const [id, k, col] of VOLS) {
     save();
   });
 }
-const mvds = [];
+const mvds = [], vvolSliders = [];
 for (let v = 0; v < 4; v++) {
+  const cell = document.createElement('div');
+  cell.className = 'vcell';
   const d = document.createElement('div');
   d.className = 'mvd'; d.style.setProperty('--c', VC[v]);
   d.addEventListener('pointerdown', e => {
     e.preventDefault();
     state.vmute[v] = !state.vmute[v]; paintMvd(); save();
   });
-  $('mixVoices').appendChild(d); mvds.push(d);
+  const sl = document.createElement('input');
+  sl.type = 'range'; sl.min = 0; sl.max = 1; sl.step = 0.01;
+  sl.value = state.vvol[v]; sl.style.accentColor = VC[v];
+  sl.addEventListener('input', () => { state.vvol[v] = parseFloat(sl.value); save(); });
+  cell.appendChild(d); cell.appendChild(sl);
+  $('mixVoices').appendChild(cell); mvds.push(d); vvolSliders.push(sl);
 }
 function paintMvd() { mvds.forEach((d, v) => d.classList.toggle('off', state.vmute[v])); }
 paintMvd();
 function openMix() {
   for (const [id, k] of VOLS) $(id).value = state.vol[k];
+  vvolSliders.forEach((sl, v) => { sl.value = state.vvol[v]; });
   paintMvd(); paintAll();
   $('mixOv').hidden = false;
 }
@@ -1189,7 +1204,8 @@ const b64url = s => btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$
 function encodeShare() {
   return b64url(JSON.stringify({ v:1, m: state.mood, b: state.bpms[state.mood],
     p: state.progs[state.mood], d: [state.drums.k, state.drums.s, state.drums.h],
-    bs: state.bass, mel: state.melody, o: state.oct, vol: state.vol, vm: state.vmute }));
+    bs: state.bass, mel: state.melody, o: state.oct, vol: state.vol, vm: state.vmute,
+    vv: state.vvol }));
 }
 function decodeShare(h) {
   try {
@@ -1202,7 +1218,8 @@ function applyShared(j) {
   const progs = [null, null, null, null], bpms = [null, null, null, null];
   progs[m] = j.p; bpms[m] = j.b;
   hydrate({ drums: { k: j.d[0], s: j.d[1], h: j.d[2] }, bass: j.bs, melody: j.mel,
-    voice: 0, mood: m, progs, bpms, vol: j.vol, vmute: j.vm, oct: j.o, mute: state.mute });
+    voice: 0, mood: m, progs, bpms, vol: j.vol, vmute: j.vm, vvol: j.vv, oct: j.o,
+    mute: state.mute });
   setMood(m); paintOct(); paintMvd(); save();
 }
 $('share').innerHTML =
