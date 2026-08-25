@@ -234,6 +234,8 @@ const SEED_CONTENT = {
             blurb: 'one block on the board is a shrunken copy of the whole level. step in through its door and you are back in the room you just left, one size down.' },
   '2,-2': { glyph: '🎬', title: 'classiccult · film finder', act: 'visit', href: 'https://classiccult.pages.dev/', accent: '#ffd166',
             blurb: 'every classic & cult screening in london, scraped nightly onto one page. no backend, nothing to pay for. i moved to dorset shortly after finishing it.' },
+  '-1,2': { glyph: '🎶', title: 'bop · music toy', act: 'play', href: '/games/bop/', accent: '#ffd166',
+            blurb: 'tap a beat into three pads, thump a bassline, drag a finger up the ribbon. it snaps to the chord and lands in the pocket - you cannot make it sound bad. no score, just noodle.' },
   '1,-2': { note: 'welcome to my hexagon! explore around if you like.', glyph: '👋' },
   // ---- my shed ----
   '-1,-1': { section: true, glyph: '🪓', title: 'shed' },
