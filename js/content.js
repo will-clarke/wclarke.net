@@ -391,13 +391,13 @@ const PLAYED = [
 // concepts' (WORST_SLUGS) beneath that. keep each tier under 18 items -
 // that's a comb's slot count, and fillSection's overflow would otherwise
 // claim the centre cell the next tier lives in.
-const DECENT_SLUGS = ['recurr', 'afterlives', 'mini-level', 'mirror', 'tile', 'drip', 'allotmatic', 'antwar'];
-const WORST_SLUGS = ['pocket', 'lanternwake', 'fathom', 'seed'];
+const DECENT_SLUGS = ['bop', 'recurr', 'afterlives', 'mini-level', 'mirror', 'tile', 'drip', 'allotmatic', 'antwar'];
+const WORST_SLUGS = ['lanternwake', 'fathom', 'seed'];
 const GAME_GLYPHS = { shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
   fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
   drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉',
   hydra: '🐉', allotmatic: '🥕', trine: '🔺', kaleid: '❋', antwar: '⚔', 'antwar-factions': '🛡', ants: '🐜',
-  'mini-level': '🪆', threescore: '🪦', afterlives: '🚪', pocket: '🎛' };
+  'mini-level': '🪆', threescore: '🪦', afterlives: '🚪', bop: '🎶' };
 // games with no games.json entry, pinned into a tier by hand
 const PINNED_ROUGH = [
   { glyph: '🟢', title: 'slime teleports', act: 'play', href: '/games/slime-teleports/',
