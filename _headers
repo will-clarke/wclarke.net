@@ -10,6 +10,7 @@
 # Patterns are prefix + a single greedy splat -- a suffix after the splat
 # (`/*.js`) does not match, so these are directory-scoped.
 /js/*
+  X-Headers-Probe: alive
   Cache-Control: public, max-age=0, must-revalidate
 
 /css/*
