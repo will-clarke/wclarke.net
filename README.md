@@ -22,10 +22,6 @@ js/content.js     the editorial content (SEED_CONTENT + shelves); culprit and
                   stats HTML live here as inline `html:` fields
 _redirects        Cloudflare Pages catch-all: every non-asset path → the comb,
                   which routes it by slug (see the slug router below)
-functions/js/     one-line Pages middleware per directory, setting
-functions/css/    Cache-Control on /js/* and /css/* so an edit is visible on
-                  reload (Pages caches unfingerprinted assets for 4h and
-                  ignores Cache-Control in `_headers`)
 css/style.css     kept only for the museum's 2021-ssssg exhibit + choosetwo/
 index.xml         RSS: also the source of the writing room's post bodies
 stories.json      short fiction (html embedded per story)
@@ -134,6 +130,14 @@ Served verbatim by **Cloudflare Pages** (Framework preset: None, Build command:
 empty, Build output directory: `/` - the repo root). Every push to `master`
 redeploys automatically. `.assetsignore` keeps repo-only files (this README,
 `.gitignore`) off the web.
+
+Cache gotcha: Pages serves every asset `max-age=0, must-revalidate`, but the
+`wclarke.net` **zone** rewrites `.js`/`.css` to a 4-hour browser TTL (Cloudflare's
+default), so a `js/content.js` edit is invisible for four hours without a
+force-reload. Compare `wclarke-net.pages.dev` (correct) against `wclarke.net`
+(rewritten) to see it. Neither `_headers` nor a Pages Function can override it -
+it happens after the origin responds. Fix: dashboard → wclarke.net → Caching →
+Configuration → **Browser Cache TTL: Respect Existing Headers**.
 
 WASM on a static host is fine: the games are single-threaded (no COOP/COEP
 headers needed) and `.wasm` serves as `application/wasm`.
