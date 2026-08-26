@@ -1,6 +1,18 @@
 {
   "games": [
     {
+      "slug": "tendril",
+      "name": "Tendril",
+      "accent": "#b7ff5e",
+      "tagline": "Hold to whip a vine at the dusk canopy, swing low as the rope reels you faster, release at the top of the arc and fly. Every grab is a bargain - the far vines dive deepest and pay in speed - and the thicket underneath pays bonus metres to anyone brave enough to skim it. Brittle vines snap, the swarm never stops, and the only way out is forward."
+    },
+    {
+      "slug": "comet",
+      "name": "Comet",
+      "accent": "#8be9ff",
+      "tagline": "One thumb, one comet, an endless climb of stars. Tap to sling off your orbit; whatever gravity catches you next, you keep. Shoot a star dead centre for a PERFECT, chain five into gold FEVER, thread the red dwarfs - and never, ever stop, because the void is right behind you and it does not slow down."
+    },
+    {
       "slug": "overtone",
       "name": "Overtone",
       "accent": "#8be3ff",
