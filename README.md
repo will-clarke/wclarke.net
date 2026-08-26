@@ -131,13 +131,17 @@ empty, Build output directory: `/` - the repo root). Every push to `master`
 redeploys automatically. `.assetsignore` keeps repo-only files (this README,
 `.gitignore`) off the web.
 
-Cache gotcha: Pages serves every asset `max-age=0, must-revalidate`, but the
-`wclarke.net` **zone** rewrites `.js`/`.css` to a 4-hour browser TTL (Cloudflare's
-default), so a `js/content.js` edit is invisible for four hours without a
-force-reload. Compare `wclarke-net.pages.dev` (correct) against `wclarke.net`
-(rewritten) to see it. Neither `_headers` nor a Pages Function can override it -
-it happens after the origin responds. Fix: dashboard → wclarke.net → Caching →
-Configuration → **Browser Cache TTL: Respect Existing Headers**.
+Cache-busting: none needed, and nothing in this repo does it. Pages serves every
+asset `max-age=0, must-revalidate`, so an edit shows up on a plain reload - the
+browser still caches, it just always revalidates and gets a 304. That only works
+because the zone's **Browser Cache TTL** is set to *Respect Existing Headers*
+(Caching → Configuration). On Cloudflare's 4-hour default it rewrote `.js`/`.css`
+*after* the origin responded, so a `js/content.js` edit stayed invisible for four
+hours - and neither a `_headers` file nor a Pages Function could override it
+(Pages honours custom headers from `_headers` but ignores its `Cache-Control`;
+either way the rewrite happened downstream). If stale JS ever returns, check that
+setting first, and compare `wclarke-net.pages.dev` against `wclarke.net` to
+confirm the origin is innocent.
 
 WASM on a static host is fine: the games are single-threaded (no COOP/COEP
 headers needed) and `.wasm` serves as `application/wasm`.
