@@ -1,0 +1,16 @@
+# Nothing on this site is fingerprinted: /js/content.js, a game's index.js and
+# index.wasm, style.css are all served under stable names forever. Cloudflare's
+# default for js/css is `max-age=14400`, so an edit stays invisible for four
+# hours unless you force-reload -- and a game's js cached apart from its wasm
+# can mismatch outright. Revalidate instead: the browser still caches, it just
+# always asks, and gets a cheap 304 when nothing changed. HTML and the comb's
+# *.json / *.xml data already behave this way by default. Media keeps the long
+# cache -- audio/ and video/ are megabytes and never change under a given name.
+/*.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=0, must-revalidate
+
+/*.wasm
+  Cache-Control: public, max-age=0, must-revalidate
