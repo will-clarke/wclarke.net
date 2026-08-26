@@ -424,5 +424,3 @@ const POST_GLYPHS = [
   [/automat/i, '⚙'], [/sql|rows|table/i, '🗄'], [/\bjq\b/i, '🔧'],
   [/team|communicat|question|simplic|perfect|picture|enjoy|boring|document|defaults|done/i, '💭'],
 ];
-
-// deploy-probe-9f2a

@@ -22,6 +22,10 @@ js/content.js     the editorial content (SEED_CONTENT + shelves); culprit and
                   stats HTML live here as inline `html:` fields
 _redirects        Cloudflare Pages catch-all: every non-asset path → the comb,
                   which routes it by slug (see the slug router below)
+functions/js/     one-line Pages middleware per directory, setting
+functions/css/    Cache-Control on /js/* and /css/* so an edit is visible on
+                  reload (Pages caches unfingerprinted assets for 4h and
+                  ignores Cache-Control in `_headers`)
 css/style.css     kept only for the museum's 2021-ssssg exhibit + choosetwo/
 index.xml         RSS: also the source of the writing room's post bodies
 stories.json      short fiction (html embedded per story)
