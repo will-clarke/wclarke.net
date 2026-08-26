@@ -4,13 +4,16 @@
 # hours unless you force-reload -- and a game's js cached apart from its wasm
 # can mismatch outright. Revalidate instead: the browser still caches, it just
 # always asks, and gets a cheap 304 when nothing changed. HTML and the comb's
-# *.json / *.xml data already behave this way by default. Media keeps the long
-# cache -- audio/ and video/ are megabytes and never change under a given name.
-/*.js
+# *.json / *.xml data already behave this way by default; audio/, video/ and
+# images/ keep the long cache, and museum/ is frozen by definition.
+#
+# Patterns are prefix + a single greedy splat -- a suffix after the splat
+# (`/*.js`) does not match, so these are directory-scoped.
+/js/*
   Cache-Control: public, max-age=0, must-revalidate
 
-/*.css
+/css/*
   Cache-Control: public, max-age=0, must-revalidate
 
-/*.wasm
+/games/*
   Cache-Control: public, max-age=0, must-revalidate
