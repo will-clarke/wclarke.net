@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Overtone</title>
+<style>
+  :root{
+    --bg:#120f22; --panel:#1b1731; --ink:#f3ecdc; --dim:#8d86a8;
+    --gold:#ffcf6e; --cyan:#8be3ff; --pink:#ff9fc7; --teal:#6fe3c1;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overflow:hidden;background:var(--bg)}
+  body{
+    font-family:ui-rounded,"SF Pro Rounded","Nunito","Segoe UI",system-ui,sans-serif;
+    color:var(--ink); user-select:none;-webkit-user-select:none;
+  }
+  #app{height:100dvh;display:flex;flex-direction:column;max-width:560px;margin:0 auto}
+  header{
+    display:flex;align-items:center;gap:10px;padding:10px 14px 4px;
+  }
+  #backBtn{
+    width:38px;height:38px;border:none;border-radius:12px;background:var(--panel);
+    color:var(--dim);font-size:22px;line-height:1;visibility:hidden;flex:0 0 auto;
+  }
+  #backBtn.show{visibility:visible}
+  .titlebox{flex:1;min-width:0}
+  h1{font-size:17px;letter-spacing:.42em;font-weight:800;color:var(--gold)}
+  .chap{font-size:10px;letter-spacing:.3em;color:var(--dim);margin-top:2px}
+  #dots{display:flex;gap:6px;flex:0 0 auto}
+  #dots i{width:8px;height:8px;border-radius:50%;background:#332c52;display:block;transition:background .3s}
+  #dots i.done{background:#5c548a}
+  #dots i.cur{background:var(--gold)}
+  #copy{padding:10px 18px 6px;min-height:96px}
+  #copyMain{font-size:17px;font-weight:700;line-height:1.35}
+  #copySub{font-size:13.5px;color:var(--dim);line-height:1.4;margin-top:5px}
+  #copySub b{color:var(--ink)}
+  #cvWrap{flex:1;position:relative;min-height:0}
+  canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
+  #chips{display:flex;gap:8px;padding:6px 14px;justify-content:center;flex-wrap:wrap;min-height:0}
+  .chip{
+    border:1.5px solid #332c52;border-radius:14px;padding:7px 12px;background:var(--panel);
+    font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--dim);
+    display:flex;flex-direction:column;align-items:center;gap:1px;min-width:76px;
+    transition:all .3s;border-style:dashed;
+  }
+  .chip small{font-size:10px;font-weight:600;opacity:.8}
+  .chip.got{border-style:solid;border-color:var(--gold);color:var(--gold);box-shadow:0 0 14px #ffcf6e33}
+  .chip.play{cursor:pointer}
+  .chip.play:active{transform:scale(.94)}
+  footer{padding:8px 14px calc(12px + env(safe-area-inset-bottom))}
+  #nextBtn{
+    width:100%;padding:14px;border:none;border-radius:16px;font-size:15px;font-weight:800;
+    letter-spacing:.25em;font-family:inherit;background:#241e40;color:#544c78;transition:all .3s;
+  }
+  #nextBtn.ready{background:var(--gold);color:#241a05;animation:pulse 1.6s infinite}
+  #nextBtn.hidden{display:none}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ffcf6e55}50%{box-shadow:0 0 0 10px #ffcf6e00}}
+  #boot{
+    position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:18px;z-index:10;
+  }
+  #boot h1{font-size:30px;letter-spacing:.5em;text-indent:.5em}
+  #boot p{color:var(--dim);font-size:14px;letter-spacing:.1em}
+  #boot .go{
+    margin-top:14px;padding:15px 44px;border-radius:18px;border:none;font-family:inherit;
+    background:var(--gold);color:#241a05;font-size:15px;font-weight:800;letter-spacing:.25em;
+  }
+  #boot small{color:#544c78;font-size:11px}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <button id="backBtn">‹</button>
+    <div class="titlebox"><h1>OVERTONE</h1><div class="chap">I · THE STRING</div></div>
+    <div id="dots"></div>
+  </header>
+  <div id="copy"><p id="copyMain"></p><p id="copySub"></p></div>
+  <div id="cvWrap"><canvas id="cv"></canvas></div>
+  <div id="chips"></div>
+  <footer><button id="nextBtn">NEXT</button></footer>
+</div>
+<div id="boot">
+  <h1>OVERTONE</h1>
+  <p>why music works</p>
+  <p style="font-size:12px">chapter one · the string</p>
+  <button class="go">BEGIN</button>
+  <small>sound on 🔊 · nothing to win, everything to hear</small>
+</div>
+
+<script>
+'use strict';
+/* ============================== audio ==============================
+   Additive engine: a note IS its partials, as literal sine oscillators.
+   So muting a rung really mutes it, and beating really beats. */
+const F0 = 220, NP = 7;
+const amp = n => 1 / Math.pow(n, 1.2);
+let AC = null, master = null;
+
+function initAudio(){
+  AC = new (window.AudioContext || window.webkitAudioContext)();
+  const comp = AC.createDynamicsCompressor();
+  master = AC.createGain();
+  master.gain.value = 0;
+  master.connect(comp); comp.connect(AC.destination);
+  master.gain.linearRampToValueAtTime(0.5, AC.currentTime + 0.3);
+}
+document.addEventListener('visibilitychange', () => {
+  if (!AC) return;
+  if (document.hidden) AC.suspend(); else AC.resume();
+});
+
+/* one-shot pluck: per-partial envelopes, higher partials die faster */
+function pluck(f, {vol=1, dur=2.4, on=null, when=0} = {}){
+  if (!AC) return;
+  const t0 = AC.currentTime + when;
+  for (let n = 1; n <= NP; n++){
+    if (on && !on[n-1]) continue;
+    if (n * f > 4200) break;
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.frequency.value = n * f;
+    const peak = vol * amp(n) * 0.17;
+    g.gain.setValueAtTime(0, t0);
+    g.gain.linearRampToValueAtTime(peak, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur / (1 + 0.55 * (n - 1)));
+    o.connect(g); g.connect(master);
+    o.start(t0); o.stop(t0 + dur + 0.1);
+  }
+}
+
+/* persistent hum with live freq + per-partial mutes */
+class Drone{
+  constructor(f, level=0.14){
+    this.f = f; this.level = level; this.on = Array(NP).fill(true);
+    this.out = AC.createGain(); this.out.gain.value = 0; this.out.connect(master);
+    this.parts = [];
+    for (let n = 1; n <= NP; n++){
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.frequency.value = n * f; g.gain.value = amp(n);
+      o.connect(g); g.connect(this.out); o.start();
+      this.parts.push({o, g});
+    }
+    this.out.gain.setTargetAtTime(level, AC.currentTime, 0.08);
+  }
+  setFreq(f){
+    this.f = f;
+    this.parts.forEach((p, i) => p.o.frequency.setTargetAtTime((i+1)*f, AC.currentTime, 0.015));
+  }
+  setPartial(n, isOn){
+    this.on[n-1] = isOn;
+    this.parts[n-1].g.gain.setTargetAtTime(isOn ? amp(n) : 0, AC.currentTime, 0.03);
+  }
+  setLevel(v){ this.level = v; this.out.gain.setTargetAtTime(v, AC.currentTime, 0.08); }
+  stop(){
+    this.out.gain.setTargetAtTime(0, AC.currentTime, 0.06);
+    const parts = this.parts;
+    setTimeout(() => parts.forEach(p => p.o.stop()), 400);
+  }
+}
+
+/* Sethares-style roughness between two partial sets (drives the wobble meter) */
+function roughness(fa, fb, onA, onB){
+  let r = 0;
+  for (let i = 1; i <= NP; i++){
+    if (onA && !onA[i-1]) continue;
+    for (let j = 1; j <= NP; j++){
+      if (onB && !onB[j-1]) continue;
+      const f1 = i * fa, f2 = j * fb;
+      const fmin = Math.min(f1, f2), df = Math.abs(f1 - f2);
+      const s = 0.24 / (0.021 * fmin + 19);
+      r += amp(i) * amp(j) * (Math.exp(-3.5 * s * df) - Math.exp(-5.75 * s * df));
+    }
+  }
+  return r;
+}
+/* The hunt lives higher up (E4): low thirds are genuinely muddy - real music
+   keeps thirds high, and so do we. Meter = roughness minus a shared-rung bonus,
+   tuned so every snap spot reads clearly calm. */
+const HF = 330;
+function alignCnt(fa, fb){
+  let a = 0;
+  for (let i = 1; i <= NP; i++)
+    for (let j = 1; j <= NP; j++){
+      const c = Math.abs(1200 * Math.log2((i * fa) / (j * fb)));
+      a += Math.exp(-Math.pow(c / 12, 2));
+    }
+  return a;
+}
+let RMAX = 0.0001;
+for (let p = 0.45; p <= 0.97; p += 0.002)
+  RMAX = Math.max(RMAX, roughness(HF, HF / p));
+function wobbleMeter(p){
+  const w = Math.pow(roughness(HF, HF / p) / RMAX, 1.3);
+  const a = Math.min(1, alignCnt(HF, HF / p) / 2.5);
+  return Math.sqrt(Math.max(0, Math.min(1, w - 0.9 * a)));
+}
+
+/* ============================== canvas ==============================*/
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize(){
+  DPR = Math.min(devicePixelRatio || 1, 2);
+  const r = cv.parentElement.getBoundingClientRect();
+  W = r.width; H = r.height;
+  cv.width = W * DPR; cv.height = H * DPR;
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+addEventListener('resize', resize);
+
+let visT = 0;                 // slow-motion clock for the modal animation
+const plucksVis = [];         // {f, on, t0, dur, tag}
+function visPluck(f, on, tag){ plucksVis.push({f, on: on ? on.slice() : null, t0: performance.now()/1000, dur: 2.2, tag}); }
+
+/* the true modal sum: string displacement = sum of its active partial modes */
+function stringY(xFrac, ampPx, on, fRel){
+  let y = 0;
+  for (let n = 1; n <= NP; n++){
+    if (on && !on[n-1]) continue;
+    y += amp(n) * Math.sin(n * Math.PI * xFrac) *
+         Math.sin(6.283 * 0.55 * n * fRel * visT + n * 1.7);
+  }
+  return y * ampPx * 0.55;
+}
+function drawStringSeg(x0, x1, yMid, ampPx, on, fRel, color, lw=3, jitter=0){
+  ctx.beginPath();
+  const N = 64;
+  for (let k = 0; k <= N; k++){
+    const xf = k / N, x = x0 + (x1 - x0) * xf;
+    let y = yMid + stringY(xf, ampPx, on, fRel);
+    if (jitter) y += jitter * Math.sin(37 * xf + 21 * visT) * Math.sin(3 * visT * 6.28);
+    k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  }
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
+}
+/* current pluck excitation (visual envelope) for a tag */
+function pluckEnv(tag){
+  const now = performance.now()/1000;
+  let e = 0, on = null;
+  for (let i = plucksVis.length - 1; i >= 0; i--){
+    const p = plucksVis[i];
+    if (now - p.t0 > p.dur){ plucksVis.splice(i,1); continue; }
+    if (p.tag !== tag) continue;
+    const v = Math.exp(-3 * (now - p.t0) / p.dur);
+    if (v > e){ e = v; on = p.on; }
+  }
+  return {e, on};
+}
+
+/* log-pitch ladder helpers */
+const FMAXDRAW = F0 * 8.4;
+function ladderY(f, top, bot){
+  return bot - (Math.log2(f / F0) / Math.log2(FMAXDRAW / F0)) * (bot - top);
+}
+function drawRung(x, y, w, color, a, lw=4){
+  ctx.globalAlpha = a;
+  ctx.beginPath(); ctx.moveTo(x - w/2, y); ctx.lineTo(x + w/2, y);
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+function glow(x, y, r, color, a){
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color); g.addColorStop(1, 'transparent');
+  ctx.globalAlpha = a; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill(); ctx.globalAlpha = 1;
+}
+function label(txt, x, y, size, color, align='center', weight=700){
+  ctx.fillStyle = color; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  ctx.font = `${weight} ${size}px ui-rounded,'SF Pro Rounded','Nunito',system-ui,sans-serif`;
+  ctx.fillText(txt, x, y);
+}
+
+/* ============================== scenes ==============================*/
+const $ = id => document.getElementById(id);
+const copyMain = $('copyMain'), copySub = $('copySub'),
+      nextBtn = $('nextBtn'), backBtn = $('backBtn'),
+      dotsEl = $('dots'), chipsEl = $('chips');
+
+const GOLD = '#ffcf6e', CYAN = '#8be3ff', PINK = '#ff9fc7', TEAL = '#6fe3c1',
+      DIM = '#4a4370', INK = '#f3ecdc';
+
+let save = {s: 0, max: 0, hunt: [false, false, false], done: Array(7).fill(false)};
+try { const s = JSON.parse(localStorage.getItem('overtone-1')); if (s && typeof s.s === 'number') save = s; } catch(e){}
+function persist(){ try { localStorage.setItem('overtone-1', JSON.stringify(save)); } catch(e){} }
+
+let scene = null, sceneIdx = 0;
+const drones = [];
+function addDrone(f, lvl){ const d = new Drone(f, lvl); drones.push(d); return d; }
+function killDrones(){ drones.forEach(d => d.stop()); drones.length = 0; }
+
+function setCopy(main, sub){ copyMain.innerHTML = main; copySub.innerHTML = sub || ''; }
+function milestone(){
+  if (save.done[sceneIdx]) return;
+  save.done[sceneIdx] = true; persist(); refreshNext();
+}
+function refreshNext(){
+  if (sceneIdx === SCENES.length - 1){ nextBtn.classList.add('hidden'); return; }
+  nextBtn.classList.remove('hidden');
+  nextBtn.classList.toggle('ready', !!save.done[sceneIdx]);
+}
+function drawDots(){
+  dotsEl.innerHTML = '';
+  SCENES.forEach((_, i) => {
+    const d = document.createElement('i');
+    if (i < save.max || save.done[i]) d.className = 'done';
+    if (i === sceneIdx) d.className = 'cur';
+    if (i <= save.max) d.onclick = () => setScene(i);
+    dotsEl.appendChild(d);
+  });
+}
+
+/* ---- scene 1 · PLUCK ---- */
+function scPluck(){
+  let plucks = 0;
+  return {
+    main: 'This is a string.', sub: 'Pluck it.',
+    setup(){},
+    down(x, y){
+      const sy = H * 0.5;
+      if (Math.abs(y - sy) < H * 0.25){
+        pluck(F0); visPluck(F0, null, 'main'); plucks++;
+        if (plucks === 1) setCopy('This is a string.', 'Again.');
+        if (plucks >= 2){
+          setCopy('One string. One note.', '…or <b>is</b> it? Let’s look closer <b>→</b>');
+          milestone();
+        }
+      }
+    },
+    draw(){
+      const y = H * 0.5, x0 = W * 0.08, x1 = W * 0.92;
+      const {e, on} = pluckEnv('main');
+      glow(W/2, y, W * 0.4, '#ffcf6e18', 0.6 + e);
+      drawStringSeg(x0, x1, y, 4 + 26 * e, on, 1, GOLD, 3.5);
+      ctx.fillStyle = DIM;
+      [x0, x1].forEach(x => { ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); });
+      if (!save.done[0]) label('tap the string', W/2, y + 52, 12, DIM);
+    }
+  };
+}
+
+/* ---- scene 2 · THE LADDER ---- */
+function scLadder(){
+  let drone, toggles = 0;
+  const top = () => H * 0.06, bot = () => H * 0.60;
+  const rungY = n => ladderY(n * F0, top(), bot());
+  return {
+    main: 'A note is a <span style="color:var(--cyan)">ladder</span>.',
+    sub: 'The string wiggles in halves and thirds and quarters, <b>all at once</b>. Each wiggle is a rung. Tap the rungs on and off.',
+    setup(){ drone = addDrone(F0, 0.15); },
+    down(x, y){
+      const sy = H * 0.8;
+      if (y > sy - 40){ pluck(F0, {on: drone.on}); visPluck(F0, drone.on, 'main'); return; }
+      let best = -1, bd = 26;
+      for (let n = 1; n <= NP; n++){
+        const d = Math.abs(y - rungY(n));
+        if (d < bd){ bd = d; best = n; }
+      }
+      if (best > 0){
+        drone.setPartial(best, !drone.on[best-1]);
+        toggles++;
+        const alive = drone.on.filter(Boolean).length;
+        if (alive === 1 && drone.on[0])
+          setCopy('Just the bottom rung?', 'A dull beep. <b>The upper rungs are the shine.</b>');
+        else if (alive === NP)
+          setCopy('All rungs back on.', 'Hear the note fill out again.');
+        if (toggles >= 2){
+          if (!save.done[1]) setCopy('You just muted <b>part of one note</b>.',
+            'Every rung is real. Together they make the sound you call “a note”.');
+          milestone();
+        }
+      }
+    },
+    draw(){
+      const sy = H * 0.8, x0 = W * 0.10, x1 = W * 0.90;
+      for (let n = 1; n <= NP; n++){
+        const y = rungY(n), on = drone.on[n-1];
+        if (on) glow(W/2, y, 40, '#8be3ff30', 0.8);
+        drawRung(W/2, y, W * 0.44, on ? CYAN : DIM, on ? 0.95 : 0.35, on ? 4.5 : 3);
+        label('×' + n, W/2 - W * 0.28, y, 12, on ? CYAN : DIM, 'right');
+        if (on) label(n === 1 ? 'whole' : n === 2 ? 'halves' : n === 3 ? 'thirds' : n + 'ths',
+                      W/2 + W * 0.26, y, 10, '#8be3ff88', 'left', 600);
+      }
+      const {e, on} = pluckEnv('main');
+      drawStringSeg(x0, x1, sy, 5 + 22 * e, on || drone.on, 1, GOLD, 3.5);
+      ctx.fillStyle = DIM;
+      [x0, x1].forEach(x => { ctx.beginPath(); ctx.arc(x, sy, 5, 0, 7); ctx.fill(); });
+      label('the string, wiggling all its rungs at once', W/2, sy + 34, 11, DIM);
+    },
+    teardown(){}
+  };
+}
+
+/* ---- bridge helper (scenes 3 & 4) ---- */
+function makeBridge(p0, lo, hi){
+  return {p: p0, lo, hi, held: false,
+    x(x0, x1){ return x0 + (x1 - x0) * this.p; },
+    grab(x, x0, x1){ this.held = Math.abs(x - this.x(x0, x1)) < 42; return this.held; },
+    drag(x, x0, x1){
+      if (!this.held) return;
+      this.p = Math.min(this.hi, Math.max(this.lo, (x - x0) / (x1 - x0)));
+    }
+  };
+}
+function drawBridge(b, x0, x1, y, snapped){
+  const bx = b.x(x0, x1);
+  ctx.strokeStyle = snapped ? GOLD : INK; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(bx, y - 16); ctx.lineTo(bx, y + 16); ctx.stroke();
+  glow(bx, y, 26, snapped ? '#ffcf6e55' : '#f3ecdc22', 1);
+  ctx.fillStyle = snapped ? GOLD : INK;
+  ctx.beginPath(); ctx.arc(bx, y, b.held ? 12 : 9, 0, 7); ctx.fill();
+}
+
+/* ---- scene 3 · HALF ---- */
+function scHalf(){
+  const br = makeBridge(0.82, 0.35, 0.95);
+  let snapped = false, lastPluckedHalf = false;
+  const SY = () => H * 0.74;
+  return {
+    main: 'Pinch it in the middle.',
+    sub: 'Drag the bead to the glowing spot, then pluck the <b>left half</b>.',
+    setup(){},
+    down(x, y){
+      const sy = SY(), x0 = W * 0.08, x1 = W * 0.92;
+      if (br.grab(x, x0, x1) && Math.abs(y - sy) < 60) return;
+      if (Math.abs(y - sy) < 70 && x < br.x(x0, x1) - 14){
+        const f = F0 / br.p;
+        pluck(f); visPluck(f, null, 'seg');
+        lastPluckedHalf = snapped;
+        if (snapped){
+          setCopy('Half the string, double the wiggle.',
+            'The <b>same note, higher</b>. 2:1 - the <b style="color:var(--gold)">OCTAVE</b>. Every rung of the high note lands on a rung of the low one.');
+          milestone();
+        }
+      }
+    },
+    move(x, y){
+      br.drag(x, W * 0.08, W * 0.92);
+      snapped = Math.abs(br.p - 0.5) < 0.035;
+      if (snapped) br.p = 0.5;
+    },
+    up(){ br.held = false; },
+    draw(){
+      const sy = SY(), x0 = W * 0.08, x1 = W * 0.92, bx = br.x(x0, x1);
+      /* ladders: open (dim, left) + pinched note (gold, right) */
+      const top = H * 0.05, bot = H * 0.56, lx = W * 0.32, rx = W * 0.66;
+      for (let n = 1; n <= NP; n++)
+        drawRung(lx, ladderY(n * F0, top, bot), W * 0.2, CYAN, 0.3);
+      label('open string', lx, bot + 16, 11, DIM);
+      const {e} = pluckEnv('seg');
+      if (e > 0.02){
+        const f = F0 / br.p;
+        for (let n = 1; n <= NP; n++){
+          const fn = n * f; if (fn > FMAXDRAW) break;
+          const y = ladderY(fn, top, bot);
+          const aligned = snapped && lastPluckedHalf;
+          drawRung(rx, y, W * 0.2, GOLD, 0.25 + 0.75 * e);
+          if (aligned){
+            drawRung(lx, ladderY(fn, top, bot), W * 0.2, '#fff3cf', e * 0.9, 5);
+            ctx.globalAlpha = e * 0.5; ctx.strokeStyle = GOLD; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(lx + W*0.1, y); ctx.lineTo(rx - W*0.1, y); ctx.stroke();
+            ctx.globalAlpha = 1;
+          }
+        }
+        label('your pinch', rx, bot + 16, 11, '#ffcf6e99');
+      }
+      /* the snap target */
+      const hx = x0 + (x1 - x0) * 0.5;
+      glow(hx, sy, 30, '#ffcf6e44', 0.7 + 0.3 * Math.sin(visT * 4));
+      ctx.setLineDash([4, 5]);
+      ctx.strokeStyle = '#ffcf6e66'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(hx, sy - 22); ctx.lineTo(hx, sy + 22); ctx.stroke();
+      ctx.setLineDash([]);
+      label('½', hx, sy + 36, 13, GOLD);
+      /* string: live left segment + slack right */
+      const env = pluckEnv('seg');
+      drawStringSeg(x0, bx, sy, 4 + 24 * env.e, null, 1 / br.p, GOLD, 3.5);
+      drawStringSeg(bx, x1, sy, 1.2, null, 1, '#5c548a', 2.5);
+      ctx.fillStyle = DIM;
+      [x0, x1].forEach(x => { ctx.beginPath(); ctx.arc(x, sy, 5, 0, 7); ctx.fill(); });
+      drawBridge(br, x0, x1, sy, snapped);
+    }
+  };
+}
+
+/* ---- scene 4 · THE HUNT ---- */
+const SPOTS = [
+  {p: 2/3, name: 'FIFTH',  ratio: '3:2', chip: null},
+  {p: 3/4, name: 'FOURTH', ratio: '4:3', chip: null},
+  {p: 4/5, name: 'THIRD',  ratio: '5:4', chip: null},
+];
+function scHunt(){
+  const br = makeBridge(0.55, 0.46, 0.96);
+  let open, note, snapIdx = -1;
+  const SY = () => H * 0.78;
+  function refreshChips(){
+    chipsEl.innerHTML = '';
+    SPOTS.forEach((s, i) => {
+      const c = document.createElement('div');
+      c.className = 'chip' + (save.hunt[i] ? ' got' : '');
+      c.innerHTML = save.hunt[i] ? `${s.name}<small>${s.ratio}</small>` : `?<small>&nbsp;</small>`;
+      chipsEl.appendChild(c);
+    });
+  }
+  return {
+    main: 'Now slide anywhere.',
+    sub: 'The open string hums along underneath. Some spots <b>wobble</b>. Some spots go <b>calm</b>. Find all three calm spots.',
+    setup(){
+      open = addDrone(HF, 0.12);
+      note = addDrone(HF / br.p, 0.15);
+      refreshChips();
+    },
+    down(x, y){ br.grab(x, W * 0.08, W * 0.92); if (!br.held && Math.abs(y - SY()) < 60) { br.held = true; br.drag(x, W*0.08, W*0.92); this.move(x, y); } },
+    move(x, y){
+      if (!br.held) return;
+      br.drag(x, W * 0.08, W * 0.92);
+      snapIdx = -1;
+      for (let i = 0; i < SPOTS.length; i++){
+        const cents = Math.abs(1200 * Math.log2(SPOTS[i].p / br.p));
+        if (cents < 22){
+          br.p = SPOTS[i].p; snapIdx = i;
+          if (!save.hunt[i]){
+            save.hunt[i] = true; persist(); refreshChips();
+            pluck(HF / br.p, {vol: 0.8});
+            setCopy(`${SPOTS[i].ratio} - the <b style="color:var(--gold)">${SPOTS[i].name}</b>.`,
+              save.hunt.every(Boolean)
+                ? 'All three! <b>Calm = the two ladders share rungs.</b> Wobble = rungs that nearly touch, beating against each other. You just found the ingredients chords are made of.'
+                : 'Feel how it settles? Their ladders share rungs. Keep hunting.');
+            if (save.hunt.every(Boolean)) milestone();
+          }
+          break;
+        }
+      }
+      note.setFreq(HF / br.p);
+    },
+    up(){ br.held = false; },
+    draw(){
+      const sy = SY(), x0 = W * 0.08, x1 = W * 0.92;
+      const f2 = HF / br.p;
+      const R = wobbleMeter(br.p);
+      /* meter */
+      const mx0 = W * 0.14, mx1 = W * 0.86, my = H * 0.055;
+      ctx.strokeStyle = '#332c52'; ctx.lineWidth = 8; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(mx0, my); ctx.lineTo(mx1, my); ctx.stroke();
+      const nx = mx0 + (mx1 - mx0) * R;
+      glow(nx, my, 22, R > 0.4 ? '#ff9fc766' : '#6fe3c166', 1);
+      ctx.fillStyle = R > 0.4 ? PINK : TEAL;
+      ctx.beginPath(); ctx.arc(nx, my, 7, 0, 7); ctx.fill();
+      label('calm', mx0, my + 20, 11, TEAL, 'left');
+      label('wobble', mx1, my + 20, 11, PINK, 'right');
+      /* ladders (local log map based on the hunt fundamental) */
+      const top = H * 0.14, bot = H * 0.62, lx = W * 0.32, rx = W * 0.66;
+      const LMAX = HF * 7.6;
+      const ly = f => bot - (Math.log2(f / HF) / Math.log2(LMAX / HF)) * (bot - top);
+      for (let n = 1; n <= NP; n++){
+        const y1 = ly(n * HF);
+        drawRung(lx, y1, W * 0.2, CYAN, 0.55);
+      }
+      for (let n = 1; n <= NP; n++){
+        const fn = n * f2; if (fn > LMAX) break;
+        const y2 = ly(fn);
+        /* aligned with any open rung? */
+        let match = 0;
+        for (let m = 1; m <= NP; m++){
+          const cents = Math.abs(1200 * Math.log2(fn / (m * HF)));
+          if (cents < 14) match = 1;
+        }
+        drawRung(rx, y2, W * 0.2, match === 1 ? '#fff3cf' : GOLD, match === 1 ? 1 : 0.7,
+                 match === 1 ? 5.5 : 4);
+        if (match === 1){
+          ctx.globalAlpha = 0.5; ctx.strokeStyle = GOLD; ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(lx + W*0.1, y2); ctx.lineTo(rx - W*0.1, y2); ctx.stroke();
+          ctx.globalAlpha = 1;
+        }
+      }
+      label('open', lx, bot + 15, 11, '#8be3ff88');
+      label('yours', rx, bot + 15, 11, '#ffcf6e99');
+      /* string with sweet-spot diamonds */
+      SPOTS.forEach((s, i) => {
+        const px = x0 + (x1 - x0) * s.p;
+        ctx.fillStyle = save.hunt[i] ? GOLD : '#3a3360';
+        ctx.save(); ctx.translate(px, sy + 26); ctx.rotate(Math.PI/4);
+        ctx.fillRect(-5, -5, 10, 10); ctx.restore();
+      });
+      const jit = R * 3.2;
+      const bx = br.x(x0, x1);
+      drawStringSeg(x0, bx, sy, 4.5, null, 1 / br.p, GOLD, 3.5, jit);
+      drawStringSeg(bx, x1, sy, 1.2, null, 1, '#5c548a', 2.5);
+      ctx.fillStyle = DIM;
+      [x0, x1].forEach(x => { ctx.beginPath(); ctx.arc(x, sy, 5, 0, 7); ctx.fill(); });
+      drawBridge(br, x0, x1, sy, snapIdx >= 0);
+    },
+    teardown(){ chipsEl.innerHTML = ''; }
+  };
+}
+
+/* ---- scene 5 · THE FAMILY ---- */
+function scFamily(){
+  const notes = [
+    {p: 1,   f: F0,       name: 'open', color: CYAN, drone: null, on: false},
+    {p: 4/5, f: F0 * 5/4, name: '⅘ pinch', color: GOLD, drone: null, on: false},
+    {p: 2/3, f: F0 * 3/2, name: '⅔ pinch', color: PINK, drone: null, on: false},
+  ];
+  let fused = false, fuseT = 0;
+  const rowY = i => H * (0.60 + i * 0.115);
+  return {
+    main: 'Three strings.',
+    sub: 'The open one, the ⅘ pinch, the ⅔ pinch - your finds. <b>Wake all three.</b>',
+    setup(){},
+    down(x, y){
+      for (let i = 0; i < 3; i++){
+        if (Math.abs(y - rowY(i)) < 26){
+          const n = notes[i];
+          n.on = !n.on;
+          if (n.on){ n.drone = addDrone(n.f, 0.11); pluck(n.f, {vol: 0.6}); }
+          else if (n.drone){ n.drone.stop(); drones.splice(drones.indexOf(n.drone), 1); n.drone = null; }
+          if (notes.every(q => q.on) && !fused){
+            fused = true; fuseT = visT;
+            pluck(F0 / 4, {vol: 0.9, dur: 3.5});  /* the deep root, two octaves down */
+            setCopy('They <b>fuse</b>. 4 : 5 : 6.',
+              'Three rungs of one giant ladder, with a secret deep root two octaves down - hear it swell? This is the <b style="color:var(--gold)">MAJOR CHORD</b>: three notes that add up to <b>one thing</b>.');
+            milestone();
+          }
+          return;
+        }
+      }
+    },
+    draw(){
+      /* shared ladder with ghost 55Hz grid */
+      const top = H * 0.05, bot = H * 0.50, cx = W * 0.5;
+      const ghostA = fused ? Math.min(1, (visT - fuseT) / 1.5) : 0;
+      if (ghostA > 0){
+        const fg = F0 / 4;
+        let prevY = 1e9;
+        for (let k = 4; k * fg <= FMAXDRAW; k++){
+          const y = ladderY(k * fg, top, bot);
+          if (prevY - y < 5) break;
+          prevY = y;
+          drawRung(cx, y, W * 0.58, '#f3ecdc', 0.13 * ghostA, 1.5);
+        }
+        glow(cx, bot + 14, 30, '#f3ecdc33', ghostA);
+        label('the secret deep root, ×¼', cx, bot + 14, 11, `rgba(243,236,220,${0.7 * ghostA})`);
+      }
+      notes.forEach((n, i) => {
+        if (!n.on) return;
+        for (let k = 1; k <= NP; k++){
+          const fk = k * n.f; if (fk > FMAXDRAW) break;
+          drawRung(cx + (i - 1) * W * 0.02, ladderY(fk, top, bot), W * 0.4, n.color, 0.55, 3.5);
+        }
+      });
+      /* fundamentals labelled 4,5,6 when fused */
+      if (ghostA > 0.5)
+        notes.forEach((n, i) => label(['4','5','6'][i], W * 0.13, ladderY(n.f, top, bot), 13, n.color, 'left'));
+      /* three strings */
+      notes.forEach((n, i) => {
+        const y = rowY(i), x0 = W * 0.10, x1 = x0 + W * 0.8 * n.p;
+        if (n.on) glow((x0 + x1)/2, y, 34, n.color + '33', 0.8);
+        drawStringSeg(x0, x1, y, n.on ? 4 : 1, null, 1 / n.p, n.on ? n.color : DIM, 3);
+        ctx.fillStyle = n.on ? n.color : DIM;
+        [x0, x1].forEach(x => { ctx.beginPath(); ctx.arc(x, y, 4.5, 0, 7); ctx.fill(); });
+        label(n.name, x1 + 12, y, 11, n.on ? n.color : DIM, 'left');
+      });
+    },
+    teardown(){ notes.forEach(n => { n.on = false; n.drone = null; }); }
+  };
+}
+
+/* ---- scene 6 · THE MOOD ---- */
+const ODE = [
+  {d:[3,3,4,5,5,4,3,2,1,1,2,3,3,2,2], t:[1,1,1,1,1,1,1,1,1,1,1,1,1.5,.5,2]},
+  {d:[3,3,4,5,5,4,3,2,1,1,2,3,2,1,1], t:[1,1,1,1,1,1,1,1,1,1,1,1,1.5,.5,2]},
+];
+function scMood(){
+  let t = 0;                       /* 0 = major, 1 = minor */
+  let held = false, hitLo = false, hitHi = false;
+  let padRoot, padThird, padFifth;
+  let phrase = 0, noteI = 0, nextT = 0;
+  const STEP = 0.42;
+  const thirdRatio = () => 5/4 - t * (5/4 - 6/5);
+  const degF = d => F0 * (d === 1 ? 1 : d === 2 ? 9/8 : d === 3 ? thirdRatio() : d === 4 ? 4/3 : 3/2);
+  const sx0 = () => W * 0.14, sx1 = () => W * 0.86, sy = () => H * 0.80;
+  return {
+    main: 'One tiny slip.',
+    sub: 'A tune is playing on your chord. <b>Slide from sun to moon</b> and listen to what one rung does.',
+    setup(){
+      padRoot  = addDrone(F0, 0.085);
+      padThird = addDrone(F0 * thirdRatio(), 0.075);
+      padFifth = addDrone(F0 * 1.5, 0.075);
+      phrase = 0; noteI = 0; nextT = AC.currentTime + 0.5;
+      hitLo = true;  /* starts at sun */
+    },
+    down(x, y){
+      if (Math.abs(y - sy()) < 56){ held = true; this.move(x, y); }
+    },
+    move(x, y){
+      if (!held) return;
+      t = Math.min(1, Math.max(0, (x - sx0()) / (sx1() - sx0())));
+      padThird.setFreq(F0 * thirdRatio());
+      if (t < 0.04) hitLo = true;
+      if (t > 0.96){
+        if (!hitHi){
+          hitHi = true;
+          setCopy('The middle note slid <b>one small step</b> down.',
+            '5:4 became 6:5. The chord still stands - but the ladders stop agreeing, and it droops the way a voice droops. <b style="color:var(--cyan)">MAJOR</b> turned <b style="color:var(--pink)">MINOR</b>. That’s half of why minor feels sad. The other half? Every sad song you’ve ever heard taught you.');
+        }
+      }
+      if (hitLo && hitHi) milestone();
+    },
+    up(){ held = false; },
+    draw(){
+      /* melody scheduler (lookahead inside the draw loop) */
+      if (AC && AC.currentTime > nextT - 0.15){
+        const ph = ODE[phrase];
+        pluck(2 * degF(ph.d[noteI]), {vol: 0.75, dur: 1.4, when: Math.max(0, nextT - AC.currentTime)});
+        nextT += ph.t[noteI] * STEP;
+        noteI++;
+        if (noteI >= ph.d.length){ noteI = 0; phrase = 1 - phrase; nextT += STEP; }
+      }
+      /* cold tint as it darkens */
+      ctx.fillStyle = `rgba(40,60,120,${t * 0.16})`; ctx.fillRect(0, 0, W, H);
+      /* zoomed linear ladder: does the third still sit on the family grid? */
+      const zTop = H * 0.10, zBot = H * 0.58, fLo = 190, fHi = 360;
+      const zy = f => zBot - (f - fLo) / (fHi - fLo) * (zBot - zTop);
+      const cx = W * 0.5, fg = F0 / 4;
+      for (let k = Math.ceil(fLo / fg); k * fg <= fHi; k++){
+        drawRung(cx, zy(k * fg), W * 0.6, '#f3ecdc', 0.14, 1.5);
+        label('×' + k, cx + W * 0.33, zy(k * fg), 10, '#f3ecdc44', 'left');
+      }
+      const f3 = F0 * thirdRatio();
+      drawRung(cx, zy(F0), W * 0.42, CYAN, 0.8, 4.5);
+      drawRung(cx, zy(F0 * 1.5), W * 0.42, PINK, 0.8, 4.5);
+      const offGrid = t;
+      drawRung(cx, zy(f3), W * 0.42, GOLD, 0.95, 5);
+      glow(cx, zy(f3), 26, offGrid > 0.5 ? '#ff9fc744' : '#ffcf6e44', 1);
+      label(offGrid > 0.6 ? 'slipped off the family grid' : 'the third, on rung ×5',
+            cx, zy(f3) + 18, 10.5, offGrid > 0.6 ? PINK : '#ffcf6e99');
+      label('root ×4', cx - W * 0.26, zy(F0), 10, '#8be3ff88', 'right');
+      label('fifth ×6', cx - W * 0.26, zy(F0 * 1.5), 10, '#ff9fc788', 'right');
+      /* the slider */
+      const x0 = sx0(), x1 = sx1(), y = sy();
+      ctx.strokeStyle = '#332c52'; ctx.lineWidth = 10; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
+      const kx = x0 + (x1 - x0) * t;
+      const grad = ctx.createLinearGradient(x0, 0, x1, 0);
+      grad.addColorStop(0, GOLD); grad.addColorStop(1, '#7f9fff');
+      ctx.strokeStyle = grad; ctx.globalAlpha = 0.5;
+      ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(kx, y); ctx.stroke(); ctx.globalAlpha = 1;
+      glow(kx, y, 30, t > 0.5 ? '#7f9fff55' : '#ffcf6e55', 1);
+      ctx.fillStyle = t > 0.5 ? '#a8bcff' : GOLD;
+      ctx.beginPath(); ctx.arc(kx, y, held ? 15 : 12, 0, 7); ctx.fill();
+      label('☀', x0 - 2, y - 26, 20, GOLD);
+      label('☾', x1 + 2, y - 26, 20, '#a8bcff');
+      label('major', x0, y + 26, 11, t < 0.5 ? GOLD : DIM);
+      label('minor', x1, y + 26, 11, t > 0.5 ? '#a8bcff' : DIM);
+    },
+    teardown(){}
+  };
+}
+
+/* ---- scene 7 · KEEPSAKES ---- */
+function scEnd(){
+  const KEEPS = [
+    {n: 'OCTAVE', r: '2:1',      play: () => { pluck(F0); pluck(F0*2, {when: 0.35}); }},
+    {n: 'FIFTH',  r: '3:2',      play: () => { pluck(F0); pluck(F0*1.5, {when: 0.35}); }},
+    {n: 'FOURTH', r: '4:3',      play: () => { pluck(F0); pluck(F0*4/3, {when: 0.35}); }},
+    {n: 'THIRD',  r: '5:4',      play: () => { pluck(F0); pluck(F0*1.25, {when: 0.35}); }},
+    {n: 'MAJOR',  r: '4:5:6',    play: () => [1, 1.25, 1.5].forEach((r, i) => pluck(F0*r, {when: i*0.09, dur: 3}))},
+    {n: 'MINOR',  r: '10:12:15', play: () => [1, 1.2, 1.5].forEach((r, i) => pluck(F0*r, {when: i*0.09, dur: 3}))},
+  ];
+  let ripple = 0;
+  return {
+    main: 'You now own the parts every song is built from.',
+    sub: 'Tap a keepsake to hear it again. <b>Chapter II · HOME</b> - why chords pull toward home - coming soon.',
+    setup(){
+      milestone();
+      chipsEl.innerHTML = '';
+      KEEPS.forEach(k => {
+        const c = document.createElement('div');
+        c.className = 'chip got play';
+        c.innerHTML = `${k.n}<small>${k.r}</small>`;
+        c.onclick = () => { k.play(); ripple = 1; visPluck(F0, null, 'main'); };
+        chipsEl.appendChild(c);
+      });
+      const r = document.createElement('div');
+      r.className = 'chip play';
+      r.innerHTML = `↺<small>restart</small>`;
+      r.onclick = () => {
+        save = {s: 0, max: 0, hunt: [false,false,false], done: Array(7).fill(false)};
+        persist(); setScene(0);
+      };
+      chipsEl.appendChild(r);
+    },
+    down(){ pluck(F0); visPluck(F0, null, 'main'); },
+    draw(){
+      const y = H * 0.5, {e, on} = pluckEnv('main');
+      glow(W/2, y, W * 0.35, '#ffcf6e15', 0.8 + e);
+      drawStringSeg(W * 0.08, W * 0.92, y, 3 + 20 * e, on, 1, GOLD, 3.5);
+      ctx.fillStyle = DIM;
+      [W*0.08, W*0.92].forEach(x => { ctx.beginPath(); ctx.arc(x, y, 5, 0, 7); ctx.fill(); });
+    },
+    teardown(){ chipsEl.innerHTML = ''; }
+  };
+}
+
+const SCENES = [scPluck, scLadder, scHalf, scHunt, scFamily, scMood, scEnd];
+
+function setScene(i){
+  if (scene && scene.teardown) scene.teardown();
+  killDrones();
+  chipsEl.innerHTML = '';
+  sceneIdx = i;
+  save.s = i; save.max = Math.max(save.max, i); persist();
+  scene = SCENES[i]();
+  setCopy(scene.main, scene.sub);
+  scene.setup();
+  backBtn.classList.toggle('show', i > 0);
+  drawDots(); refreshNext();
+}
+nextBtn.onclick = () => { if (save.done[sceneIdx] && sceneIdx < SCENES.length - 1) setScene(sceneIdx + 1); };
+backBtn.onclick = () => { if (sceneIdx > 0) setScene(sceneIdx - 1); };
+
+/* pointer plumbing */
+function pos(ev){ const r = cv.getBoundingClientRect(); return [ev.clientX - r.left, ev.clientY - r.top]; }
+cv.addEventListener('pointerdown', ev => {
+  ev.preventDefault(); cv.setPointerCapture(ev.pointerId);
+  if (AC && AC.state === 'suspended') AC.resume();
+  const [x, y] = pos(ev); if (scene.down) scene.down(x, y);
+});
+cv.addEventListener('pointermove', ev => { const [x, y] = pos(ev); if (scene.move) scene.move(x, y); });
+cv.addEventListener('pointerup',   ev => { if (scene.up) scene.up(); });
+cv.addEventListener('pointercancel', ev => { if (scene.up) scene.up(); });
+
+/* render loop */
+let lastT = 0;
+function frame(ts){
+  const dt = Math.min(0.05, (ts - lastT) / 1000 || 0.016); lastT = ts;
+  visT += dt;
+  ctx.clearRect(0, 0, W, H);
+  if (scene) scene.draw();
+  requestAnimationFrame(frame);
+}
+
+/* boot */
+document.querySelector('#boot .go').onclick = () => {
+  initAudio();
+  document.getElementById('boot').remove();
+  resize();
+  setScene(Math.min(save.s, SCENES.length - 1));
+  requestAnimationFrame(frame);
+};
+</script>
+</body>
+</html>

@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "overtone",
+      "name": "Overtone",
+      "accent": "#8be3ff",
+      "tagline": "Not a game - a walk from one plucked string to the reason chords exist. Pluck it and meet the hidden ladder inside every note, pinch it in half to find the octave, then slide until the wobble goes calm: the fifth, the fourth, the third, discovered by ear. Stack your finds and they fuse into the major chord; slip one rung and hear it turn minor. Every claim demonstrated live, nothing to win."
+    },
+    {
       "slug": "voicebox",
       "name": "Voicebox",
       "accent": "#ffb648",
