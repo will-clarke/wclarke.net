@@ -37,6 +37,7 @@ https://wclarke.net/games/threescore/
 https://wclarke.net/games/tile/
 https://wclarke.net/games/trine/
 https://wclarke.net/games/voicebox/
+https://wclarke.net/games/wallflower/
 https://wclarke.net/games/worm-division/
 https://wclarke.net/museum/
 https://wclarke.net/posts/2014-03-15--show-vim-mappings

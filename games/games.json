@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "wallflower",
+      "name": "Wallflower",
+      "accent": "#df5a4a",
+      "tagline": "A shy creature, a patterned wall, and a trail of paint that never dries. Every step grows your body one cell - forever - so the route IS the painting: crawl through pots to change your ink, lay each colour on its matching patch, and never cross yourself or duck into a dead end you didn't mean to keep. Cover the pattern and you simply vanish into the wallpaper."
+    },
+    {
       "slug": "tendril",
       "name": "Tendril",
       "accent": "#b7ff5e",
