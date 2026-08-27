@@ -20,6 +20,11 @@
 # Most games are self-contained static HTML. A few are build-based (see
 # BUILD_GAMES): `make sync` builds them in the snapshot and copies only their
 # built dist/ into games/<slug>/ -- never the source tree or node_modules.
+# A build-based game is only rebuilt when its committed tree hash changes:
+# the last-synced hash is stamped in $(STAMPS)/<slug>. `make sync FORCE=1`
+# rebuilds them all. Games that commit their bundled index.html (hydra,
+# allotmatic) are never built here -- the static sync ships what they
+# committed.
 #
 # There is no games/index.html any more (the standalone hex cabinet was
 # retired - the comb's own games room replaces it). The sync still excludes
@@ -28,8 +33,10 @@
 
 GAMES_SRC := ../games
 SNAPSHOT  := /tmp/wclarke-net-games-snapshot
+STAMPS    := .sync-stamps
 PORT      ?= 8000
 PULL      ?= 1        # PULL=0 to skip the git pull (e.g. offline)
+FORCE     ?= 0        # FORCE=1 to rebuild build-based games regardless of stamps
 
 # Games already under games/ that come from elsewhere (the sokoban WASM set,
 # rebuilt in wclarke-gems). Excluded from --delete so a sync never prunes them.
@@ -61,7 +68,7 @@ SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
 .DEFAULT_GOAL := help
 
 ## sync: pull ../games, snapshot HEAD, build, and import into games/
-sync: pull snapshot build sync-games sync-built drop-snapshot sitemap
+sync: pull snapshot sync-games sync-built drop-snapshot sitemap
 	@echo
 	@echo "== done. review + commit to deploy: =="
 	@git status --short
@@ -91,10 +98,6 @@ snapshot:
 drop-snapshot:
 	@rm -rf $(SNAPSHOT)
 
-## build: build the build-based games in the snapshot (-> each game's dist/)
-build: snapshot
-	@$(MAKE) -C $(SNAPSHOT) build
-
 ## sync-games: copy the snapshot (self-contained static games) -> games/
 sync-games: snapshot
 	@echo "==> games/  <- snapshot  (keeping: $(KEEP_GAMES))"
@@ -107,11 +110,21 @@ sync-games: snapshot
 	  --exclude='/index.html' --exclude='/shots' \
 	  $(SNAPSHOT)/ games/
 
-## sync-built: copy each build-based game's built dist/ -> games/<slug>/
-sync-built:
+## sync-built: build each stale build-based game and copy its dist/ -> games/<slug>/
+sync-built: snapshot
+	@mkdir -p $(STAMPS)
 	@for g in $(BUILD_GAMES); do \
+	  want=$$(git -C $(GAMES_SRC) rev-parse HEAD:$$g); \
+	  if [ "$(FORCE)" != "1" ] && [ "$$want" = "$$(cat $(STAMPS)/$$g 2>/dev/null)" ] \
+	     && [ -e games/$$g/index.html ]; then \
+	    echo "==> games/$$g/  unchanged, skipping build"; \
+	    continue; \
+	  fi; \
+	  echo "==> building $$g"; \
+	  (cd $(SNAPSHOT)/$$g && npm ci --no-audit --no-fund && npm run build) || exit 1; \
 	  echo "==> games/$$g/  <- snapshot/$$g/dist/"; \
 	  rsync -a --delete $(SNAPSHOT)/$$g/dist/ games/$$g/; \
+	  printf '%s\n' "$$want" > $(STAMPS)/$$g; \
 	done
 
 ## sync-intuition: regenerate intuition.json from ../intuition's post index
@@ -131,5 +144,5 @@ serve:
 help:
 	@grep -E '^## ' $(MAKEFILE_LIST) | sed 's/## /  /'
 
-.PHONY: sync pull snapshot drop-snapshot build sync-games sync-built \
+.PHONY: sync pull snapshot drop-snapshot sync-games sync-built \
         sync-intuition sitemap serve help
