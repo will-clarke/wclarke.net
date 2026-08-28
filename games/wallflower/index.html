@@ -22,7 +22,8 @@
   }
   #app{height:100%;display:flex;flex-direction:column;padding:calc(var(--sat) + 8px) 12px calc(var(--sab) + 10px)}
   header{display:flex;align-items:center;gap:10px;padding:2px 2px 8px}
-  header .title{flex:1;text-align:center;min-width:0}
+  header .title{flex:1;text-align:center;min-width:0;background:rgba(247,240,226,.9);
+    border-radius:14px;padding:2px 12px;box-shadow:0 0 12px 8px rgba(247,240,226,.9)}
   header .title .lvlname{font-size:19px;font-weight:bold;letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   header .title .lvlno{font-size:11px;color:var(--ink-soft);letter-spacing:.14em;text-transform:uppercase}
   .iconbtn{
@@ -423,7 +424,7 @@ function nudge(dx,dy){ /* bump feedback on blocked move */
   deadFlash={t0:performance.now(),dur:160,bump:[dx,dy]};
 }
 function wrongPaint(x,y){
-  dead=true; wiltT=performance.now(); sfx.bad(); buzz([12,50,12]);
+  dead=true; wiltT=performance.now(); cancelRun(); sfx.bad(); buzz([12,50,12]);
   const need=L.target[y*L.W+x];
   toast('That patch needs '+colName(need)+' - rewind ⟲');
   $('undoBtn').classList.add('pulse');
@@ -567,6 +568,7 @@ function draw(now){
 
   // snake body (per-cell capsules; crisp colour boundary at cell edges)
   const w=cs*.62, animP = anim? Math.min(1,(now-anim.t0)/anim.dur) : 1;
+  let tipX,tipY,tipR,tipP; // leaf-face drawn AFTER the vine so it sits on top
   for(let bi=0;bi<body.length;bi++){
     const seg=body[bi], P=INKS[seg.c], [mx,my]=cxy(seg.x,seg.y);
     const isHead=bi===body.length-1;
@@ -577,7 +579,7 @@ function draw(now){
       const hx=exm+(mx-exm)*animP, hy=eym+(my-eym)*animP;
       ctx.strokeStyle=P.main; ctx.lineWidth=w*(0.55+.45*animP); ctx.lineCap='round';
       ctx.beginPath(); ctx.moveTo(exm,eym); ctx.lineTo(hx,hy); ctx.stroke();
-      drawTip(hx,hy,w*(0.55+.45*animP)/2,P);
+      tipX=hx; tipY=hy; tipR=w*(0.55+.45*animP)/2; tipP=P;
       continue;
     }
     ctx.fillStyle=P.main;
@@ -597,13 +599,14 @@ function draw(now){
         else deadFlash=null;
         ctx.fillStyle=P.main; ctx.beginPath(); ctx.arc(fx,fy,w/2,0,7); ctx.fill();
       }
-      drawTip(fx,fy,w/2,P);
+      tipX=fx; tipY=fy; tipR=w/2; tipP=P;
     }
   }
 
   // organic vine over the paint: a wobbling stem that tapers toward the tip,
   // with strictly alternating leaves on petioles (real climbers alternate
   // sides) that grow in a beat after each cell is painted
+  let attX,attY; // where the stem enters the head cell - the leaf stalk grafts here
   if(body.length>1){
     ctx.lineCap='round';
     const n=body.length;
@@ -623,6 +626,7 @@ function draw(now){
       else { ctx.moveTo((pts[bi-1][0]+pts[bi][0])/2,(pts[bi-1][1]+pts[bi][1])/2); ctx.quadraticCurveTo(pts[bi][0],pts[bi][1],(pts[bi][0]+pts[bi+1][0])/2,(pts[bi][1]+pts[bi+1][1])/2); }
       ctx.stroke();
     }
+    attX=(pts[n-2][0]+pts[n-1][0])/2; attY=(pts[n-2][1]+pts[n-1][1])/2;
     ctx.globalAlpha=.8;
     // seed leaves where the plant sprouted
     {
@@ -648,6 +652,9 @@ function draw(now){
     }
     ctx.globalAlpha=1;
   }
+
+  // the leaf-face rides on top of the stem so it always reads attached
+  if(tipP) drawTip(tipX,tipY,tipR,tipP,attX,attY);
 
   // composite the plant layer onto the screen at the fade alpha
   ctx=screen;
@@ -723,9 +730,11 @@ function segWob(seg,k){
   return ((h^(h>>>16))>>>0)/4294967296-.5;
 }
 
-// the growing tip: a slim tendril that slowly sways and searches for the next
-// place to grow, over a gently pulsing halo; wilts when the paint is wrong
-function drawTip(x,y,r0,P){
+// the player: a big sweet leaf with eyes, pointing where you're heading,
+// attached to the stem by a short petiole. Sways very gently (this is a
+// puzzle game); droops with eyes closed when the paint underneath is wrong.
+let blinkAt=performance.now()+2000;
+function drawTip(x,y,r0,P,ax,ay){
   const now=performance.now();
   const r=r0;
   // "this is you" ping: expanding rings for the first moments of a level
@@ -741,36 +750,63 @@ function drawTip(x,y,r0,P){
     ctx.globalAlpha=ga;
   }
   const wiltP = dead&&wiltT? Math.min(1,(now-wiltT)/700) : 0;
-  const side=(body.length%2)?1:-1; // curl mirrors each step - feels alive
-  // searching sway: slow wander + a small quicker tremble; stills when wilted
-  const sway=(.34*Math.sin(now/1600)+.13*Math.sin(now/520))*(1-wiltP);
-  let ang=Math.atan2(facing[1],facing[0]);
-  ang+=(Math.PI/2-ang)*wiltP*.85; // droop toward the floor
+  // the blade always points jauntily up (a leaf, never a fish); your heading
+  // shows in the pupils instead. Wilting flops the blade toward the floor.
+  let ang=-Math.PI/2+.32;
+  ang+=(Math.PI/2+.2-ang)*wiltP;
+  ang+=.05*Math.sin(now/1500)*(1-wiltP);  // barely-there sway; stills when wilted
   // gently pulsing halo = "this is you"
   ctx.fillStyle='#fffdf6';
-  ctx.beginPath(); ctx.arc(x,y,r*(1.04+.06*Math.sin(now/650)),0,7); ctx.fill();
-  ctx.lineCap='round';
-  // one shy young leaf at the neck
-  drawLeaf(x-Math.cos(ang)*r*.3, y-Math.sin(ang)*r*.3, ang+side*2.15, r*.5, P.deep);
-  // the tendril: grown point by point with curvature that increases along its
-  // length (young shoots straighten at the base and curl at the tip), the
-  // curl slowly tightening and loosening as it searches
-  const reach=r*2.3*(1-.3*wiltP);
-  const tighten=1+.25*Math.sin(now/1100)*(1-wiltP)+.9*wiltP;
-  const N=22;
-  let hx_=x-Math.cos(ang)*r*.35, hy_=y-Math.sin(ang)*r*.35; // start at the neck
-  let heading=ang+sway-side*.30; // slight counter-curl start = S-curve
-  ctx.strokeStyle=P.deep;
-  for(let i=1;i<=N;i++){
-    const t=i/N;
-    heading+=side*(11.5/N)*Math.pow(t,2.2)*tighten;
-    const qx=hx_+Math.cos(heading)*(reach/N), qy=hy_+Math.sin(heading)*(reach/N);
-    ctx.lineWidth=Math.max(1.2,r*(.24-.19*t));
-    ctx.beginPath(); ctx.moveTo(hx_,hy_); ctx.lineTo(qx,qy); ctx.stroke();
-    hx_=qx; hy_=qy;
+  ctx.beginPath(); ctx.arc(x,y,r*(1.22+.05*Math.sin(now/650)),0,7); ctx.fill();
+  // leaf drawn in local coords: +x = facing. Round back (where the face
+  // lives), single point at the front, vein down the middle - a leaf, not a fish.
+  const R=r*.95;
+  // the stalk: OVER the halo, from where the stem enters this cell (exact
+  // same wobbled point the stem pass uses) curving into the leaf base -
+  // so the leaf is always visibly attached to the vine
+  ctx.strokeStyle=P.deep; ctx.lineCap='round'; ctx.lineWidth=Math.max(2,r*.17);
+  const bwx=x-Math.cos(ang)*R*.8, bwy=y-Math.sin(ang)*R*.8; // leaf base (world)
+  ctx.beginPath();
+  if(ax!==undefined){
+    ctx.moveTo(ax,ay);
+    ctx.quadraticCurveTo(x-Math.cos(ang)*R*1.35, y-Math.sin(ang)*R*1.35, bwx,bwy);
+  } else { // fresh sprout: just a little stalk behind the leaf
+    ctx.moveTo(x-Math.cos(ang)*R*1.5, y-Math.sin(ang)*R*1.5); ctx.lineTo(bwx,bwy);
   }
-  // bright growing point at the very tip
-  ctx.fillStyle=P.lite; ctx.beginPath(); ctx.arc(hx_,hy_,r*.11,0,7); ctx.fill();
+  ctx.stroke();
+  ctx.save(); ctx.translate(x,y); ctx.rotate(ang);
+  // blade: circle with a pointed front
+  ctx.fillStyle=P.deep;
+  ctx.beginPath();
+  ctx.arc(0,0,R,Math.PI/3,Math.PI*5/3);          // the round back
+  ctx.quadraticCurveTo(R*1.3,-R*.45,R*1.6,0);    // up to the tip point
+  ctx.quadraticCurveTo(R*1.3,R*.45,R*.5,R*.866); // and back
+  ctx.closePath(); ctx.fill();
+  // central vein + two side veins
+  ctx.strokeStyle=P.main; ctx.lineWidth=Math.max(1.5,R*.08);
+  ctx.beginPath(); ctx.moveTo(-R*.55,0); ctx.lineTo(R*1.35,0); ctx.stroke();
+  ctx.lineWidth=Math.max(1,R*.05);
+  for(const s of [-1,1]){
+    ctx.beginPath(); ctx.moveTo(R*.1,0); ctx.lineTo(R*.62,s*R*.42); ctx.stroke();
+  }
+  // eyes across the blade (blink now and then; closed when wilted);
+  // the pupils look where you're heading
+  const ed=R*.44, er=R*.30;
+  const lca=Math.cos(ang), lsa=Math.sin(ang);
+  const lookX=(facing[0]*lca+facing[1]*lsa)*er*.4, lookY=(-facing[0]*lsa+facing[1]*lca)*er*.4;
+  const blink = wiltP>0 || (now>blinkAt && now<blinkAt+140);
+  if(now>blinkAt+140) blinkAt=now+1400+Math.random()*2600;
+  for(const s of [-1,1]){
+    const ex=R*.02, ey=s*ed;
+    if(blink){
+      ctx.strokeStyle='#fffdf6'; ctx.lineWidth=Math.max(1.5,er*.4); ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(ex,ey-er*.6); ctx.lineTo(ex,ey+er*.6); ctx.stroke();
+    } else {
+      ctx.fillStyle='#fffdf6'; ctx.beginPath(); ctx.arc(ex,ey,er,0,7); ctx.fill();
+      ctx.fillStyle='#332'; ctx.beginPath(); ctx.arc(ex+lookX,ey+lookY,er*.5,0,7); ctx.fill();
+    }
+  }
+  ctx.restore();
 }
 
 function frame(now){ if(L)draw(now); requestAnimationFrame(frame); }
@@ -788,10 +824,12 @@ function startRun(dx,dy,n){
   cancelRun(); run={dx,dy,left:n};
   (function tick(){
     if(!run)return;
-    if(won||winT||dead||run.left<=0){ run=null; return; }
+    if(won||winT||run.left<=0){ run=null; return; } // mistakes don't block - experiment away
     if(!canStep(run.dx,run.dy)){ nudge(run.dx,run.dy); run=null; return; }
-    step(run.dx,run.dy); run.left--;
-    if(run.left>0&&!dead&&!won) runTimer=setTimeout(tick,85); else run=null;
+    step(run.dx,run.dy);
+    if(!run)return; // a fresh wrong paint cancels the run at the mistake
+    run.left--;
+    if(run.left>0&&!won) runTimer=setTimeout(tick,85); else run=null;
   })();
 }
 
