@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0a1030">
+<title>Technobird</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body {
+    position:fixed; inset:0; overflow:hidden;
+    background:#0a1030;
+    touch-action:none; overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none;
+    -webkit-tap-highlight-color:transparent;
+    font-family:ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  canvas { position:absolute; inset:0; display:block; }
+  .hud {
+    position:absolute; top:calc(10px + env(safe-area-inset-top));
+    left:0; right:0; display:flex; justify-content:space-between;
+    padding:0 16px; pointer-events:none; z-index:2;
+    color:#cfeaff; font-size:15px; letter-spacing:1px;
+    text-shadow:0 0 8px rgba(120,220,255,.5);
+    opacity:0; transition:opacity .4s;
+  }
+  .hud.on { opacity:1; }
+  #count::before {
+    content:""; display:inline-block; width:11px; height:11px; margin-right:6px;
+    background:#9ff7ff; clip-path:polygon(50% 0, 100% 100%, 50% 70%, 0 100%);
+    filter:drop-shadow(0 0 4px #6fe0ff);
+  }
+  .overlay {
+    position:absolute; inset:0; z-index:3;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; color:#d8f2ff; padding:24px;
+    background:radial-gradient(ellipse at 50% 40%, rgba(10,18,52,.25), rgba(6,9,28,.78));
+    transition:opacity .5s; gap:0;
+  }
+  .overlay.hidden { opacity:0; pointer-events:none; }
+  h1 {
+    font-size:clamp(30px, 9vw, 52px); font-weight:700; letter-spacing:.14em;
+    color:#eafcff; text-shadow:0 0 18px #4fd8ff, 0 0 46px rgba(70,190,255,.55);
+  }
+  .sub { margin-top:10px; font-size:13px; letter-spacing:.24em; color:#8fb8de; text-transform:uppercase; }
+  .howto { margin-top:38px; font-size:14.5px; line-height:2.1; color:#bfe2ff; }
+  .howto b { color:#fff; font-weight:600; }
+  .go {
+    margin-top:44px; font-size:13px; letter-spacing:.28em; text-transform:uppercase;
+    color:#9ff7ff; animation:pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:.45} 50%{opacity:1} }
+  .stat { font-size:15px; letter-spacing:.12em; color:#9fc4e8; margin-top:8px; }
+  .big { font-size:clamp(34px, 11vw, 58px); color:#fff; letter-spacing:.06em;
+         text-shadow:0 0 22px rgba(120,220,255,.7); margin-top:6px; }
+  .newbest { color:#ffd76a; text-shadow:0 0 16px rgba(255,200,80,.8); font-size:14px;
+             letter-spacing:.3em; margin-top:14px; text-transform:uppercase; }
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<div class="hud" id="hud">
+  <span id="alt">0 m</span>
+  <span id="count">10</span>
+</div>
+
+<div class="overlay" id="title">
+  <h1>TECHNOBIRD</h1>
+  <div class="sub">guide the flock out of the sky</div>
+  <div class="howto">
+    <b>hold + drag</b> anywhere - the flock chases your thumb<br>
+    <b>keep holding</b> - they pull in tight to thread the gaps<br>
+    <b>let go</b> - they fan out wide to gather strays<br>
+    every bird fights &middot; every bird counts
+  </div>
+  <div class="go">hold anywhere to launch</div>
+</div>
+
+<div class="overlay hidden" id="death">
+  <div class="sub">the flock came down at</div>
+  <div class="big" id="dAlt">0 m</div>
+  <div class="stat" id="dBest">best 0 m</div>
+  <div class="stat" id="dRec">birds recruited: 0</div>
+  <div class="newbest" id="dNew" style="display:none">new best flight</div>
+  <div class="go">hold anywhere to fly again</div>
+</div>
+
+<script>
+'use strict';
+// ---------------------------------------------------------------- canvas ---
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const trailCv = document.createElement('canvas');
+const tctx = trailCv.getContext('2d');
+let W = 0, H = 0, u = 1, dpr = 1;
+
+function resize() {
+  dpr = Math.min(2, window.devicePixelRatio || 1);
+  W = window.innerWidth; H = window.innerHeight;
+  u = Math.min(W, H) / 390;
+  for (const [c, x] of [[cv, ctx], [trailCv, tctx]]) {
+    c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
+    x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  makeStars();
+}
+window.addEventListener('resize', resize);
+
+// ----------------------------------------------------------------- helpers -
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const rand = (a, b) => a + Math.random() * (b - a);
+const dist2 = (ax, ay, bx, by) => { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; };
+
+function lerpColor(c1, c2, t) {
+  return [0, 1, 2].map(i => Math.round(lerp(c1[i], c2[i], t)));
+}
+const css = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+// pre-rendered radial glow sprites (shadowBlur is too slow on mobile)
+function makeGlow(color, r) {
+  const c = document.createElement('canvas');
+  c.width = c.height = r * 2;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(r, r, 0, r, r, r);
+  grad.addColorStop(0, color);
+  grad.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = grad; g.fillRect(0, 0, r * 2, r * 2);
+  return c;
+}
+const GLOW = {
+  bird:  makeGlow('rgba(110,225,255,.55)', 16),
+  mote:  makeGlow('rgba(255,214,90,.6)',  20),
+  bolt:  makeGlow('rgba(255,230,150,.7)', 10),
+  drone: makeGlow('rgba(255,90,140,.4)',  30),
+  lure:  makeGlow('rgba(190,245,255,.5)', 26),
+};
+
+// ------------------------------------------------------------------- audio -
+let AC = null, master = null, lastShotSnd = 0;
+function audioInit() {
+  if (AC) { if (AC.state === 'suspended') AC.resume(); return; }
+  try {
+    AC = new (window.AudioContext || window.webkitAudioContext)();
+    master = AC.createGain(); master.gain.value = 0.16; master.connect(AC.destination);
+  } catch (e) { AC = null; }
+}
+function tone(f0, f1, dur, type, vol) {
+  if (!AC) return;
+  const t = AC.currentTime;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, t);
+  o.frequency.exponentialRampToValueAtTime(Math.max(30, f1), t + dur);
+  g.gain.setValueAtTime(vol, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + 0.02);
+}
+function noiseBurst(dur, vol) {
+  if (!AC) return;
+  const n = Math.floor(AC.sampleRate * dur);
+  const buf = AC.createBuffer(1, n, AC.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const src = AC.createBufferSource(); src.buffer = buf;
+  const g = AC.createGain(); g.gain.value = vol;
+  const f = AC.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 900;
+  src.connect(f); f.connect(g); g.connect(master); src.start();
+}
+const snd = {
+  shoot()   { const now = performance.now(); if (now - lastShotSnd < 90) return;
+              lastShotSnd = now; tone(1250, 700, 0.05, 'square', 0.018); },
+  recruit() { tone(760, 760, 0.06, 'sine', 0.09); setTimeout(() => tone(1140, 1140, 0.09, 'sine', 0.09), 60); },
+  birdDie() { tone(340, 90, 0.2, 'sawtooth', 0.05); },
+  explode() { noiseBurst(0.22, 0.1); tone(220, 60, 0.18, 'triangle', 0.06); },
+  launch()  { tone(440, 880, 0.25, 'sine', 0.08); },
+  over()    { tone(300, 70, 0.7, 'sawtooth', 0.07); },
+};
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+// ------------------------------------------------------------------- state -
+const CAP = 40, START_BIRDS = 10;
+let best = 0;
+try { best = +localStorage.getItem('technobird-best') || 0; } catch (e) {}
+
+const S = {
+  mode: 'title',          // title | playing | dead
+  alt: 0,                 // world distance climbed, px
+  recruited: 0,
+  birds: [], bolts: [], drones: [], wires: [], motes: [], parts: [],
+  nextSpawn: 0,
+  lure: { x: 0, y: 0 },
+  held: false, grip: 0,   // grip eases 0..1 while held
+  shake: 0, diedAt: 0,
+};
+window.__tb = { S, start, get best() { return best; } };  // headless-test hook
+
+// ------------------------------------------------------------------- input -
+let ptrId = null, px = 0, py = 0;
+
+function flockCentroid() {
+  if (!S.birds.length) return { x: W / 2, y: H * 0.6 };
+  let x = 0, y = 0;
+  for (const b of S.birds) { x += b.x; y += b.y; }
+  return { x: x / S.birds.length, y: y / S.birds.length };
+}
+
+window.addEventListener('pointerdown', e => {
+  audioInit();
+  if (ptrId !== null) return;
+  ptrId = e.pointerId; px = e.clientX; py = e.clientY;
+  if (S.mode === 'title') { start(); return; }
+  if (S.mode === 'dead') {
+    if (performance.now() - S.diedAt > 700) start();
+    return;
+  }
+  S.held = true;
+  const c = flockCentroid();
+  S.lure.x = clamp(c.x, 20, W - 20);
+  S.lure.y = clamp(c.y, 60, H - 30);
+});
+window.addEventListener('pointermove', e => {
+  if (e.pointerId !== ptrId) return;
+  const dx = e.clientX - px, dy = e.clientY - py;
+  px = e.clientX; py = e.clientY;
+  if (!S.held) return;
+  S.lure.x = clamp(S.lure.x + dx * 1.18, 16, W - 16);
+  S.lure.y = clamp(S.lure.y + dy * 1.18, 56, H - 24);
+});
+function ptrEnd(e) { if (e.pointerId === ptrId) { ptrId = null; S.held = false; } }
+window.addEventListener('pointerup', ptrEnd);
+window.addEventListener('pointercancel', ptrEnd);
+
+// ------------------------------------------------------------------- birds -
+function newBird(x, y) {
+  return {
+    x, y, vx: rand(-40, 40), vy: rand(-90, -30),
+    cd: rand(0.2, 0.9),           // fire cooldown
+    ph: rand(0, TAU),             // wander phase
+  };
+}
+function spawnFlock() {
+  S.birds = [];
+  for (let i = 0; i < START_BIRDS; i++)
+    S.birds.push(newBird(W / 2 + rand(-50, 50), H * 0.68 + rand(-40, 40)));
+}
+
+function stepBirds(dt) {
+  const g = S.grip;
+  const R2 = Math.pow(52 * u, 2);                    // neighbourhood
+  const sepR2 = Math.pow(lerp(21, 12, g) * u, 2);    // hold => tighter packing
+  const cohW = lerp(0.55, 1.6, g);
+  const lureW = 2.6 * g;
+  const maxS = 305 * u, minS = 70 * u, maxF = 1500 * u;
+  const birds = S.birds;
+
+  for (let i = 0; i < birds.length; i++) {
+    const b = birds[i];
+    let sx = 0, sy = 0, ax = 0, ay = 0, cx = 0, cy = 0, n = 0;
+    for (let j = 0; j < birds.length; j++) {
+      if (i === j) continue;
+      const o = birds[j];
+      const d2 = dist2(b.x, b.y, o.x, o.y);
+      if (d2 > R2) continue;
+      n++;
+      ax += o.vx; ay += o.vy;
+      cx += o.x;  cy += o.y;
+      if (d2 < sepR2 && d2 > 0.01) {
+        const d = Math.sqrt(d2);
+        sx += (b.x - o.x) / d / d; sy += (b.y - o.y) / d / d;
+      }
+    }
+    let fx = 0, fy = 0;
+    if (n) {
+      fx += sx * 3400 * u;                            // separation
+      fy += sy * 3400 * u;
+      fx += (ax / n - b.vx) * 0.9;                    // alignment
+      fy += (ay / n - b.vy) * 0.9;
+      fx += (cx / n - b.x) * cohW * 3.2;              // cohesion
+      fy += (cy / n - b.y) * cohW * 3.2;
+    }
+    if (g > 0.01) {                                   // seek the lure
+      const dx = S.lure.x - b.x, dy = S.lure.y - b.y;
+      const d = Math.hypot(dx, dy) || 1;
+      fx += (dx / d * maxS - b.vx) * lureW;
+      fy += (dy / d * maxS - b.vy) * lureW;
+    } else {                                          // released: drift home
+      fx += (W / 2 - b.x) * 0.35;
+      fy += (H * 0.55 - b.y) * 0.35;
+    }
+    // soft screen bounds
+    const m = 26;
+    if (b.x < m) fx += (m - b.x) * 26; else if (b.x > W - m) fx -= (b.x - (W - m)) * 26;
+    if (b.y < 60) fy += (60 - b.y) * 26; else if (b.y > H - m) fy -= (b.y - (H - m)) * 26;
+    // gentle wander so the flock never sits still
+    b.ph += dt * 3;
+    fx += Math.sin(b.ph) * 130 * u * (1 - g * 0.6);
+    fy += Math.cos(b.ph * 0.8) * 90 * u * (1 - g * 0.6);
+
+    const fm = Math.hypot(fx, fy);
+    if (fm > maxF) { fx = fx / fm * maxF; fy = fy / fm * maxF; }
+    b.vx += fx * dt; b.vy += fy * dt;
+    const sp = Math.hypot(b.vx, b.vy) || 1;
+    const cl = clamp(sp, minS, maxS);
+    b.vx = b.vx / sp * cl; b.vy = b.vy / sp * cl;
+    b.x += b.vx * dt; b.y += b.vy * dt;
+
+    // fire
+    b.cd -= dt;
+    if (b.cd <= 0) {
+      b.cd = rand(0.55, 0.95);
+      S.bolts.push({ x: b.x, y: b.y - 6 * u, vy: -640 * u });
+      snd.shoot();
+    }
+  }
+}
+
+function killBird(i) {
+  const b = S.birds[i];
+  for (let k = 0; k < 9; k++)
+    S.parts.push({ x: b.x, y: b.y, vx: rand(-160, 160), vy: rand(-200, 80),
+                   life: rand(0.3, 0.65), t: 0, col: '#9ff7ff', r: rand(1.2, 2.6) * u });
+  S.birds.splice(i, 1);
+  snd.birdDie(); buzz(14);
+  S.shake = Math.max(S.shake, 5);
+  if (!S.birds.length) gameOver();
+}
+
+function recruitAt(x, y) {
+  if (S.birds.length < CAP) {
+    S.birds.push(newBird(x, y));
+    S.recruited++;
+    for (let k = 0; k < 7; k++)
+      S.parts.push({ x, y, vx: rand(-110, 110), vy: rand(-140, 40),
+                     life: rand(0.25, 0.5), t: 0, col: '#ffd76a', r: rand(1, 2.2) * u });
+    snd.recruit();
+  }
+}
+
+// ------------------------------------------------------------ world spawns -
+function scrollSpeed() { return u * clamp(125 + S.alt * 0.006, 125, 275); }
+function tier() { return clamp(S.alt / 14000, 0, 1); }
+
+function spawnWire() {
+  const t = tier();
+  const gapW = lerp(0.42, 0.20, t) * W * rand(0.9, 1.1);
+  const gx = rand(gapW * 0.55, W - gapW * 0.55);
+  const gaps = [{ x0: gx - gapW / 2, x1: gx + gapW / 2 }];
+  if (t > 0.35 && Math.random() < 0.45) {  // second gap once things heat up
+    const g2 = rand(gapW * 0.5, W - gapW * 0.5);
+    gaps.push({ x0: g2 - gapW * 0.4, x1: g2 + gapW * 0.4 });
+  }
+  S.wires.push({ y: -30, gaps });
+}
+function spawnDrones() {
+  const t = tier();
+  const k = 1 + Math.floor(Math.random() * (1 + t * 2.6));
+  for (let i = 0; i < k; i++)
+    S.drones.push({
+      x: rand(W * 0.15, W * 0.85), y: -40 - i * 90 * u,
+      r: 17 * u, hp: 3 + Math.floor(t * 8), maxHp: 3 + Math.floor(t * 8),
+      vx: rand(30, 80) * u * (Math.random() < 0.5 ? -1 : 1),
+      ph: rand(0, TAU), flash: 0,
+    });
+}
+function spawnMotes() {
+  const k = 3 + Math.floor(Math.random() * 3);
+  // clusters hug an edge half the time - spreading out is how you farm them
+  const edge = Math.random() < 0.5;
+  const cx = edge ? (Math.random() < 0.5 ? W * 0.14 : W * 0.86) : rand(W * 0.25, W * 0.75);
+  for (let i = 0; i < k; i++)
+    S.motes.push({ x: clamp(cx + rand(-70, 70) * u, 18, W - 18),
+                   y: -20 - i * 46 * u, ph: rand(0, TAU) });
+}
+function spawnPattern() {
+  if (S.alt < 900) { spawnMotes(); return; }   // gentle first stretch
+  const r = Math.random();
+  if (r < 0.34) spawnWire();
+  else if (r < 0.62) spawnDrones();
+  else if (r < 0.84) spawnMotes();
+  else { spawnWire(); spawnDrones(); }
+}
+
+// -------------------------------------------------------------- world step -
+function stepWorld(dt) {
+  const sp = scrollSpeed();
+  S.alt += sp * dt / u;                    // altitude in device-independent px
+  if (S.alt > S.nextSpawn) {
+    spawnPattern();
+    S.nextSpawn = S.alt + lerp(430, 300, tier()) * rand(0.9, 1.15);
+  }
+
+  // wires
+  for (let i = S.wires.length - 1; i >= 0; i--) {
+    const w = S.wires[i];
+    w.y += sp * dt;
+    if (w.y > H + 40) { S.wires.splice(i, 1); continue; }
+    for (let j = S.birds.length - 1; j >= 0; j--) {
+      const b = S.birds[j];
+      if (Math.abs(b.y - w.y) > 5 * u) continue;
+      let safe = false;
+      for (const g of w.gaps) if (b.x > g.x0 && b.x < g.x1) { safe = true; break; }
+      if (!safe) killBird(j);
+    }
+  }
+
+  // drones
+  for (let i = S.drones.length - 1; i >= 0; i--) {
+    const d = S.drones[i];
+    d.y += sp * dt * 0.82;                 // drones hold ground slightly
+    d.x += d.vx * dt;
+    d.ph += dt * 3;
+    d.flash = Math.max(0, d.flash - dt * 8);
+    if (d.x < d.r || d.x > W - d.r) d.vx *= -1;
+    if (d.y > H + 60) { S.drones.splice(i, 1); continue; }
+    // bird ramming: costs a bird, deals 2
+    for (let j = S.birds.length - 1; j >= 0; j--) {
+      const b = S.birds[j];
+      if (dist2(b.x, b.y, d.x, d.y) < d.r * d.r) {
+        killBird(j); d.hp -= 2; d.flash = 1;
+        break;
+      }
+    }
+    if (d.hp <= 0) {
+      for (let k = 0; k < 16; k++)
+        S.parts.push({ x: d.x, y: d.y, vx: rand(-240, 240), vy: rand(-240, 240),
+                       life: rand(0.35, 0.8), t: 0, col: '#ff6e96', r: rand(1.5, 3.4) * u });
+      if (Math.random() < 0.5) S.motes.push({ x: d.x, y: d.y, ph: 0 });
+      S.drones.splice(i, 1);
+      snd.explode(); buzz(24); S.shake = Math.max(S.shake, 9);
+    }
+  }
+
+  // bolts
+  for (let i = S.bolts.length - 1; i >= 0; i--) {
+    const bo = S.bolts[i];
+    bo.y += bo.vy * dt;
+    if (bo.y < -20) { S.bolts.splice(i, 1); continue; }
+    for (const d of S.drones) {
+      if (dist2(bo.x, bo.y, d.x, d.y) < d.r * d.r) {
+        d.hp -= 1; d.flash = 1;
+        S.bolts.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  // motes
+  for (let i = S.motes.length - 1; i >= 0; i--) {
+    const mo = S.motes[i];
+    mo.y += sp * dt; mo.ph += dt * 4;
+    if (mo.y > H + 30) { S.motes.splice(i, 1); continue; }
+    const rr = Math.pow(15 * u, 2);
+    for (const b of S.birds) {
+      if (dist2(b.x, b.y, mo.x, mo.y) < rr) {
+        recruitAt(mo.x, mo.y);
+        S.motes.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  // particles
+  for (let i = S.parts.length - 1; i >= 0; i--) {
+    const p = S.parts[i];
+    p.t += dt;
+    if (p.t > p.life) { S.parts.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt + sp * dt * 0.4;
+    p.vy += 260 * dt;
+  }
+
+  S.shake = Math.max(0, S.shake - dt * 40);
+}
+
+// ------------------------------------------------------------------ render -
+// sky keyframes: dusk -> indigo -> near-space -> void
+const SKY = [
+  { at: 0,     top: [16, 26, 66],  bot: [64, 44, 105] },
+  { at: 4000,  top: [8, 13, 44],   bot: [38, 28, 80]  },
+  { at: 10000, top: [3, 5, 22],    bot: [18, 15, 48]  },
+  { at: 18000, top: [1, 1, 8],     bot: [7, 6, 24]    },
+];
+function skyColors() {
+  const a = S.alt;
+  for (let i = 0; i < SKY.length - 1; i++) {
+    const k0 = SKY[i], k1 = SKY[i + 1];
+    if (a <= k1.at) {
+      const t = clamp((a - k0.at) / (k1.at - k0.at), 0, 1);
+      return { top: lerpColor(k0.top, k1.top, t), bot: lerpColor(k0.bot, k1.bot, t) };
+    }
+  }
+  const last = SKY[SKY.length - 1];
+  return { top: last.top, bot: last.bot };
+}
+
+let stars = [];
+function makeStars() {
+  stars = [];
+  for (let i = 0; i < 90; i++)
+    stars.push({ x: Math.random() * W, y: Math.random() * H,
+                 z: rand(0.25, 1), r: rand(0.5, 1.6) });
+}
+
+function drawBird(b, bright) {
+  const a = Math.atan2(b.vy, b.vx);
+  ctx.save();
+  ctx.translate(b.x, b.y);
+  ctx.rotate(a + Math.PI / 2);
+  const s = 5.2 * u;
+  ctx.fillStyle = bright ? '#ffffff' : '#aef4ff';
+  ctx.beginPath();
+  ctx.moveTo(0, -s * 1.5);
+  ctx.lineTo(s, s);
+  ctx.lineTo(0, s * 0.3);
+  ctx.lineTo(-s, s);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function render() {
+  const sky = skyColors();
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0, css(sky.top));
+  grad.addColorStop(1, css(sky.bot));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // stars fade in with altitude, parallax-scroll downward
+  const starA = clamp((S.alt - 2500) / 9000, 0, 0.9);
+  if (starA > 0.01) {
+    ctx.fillStyle = `rgba(215,235,255,${starA})`;
+    for (const st of stars) {
+      const y = (st.y + S.alt * st.z * 0.35) % H;
+      ctx.fillRect(st.x, y, st.r, st.r);
+    }
+  }
+
+  const shx = S.shake ? rand(-S.shake, S.shake) * 0.5 : 0;
+  const shy = S.shake ? rand(-S.shake, S.shake) * 0.5 : 0;
+  ctx.save();
+  ctx.translate(shx, shy);
+
+  // trail layer: fade, stamp glows, composite
+  tctx.save();
+  tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  tctx.globalCompositeOperation = 'destination-out';
+  tctx.fillStyle = 'rgba(0,0,0,0.18)';
+  tctx.fillRect(0, 0, W, H);
+  tctx.globalCompositeOperation = 'source-over';
+  for (const b of S.birds) tctx.drawImage(GLOW.bird, b.x - 16, b.y - 16);
+  tctx.restore();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.drawImage(trailCv, 0, 0, W, H);
+
+  // wires
+  for (const w of S.wires) {
+    ctx.lineWidth = 5 * u; ctx.strokeStyle = 'rgba(255,90,80,.22)';
+    strokeWire(w); ctx.lineWidth = 1.6 * u; ctx.strokeStyle = '#ff7a66';
+    strokeWire(w);
+    ctx.fillStyle = '#ffd0c0';
+    for (const g of w.gaps) {
+      diamond(g.x0, w.y, 3.4 * u);
+      diamond(g.x1, w.y, 3.4 * u);
+    }
+  }
+
+  // motes
+  for (const mo of S.motes) {
+    const bob = Math.sin(mo.ph) * 2 * u;
+    ctx.drawImage(GLOW.mote, mo.x - 20, mo.y + bob - 20);
+    ctx.fillStyle = '#ffd76a';
+    ctx.beginPath(); ctx.arc(mo.x, mo.y + bob, 4 * u, 0, TAU); ctx.fill();
+    ctx.fillStyle = '#fff2c8';
+    ctx.beginPath(); ctx.arc(mo.x - u, mo.y + bob - u, 1.6 * u, 0, TAU); ctx.fill();
+  }
+
+  // bolts
+  ctx.fillStyle = '#ffe9a8';
+  for (const bo of S.bolts) {
+    ctx.drawImage(GLOW.bolt, bo.x - 10, bo.y - 10);
+    ctx.fillRect(bo.x - u, bo.y - 7 * u, 2 * u, 9 * u);
+  }
+
+  // drones
+  for (const d of S.drones) {
+    ctx.drawImage(GLOW.drone, d.x - 30, d.y - 30);
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(Math.sin(d.ph) * 0.25);
+    const r = d.r;
+    ctx.fillStyle = d.flash > 0.4 ? '#ffe0ea' : '#3c1230';
+    ctx.strokeStyle = '#ff5a8c'; ctx.lineWidth = 1.8 * u;
+    ctx.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = k / 6 * TAU + Math.PI / 6;
+      const x = Math.cos(a) * r, y = Math.sin(a) * r;
+      k ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ff5a8c';
+    ctx.beginPath(); ctx.arc(0, 0, r * 0.32, 0, TAU); ctx.fill();
+    // hp pips
+    if (d.hp < d.maxHp) {
+      ctx.fillStyle = 'rgba(255,255,255,.75)';
+      const frac = d.hp / d.maxHp;
+      ctx.fillRect(-r * 0.8, -r - 7 * u, r * 1.6 * frac, 2.4 * u);
+    }
+    ctx.restore();
+  }
+
+  ctx.globalCompositeOperation = 'source-over';
+
+  // particles
+  for (const p of S.parts) {
+    ctx.globalAlpha = 1 - p.t / p.life;
+    ctx.fillStyle = p.col;
+    ctx.fillRect(p.x - p.r / 2, p.y - p.r / 2, p.r, p.r);
+  }
+  ctx.globalAlpha = 1;
+
+  // birds
+  const bright = S.grip > 0.6;
+  for (const b of S.birds) drawBird(b, bright);
+
+  // lure glint while held
+  if (S.held && S.mode === 'playing') {
+    const pulse = 0.7 + Math.sin(performance.now() / 130) * 0.3;
+    ctx.globalAlpha = 0.55 * pulse * S.grip;
+    ctx.drawImage(GLOW.lure, S.lure.x - 26, S.lure.y - 26);
+    ctx.globalAlpha = 1;
+  }
+
+  ctx.restore();
+}
+function strokeWire(w) {
+  ctx.beginPath();
+  let x = 0;
+  const gaps = [...w.gaps].sort((a, b) => a.x0 - b.x0);
+  for (const g of gaps) {
+    if (g.x0 > x) { ctx.moveTo(x, w.y); ctx.lineTo(g.x0, w.y); }
+    x = Math.max(x, g.x1);
+  }
+  if (x < W) { ctx.moveTo(x, w.y); ctx.lineTo(W, w.y); }
+  ctx.stroke();
+}
+function diamond(x, y, r) {
+  ctx.beginPath();
+  ctx.moveTo(x, y - r); ctx.lineTo(x + r, y); ctx.lineTo(x, y + r); ctx.lineTo(x - r, y);
+  ctx.closePath(); ctx.fill();
+}
+
+// -------------------------------------------------------------------- flow -
+const $ = id => document.getElementById(id);
+function start() {
+  S.mode = 'playing';
+  S.alt = 0; S.recruited = 0; S.nextSpawn = 400;
+  S.bolts = []; S.drones = []; S.wires = []; S.motes = []; S.parts = [];
+  S.grip = 0; S.shake = 0;
+  spawnFlock();
+  S.held = ptrId !== null;               // launching by holding = already steering
+  const c = flockCentroid();
+  S.lure.x = c.x; S.lure.y = c.y;
+  $('title').classList.add('hidden');
+  $('death').classList.add('hidden');
+  $('hud').classList.add('on');
+  snd.launch();
+}
+function gameOver() {
+  S.mode = 'dead'; S.diedAt = performance.now();
+  const m = Math.round(S.alt / 10);
+  const isBest = m > best;
+  if (isBest) {
+    best = m;
+    try { localStorage.setItem('technobird-best', String(best)); } catch (e) {}
+  }
+  $('dAlt').textContent = m.toLocaleString() + ' m';
+  $('dBest').textContent = 'best ' + best.toLocaleString() + ' m';
+  $('dRec').textContent = 'birds recruited: ' + S.recruited;
+  $('dNew').style.display = isBest ? 'block' : 'none';
+  $('death').classList.remove('hidden');
+  $('hud').classList.remove('on');
+  snd.over(); buzz([40, 60, 40]);
+}
+
+// -------------------------------------------------------------------- loop -
+let last = performance.now(), hudAlt = -1, hudCount = -1;
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+
+  S.grip += ((S.held && S.mode === 'playing' ? 1 : 0) - S.grip) * Math.min(1, dt * 6);
+
+  if (S.mode === 'playing') {
+    stepBirds(dt);
+    stepWorld(dt);
+    const m = Math.round(S.alt / 10), n = S.birds.length;
+    if (m !== hudAlt)   { hudAlt = m;   $('alt').textContent = m.toLocaleString() + ' m'; }
+    if (n !== hudCount) { hudCount = n; $('count').textContent = n; }
+  } else if (S.mode === 'title') {
+    // idle flock loitering behind the title
+    if (!S.birds.length) spawnFlock();
+    stepBirds(dt);
+    S.bolts.length = 0;
+  } else {
+    stepBirds(dt);
+    for (let i = S.parts.length - 1; i >= 0; i--) {
+      const p = S.parts[i];
+      p.t += dt;
+      if (p.t > p.life) S.parts.splice(i, 1);
+      else { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 260 * dt; }
+    }
+    S.bolts.length = 0;
+  }
+
+  render();
+}
+
+document.addEventListener('visibilitychange', () => { last = performance.now(); });
+resize();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

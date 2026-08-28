@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "technobird",
+      "name": "Technobird",
+      "accent": "#9ff7ff",
+      "tagline": "You are not a bird - you are the flock. Hold and drag and the murmuration chases your thumb; keep holding and it pulls in tight to thread the razor wires; let go and it fans out wide to sweep up recruits. Every bird is a gun, a hit point and a wingbeat of the same living creature. Climb out of the dusk until the stars come out, and keep at least one heart beating."
+    },
+    {
       "slug": "wallflower",
       "name": "Wallflower",
       "accent": "#df5a4a",

@@ -31,6 +31,7 @@ https://wclarke.net/games/recursive-sokoban/
 https://wclarke.net/games/seed/
 https://wclarke.net/games/shipshape/
 https://wclarke.net/games/slime-teleports/
+https://wclarke.net/games/technobird/
 https://wclarke.net/games/tendril/
 https://wclarke.net/games/terminus/
 https://wclarke.net/games/threescore/
