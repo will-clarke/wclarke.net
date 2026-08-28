@@ -124,7 +124,7 @@
    '#' wall  '.' plain  ' ' void  '@' start
    lowercase rby = patterned target, uppercase RBY = paint pot          */
 const LEVELS = [
-{ name:'First Steps', ink:'r', par:5, hint:'Swipe to crawl. Your trail is paint - cover every patterned patch.', map:[
+{ name:'First Steps', ink:'r', par:5, hint:'Swipe to grow. Your vine is paint - cover every patterned patch.', map:[
 '@rr',
 '..r',
 '.rr']},
@@ -169,7 +169,7 @@ const LEVELS = [
 'bbrrbb',
 '..RB..',
 '@.....']},
-{ name:'Splatter', ink:'y', par:30, hint:'Scattered patches, one order. Read the wall before you crawl.', map:[
+{ name:'Splatter', ink:'y', par:30, hint:'Scattered patches, one order. Read the wall before you grow.', map:[
 'yy.yB..',
 '.ry@.y.',
 '.....yb',
@@ -231,6 +231,55 @@ const LEVELS = [
 '.b.....',
 '.b..B..',
 '.byrr..']},
+{ name:'Trellis', ink:'y', par:45, hint:'Two pots of each colour now. Which one - and when?', map:[
+'b...bbB',
+'.r@yb..',
+'r....r.',
+'.rR.y.r',
+'B..yRr.',
+'byy..b.',
+'.bb..b.']},
+{ name:'Bramble', ink:'r', par:45, hint:'', map:[
+'y....b.',
+'.YbB...',
+'.r.r.Br',
+'y.b.br.',
+'....r.@',
+'yrRb..r',
+'y....b.']},
+{ name:'Single Stem', ink:'b', par:44, hint:'There is exactly one way to grow. No pressure.', map:[
+'bbY.y.y',
+'.b..b..',
+'.R..bRy',
+'rryy...',
+'.y.b..r',
+'..y@.rr',
+'r..y..Y']},
+{ name:'Overgrowth', ink:'b', par:52, hint:'', map:[
+'...yy...',
+'by.bY.y.',
+'..yb..y@',
+'.b.yb.b.',
+'bB.B..bb',
+'r.b.br..',
+'r.r.r..R']},
+{ name:'Conservatory', ink:'r', par:53, hint:'', map:[
+'..bb....',
+'.y.yBbr.',
+'bY..y@.r',
+'byb..r..',
+'...yb..r',
+'.Yy..brr',
+'b..yy..B']},
+{ name:'The Glasshouse', ink:'r', par:57, hint:'', map:[
+'.b.b...r',
+'b.bR..r.',
+'...b..br',
+'bBRr.rb.',
+'.r.B.r.r',
+'r.r.Bb..',
+'.b.b.rr.',
+'@.b.bb..']},
 ];
 
 /* ============================== palette ============================== */
@@ -242,7 +291,9 @@ const INKS = {
 const CELL_PANEL='#f7f0e2', CELL_LINE='#e7dcc6';
 
 /* ============================== state ============================== */
-const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const cv=document.getElementById('cv');
+let ctx=cv.getContext('2d'); // draw() temporarily points this at the plant layer
+const plantCv=document.createElement('canvas'), pctx=plantCv.getContext('2d');
 const mainEl=document.getElementById('main');
 let L=null;            // parsed level {W,H,wall,target,pot,start,ink}
 let lvlIdx=0;
@@ -253,7 +304,7 @@ let history=[];        // [{x,y,prevInk}]
 let facing=[1,0];
 let anim=null;         // {t0,dur} head grow-in
 let winT=0;            // >0 while win fade plays (timestamp)
-let won=false, dead=false, deadFlash=null;
+let won=false, dead=false, deadFlash=null, wiltT=0;
 let resetArmed=0;
 let cs=40, ox=0, oy=0; // cell size + board origin inside canvas
 let dpr=1;
@@ -298,6 +349,7 @@ const sfx={
   bad(){ tone(130,.2,'sawtooth',.14,0,80); },
   boxed(){ tone(180,.15,'square',.08,0,120); },
   undo(){ tone(240,.05,'triangle',.07); },
+  bloom(){ tone(880,.12,'sine',.08,0,1320); },
   win(){ [523,659,784,1047].forEach((f,i)=>tone(f,.34,'sine',.16,i*.09)); },
 };
 function buzz(p){ try{navigator.vibrate&&navigator.vibrate(p);}catch(e){} }
@@ -321,9 +373,9 @@ function loadLevel(i){
   lvlIdx=Math.max(0,Math.min(LEVELS.length-1,i));
   const def=LEVELS[lvlIdx];
   L=parseLevel(def);
-  body=[{x:L.start.x,y:L.start.y,c:L.ink}];
+  body=[{x:L.start.x,y:L.start.y,c:L.ink,t:performance.now()}];
   occ=new Map([[key(L.start.x,L.start.y),0]]);
-  ink=L.ink; history=[]; facing=[1,0]; anim=null; winT=0; won=false; dead=false; deadFlash=null;
+  ink=L.ink; history=[]; facing=[1,0]; anim=null; winT=0; won=false; dead=false; deadFlash=null; wiltT=0;
   save.last=lvlIdx; persist();
   $('lvlNo').textContent='Level '+(lvlIdx+1)+' of '+LEVELS.length;
   $('lvlName').textContent=def.name;
@@ -356,11 +408,12 @@ function step(dx,dy){
   history.push({prevInk:ink});
   if(L.pot[i]){ ink=L.pot[i]; sfx.pot(); buzz(18); }
   else { sfx.step(); buzz(6); }
-  body.push({x,y,c:ink});
+  body.push({x,y,c:ink,t:performance.now()});
   occ.set(key(x,y),body.length-1);
   facing=[dx,dy];
   anim={t0:performance.now(),dur:95};
   updateHud();
+  if(L.target[i]&&L.target[i]===ink){ sfx.bloom(); }
   if(L.target[i]&&L.target[i]!==ink){ wrongPaint(x,y); }
   else if(allMet()){ winT=performance.now(); won=true; setTimeout(showWin,950); sfx.win(); buzz([15,30,15,30,70]); markDone(); }
   else checkStuck();
@@ -370,7 +423,7 @@ function nudge(dx,dy){ /* bump feedback on blocked move */
   deadFlash={t0:performance.now(),dur:160,bump:[dx,dy]};
 }
 function wrongPaint(x,y){
-  dead=true; sfx.bad(); buzz([12,50,12]);
+  dead=true; wiltT=performance.now(); sfx.bad(); buzz([12,50,12]);
   const need=L.target[y*L.W+x];
   toast('That patch needs '+colName(need)+' - rewind ⟲');
   $('undoBtn').classList.add('pulse');
@@ -387,7 +440,7 @@ function undo(){
   const h=history.pop(), t=body.pop();
   occ.delete(key(t.x,t.y));
   ink=h.prevInk; anim=null;
-  if(dead&&!anyWrong()){ dead=false; $('undoBtn').classList.remove('pulse'); }
+  if(dead&&!anyWrong()){ dead=false; wiltT=0; $('undoBtn').classList.remove('pulse'); }
   if($('undoBtn').classList.contains('pulse')&&!dead&&hasMoves())$('undoBtn').classList.remove('pulse');
   sfx.undo(); buzz(5); updateHud();
 }
@@ -433,6 +486,7 @@ function layout(){
   const w=cs*L.W+pad*2, h=cs*L.H+pad*2;
   cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr);
   cv.style.width=w+'px'; cv.style.height=h+'px';
+  plantCv.width=cv.width; plantCv.height=cv.height;
   ox=pad; oy=pad;
 }
 function rr(x,y,w,h,r){ ctx.beginPath(); ctx.roundRect(x,y,w,h,r); }
@@ -478,8 +532,8 @@ function draw(now){
   }
 
   // paint tins (under snake; a consumed tin is covered anyway).
-  // Deliberately inanimate-looking - handle, rim, drip - so the creature
-  // (round, halo, eyes) is never mistaken for a pot.
+  // Deliberately inanimate-looking - handle, rim, drip - so the plant
+  // (halo, curled shoot) is never mistaken for a pot.
   for(let y=0;y<L.H;y++)for(let x=0;x<L.W;x++){
     const i=y*L.W+x; if(!L.pot[i]||occ.has(key(x,y)))continue;
     const P=INKS[L.pot[i]], [mx,my]=cxy(x,y);
@@ -503,9 +557,15 @@ function draw(now){
     drawSym(P.sym,mx-w2*.14,my+h2*.16,cs*.09,'#fffd',Math.max(1.2,cs*.035));
   }
 
-  // snake body (per-cell capsules; crisp colour boundary at cell edges)
+  // The whole plant (paint capsules + vine + tip) renders to an offscreen
+  // layer at full opacity and is composited ONCE at the fade alpha, so the
+  // win fade never exposes the overlapping construction underneath.
   const alpha = winP? 1-winP*.55 : 1;
-  ctx.globalAlpha=alpha;
+  pctx.setTransform(dpr,0,0,dpr,0,0);
+  pctx.clearRect(0,0,plantCv.width,plantCv.height);
+  const screen=ctx; ctx=pctx;
+
+  // snake body (per-cell capsules; crisp colour boundary at cell edges)
   const w=cs*.62, animP = anim? Math.min(1,(now-anim.t0)/anim.dur) : 1;
   for(let bi=0;bi<body.length;bi++){
     const seg=body[bi], P=INKS[seg.c], [mx,my]=cxy(seg.x,seg.y);
@@ -517,7 +577,7 @@ function draw(now){
       const hx=exm+(mx-exm)*animP, hy=eym+(my-eym)*animP;
       ctx.strokeStyle=P.main; ctx.lineWidth=w*(0.55+.45*animP); ctx.lineCap='round';
       ctx.beginPath(); ctx.moveTo(exm,eym); ctx.lineTo(hx,hy); ctx.stroke();
-      drawFace(hx,hy,w*(0.55+.45*animP)/2,P);
+      drawTip(hx,hy,w*(0.55+.45*animP)/2,P);
       continue;
     }
     ctx.fillStyle=P.main;
@@ -537,13 +597,87 @@ function draw(now){
         else deadFlash=null;
         ctx.fillStyle=P.main; ctx.beginPath(); ctx.arc(fx,fy,w/2,0,7); ctx.fill();
       }
-      drawFace(fx,fy,w/2,P);
+      drawTip(fx,fy,w/2,P);
     }
-    // wrong-paint marker (on top of everything, face included)
+  }
+
+  // organic vine over the paint: a wobbling stem that tapers toward the tip,
+  // with strictly alternating leaves on petioles (real climbers alternate
+  // sides) that grow in a beat after each cell is painted
+  if(body.length>1){
+    ctx.lineCap='round';
+    const n=body.length;
+    const pts=body.map((seg,bi)=>{
+      const [mx,my]=cxy(seg.x,seg.y);
+      const wob=(bi===0||bi===n-1)?0:cs*.15;
+      return [mx+segWob(seg,1)*wob*2, my+segWob(seg,2)*wob*2];
+    });
+    ctx.globalAlpha=.55;
+    for(let bi=0;bi<n;bi++){
+      const P=INKS[body[bi].c];
+      ctx.strokeStyle=P.deep;
+      ctx.lineWidth=Math.max(1.5,cs*(.11-.05*bi/n));
+      ctx.beginPath();
+      if(bi===0){ ctx.moveTo(pts[0][0],pts[0][1]); ctx.lineTo((pts[0][0]+pts[1][0])/2,(pts[0][1]+pts[1][1])/2); }
+      else if(bi===n-1){ ctx.moveTo((pts[bi-1][0]+pts[bi][0])/2,(pts[bi-1][1]+pts[bi][1])/2); ctx.lineTo(pts[bi][0],pts[bi][1]); }
+      else { ctx.moveTo((pts[bi-1][0]+pts[bi][0])/2,(pts[bi-1][1]+pts[bi][1])/2); ctx.quadraticCurveTo(pts[bi][0],pts[bi][1],(pts[bi][0]+pts[bi+1][0])/2,(pts[bi][1]+pts[bi+1][1])/2); }
+      ctx.stroke();
+    }
+    ctx.globalAlpha=.8;
+    // seed leaves where the plant sprouted
+    {
+      const P0=INKS[body[0].c];
+      const sa=Math.atan2(pts[1][1]-pts[0][1],pts[1][0]-pts[0][0]);
+      drawLeaf(pts[0][0],pts[0][1],sa+Math.PI*.65,cs*.14,P0.deep);
+      drawLeaf(pts[0][0],pts[0][1],sa-Math.PI*.65,cs*.14,P0.deep);
+    }
+    for(let bi=1;bi<n-1;bi++){
+      const seg=body[bi], P=INKS[seg.c];
+      const t=L.target[seg.y*L.W+seg.x];
+      if(t&&t===seg.c)continue; // a bloom lives here
+      const age=Math.min(1,(now-seg.t-140)/420); if(age<=0)continue;
+      const stemAng=Math.atan2(pts[bi+1][1]-pts[bi-1][1],pts[bi+1][0]-pts[bi-1][0]);
+      const side=bi%2?1:-1;
+      const la=stemAng+side*(1.0+segWob(seg,3)*.5);
+      const s=cs*(.16+segWob(seg,4)*.06)*age;
+      const bx=pts[bi][0], by=pts[bi][1];
+      const lx=bx+Math.cos(la)*cs*.13, ly=by+Math.sin(la)*cs*.13; // petiole end
+      ctx.strokeStyle=P.deep; ctx.lineWidth=Math.max(1.2,cs*.04);
+      ctx.beginPath(); ctx.moveTo(bx,by); ctx.lineTo(lx,ly); ctx.stroke();
+      drawLeaf(lx,ly,la+side*.28,s,P.deep);
+    }
+    ctx.globalAlpha=1;
+  }
+
+  // composite the plant layer onto the screen at the fade alpha
+  ctx=screen;
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.globalAlpha=alpha;
+  ctx.drawImage(plantCv,0,0);
+  ctx.restore();
+
+  // blooms on correctly painted patches - full opacity even through the win
+  // fade: the creature vanishes, the flowers stay on the wall
+  for(let bi=0;bi<body.length;bi++){
+    const seg=body[bi], t=L.target[seg.y*L.W+seg.x];
+    if(!t||t!==seg.c)continue;
+    const [mx,my]=cxy(seg.x,seg.y);
+    const p=Math.min(1,(now-(body[bi+1]?body[bi+1].t:seg.t))/380), c3=2.70158;
+    const k=1+c3*Math.pow(p-1,3)+1.70158*Math.pow(p-1,2); // easeOutBack pop
+    drawBloom(mx,my,cs*(.30+segWob(seg,5)*.06)*k,INKS[seg.c],bi===body.length-1,segWob(seg,6)*Math.PI);
+  }
+
+  // wrong-paint markers (on top of the vine)
+  ctx.globalAlpha=alpha;
+  for(const seg of body){
     const t=L.target[seg.y*L.W+seg.x];
-    if(t&&t!==seg.c){
-      ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(2,cs*.07); ctx.lineCap='round';
-      const s=cs*.14;
+    if(!t||t===seg.c)continue;
+    const [mx,my]=cxy(seg.x,seg.y);
+    ctx.lineCap='round';
+    const s=cs*.14;
+    for(const [st,lw] of [['#0005',cs*.11],['#fff',cs*.07]]){ // dark underlay for contrast
+      ctx.strokeStyle=st; ctx.lineWidth=Math.max(2,lw);
       ctx.beginPath(); ctx.moveTo(mx-s,my-s);ctx.lineTo(mx+s,my+s);ctx.moveTo(mx+s,my-s);ctx.lineTo(mx-s,my+s); ctx.stroke();
     }
   }
@@ -561,12 +695,39 @@ function draw(now){
   }
 }
 
-let blinkAt=performance.now()+2000;
-function drawFace(x,y,r0,P){
+function drawLeaf(x,y,ang,s,fill){
+  const ca=Math.cos(ang),sa=Math.sin(ang);
+  const px=-sa,py=ca; // perpendicular
+  ctx.fillStyle=fill; ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.quadraticCurveTo(x+ca*s+px*s*.9, y+sa*s+py*s*.9, x+ca*s*2.1, y+sa*s*2.1);
+  ctx.quadraticCurveTo(x+ca*s-px*s*.9, y+sa*s-py*s*.9, x,y);
+  ctx.fill();
+}
+function drawBloom(x,y,r,P,onHead,rot){
+  if(r<=0)return;
+  if(onHead)return; // never hide the growing tip; it blooms once you move on
+  for(let a=0;a<6;a++){
+    const th=a*Math.PI/3+.4+(rot||0);
+    ctx.fillStyle=P.lite; ctx.beginPath();
+    ctx.arc(x+Math.cos(th)*r*.52, y+Math.sin(th)*r*.52, r*.36, 0, 7); ctx.fill();
+  }
+  ctx.fillStyle=P.deep; ctx.beginPath(); ctx.arc(x,y,r*.30,0,7); ctx.fill();
+  ctx.fillStyle='#fffdf6'; ctx.beginPath(); ctx.arc(x,y,r*.13,0,7); ctx.fill();
+}
+
+// deterministic per-segment jitter in [-.5,.5] - stable across frames
+function segWob(seg,k){
+  let h=(seg.x*73856093 ^ seg.y*19349663 ^ k*83492791)>>>0;
+  h=Math.imul(h^(h>>>13),1274126177)>>>0;
+  return ((h^(h>>>16))>>>0)/4294967296-.5;
+}
+
+// the growing tip: a slim tendril that slowly sways and searches for the next
+// place to grow, over a gently pulsing halo; wilts when the paint is wrong
+function drawTip(x,y,r0,P){
   const now=performance.now();
-  const r=r0*(1+.05*Math.sin(now/300)); // idle breathe
-  const ed=r*.42, er=r*.34;
-  const lookX=facing[0]*r*.22, lookY=facing[1]*r*.22;
+  const r=r0;
   // "this is you" ping: expanding rings for the first moments of a level
   const sp=(now-spawnT)/1400, ga=ctx.globalAlpha;
   if(sp>0&&sp<1){
@@ -579,22 +740,37 @@ function drawFace(x,y,r0,P){
     }
     ctx.globalAlpha=ga;
   }
-  ctx.fillStyle='#fffdf6'; ctx.beginPath(); ctx.arc(x,y,r*1.18,0,7); ctx.fill(); // cream halo
-  ctx.fillStyle=P.deep; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
-  ctx.fillStyle=P.main; ctx.beginPath(); ctx.arc(x,y,r*.88,0,7); ctx.fill();
-  const blink = now>blinkAt && now<blinkAt+140;
-  if(now>blinkAt+140) blinkAt=now+1400+Math.random()*2600;
-  const [pxr,pyr]=[facing[1],facing[0]]; // perpendicular
-  for(const s of [-1,1]){
-    const ex=x+lookX*1.2+pxr*s*ed, ey=y+lookY*1.2+pyr*s*ed;
-    if(blink){
-      ctx.strokeStyle='#fff'; ctx.lineWidth=Math.max(1.5,r*.14); ctx.beginPath();
-      ctx.moveTo(ex-er*.7,ey); ctx.lineTo(ex+er*.7,ey); ctx.stroke();
-    } else {
-      ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(ex,ey,er,0,7); ctx.fill();
-      ctx.fillStyle='#332'; ctx.beginPath(); ctx.arc(ex+lookX*.6,ey+lookY*.6,er*.48,0,7); ctx.fill();
-    }
+  const wiltP = dead&&wiltT? Math.min(1,(now-wiltT)/700) : 0;
+  const side=(body.length%2)?1:-1; // curl mirrors each step - feels alive
+  // searching sway: slow wander + a small quicker tremble; stills when wilted
+  const sway=(.34*Math.sin(now/1600)+.13*Math.sin(now/520))*(1-wiltP);
+  let ang=Math.atan2(facing[1],facing[0]);
+  ang+=(Math.PI/2-ang)*wiltP*.85; // droop toward the floor
+  // gently pulsing halo = "this is you"
+  ctx.fillStyle='#fffdf6';
+  ctx.beginPath(); ctx.arc(x,y,r*(1.04+.06*Math.sin(now/650)),0,7); ctx.fill();
+  ctx.lineCap='round';
+  // one shy young leaf at the neck
+  drawLeaf(x-Math.cos(ang)*r*.3, y-Math.sin(ang)*r*.3, ang+side*2.15, r*.5, P.deep);
+  // the tendril: grown point by point with curvature that increases along its
+  // length (young shoots straighten at the base and curl at the tip), the
+  // curl slowly tightening and loosening as it searches
+  const reach=r*2.3*(1-.3*wiltP);
+  const tighten=1+.25*Math.sin(now/1100)*(1-wiltP)+.9*wiltP;
+  const N=22;
+  let hx_=x-Math.cos(ang)*r*.35, hy_=y-Math.sin(ang)*r*.35; // start at the neck
+  let heading=ang+sway-side*.30; // slight counter-curl start = S-curve
+  ctx.strokeStyle=P.deep;
+  for(let i=1;i<=N;i++){
+    const t=i/N;
+    heading+=side*(11.5/N)*Math.pow(t,2.2)*tighten;
+    const qx=hx_+Math.cos(heading)*(reach/N), qy=hy_+Math.sin(heading)*(reach/N);
+    ctx.lineWidth=Math.max(1.2,r*(.24-.19*t));
+    ctx.beginPath(); ctx.moveTo(hx_,hy_); ctx.lineTo(qx,qy); ctx.stroke();
+    hx_=qx; hy_=qy;
   }
+  // bright growing point at the very tip
+  ctx.fillStyle=P.lite; ctx.beginPath(); ctx.arc(hx_,hy_,r*.11,0,7); ctx.fill();
 }
 
 function frame(now){ if(L)draw(now); requestAnimationFrame(frame); }
