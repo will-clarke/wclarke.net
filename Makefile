@@ -58,12 +58,14 @@ BUILD_EXCLUDES := $(foreach g,$(BUILD_GAMES),--exclude=$(g))
 # is mini-level's Cloudflare Worker (server-side deploy tooling - wrangler
 # config, D1 schema, and .dev.vars secrets that must NEVER land on the site;
 # the game talks to the deployed worker over https, nothing here serves it).
+# `itch` is per-game itch.io packaging/promo media (mp4s, gifs) - like /shots,
+# it never ships to the site.
 SRC_EXCLUDES := --exclude=node_modules --exclude=package.json \
                 --exclude=package-lock.json --exclude=tsconfig.json \
                 --exclude='*.ts' --exclude='*.mjs' \
                 --exclude=src --exclude=test --exclude=tools \
                 --exclude=web --exclude=public --exclude=scripts --exclude=dist \
-                --exclude=worker
+                --exclude=worker --exclude=itch
 
 .DEFAULT_GOAL := help
 

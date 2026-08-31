@@ -417,6 +417,11 @@
     #levelName:hover { background: none; color: var(--dim); }
     #bar button kbd { display: inline-block; } /* outranks the base display:none below */
   }
+  /* T100: keyboard focus reads - the arrows browse every menu on desktop. */
+  button:focus-visible, .comCard:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+  }
   /* The keycap hints live in the footer buttons, hidden from touch. */
   #bar button { position: relative; }
   #bar kbd {
@@ -452,6 +457,18 @@
   }
   .tog.on { border-color: var(--blue); color: var(--blue); background: var(--accent-wash); }
   .tog.tri { flex-basis: 64px; }
+  /* T101: the save-code row - one pasteable string in, one out. */
+  #svIn {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--field);
+    color: var(--ink);
+    font: inherit;
+    font-size: 13px;
+  }
   #howto { margin-top: 20px; color: var(--dim); font-size: 13px; line-height: 1.5; }
   #howto h3 {
     margin-bottom: 8px;
@@ -741,6 +758,14 @@
       <button id="moOn" class="tog tri">On</button>
       <button id="moOff" class="tog tri">Off</button>
     </div>
+    <div class="setRow"><span>Save data</span>
+      <button id="svCopy" class="tog">Copy code</button>
+      <button id="svLoad" class="tog">Enter code</button>
+    </div>
+    <div class="setRow" id="svRow" hidden>
+      <input id="svIn" placeholder="paste a save code" aria-label="Save code">
+      <button id="svGo" class="tog tri">Load</button>
+    </div>
     <div id="howto">
       <h3>How to play</h3>
       <p>Swipe to move. Every self obeys the same swipe at once - TRY being the important word. Hold a direction to keep walking.</p>
@@ -749,7 +774,7 @@
       <p>Two selves meeting through a door merge into one. Pits swallow whatever falls in.</p>
       <p>Undo is generous: tap for one step back, hold to rewind. Reset starts the level over.</p>
       <p>Just for fun: tap a window to dive in, poke a self to make it wriggle, long-press the board to climb out a level.</p>
-      <p>Keyboard: arrows or WASD move, Z undoes, R resets.</p>
+      <p>Keyboard: arrows or WASD move (and browse the menus), Z undoes, R resets, Enter advances, Escape backs out.</p>
     </div>
   </div>
 </div>
@@ -2552,10 +2577,12 @@ const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 // T78: every animation gate asks this instead of the media query directly.
 // Linux browsers mirror the desktop's animations toggle into
 // prefers-reduced-motion, which silently froze the whole game on Will's
-// desktop - so Motion is a Setting now: auto honours the system, On and
-// Off override it either way.
+// desktop - so Motion is a Setting: On and Off are absolute, Auto honours
+// the system. T105: the default is On - the squeeze IS the game, and a
+// fresh save (every itch player) must never open frozen; reduced motion
+// is one Settings tap away, not a silent ambush.
 function calmMotion() {
-  const pref = progress.anim || 'auto';
+  const pref = progress.anim || 'on';
   return pref === 'auto' ? reducedMotion.matches : pref === 'off';
 }
 
@@ -2865,7 +2892,11 @@ function loadProgress() {
       progress.records = (raw.records && typeof raw.records === 'object') ? raw.records : {};
       progress.at = typeof raw.at === 'string' ? raw.at : '';
       progress.theme = raw.theme === 'light' || raw.theme === 'dark' ? raw.theme : 'auto';
-      progress.anim = raw.anim === 'on' || raw.anim === 'off' ? raw.anim : 'auto';
+      // T105: only a deliberate tap survives - old loads stamped 'auto'
+      // into every save, so without the marker those stay coerced to On.
+      progress.animChosen = raw.animChosen === true;
+      progress.anim = progress.animChosen &&
+        (raw.anim === 'off' || raw.anim === 'auto') ? raw.anim : 'on';
       progress.seen = (raw.seen && typeof raw.seen === 'object') ? raw.seen : {};
       if (raw.audio) audio = { sfx: raw.audio.sfx ? 1 : 0, music: raw.audio.music ? 1 : 0 };
     }
@@ -6777,17 +6808,63 @@ function syncThemeBtns() {
 
 // T78: the motion control - same shape as the theme's.
 function syncMotionBtns() {
-  const pref = progress.anim || 'auto';
+  const pref = progress.anim || 'on';
   for (const [id, v] of [['moAuto', 'auto'], ['moOn', 'on'], ['moOff', 'off']]) {
     $(id).classList.toggle('on', pref === v);
   }
 }
 function setMotion(pref) {
   progress.anim = pref;
+  progress.animChosen = true;
   saveProgress();
   syncMotionBtns();
   dirty = true; // the idle wobble starts/stops on the next frame
 }
+
+// T101: the save code - progress + drafts as one pasteable string, because
+// a host you don't own (itch.io) can evict localStorage. Import writes the
+// raw keys and reloads so the normal migration chain runs whatever vintage
+// the code turns out to be.
+const SAVE_CODE_TAG = 'nestsave:';
+function saveCode() {
+  return SAVE_CODE_TAG + btoa(unescape(encodeURIComponent(
+    JSON.stringify({ k: SAVE_KEY, p: progress, d: drafts }))));
+}
+$('svCopy').addEventListener('click', async () => {
+  play('ui');
+  const code = saveCode();
+  let ok = true;
+  try { await navigator.clipboard.writeText(code); }
+  catch (e) { ok = !!window.prompt('Copy your save code:', code); }
+  if (ok) {
+    $('svCopy').textContent = 'Copied ✓';
+    setTimeout(() => { $('svCopy').textContent = 'Copy code'; }, 1400);
+  }
+});
+$('svLoad').addEventListener('click', () => {
+  play('ui');
+  $('svRow').hidden = !$('svRow').hidden;
+  if (!$('svRow').hidden) { $('svIn').placeholder = 'paste a save code'; $('svIn').focus(); }
+});
+function svApply() {
+  const t = $('svIn').value.trim();
+  try {
+    if (!t.startsWith(SAVE_CODE_TAG)) throw 0;
+    const pack = JSON.parse(decodeURIComponent(escape(atob(t.slice(SAVE_CODE_TAG.length)))));
+    if (!pack || typeof pack.k !== 'string' || !pack.k.startsWith('mini-level-v') ||
+        !pack.p || typeof pack.p !== 'object') throw 0;
+    // An older code must not lose to stale current-version data on reload.
+    localStorage.removeItem(SAVE_KEY);
+    localStorage.setItem(pack.k, JSON.stringify(pack.p));
+    if (Array.isArray(pack.d)) localStorage.setItem(DRAFT_KEY, JSON.stringify(pack.d));
+    location.reload();
+  } catch (e) {
+    $('svIn').value = '';
+    $('svIn').placeholder = 'that code did not read';
+  }
+}
+$('svGo').addEventListener('click', () => { play('ui'); svApply(); });
+$('svIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') svApply(); });
 
 $('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
 $('edDrafts').addEventListener('click', () => { play('ui'); openDrafts(); });
@@ -7074,11 +7151,49 @@ const KEYS = {
   ArrowUp: 'U', ArrowDown: 'D', ArrowLeft: 'L', ArrowRight: 'R',
   w: 'U', s: 'D', a: 'L', d: 'R',
 };
+
+// T100: arrow keys browse the picker - focus hops to the geometrically
+// nearest button in the pressed direction, so the accordion tile grids
+// read as real 2D grids. Enter/Space then click natively; focus() scrolls.
+function pickerNav(dir) {
+  const all = [...$('picker').querySelectorAll('button')].filter((b) =>
+    b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden');
+  if (!all.length) return;
+  const cur = document.activeElement;
+  if (!all.includes(cur)) {
+    (all.find((b) => b.classList.contains('here')) ||
+     all.find((b) => b.classList.contains('shelf') || b.classList.contains('lv')) ||
+     all[0]).focus();
+    return;
+  }
+  const r = cur.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const [vx, vy] = { U: [0, -1], D: [0, 1], L: [-1, 0], R: [1, 0] }[dir];
+  let best = null, bestScore = Infinity;
+  for (const b of all) {
+    if (b === cur) continue;
+    const q = b.getBoundingClientRect();
+    const dx = q.left + q.width / 2 - cx, dy = q.top + q.height / 2 - cy;
+    const fwd = dx * vx + dy * vy;               // progress along the arrow
+    const drift = Math.abs(dx * vy) + Math.abs(dy * vx); // sideways slip
+    if (fwd < 1) continue;
+    const score = fwd + drift * 2.5;
+    if (score < bestScore) { bestScore = score; best = b; }
+  }
+  if (best) best.focus();
+}
 window.addEventListener('keydown', (e) => {
   // The editor has real text fields; wasd there is typing, not walking.
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
   const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
-  if (KEYS[k]) { e.preventDefault(); stopAuto(); applyMove(KEYS[k]); return; }
+  if (KEYS[k]) {
+    e.preventDefault();
+    // T100: with a screen over the board the arrows browse, never walk -
+    // the blob was taking every arrow press underneath the open picker.
+    if (!$('picker').hidden) return pickerNav(KEYS[k]);
+    if (overlayOpen()) return;
+    stopAuto(); applyMove(KEYS[k]); return;
+  }
   // T60: Escape walks the Levels screen up one layer before closing it.
   // T61: on the publish card it is Cancel, so the win card takes over.
   if (k === 'Escape') {

@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "terraflow",
+      "name": "Terraflow",
+      "accent": "#4fe3ae",
+      "tagline": "Mini Metro meets a chemistry set on a sleepy off-world outpost. Wells seep elements, modules pay for what they drink, and you only ever draw the pipes - particles queue where your network chokes, and a reactor fed one carbon for every two oxygen turns a trickle into an income. No timers, no failure: just upgrade and reroute until the dots become streaks and the streaks become silly numbers."
+    },
+    {
       "slug": "technobird",
       "name": "Technobird",
       "accent": "#9ff7ff",
