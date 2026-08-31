@@ -58,7 +58,8 @@ function onMove(e) {
     Input.drag.x = x; Input.drag.y = y;
     const target = nodeAt(x, y);
     Input.drag.targetNode = target !== Input.drag.fromNode ? target : null;
-    Input.drag.valid = !!Input.drag.targetNode && canConnect(Input.drag.fromNode, Input.drag.targetNode);
+    Input.drag.valid = !!Input.drag.targetNode && Sim.pipeStock > 0
+      && canConnect(Input.drag.fromNode, Input.drag.targetNode);
   }
 }
 

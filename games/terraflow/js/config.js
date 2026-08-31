@@ -1,9 +1,10 @@
 // Terraflow - all tunables and content live here. Balance by editing this file only.
+// v1.1 hub model: resources ARE the currency (SPEC decisions 16-21).
 
 const ELEMENTS = {
-  O:   { label: 'O',   color: '#ff6f61', value: 1 },
-  C:   { label: 'C',   color: '#f5c542', value: 1 },
-  CO2: { label: 'CO₂', color: '#4fe3ae', value: 6 },
+  O:   { label: 'O',   color: '#ff6f61' },
+  C:   { label: 'C',   color: '#f5c542' },
+  CO2: { label: 'CO₂', color: '#4fe3ae' },
 };
 
 const RECIPES = {
@@ -13,63 +14,71 @@ const RECIPES = {
 const CONFIG = {
   colors: {
     bg: '#0f1218', ink: '#e8ecf2', dim: '#8a93a6',
-    slot: '#5a6577', currency: '#9aa7ff', bad: '#ff5d5d', good: '#5fd68a',
+    slot: '#5a6577', bad: '#ff5d5d', good: '#5fd68a',
   },
 
   // geometry
   spacing: 15,        // min px between particles = queue slot size
   particleR: 4.5,
   nodeR: 17,
+  hubR: 24,
   hitR: 36,           // touch hit radius for nodes
   pipeHitR: 22,
   laneOffset: 7,      // px between parallel lanes
+  portSpread: 11,     // px between pipe endpoints sharing a node
   maxLanes: 3,
-  topPad: 58,         // status strip
+  topPad: 86,         // status strip + goal chip
   bottomPad: 92,      // sheet handle
 
-  // rates
+  // rates - deliberately slow start (playtest: early dots should be watchable)
   baseFlowSpeed: 55,      // px/s
-  baseSourceRate: 0.8,    // units/s per source
+  baseSourceRate: 0.5,    // units/s per vent
   streakSpeed: 140,       // px/s above which dots render as streaks
-  stubCapMult: 3,         // converter input buffer = ratio * this
+  stubCapMult: 3,         // reactor input buffer = ratio * this
   outBufCap: 3,
-  sinkBufCap: 3,
 
-  sink: {
-    baseDemand: 0.8,      // units/s
-    demandGrowth: 1.45,   // per level
-    valueGrowth: 1.15,    // per level
-    levelBase: 25,        // units consumed for first level-up
-    levelGrowth: 1.5,
-  },
+  // pipes are precious (decision 17)
+  pipeStockStart: 3,
 
+  // upgrades: cost = resources, scaled by growth^level. showGoal hides a row
+  // until the goal ladder reaches that index (no CO₂ prices before chemistry).
   upgrades: {
-    flow:      { name: 'Flow speed',   desc: 'All pipes move faster',   base: 30, growth: 1.6, mult: 1.25 },
-    source:    { name: 'Well output',  desc: 'Wells produce faster',    base: 25, growth: 1.6, mult: 1.25 },
-    converter: { name: 'Reactor speed', desc: 'Reactors react faster',  base: 40, growth: 1.6, mult: 1.3 },
+    flow:      { name: 'Flow speed',    desc: 'All pipes move faster',  cost: { O: 15 },  growth: 1.6, mult: 1.25, showGoal: 0 },
+    source:    { name: 'Vent output',   desc: 'Vents seep faster',      cost: { O: 12 },  growth: 1.6, mult: 1.25, showGoal: 1 },
+    converter: { name: 'Reactor speed', desc: 'Reactors react faster',  cost: { CO2: 6 }, growth: 1.7, mult: 1.3,  showGoal: 2 },
+    pipe:      { name: '+1 Pipe',       desc: 'One more pipe to draw',  cost: { O: 60 },  growth: 2.2, showGoal: 1 },
   },
-  laneCostBase: 25,
-  laneCostGrowth: 2,
+  laneCost: { O: 30 }, laneCostGrowth: 2,
 
-  endTarget: 8000,        // total earned -> end card
+  chemistryGoal: 2,   // goal index at which element symbols / recipe notation appear
   autosaveSec: 10,
-  saveKey: 'terraflow_v1',
+  saveKey: 'terraflow_v2',
 };
 
-// Map content. fx/fy = fractions of playfield. gate.earned = total earned to appear.
+// Goal ladder: need N of element (LIFETIME banked - spending never regresses).
+// Completing goal k sets goalIndex = k+1, spawns NODE_DEFS gated at k+1,
+// grants pipes, shows the toast.
+const GOALS = [
+  { element: 'O',   need: 10,  grantPipes: 1, toast: 'Second vent uncovered  (+1 pipe)' },
+  { element: 'O',   need: 40,  grantPipes: 2, toast: 'Carbon vent + reactor slot found  (+2 pipes)' },
+  { element: 'CO2', need: 12,  grantPipes: 1, toast: 'Second reactor slot opened  (+1 pipe)' },
+  { element: 'CO2', need: 80,  grantPipes: 1, toast: 'Stabilizer spinning up  (+1 pipe)' },
+  { element: 'CO2', need: 300, grantPipes: 0, toast: null }, // final -> end card
+];
+
+// Map nodes: fx/fy are fractions of the playfield. gate.goal = goalIndex needed.
 const NODE_DEFS = [
-  { id: 'srcO1',  kind: 'source', element: 'O',   fx: 0.22, fy: 0.16, gate: { earned: 0 } },
-  { id: 'snkO',   kind: 'sink',   element: 'O',   fx: 0.76, fy: 0.28, gate: { earned: 0 } },
-  { id: 'srcO2',  kind: 'source', element: 'O',   fx: 0.14, fy: 0.46, gate: { earned: 15 } },
-  { id: 'srcC',   kind: 'source', element: 'C',   fx: 0.30, fy: 0.82, gate: { earned: 120 } },
-  { id: 'slot1',  kind: 'slot',                   fx: 0.56, fy: 0.63, gate: { earned: 120 } },
-  { id: 'snkCO2', kind: 'sink',   element: 'CO2', fx: 0.83, fy: 0.80, gate: { earned: 120 } },
-  { id: 'slot2',  kind: 'slot',                   fx: 0.44, fy: 0.40, gate: { earned: 600 } },
+  { id: 'hub',    kind: 'hub',                    fx: 0.78, fy: 0.70, gate: { goal: 0 } },
+  { id: 'srcO1',  kind: 'source', element: 'O',   fx: 0.22, fy: 0.16, gate: { goal: 0 } },
+  { id: 'srcO2',  kind: 'source', element: 'O',   fx: 0.14, fy: 0.46, gate: { goal: 1 } },
+  { id: 'srcC',   kind: 'source', element: 'C',   fx: 0.30, fy: 0.84, gate: { goal: 2 } },
+  { id: 'slot1',  kind: 'slot',                   fx: 0.56, fy: 0.58, gate: { goal: 2 } },
+  { id: 'slot2',  kind: 'slot',                   fx: 0.42, fy: 0.36, gate: { goal: 3 } },
 ];
 
 const HINTS = [
-  { id: 'draw',  gate: { earned: 0 },   text: 'Drag from the well ● to the pulsing module ⬡' },
-  { id: 'sheet', gate: { earned: 40 },  text: 'Swipe up for upgrades' },
-  { id: 'slot',  gate: { earned: 120 }, text: 'Tap the dashed slot to build a reactor' },
-  { id: 'lanes', gate: { earned: 300 }, text: 'Tap a pipe to add a parallel lane' },
+  { id: 'draw',  gate: { goal: 0 }, text: 'Drag from the vent ● to the hub ⬢' },
+  { id: 'sheet', gate: { goal: 1 }, text: 'Swipe up to spend your bank on upgrades' },
+  { id: 'slot',  gate: { goal: 2 }, text: 'Tap the dashed slot to build a reactor' },
+  { id: 'lanes', gate: { goal: 3 }, text: 'Tap a pipe to add a parallel lane' },
 ];

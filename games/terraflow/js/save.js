@@ -1,18 +1,20 @@
 // localStorage save/load. Particles and small buffers are not persisted.
+// v2 format (hub model); old v1 saves are ignored (different game).
+
+let _saveCleared = false;
 
 function saveGame() {
+  if (_saveCleared) return; // reset in progress: don't resurrect the save on unload
   try {
     const data = {
-      v: 1,
-      time: Sim.time, currency: Sim.currency, totalEarned: Sim.totalEarned,
-      peakIncome: Sim.peakIncome, ended: Sim.ended,
+      v: 2,
+      time: Sim.time, bank: Sim.bank, lifetime: Sim.lifetime,
+      pipeStock: Sim.pipeStock, goalIndex: Sim.goalIndex,
+      peakIntake: Sim.peakIntake, ended: Sim.ended,
       upgrades: Sim.upgrades,
       hints: [...UI.shownHints],
-      nodes: Sim.nodes.map(n => ({
-        id: n.id, kind: n.kind, recipe: n.recipe,
-        level: n.level, consumed: n.consumed, consumedTotal: n.consumedTotal,
-        demand: n.demand, valueMult: n.valueMult, levelNeed: n.levelNeed,
-      })),
+      endShown: UI.endShown,
+      nodes: Sim.nodes.map(n => ({ id: n.id, kind: n.kind, recipe: n.recipe })),
       pipes: Sim.pipes.map(p => ({ from: p.from, to: p.to, lanes: p.lanes })),
     };
     localStorage.setItem(CONFIG.saveKey, JSON.stringify(data));
@@ -22,13 +24,18 @@ function saveGame() {
 function loadGame() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(CONFIG.saveKey)); } catch (e) { return false; }
-  if (!data || data.v !== 1) return false;
+  if (!data || data.v !== 2) return false;
 
-  Sim.time = data.time; Sim.currency = data.currency; Sim.totalEarned = data.totalEarned;
-  Sim.peakIncome = data.peakIncome || 0; Sim.ended = !!data.ended;
+  Sim.time = data.time;
+  Object.assign(Sim.bank, data.bank);
+  Object.assign(Sim.lifetime, data.lifetime);
+  Sim.pipeStock = data.pipeStock;
+  Sim.goalIndex = data.goalIndex;
+  Sim.peakIntake = data.peakIntake || 0;
+  Sim.ended = !!data.ended;
   Object.assign(Sim.upgrades, data.upgrades);
   UI.shownHints = new Set(data.hints || []);
-  UI.endShown = Sim.ended;
+  UI.endShown = !!data.endShown;
 
   for (const sn of data.nodes) {
     const def = NODE_DEFS.find(d => d.id === sn.id);
@@ -36,16 +43,12 @@ function loadGame() {
     const n = spawnNode(def);
     n.spawnT = 1;
     if (sn.kind === 'converter') placeConverter(n, sn.recipe);
-    if (n.kind === 'sink') {
-      n.level = sn.level; n.consumed = sn.consumed; n.consumedTotal = sn.consumedTotal;
-      n.demand = sn.demand; n.valueMult = sn.valueMult; n.levelNeed = sn.levelNeed;
-    }
   }
-  layoutAllNodes();
+  for (const n of Sim.nodes) layoutNode(n);
   for (const sp of data.pipes) {
     const from = Sim.nodeById[sp.from], to = Sim.nodeById[sp.to];
     if (!from || !to || !canConnect(from, to)) continue;
-    const pipe = addPipe(from, to);
+    const pipe = addPipe(from, to, { free: true }); // stock already reflects them
     while (pipe.lanes < Math.min(sp.lanes, CONFIG.maxLanes)) addLane(pipe);
     pipe.bornT = Sim.time - 1;
   }
@@ -53,5 +56,6 @@ function loadGame() {
 }
 
 function clearSave() {
+  _saveCleared = true;
   try { localStorage.removeItem(CONFIG.saveKey); } catch (e) { }
 }

@@ -10,7 +10,7 @@ function layoutAllNodes() {
 function checkSpawns() {
   for (const def of NODE_DEFS) {
     if (Sim.nodeById[def.id]) continue;
-    if (Sim.totalEarned >= def.gate.earned) {
+    if (Sim.goalIndex >= def.gate.goal) {
       const n = spawnNode(def);
       layoutNode(n);
     }
@@ -23,10 +23,10 @@ function init() {
   renderInit(canvas);
   inputInit(canvas);
 
-  if (!loadGame()) checkSpawns(); // fresh game: spawn gate-0 nodes
+  if (!loadGame()) checkSpawns(); // fresh game: spawn goal-0 nodes
   layoutAllNodes();
 
-  window.addEventListener('resize', () => { renderResize(); layoutAllNodes(); });
+  window.addEventListener('resize', renderResize);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
   setInterval(saveGame, CONFIG.autosaveSec * 1000);
 
@@ -37,7 +37,8 @@ function init() {
     let steps = 0;
     while (acc >= DT && steps < 5) { simStep(DT); acc -= DT; steps++; }
     if (steps === 5) acc = 0;
-    checkSpawns();
+    const done = checkGoal();
+    if (done) { checkSpawns(); uiGoalComplete(done); }
     uiCheckHints();
     uiUpdate();
     renderDraw();

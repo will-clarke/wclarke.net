@@ -1,14 +1,19 @@
-// Simulation: nodes, pipes, particles, back-pressure. No DOM/canvas here.
-// Every node is {inputs, outputs, rate} shaped: source = outputs only,
-// sink = inputs only, converter = both. See SPEC §5.
+// Simulation: nodes, pipes, particles, back-pressure, resource economy.
+// No DOM/canvas here. Every node is {inputs, outputs, rate} shaped:
+// vent (source) = outputs only, hub = inputs only (banks everything),
+// reactor (converter) = both. See SPEC §5 (v1.1 hub model).
 
 const Sim = {
   nodes: [], pipes: [], nodeById: {},
-  time: 0, currency: 0, totalEarned: 0,
-  incomeEMA: 0, peakIncome: 0,
-  upgrades: { flow: 0, source: 0, converter: 0 },
+  time: 0,
+  bank: { O: 0, C: 0, CO2: 0 },       // spendable
+  lifetime: { O: 0, C: 0, CO2: 0 },   // drives goals, never decreases
+  pipeStock: CONFIG.pipeStockStart,
+  goalIndex: 0,
+  intakeEMA: 0, peakIntake: 0,
+  upgrades: { flow: 0, source: 0, converter: 0, pipe: 0 },
   ended: false,
-  _pipeSeq: 0, _earnAcc: 0,
+  _pipeSeq: 0, _intakeAcc: 0,
 };
 
 // --- derived rates -----------------------------------------------------------
@@ -16,21 +21,36 @@ const Sim = {
 function flowSpeed() { return CONFIG.baseFlowSpeed * Math.pow(CONFIG.upgrades.flow.mult, Sim.upgrades.flow); }
 function sourceRate() { return CONFIG.baseSourceRate * Math.pow(CONFIG.upgrades.source.mult, Sim.upgrades.source); }
 function converterRate(recipe) { return recipe.baseRate * Math.pow(CONFIG.upgrades.converter.mult, Sim.upgrades.converter); }
-function upgradeCost(key) { const u = CONFIG.upgrades[key]; return Math.round(u.base * Math.pow(u.growth, Sim.upgrades[key])); }
-function laneCost(pipe) { return Math.round(CONFIG.laneCostBase * Math.pow(CONFIG.laneCostGrowth, pipe.lanes - 1)); }
+function chemistryOn() { return Sim.goalIndex >= CONFIG.chemistryGoal; }
+function currentGoal() { return Sim.ended ? null : GOALS[Sim.goalIndex] || null; }
+
+// --- resource costs ----------------------------------------------------------
+
+function scaleCost(cost, growth, level) {
+  const out = {};
+  for (const el in cost) out[el] = Math.round(cost[el] * Math.pow(growth, level));
+  return out;
+}
+function upgradeCost(key) {
+  const u = CONFIG.upgrades[key];
+  return scaleCost(u.cost, u.growth, Sim.upgrades[key]);
+}
+function laneCost(pipe) { return scaleCost(CONFIG.laneCost, CONFIG.laneCostGrowth, pipe.lanes - 1); }
+function canAfford(cost) { return Object.entries(cost).every(([el, n]) => Sim.bank[el] >= n); }
+function payCost(cost) {
+  if (!canAfford(cost)) return false;
+  for (const el in cost) Sim.bank[el] -= cost[el];
+  return true;
+}
 
 // --- nodes -------------------------------------------------------------------
 
 function spawnNode(def) {
   const n = {
     id: def.id, kind: def.kind, element: def.element, fx: def.fx, fy: def.fy,
-    x: 0, y: 0, acc: 0, rr: 0, spawnT: 0, blocked: false,
+    x: 0, y: 0, acc: 0, rr: 0, spawnT: 0, blocked: false, emitPulse: 0,
   };
-  if (n.kind === 'sink') {
-    n.buf = 0; n.level = 0; n.consumed = 0; n.consumedTotal = 0;
-    n.demand = CONFIG.sink.baseDemand; n.valueMult = 1;
-    n.levelNeed = CONFIG.sink.levelBase; n.starve = 0; n.levelPulse = 0;
-  }
+  if (n.kind === 'hub') n.blips = [];
   Sim.nodes.push(n);
   Sim.nodeById[n.id] = n;
   return n;
@@ -59,14 +79,14 @@ function nodeOutputElement(node) {
 
 // structural: does this node type ever take this element?
 function structuralAccepts(node, el) {
-  if (node.kind === 'sink') return node.element === el;
+  if (node.kind === 'hub') return true;
   if (node.kind === 'converter') return !!RECIPES[node.recipe].inputs[el];
   return false;
 }
 
-// runtime: is there buffer space right now?
+// runtime: is there space right now? (the hub always swallows - decision 20)
 function nodeAccepts(node, el) {
-  if (node.kind === 'sink') return node.element === el && node.buf < CONFIG.sinkBufCap;
+  if (node.kind === 'hub') return true;
   if (node.kind === 'converter') {
     const ratio = RECIPES[node.recipe].inputs[el];
     return !!ratio && node.buffers[el] < ratio * CONFIG.stubCapMult;
@@ -75,8 +95,13 @@ function nodeAccepts(node, el) {
 }
 
 function deliverTo(node, el) {
-  if (node.kind === 'sink') node.buf++;
-  else if (node.kind === 'converter') node.buffers[el]++;
+  if (node.kind === 'hub') {
+    Sim.bank[el]++; Sim.lifetime[el]++; Sim._intakeAcc++;
+    node.blips.push({ t: 0, color: ELEMENTS[el].color });
+    if (node.blips.length > 6) node.blips.shift();
+  } else if (node.kind === 'converter') {
+    node.buffers[el]++;
+  }
 }
 
 // --- pipes -------------------------------------------------------------------
@@ -116,21 +141,24 @@ function canConnect(from, to) {
   return !Sim.pipes.some(p => p.from === from.id && p.to === to.id);
 }
 
-function addPipe(from, to) {
-  const path = makePath(from, to);
+function addPipe(from, to, opts) {
+  const free = opts && opts.free;
+  if (!free && Sim.pipeStock < 1) return null;
+  if (!free) Sim.pipeStock--;
   const pipe = {
     id: 'p' + (++Sim._pipeSeq), from: from.id, to: to.id,
     element: nodeOutputElement(from), lanes: 1, laneP: [[]], rr: 0,
-    segs: path.segs, length: path.length,
-    delivered: 0, rateEMA: 0, jamF: 0, bornT: Sim.time,
+    segs: [], length: 0,
+    delivered: 0, rateEMA: 0, bornT: Sim.time,
   };
   Sim.pipes.push(pipe);
+  reflowPipes();
   return pipe;
 }
 
 function removePipe(pipe) {
   const i = Sim.pipes.indexOf(pipe);
-  if (i >= 0) Sim.pipes.splice(i, 1);
+  if (i >= 0) { Sim.pipes.splice(i, 1); Sim.pipeStock++; reflowPipes(); }
 }
 
 function addLane(pipe) { pipe.lanes++; pipe.laneP.push([]); }
@@ -163,12 +191,34 @@ function pipeAccept(pipe) {
   return false;
 }
 
-// recompute pipe geometry after layout change, preserving relative particle positions
+// Recompute pipe geometry: endpoints spread across per-node ports so converging
+// streams never visually merge (decision 19), then 45° paths rebuilt. Particle
+// positions are preserved proportionally.
 function reflowPipes() {
+  // gather endpoints per node
+  const at = {}; // nodeId -> [{pipe, end, angle}]
   for (const pipe of Sim.pipes) {
-    const from = Sim.nodeById[pipe.from], to = Sim.nodeById[pipe.to];
+    const a = Sim.nodeById[pipe.from], b = Sim.nodeById[pipe.to];
+    const ang = Math.atan2(b.y - a.y, b.x - a.x);
+    (at[a.id] = at[a.id] || []).push({ pipe, end: 'a', angle: ang });
+    (at[b.id] = at[b.id] || []).push({ pipe, end: 'b', angle: ang + Math.PI });
+  }
+  for (const id in at) {
+    const list = at[id].sort((p, q) => p.angle - q.angle);
+    list.forEach((e, k) => {
+      const off = (k - (list.length - 1) / 2) * CONFIG.portSpread;
+      if (e.end === 'a') e.pipe._aOff = off; else e.pipe._bOff = off;
+    });
+  }
+  for (const pipe of Sim.pipes) {
+    const a = Sim.nodeById[pipe.from], b = Sim.nodeById[pipe.to];
+    const d = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const ux = (b.x - a.x) / d, uy = (b.y - a.y) / d; // perp = (-uy, ux)
+    const aOff = pipe._aOff || 0, bOff = pipe._bOff || 0;
     const old = pipe.length;
-    const path = makePath(from, to);
+    const path = makePath(
+      { x: a.x - uy * aOff, y: a.y + ux * aOff },
+      { x: b.x - uy * bOff, y: b.y + ux * bOff });
     pipe.segs = path.segs; pipe.length = path.length;
     if (old > 0.01) {
       const k = pipe.length / old;
@@ -177,18 +227,16 @@ function reflowPipes() {
   }
 }
 
-// --- economy -----------------------------------------------------------------
+// --- goals -------------------------------------------------------------------
 
-function earn(v) {
-  Sim.currency += v;
-  Sim.totalEarned += v;
-  Sim._earnAcc += v;
-}
-
-function spend(v) {
-  if (Sim.currency < v) return false;
-  Sim.currency -= v;
-  return true;
+// returns the just-completed goal (for UI toast / end card), else null
+function checkGoal() {
+  const g = currentGoal();
+  if (!g || Sim.lifetime[g.element] < g.need) return null;
+  Sim.goalIndex++;
+  Sim.pipeStock += g.grantPipes;
+  if (Sim.goalIndex >= GOALS.length) Sim.ended = true;
+  return g;
 }
 
 // --- tick --------------------------------------------------------------------
@@ -200,7 +248,6 @@ function simStep(dt) {
   // 1. move particles (front to back, spacing-clamped) and deliver at pipe ends
   for (const pipe of Sim.pipes) {
     const to = Sim.nodeById[pipe.to];
-    let stuck = 0, total = 0;
     for (const lane of pipe.laneP) {
       for (let i = 0; i < lane.length; i++) {
         const p = lane[i];
@@ -209,7 +256,6 @@ function simStep(dt) {
         const np = Math.min(want, cap);
         p.stuck = want - np > v * dt * 0.5;
         p.pos = Math.max(p.pos, np);
-        total++; if (p.stuck) stuck++;
       }
       if (lane.length && lane[0].pos >= pipe.length - 0.5 && nodeAccepts(to, pipe.element)) {
         deliverTo(to, pipe.element);
@@ -217,18 +263,18 @@ function simStep(dt) {
         pipe.delivered++;
       }
     }
-    pipe.jamF = total ? stuck / total : 0;
     const inst = pipe.delivered / dt; pipe.delivered = 0;
     pipe.rateEMA += (inst - pipe.rateEMA) * Math.min(1, dt / 2);
   }
 
-  // 2. nodes produce / react / consume
+  // 2. nodes produce / react
   for (const n of Sim.nodes) {
     if (n.spawnT < 1) n.spawnT = Math.min(1, n.spawnT + dt * 2.5);
+    if (n.emitPulse > 0) n.emitPulse = Math.max(0, n.emitPulse - dt * 2.5);
 
     if (n.kind === 'source') {
       n.acc = Math.min(n.acc + sourceRate() * dt, 2);
-      while (n.acc >= 1 && tryEmit(n)) n.acc -= 1;
+      while (n.acc >= 1 && tryEmit(n)) { n.acc -= 1; n.emitPulse = 1; }
       n.blocked = n.acc >= 1;
 
     } else if (n.kind === 'converter') {
@@ -246,30 +292,16 @@ function simStep(dt) {
       while (n.outBuf >= 1 && tryEmit(n)) n.outBuf -= 1;
       if (n.firePulse > 0) n.firePulse = Math.max(0, n.firePulse - dt * 3);
 
-    } else if (n.kind === 'sink') {
-      n.acc = Math.min(n.acc + n.demand * dt, 1.5);
-      while (n.acc >= 1 && n.buf >= 1) {
-        n.acc -= 1; n.buf -= 1; n.consumed++; n.consumedTotal++;
-        earn(ELEMENTS[n.element].value * n.valueMult);
-        if (n.consumed >= n.levelNeed) {
-          n.consumed = 0; n.level++;
-          n.demand *= CONFIG.sink.demandGrowth;
-          n.valueMult *= CONFIG.sink.valueGrowth;
-          n.levelNeed = Math.round(CONFIG.sink.levelBase * Math.pow(CONFIG.sink.levelGrowth, n.level));
-          n.levelPulse = 1;
-        }
-      }
-      n.starve = n.buf === 0
-        ? Math.min(1, n.starve + dt / 1.5)
-        : Math.max(0, n.starve - dt * 2);
-      if (n.levelPulse > 0) n.levelPulse = Math.max(0, n.levelPulse - dt * 1.5);
+    } else if (n.kind === 'hub') {
+      for (const b of n.blips) b.t += dt;
+      n.blips = n.blips.filter(b => b.t < 0.8);
     }
   }
 
-  // 3. income EMA + peak
-  const inst = Sim._earnAcc / dt; Sim._earnAcc = 0;
-  Sim.incomeEMA += (inst - Sim.incomeEMA) * Math.min(1, dt / 1.5);
-  if (Sim.incomeEMA > Sim.peakIncome) Sim.peakIncome = Sim.incomeEMA;
+  // 3. intake EMA + peak (total molecules/s reaching the hub)
+  const inst = Sim._intakeAcc / dt; Sim._intakeAcc = 0;
+  Sim.intakeEMA += (inst - Sim.intakeEMA) * Math.min(1, dt / 1.5);
+  if (Sim.intakeEMA > Sim.peakIntake) Sim.peakIntake = Sim.intakeEMA;
 }
 
 // --- misc --------------------------------------------------------------------

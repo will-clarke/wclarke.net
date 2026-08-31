@@ -25,11 +25,7 @@ function renderResize() {
     x: 14, y: CONFIG.topPad,
     w: Render.w - 28, h: Render.h - CONFIG.topPad - CONFIG.bottomPad,
   };
-  // layout nodes from fractions, rebuild pipe geometry
-  for (const n of Sim.nodes) {
-    n.x = Render.field.x + n.fx * Render.field.w;
-    n.y = Render.field.y + n.fy * Render.field.h;
-  }
+  for (const n of Sim.nodes) layoutNode(n);
   reflowPipes();
   // static starfield, deterministic
   Render.stars = [];
@@ -169,54 +165,52 @@ function drawNode(ctx, n, t) {
 
   if (n.kind === 'source') {
     const col = ELEMENTS[n.element].color;
+    // emit ripple: a ring that grows outward each time a dot leaves
+    if (n.emitPulse > 0) {
+      ctx.strokeStyle = col;
+      ctx.globalAlpha = n.emitPulse * 0.5;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(0, 0, R + (1 - n.emitPulse) * 10, 0, 7); ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     ctx.fillStyle = col;
     ctx.globalAlpha = n.blocked ? 0.55 : 1;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
     ctx.globalAlpha = 1;
-    ctx.fillStyle = '#101319';
-    ctx.font = '700 13px system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(ELEMENTS[n.element].label, 0, 0.5);
+    if (chemistryOn()) {
+      ctx.fillStyle = '#101319';
+      ctx.font = '700 13px system-ui, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(ELEMENTS[n.element].label, 0, 0.5);
+    }
 
-  } else if (n.kind === 'sink') {
-    const col = ELEMENTS[n.element].color;
-    // starving pulse rings
-    if (n.starve > 0.4) {
-      const ph = (t * 0.9) % 1;
-      ctx.strokeStyle = col;
-      ctx.globalAlpha = (1 - ph) * 0.4 * n.starve;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(0, 0, R + 4 + ph * 14, 0, 7); ctx.stroke();
-      ctx.globalAlpha = 1;
+  } else if (n.kind === 'hub') {
+    const HR = CONFIG.hubR;
+    // arrival blips: coloured rings collapsing inward (the hub *swallows*)
+    for (const b of n.blips) {
+      const ph = b.t / 0.8;
+      ctx.strokeStyle = b.color;
+      ctx.globalAlpha = (1 - ph) * 0.6;
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, HR + 14 - ph * 14, 0, 7); ctx.stroke();
     }
-    ctx.strokeStyle = col; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.5;
-    ctx.beginPath(); ctx.arc(0, 0, R - 4.5, 0, 7); ctx.stroke();
     ctx.globalAlpha = 1;
-    // level progress arc
-    const prog = n.consumed / n.levelNeed;
-    ctx.lineWidth = 2.5;
+    hexPath(ctx, HR);
+    ctx.fillStyle = '#161d28';
+    ctx.fill();
     ctx.strokeStyle = CONFIG.colors.ink;
-    ctx.globalAlpha = 0.85;
-    ctx.beginPath(); ctx.arc(0, 0, R + 4, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+    hexPath(ctx, HR - 5.5);
+    ctx.strokeStyle = CONFIG.colors.dim;
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.6;
+    ctx.stroke();
     ctx.globalAlpha = 1;
-    // level-up flash
-    if (n.levelPulse > 0) {
-      ctx.strokeStyle = CONFIG.colors.ink;
-      ctx.globalAlpha = n.levelPulse * 0.7;
-      ctx.beginPath(); ctx.arc(0, 0, R + 7 + (1 - n.levelPulse) * 10, 0, 7); ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-    ctx.fillStyle = col;
-    ctx.font = '700 11px system-ui, sans-serif';
+    ctx.fillStyle = CONFIG.colors.ink;
+    ctx.font = '700 9.5px system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(ELEMENTS[n.element].label, 0, 0.5);
-    ctx.font = '600 10px system-ui, sans-serif';
-    ctx.fillStyle = CONFIG.colors.dim;
-    ctx.fillText(fmt(n.demand) + '/s', 0, R + 14);
-    if (n.level > 0) ctx.fillText('lv' + n.level, 0, -R - 10);
+    ctx.fillText('HUB', 0, 0.5);
 
   } else if (n.kind === 'slot') {
     ctx.strokeStyle = CONFIG.colors.slot;
@@ -233,13 +227,11 @@ function drawNode(ctx, n, t) {
   } else if (n.kind === 'converter') {
     const r = RECIPES[n.recipe];
     const outCol = ELEMENTS[r.out].color;
-    // body
     ctx.fillStyle = '#1a212c';
     ctx.strokeStyle = outCol;
     ctx.lineWidth = 2;
     roundRect(ctx, -R - 2, -R - 2, (R + 2) * 2, (R + 2) * 2, 8);
     ctx.fill(); ctx.stroke();
-    // fire flash
     if (n.firePulse > 0) {
       ctx.globalAlpha = n.firePulse * 0.35;
       ctx.fillStyle = outCol;
@@ -267,7 +259,7 @@ function drawNode(ctx, n, t) {
       ctx.globalAlpha = 1;
       row++;
     }
-    // output pip + label
+    // output label + buffer pips
     ctx.fillStyle = outCol;
     ctx.font = '700 9px system-ui, sans-serif';
     ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
@@ -284,10 +276,20 @@ function drawNode(ctx, n, t) {
     ctx.strokeStyle = CONFIG.colors.good;
     ctx.globalAlpha = 0.9;
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(0, 0, R + 8, 0, 7); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0, (n.kind === 'hub' ? CONFIG.hubR : R) + 8, 0, 7); ctx.stroke();
     ctx.globalAlpha = 1;
   }
   ctx.restore();
+}
+
+function hexPath(ctx, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = Math.PI / 6 + i * Math.PI / 3;
+    const x = Math.cos(a) * r, y = Math.sin(a) * r;
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
 }
 
 function roundRect(ctx, x, y, w, h, r) {
