@@ -32,21 +32,21 @@ html, body {
   pointer-events: none;
   text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
-#strip-bank { display: flex; gap: 14px; }
+#strip-bank { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; }
 #strip-bank i, .upg-buy i, #goal-label i, .pop-btn i { font-style: normal; margin-right: 3px; }
 #strip-pipes { color: #8a93a6; font-size: 13px; }
 
-/* goal chip */
+/* goal chip - sits to the right of the mural board (canvas-drawn at top-left) */
 #goal {
-  position: absolute; top: 44px; left: 18px; right: 18px;
-  display: flex; align-items: center; gap: 10px;
+  position: absolute; top: 64px; left: 188px; right: 18px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 9px;
   pointer-events: none;
   font-size: 12px; font-weight: 600; color: #c9d2e0;
   text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
-#goal-label { white-space: nowrap; letter-spacing: .04em; }
+#goal-label { letter-spacing: .04em; line-height: 1.7; }
 #goal-bar {
-  flex: 1; height: 4px; border-radius: 2px;
+  height: 5px; border-radius: 3px;
   background: #232c3a; overflow: hidden;
 }
 #goal-bar i {
@@ -58,7 +58,7 @@ html, body {
 
 /* hint toast */
 #hint {
-  position: absolute; top: 74px; left: 50%;
+  position: absolute; top: 146px; left: 50%;
   transform: translateX(-50%) translateY(-6px);
   background: rgba(26,33,44,.92);
   border: 1px solid #2a3342;

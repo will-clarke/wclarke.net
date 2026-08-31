@@ -1,13 +1,15 @@
-// Simulation: nodes, pipes, particles, back-pressure, resource economy.
+// Simulation: nodes, pipes, particles, back-pressure, paint economy.
 // No DOM/canvas here. Every node is {inputs, outputs, rate} shaped:
-// vent (source) = outputs only, hub = inputs only (banks everything),
-// reactor (converter) = both. See SPEC §5 (v1.1 hub model).
+// spring (source) = outputs only, the Vat (kind 'hub') = inputs only (banks
+// everything), mixer (converter) = both. See SPEC §5.
+
+const _zeroPaints = () => Object.fromEntries(Object.keys(PAINTS).map(k => [k, 0]));
 
 const Sim = {
   nodes: [], pipes: [], nodeById: {},
   time: 0,
-  bank: { O: 0, C: 0, CO2: 0 },       // spendable
-  lifetime: { O: 0, C: 0, CO2: 0 },   // drives goals, never decreases
+  bank: _zeroPaints(),       // spendable
+  lifetime: _zeroPaints(),   // drives goals, never decreases
   pipeStock: CONFIG.pipeStockStart,
   goalIndex: 0,
   intakeEMA: 0, peakIntake: 0,
@@ -21,8 +23,8 @@ const Sim = {
 function flowSpeed() { return CONFIG.baseFlowSpeed * Math.pow(CONFIG.upgrades.flow.mult, Sim.upgrades.flow); }
 function sourceRate() { return CONFIG.baseSourceRate * Math.pow(CONFIG.upgrades.source.mult, Sim.upgrades.source); }
 function converterRate(recipe) { return recipe.baseRate * Math.pow(CONFIG.upgrades.converter.mult, Sim.upgrades.converter); }
-function chemistryOn() { return Sim.goalIndex >= CONFIG.chemistryGoal; }
 function currentGoal() { return Sim.ended ? null : GOALS[Sim.goalIndex] || null; }
+function unlockedRecipes() { return Object.values(RECIPES).filter(r => Sim.goalIndex >= r.gate); }
 
 // --- resource costs ----------------------------------------------------------
 
@@ -97,7 +99,7 @@ function nodeAccepts(node, el) {
 function deliverTo(node, el) {
   if (node.kind === 'hub') {
     Sim.bank[el]++; Sim.lifetime[el]++; Sim._intakeAcc++;
-    node.blips.push({ t: 0, color: ELEMENTS[el].color });
+    node.blips.push({ t: 0, color: PAINTS[el].color });
     if (node.blips.length > 6) node.blips.shift();
   } else if (node.kind === 'converter') {
     node.buffers[el]++;
@@ -232,7 +234,7 @@ function reflowPipes() {
 // returns the just-completed goal (for UI toast / end card), else null
 function checkGoal() {
   const g = currentGoal();
-  if (!g || Sim.lifetime[g.element] < g.need) return null;
+  if (!g || Sim.lifetime[g.paint] < g.need) return null;
   Sim.goalIndex++;
   Sim.pipeStock += g.grantPipes;
   if (Sim.goalIndex >= GOALS.length) Sim.ended = true;
@@ -298,7 +300,7 @@ function simStep(dt) {
     }
   }
 
-  // 3. intake EMA + peak (total molecules/s reaching the hub)
+  // 3. intake EMA + peak (total paint/s reaching the vat)
   const inst = Sim._intakeAcc / dt; Sim._intakeAcc = 0;
   Sim.intakeEMA += (inst - Sim.intakeEMA) * Math.min(1, dt / 1.5);
   if (Sim.intakeEMA > Sim.peakIntake) Sim.peakIntake = Sim.intakeEMA;

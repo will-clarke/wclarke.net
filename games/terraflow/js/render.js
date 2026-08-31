@@ -61,6 +61,79 @@ function renderDraw() {
   for (const p of Sim.pipes) drawParticles(ctx, p, t);
   for (const n of Sim.nodes) drawNode(ctx, n, t);
   for (const p of Sim.pipes) drawRateLabel(ctx, p);
+  drawMural(ctx, t);
+}
+
+// --- the mural (goal board) ----------------------------------------------------
+
+function regionPath(ctx, r, M) {
+  ctx.beginPath();
+  if (r.kind === 'rect') {
+    ctx.rect(M.x + r.x * M.w, M.y + r.y * M.h, r.w * M.w, r.h * M.h);
+  } else if (r.kind === 'circle') {
+    ctx.arc(M.x + r.cx * M.w, M.y + r.cy * M.h, r.r * M.w, 0, 7);
+  } else {
+    r.pts.forEach(([px, py], i) => {
+      if (i === 0) ctx.moveTo(M.x + px * M.w, M.y + py * M.h);
+      else ctx.lineTo(M.x + px * M.w, M.y + py * M.h);
+    });
+    ctx.closePath();
+  }
+}
+
+function regionBBox(r, M) {
+  if (r.kind === 'rect') return { x: M.x + r.x * M.w, y: M.y + r.y * M.h, w: r.w * M.w, h: r.h * M.h };
+  if (r.kind === 'circle') {
+    const R = r.r * M.w;
+    return { x: M.x + r.cx * M.w - R, y: M.y + r.cy * M.h - R, w: R * 2, h: R * 2 };
+  }
+  const xs = r.pts.map(p => p[0]), ys = r.pts.map(p => p[1]);
+  const x0 = Math.min(...xs), y0 = Math.min(...ys);
+  return { x: M.x + x0 * M.w, y: M.y + y0 * M.h, w: (Math.max(...xs) - x0) * M.w, h: (Math.max(...ys) - y0) * M.h };
+}
+
+function drawMural(ctx, t) {
+  const M = CONFIG.mural;
+  roundRect(ctx, M.x - 5, M.y - 5, M.w + 10, M.h + 10, 8);
+  ctx.fillStyle = '#161d28'; ctx.fill();
+  ctx.strokeStyle = '#2a3342'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.save();
+  roundRect(ctx, M.x, M.y, M.w, M.h, 4);
+  ctx.clip();
+  ctx.fillStyle = '#0c0f14';
+  ctx.fillRect(M.x, M.y, M.w, M.h);
+  for (const r of MURAL_REGIONS) {
+    const g = GOALS[r.goal];
+    const col = PAINTS[g.paint].color;
+    const done = r.goal < Sim.goalIndex;
+    const current = r.goal === Sim.goalIndex;
+    ctx.save();
+    regionPath(ctx, r, M);
+    ctx.clip();
+    if (done) {
+      ctx.fillStyle = col;
+      ctx.fillRect(M.x, M.y, M.w, M.h);
+    } else if (current) {
+      // paint floods the region bottom-up as the vat banks it
+      const frac = Math.min(1, Sim.lifetime[g.paint] / g.need);
+      const bb = regionBBox(r, M);
+      ctx.fillStyle = col;
+      ctx.globalAlpha = 0.16;
+      ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
+      ctx.globalAlpha = 1;
+      ctx.fillRect(bb.x, bb.y + bb.h * (1 - frac), bb.w, bb.h * frac);
+    }
+    ctx.restore();
+    if (!done) {
+      regionPath(ctx, r, M);
+      ctx.strokeStyle = current ? col : '#39445a';
+      ctx.globalAlpha = current ? 0.65 + 0.3 * Math.sin(t * 3) : 0.55;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+  }
+  ctx.restore();
 }
 
 // --- pipes -------------------------------------------------------------------
@@ -73,7 +146,7 @@ function tracePipe(ctx, pipe) {
 }
 
 function drawPipeBody(ctx, pipe) {
-  const col = ELEMENTS[pipe.element].color;
+  const col = PAINTS[pipe.element].color;
   const born = Math.min(1, (Sim.time - pipe.bornT) * 4); // snap-in
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   ctx.globalAlpha = 0.20 * born;
@@ -91,7 +164,7 @@ function laneOffsetFor(pipe, li) {
 }
 
 function drawParticles(ctx, pipe, t) {
-  const col = ELEMENTS[pipe.element].color;
+  const col = PAINTS[pipe.element].color;
   const v = flowSpeed();
   const streak = v > CONFIG.streakSpeed;
   const streakLen = Math.min(12, v * 0.05);
@@ -125,7 +198,7 @@ function drawRateLabel(ctx, pipe) {
   const mid = pipePointAt(pipe, pipe.length / 2);
   ctx.font = '600 10px system-ui, sans-serif';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillStyle = ELEMENTS[pipe.element].color;
+  ctx.fillStyle = PAINTS[pipe.element].color;
   ctx.globalAlpha = 0.85;
   ctx.fillText(fmt(pipe.rateEMA) + '/s', mid.x - mid.uy * 14, mid.y + mid.ux * 14);
   ctx.globalAlpha = 1;
@@ -136,7 +209,7 @@ function drawPreview(ctx) {
   const from = d.fromNode;
   const end = d.targetNode ? { x: d.targetNode.x, y: d.targetNode.y } : { x: d.x, y: d.y };
   const path = makePath(from, end);
-  const col = d.valid ? ELEMENTS[nodeOutputElement(from)].color : CONFIG.colors.bad;
+  const col = d.valid ? PAINTS[nodeOutputElement(from)].color : CONFIG.colors.bad;
   ctx.save();
   ctx.setLineDash([7, 7]);
   ctx.lineDashOffset = -Sim.time * 30;
@@ -164,7 +237,7 @@ function drawNode(ctx, n, t) {
   const R = CONFIG.nodeR;
 
   if (n.kind === 'source') {
-    const col = ELEMENTS[n.element].color;
+    const col = PAINTS[n.element].color;
     // emit ripple: a ring that grows outward each time a dot leaves
     if (n.emitPulse > 0) {
       ctx.strokeStyle = col;
@@ -177,16 +250,11 @@ function drawNode(ctx, n, t) {
     ctx.globalAlpha = n.blocked ? 0.55 : 1;
     ctx.beginPath(); ctx.arc(0, 0, R, 0, 7); ctx.fill();
     ctx.globalAlpha = 1;
-    if (chemistryOn()) {
-      ctx.fillStyle = '#101319';
-      ctx.font = '700 13px system-ui, sans-serif';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(ELEMENTS[n.element].label, 0, 0.5);
-    }
 
   } else if (n.kind === 'hub') {
+    // the Vat: a dark swirling pit that swallows paint
     const HR = CONFIG.hubR;
-    // arrival blips: coloured rings collapsing inward (the hub *swallows*)
+    // arrival blips: coloured rings collapsing inward
     for (const b of n.blips) {
       const ph = b.t / 0.8;
       ctx.strokeStyle = b.color;
@@ -195,22 +263,24 @@ function drawNode(ctx, n, t) {
       ctx.beginPath(); ctx.arc(0, 0, HR + 14 - ph * 14, 0, 7); ctx.stroke();
     }
     ctx.globalAlpha = 1;
-    hexPath(ctx, HR);
-    ctx.fillStyle = '#161d28';
-    ctx.fill();
+    ctx.fillStyle = '#0a0d13';
+    ctx.beginPath(); ctx.arc(0, 0, HR, 0, 7); ctx.fill();
     ctx.strokeStyle = CONFIG.colors.ink;
     ctx.lineWidth = 2.5;
-    ctx.stroke();
-    hexPath(ctx, HR - 5.5);
+    ctx.beginPath(); ctx.arc(0, 0, HR, 0, 7); ctx.stroke();
+    // slow inward swirl
     ctx.strokeStyle = CONFIG.colors.dim;
-    ctx.lineWidth = 1;
-    ctx.globalAlpha = 0.6;
-    ctx.stroke();
+    ctx.lineWidth = 1.5;
+    for (let i = 0; i < 3; i++) {
+      const a0 = -t * 0.9 + i * (Math.PI * 2 / 3);
+      ctx.globalAlpha = 0.55 - i * 0.13;
+      ctx.beginPath(); ctx.arc(0, 0, HR - 6 - i * 6, a0, a0 + 1.9); ctx.stroke();
+    }
     ctx.globalAlpha = 1;
-    ctx.fillStyle = CONFIG.colors.ink;
-    ctx.font = '700 9.5px system-ui, sans-serif';
+    ctx.fillStyle = CONFIG.colors.dim;
+    ctx.font = '700 8.5px system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('HUB', 0, 0.5);
+    ctx.fillText('THE VAT', 0, HR + 13);
 
   } else if (n.kind === 'slot') {
     ctx.strokeStyle = CONFIG.colors.slot;
@@ -226,7 +296,7 @@ function drawNode(ctx, n, t) {
 
   } else if (n.kind === 'converter') {
     const r = RECIPES[n.recipe];
-    const outCol = ELEMENTS[r.out].color;
+    const outCol = PAINTS[r.out].color;
     ctx.fillStyle = '#1a212c';
     ctx.strokeStyle = outCol;
     ctx.lineWidth = 2;
@@ -250,7 +320,7 @@ function drawNode(ctx, n, t) {
     for (const el of els) {
       const ratio = r.inputs[el];
       const y = -6 + row * 11 - (els.length - 1) * 2;
-      ctx.fillStyle = ELEMENTS[el].color;
+      ctx.fillStyle = PAINTS[el].color;
       const have = Math.min(ratio, Math.floor(n.buffers[el]));
       for (let i = 0; i < ratio; i++) {
         ctx.globalAlpha = i < have ? 1 : 0.22;
@@ -259,11 +329,9 @@ function drawNode(ctx, n, t) {
       ctx.globalAlpha = 1;
       row++;
     }
-    // output label + buffer pips
+    // output swatch + buffer pips
     ctx.fillStyle = outCol;
-    ctx.font = '700 9px system-ui, sans-serif';
-    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
-    ctx.fillText(ELEMENTS[r.out].label, R - 4, -2);
+    ctx.beginPath(); ctx.arc(R - 8, -4, 4.2, 0, 7); ctx.fill();
     for (let i = 0; i < CONFIG.outBufCap; i++) {
       ctx.globalAlpha = i < n.outBuf ? 1 : 0.22;
       ctx.beginPath(); ctx.arc(R - 8 - i * 8, 8, 2.6, 0, 7); ctx.fill();
@@ -280,16 +348,6 @@ function drawNode(ctx, n, t) {
     ctx.globalAlpha = 1;
   }
   ctx.restore();
-}
-
-function hexPath(ctx, r) {
-  ctx.beginPath();
-  for (let i = 0; i < 6; i++) {
-    const a = Math.PI / 6 + i * Math.PI / 3;
-    const x = Math.cos(a) * r, y = Math.sin(a) * r;
-    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.closePath();
 }
 
 function roundRect(ctx, x, y, w, h, r) {

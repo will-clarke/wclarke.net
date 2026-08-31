@@ -49,7 +49,7 @@ function uiInit() {
 // coloured dot + amount, e.g. "●12 ●3" - the one way costs are ever rendered
 function costHTML(cost) {
   return Object.entries(cost)
-    .map(([el, n]) => `<i style="color:${ELEMENTS[el].color}">●</i>${fmt(n)}`)
+    .map(([el, n]) => `<i style="color:${PAINTS[el].color}">●</i>${fmt(n)}`)
     .join(' ');
 }
 
@@ -58,14 +58,14 @@ function costHTML(cost) {
 let _lastStrip = '';
 function uiUpdate() {
   const g = currentGoal();
-  const key = Sim.bank.O + '|' + Sim.bank.C + '|' + Sim.bank.CO2 + '|' + Sim.pipeStock + '|'
-    + Sim.goalIndex + '|' + Sim.ended + '|' + (g ? Sim.lifetime[g.element] : '');
+  const key = Object.values(Sim.bank).join('|') + '|' + Sim.pipeStock + '|'
+    + Sim.goalIndex + '|' + Sim.ended + '|' + (g ? Sim.lifetime[g.paint] : '');
   if (key !== _lastStrip) {
     _lastStrip = key;
-    // bank: show an element once it exists in the world
-    UI.els.bank.innerHTML = Object.keys(ELEMENTS)
-      .filter(el => Sim.lifetime[el] > 0 || el === 'O' || (chemistryOn() && el !== 'C'))
-      .map(el => `<span><i style="color:${ELEMENTS[el].color}">●</i>${fmt(Sim.bank[el])}</span>`)
+    // bank: show a paint once some of it has ever been banked
+    UI.els.bank.innerHTML = Object.keys(PAINTS)
+      .filter(el => Sim.lifetime[el] > 0 || el === 'R')
+      .map(el => `<span><i style="color:${PAINTS[el].color}">●</i>${fmt(Sim.bank[el])}</span>`)
       .join('');
     UI.els.pipes.textContent = '▭ ×' + Sim.pipeStock;
     uiRefreshGoalChip();
@@ -77,21 +77,21 @@ function uiUpdate() {
 function uiRefreshGoalChip() {
   const g = currentGoal();
   if (!g) {
-    UI.els.goalLabel.innerHTML = Sim.ended ? 'OUTPOST STABILIZED ✓' : '';
+    UI.els.goalLabel.innerHTML = Sim.ended ? 'MURAL COMPLETE ✓' : '';
     UI.els.goal.classList.toggle('done', Sim.ended);
     return;
   }
   UI.els.goal.classList.remove('done');
-  const el = ELEMENTS[g.element];
+  const p = PAINTS[g.paint];
   UI.els.goalLabel.innerHTML =
-    `goal&nbsp; <i style="color:${el.color}">●</i> ${fmt(Math.min(Sim.lifetime[g.element], g.need))} / ${fmt(g.need)}`;
+    `the mural needs<br><i style="color:${p.color}">●</i> ${p.name.toLowerCase()} &nbsp;${fmt(Math.min(Sim.lifetime[g.paint], g.need))} / ${fmt(g.need)}`;
 }
 
 function uiUpdateGoalBar() {
   const g = currentGoal();
-  const frac = g ? Math.min(1, Sim.lifetime[g.element] / g.need) : 1;
+  const frac = g ? Math.min(1, Sim.lifetime[g.paint] / g.need) : 1;
   UI.els.goalBar.style.width = (frac * 100).toFixed(1) + '%';
-  const col = g ? ELEMENTS[g.element].color : CONFIG.colors.good;
+  const col = g ? PAINTS[g.paint].color : CONFIG.colors.good;
   if (UI.els.goalBar.dataset.col !== col) {
     UI.els.goalBar.dataset.col = col;
     UI.els.goalBar.style.background = col;
@@ -162,13 +162,21 @@ function popupAt(x, y) {
   return p;
 }
 
+// a recipe rendered as paint dots: ●●● + ● → ● Light green
+function recipeHTML(r) {
+  const parts = Object.entries(r.inputs)
+    .map(([el, q]) => `<i style="color:${PAINTS[el].color}">${'●'.repeat(q)}</i>`)
+    .join(' + ');
+  return `${parts} → <i style="color:${PAINTS[r.out].color}">●</i> ${PAINTS[r.out].name}`;
+}
+
 function uiOpenRadial(slotNode) {
   uiCloseMenus();
   const p = popupAt(slotNode.x, slotNode.y);
-  for (const r of Object.values(RECIPES)) {
+  for (const r of unlockedRecipes()) {
     const b = document.createElement('button');
     b.className = 'pop-btn';
-    b.innerHTML = `<span style="color:${ELEMENTS[r.out].color}">${r.label}</span>`;
+    b.innerHTML = recipeHTML(r);
     b.addEventListener('click', () => {
       placeConverter(slotNode, r.id);
       uiHintDone('slot');
@@ -183,7 +191,7 @@ function uiOpenConverterMenu(node) {
   const p = popupAt(node.x, node.y);
   const b = document.createElement('button');
   b.className = 'pop-btn danger';
-  b.textContent = '✕ Remove reactor';
+  b.textContent = '✕ Remove mixer';
   b.addEventListener('click', () => { removeConverter(node); uiCloseMenus(); });
   p.appendChild(b);
 }
@@ -236,10 +244,10 @@ function uiHintDone(id) { UI.shownHints.add(id); }
 function uiShowEndCard() {
   UI.endShown = true;
   const mm = Math.floor(Sim.time / 60), ss = Math.floor(Sim.time % 60);
+  const total = Object.values(Sim.lifetime).reduce((a, b) => a + b, 0);
   UI.els.endStats.innerHTML = `
     <div><span>Time</span><b>${mm}:${String(ss).padStart(2, '0')}</b></div>
-    <div><span>O banked</span><b style="color:${ELEMENTS.O.color}">${fmt(Sim.lifetime.O)}</b></div>
-    <div><span>CO₂ banked</span><b style="color:${ELEMENTS.CO2.color}">${fmt(Sim.lifetime.CO2)}</b></div>
-    <div><span>Peak intake</span><b>${fmt(Sim.peakIntake)}/s</b></div>`;
+    <div><span>Paint banked</span><b>${fmt(total)}</b></div>
+    <div><span>Peak flow</span><b>${fmt(Sim.peakIntake)}/s</b></div>`;
   UI.els.endcard.classList.add('show');
 }
