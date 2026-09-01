@@ -317,7 +317,8 @@ function drawNode(ctx, n, t) {
     // output swatch + buffer pips
     ctx.fillStyle = outCol;
     ctx.beginPath(); ctx.arc(R - 8, -4, 4.2, 0, 7); ctx.fill();
-    for (let i = 0; i < CONFIG.outBufCap; i++) {
+    const pips = Math.min(outBufCapOf(r), 4);
+    for (let i = 0; i < pips; i++) {
       ctx.globalAlpha = i < n.outBuf ? 1 : 0.22;
       ctx.beginPath(); ctx.arc(R - 8 - i * 8, 8, 2.6, 0, 7); ctx.fill();
     }

@@ -61,9 +61,12 @@ function flowSpeed() { return CONFIG.baseFlowSpeed * Math.pow(CONFIG.flowMult, t
 function sourceRate(el) { return CONFIG.baseSourceRate * Math.pow(CONFIG.rateMult, trackLevel('rate-' + el)); }
 function converterRate(recipe) { return recipe.baseRate * Math.pow(CONFIG.mixMult, trackLevel('mixspeed')); }
 function maxLanes() { return CONFIG.baseMaxLanes + trackLevel('lanecap'); }
-function recipeInputs(r) {
+function recipeAt(r) {
   return r.ratios[Math.min(trackLevel('ratio-' + r.id), r.ratios.length - 1)];
 }
+function recipeInputs(r) { return recipeAt(r).in; }
+function recipeOut(r) { return recipeAt(r).out; }
+function outBufCapOf(r) { return Math.max(CONFIG.outBufCap, recipeOut(r) * 2); }
 function unlockedRecipes() { return Object.values(RECIPES).filter(r => trackLevel(r.unlock) >= 1); }
 
 // --- resource costs ----------------------------------------------------------
@@ -97,7 +100,7 @@ function spawnNode(def) {
 function placeConverter(node, recipeId) {
   const r = RECIPES[recipeId];
   node.kind = 'converter'; node.recipe = recipeId;
-  node.buffers = {}; for (const el in r.ratios[0]) node.buffers[el] = 0;
+  node.buffers = {}; for (const el in r.ratios[0].in) node.buffers[el] = 0;
   node.outBuf = 0; node.prog = 0; node.firePulse = 0; node.rr = 0;
 }
 
@@ -106,7 +109,7 @@ function swapConverter(node, recipeId) {
   const r = RECIPES[recipeId];
   for (const p of Sim.pipes.slice()) {
     if (p.from === node.id) removePipe(p); // output colour changes
-    else if (p.to === node.id && !r.ratios[0][p.element]) removePipe(p);
+    else if (p.to === node.id && !r.ratios[0].in[p.element]) removePipe(p);
   }
   placeConverter(node, recipeId);
 }
@@ -329,13 +332,14 @@ function simStep(dt) {
     } else if (n.kind === 'converter') {
       const r = RECIPES[n.recipe];
       const inputs = recipeInputs(r);
-      const ready = () => n.outBuf < CONFIG.outBufCap &&
+      const outN = recipeOut(r);
+      const ready = () => n.outBuf < outBufCapOf(r) &&
         Object.entries(inputs).every(([el, q]) => n.buffers[el] >= q);
       if (ready()) {
         n.prog += converterRate(r) * dt;
         while (n.prog >= 1 && ready()) {
           for (const [el, q] of Object.entries(inputs)) n.buffers[el] -= q;
-          n.outBuf++; n.prog -= 1; n.firePulse = 1;
+          n.outBuf += outN; n.prog -= 1; n.firePulse = 1;
         }
         if (n.prog >= 1) n.prog = 1;
       }

@@ -144,6 +144,16 @@ function buildCatalogue() {
       UI.els.upgrades.appendChild(row);
     }
   }
+  // completed fold: maxed rows move here so the live list stays short (prompt 7)
+  const dh = document.createElement('div');
+  dh.className = 'upg-cat done-header';
+  dh.addEventListener('click', () => { UI.doneOpen = !UI.doneOpen; _lastStrip = ''; });
+  UI.els.doneHeader = dh;
+  UI.els.upgrades.appendChild(dh);
+  const dl = document.createElement('div');
+  dl.id = 'done-list';
+  UI.els.doneList = dl;
+  UI.els.upgrades.appendChild(dl);
 }
 
 // the one catalogue gesture: afford it -> buy now; can't -> pin it as the goal
@@ -166,31 +176,43 @@ function uiTapTrack(t, row) {
 function refreshCatalogue() {
   const owned = ownedLevels();
   UI.els.sheetLabel.textContent = `Upgrades ${owned} / ${TOTAL_LEVELS}`;
-  let row = UI.els.upgrades.firstElementChild;
   const catShown = {};
-  for (; row; row = row.nextElementSibling) {
-    if (!row.dataset.id) continue; // category header, handled after
+  let doneCount = 0;
+  for (const row of UI.els.upgrades.querySelectorAll('.upg')) {
     const t = TRACK_BY_ID[row.dataset.id];
+    const maxed = trackMaxed(t);
+    if (maxed && row.parentElement !== UI.els.doneList) UI.els.doneList.appendChild(row);
+    if (maxed) {
+      doneCount++;
+      row.classList.add('maxed');
+      row.classList.remove('pinned');
+      row.hidden = !UI.doneOpen;
+      const btn = row.querySelector('.upg-buy');
+      if (btn.innerHTML !== 'MAX') btn.innerHTML = 'MAX';
+      const lvl = row.querySelector('.upg-lvl');
+      const ltxt = t.max > 1 ? `lv${t.max}/${t.max}` : '';
+      if (lvl.textContent !== ltxt) lvl.textContent = ltxt;
+      continue;
+    }
     const visible = trackVisible(t);
     row.hidden = !visible;
     if (!visible) continue;
     catShown[t.cat] = true;
-    const maxed = trackMaxed(t);
     const btn = row.querySelector('.upg-buy');
     row.classList.toggle('pinned', Sim.pinned === t.id);
-    row.classList.toggle('maxed', maxed);
-    const html = maxed ? 'MAX'
-      : Sim.pinned === t.id ? '★ goal'
-      : costHTML(trackCost(t));
+    const html = Sim.pinned === t.id ? '★ goal' : costHTML(trackCost(t));
     if (btn.innerHTML !== html) btn.innerHTML = html;
-    btn.classList.toggle('afford', !maxed && canAfford(trackCost(t)));
+    btn.classList.toggle('afford', canAfford(trackCost(t)));
     const lvl = row.querySelector('.upg-lvl');
     const ltxt = t.max > 1 ? `lv${trackLevel(t.id)}/${t.max}` : '';
     if (lvl.textContent !== ltxt) lvl.textContent = ltxt;
   }
-  for (const h of UI.els.upgrades.querySelectorAll('.upg-cat')) {
+  for (const h of UI.els.upgrades.querySelectorAll('.upg-cat:not(.done-header)')) {
     h.hidden = !catShown[h.dataset.cat];
   }
+  UI.els.doneHeader.hidden = doneCount === 0;
+  UI.els.doneHeader.textContent = `✓ completed ${doneCount} ${UI.doneOpen ? '▾' : '▸'}`;
+  UI.els.doneList.hidden = !UI.doneOpen || doneCount === 0;
 }
 
 // --- popup menus (radial-ish, DOM) ----------------------------------------------
@@ -206,12 +228,13 @@ function popupAt(x, y) {
   return p;
 }
 
-// a recipe rendered as paint dots / counts: ●×6 + ●×6 → ● Orange
+// a recipe rendered as paint dots / counts: ●×1 + ●×1 → ●×4 Orange
 function recipeHTML(r) {
   const parts = Object.entries(recipeInputs(r))
     .map(([el, q]) => `<i style="color:${PAINTS[el].color}">●</i>×${q}`)
     .join(' + ');
-  return `${parts} → <i style="color:${PAINTS[r.out].color}">●</i> ${PAINTS[r.out].name}`;
+  const outN = recipeOut(r);
+  return `${parts} → <i style="color:${PAINTS[r.out].color}">●</i>${outN > 1 ? '×' + outN : ''} ${PAINTS[r.out].name}`;
 }
 
 function uiOpenRadial(slotNode) {

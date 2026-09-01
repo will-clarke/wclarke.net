@@ -1,5 +1,5 @@
 // localStorage save/load. Particles and small buffers are not persisted.
-// v4 format (upgrade-tree V2); older saves are ignored (different game).
+// v5 format (V3 catalogue); older saves are ignored (different game).
 
 let _saveCleared = false;
 
@@ -7,7 +7,7 @@ function saveGame() {
   if (_saveCleared) return; // reset in progress: don't resurrect the save on unload
   try {
     const data = {
-      v: 4,
+      v: 5,
       time: Sim.time, bank: Sim.bank, lifetime: Sim.lifetime,
       pipeStock: Sim.pipeStock, up: Sim.up, pinned: Sim.pinned,
       peakIntake: Sim.peakIntake, ended: Sim.ended,
@@ -23,7 +23,7 @@ function saveGame() {
 function loadGame() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(CONFIG.saveKey)); } catch (e) { return false; }
-  if (!data || data.v !== 4) return false;
+  if (!data || data.v !== 5) return false;
 
   Sim.time = data.time;
   Object.assign(Sim.bank, data.bank);
