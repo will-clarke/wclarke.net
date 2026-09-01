@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "silicon",
+      "name": "Silicon",
+      "accent": "#ffb000",
+      "tagline": "Hand-pull one silicon crystal in your bedroom, and don't stop until the numbers frighten you. Machines buy machines, yield creeps past 100%, process nodes shrink to atoms - then you TAPE-OUT: scrap the whole line, keep the photomasks, and spend them on upgrades that break the game's own rules. Speculative execution pre-plays your next run. The factory is coming for your job first."
+    },
+    {
       "slug": "terraflow",
       "name": "Terraflow",
       "accent": "#ffd23f",

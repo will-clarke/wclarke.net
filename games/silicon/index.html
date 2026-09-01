@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>SILICON</title>
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#131820; --panel2:#0f141b; --line:#232b36;
+    --txt:#c7d1dc; --dim:#6b7686; --amber:#ffb000; --cyan:#4dd0e1;
+    --green:#3fb950; --red:#e05d5d; --purple:#b48cff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:ui-monospace,'SF Mono',Menlo,Consolas,monospace; font-size:14px;
+    overscroll-behavior:none;}
+  #app{max-width:560px; margin:0 auto; padding:0 10px 90px; user-select:none; -webkit-user-select:none;}
+
+  /* header */
+  #hdr{padding:10px 2px 6px; display:flex; align-items:baseline; justify-content:space-between;}
+  #brand{color:var(--dim); letter-spacing:4px; font-size:12px;}
+  #eraTag{color:var(--amber); font-size:11px; letter-spacing:2px;}
+  #countBox{text-align:center; padding:2px 0 8px;}
+  #bigCount{font-size:34px; font-weight:700; color:#fff; line-height:1.1; font-variant-numeric:tabular-nums;}
+  #bigCount .unit{font-size:13px; color:var(--dim); font-weight:400;}
+  #rateLine{color:var(--dim); font-size:12px; margin-top:2px;}
+  #rateLine b{color:var(--cyan); font-weight:600;}
+  #yieldChip{display:none; color:var(--green); font-size:12px;}
+  #frenzyChip{display:none; color:var(--amber); font-size:12px; animation:pulse 0.8s infinite alternate;}
+  @keyframes pulse{from{opacity:0.6}to{opacity:1}}
+
+  /* map strip */
+  #mapWrap{position:relative; border:1px solid var(--line); border-radius:8px; overflow:hidden;
+    background:#05070a; height:150px;}
+  #map{width:100%; height:100%; display:block; touch-action:manipulation;}
+  #mapEra{position:absolute; top:6px; left:8px; font-size:10px; letter-spacing:2px; color:var(--dim); pointer-events:none;}
+  #mapScale{position:absolute; bottom:6px; left:8px; font-size:10px; color:var(--dim); pointer-events:none;}
+  #mapScale i{display:inline-block; width:34px; height:1px; background:var(--dim); vertical-align:middle; margin-right:5px;
+    border-left:1px solid var(--dim); border-right:1px solid var(--dim); height:5px; background:none; border-bottom:1px solid var(--dim);}
+
+  /* tabs */
+  #tabs{display:flex; gap:6px; margin:10px 0 8px;}
+  .tab{flex:1; text-align:center; padding:9px 0; border:1px solid var(--line); border-radius:8px;
+    background:var(--panel2); color:var(--dim); font-size:12px; letter-spacing:2px; cursor:pointer;}
+  .tab.on{background:var(--panel); color:var(--txt); border-color:#3a4654;}
+  .tab .dot{display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--amber);
+    margin-left:5px; vertical-align:middle; visibility:hidden;}
+  .tab.alert .dot{visibility:visible;}
+  #tabMasks{display:none;}
+
+  /* tap button */
+  #tapBtn{width:100%; padding:16px 0; margin:2px 0 10px; border:1px solid #6b5200; border-radius:10px;
+    background:linear-gradient(180deg,#2a2008,#1a1405); color:var(--amber); font-family:inherit;
+    font-size:15px; letter-spacing:2px; cursor:pointer;}
+  #tapBtn:active{transform:scale(0.985); background:#332708;}
+  #tapBtn small{display:block; color:#8a7a45; font-size:11px; letter-spacing:0; margin-top:3px;}
+
+  /* buy amount toggle */
+  #buyAmt{display:flex; gap:6px; margin-bottom:8px;}
+  #buyAmt button{flex:1; padding:6px 0; font-family:inherit; font-size:11px; border:1px solid var(--line);
+    border-radius:6px; background:var(--panel2); color:var(--dim); cursor:pointer;}
+  #buyAmt button.on{color:var(--cyan); border-color:#2b5f68;}
+
+  /* lanes */
+  .lane{border:1px solid var(--line); border-radius:8px; background:var(--panel); margin-bottom:8px;
+    padding:8px 10px 10px; position:relative; overflow:hidden;}
+  .lane.locked{opacity:0.45;}
+  .laneTop{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .laneName{font-size:13px; color:var(--txt);}
+  .laneName .cnt{color:var(--cyan); margin-left:6px;}
+  .laneRate{font-size:11px; color:var(--dim); margin-top:2px;}
+  .laneBuy{min-width:118px; padding:8px 6px; font-family:inherit; font-size:11px; border-radius:7px;
+    border:1px solid #2b5f68; background:#0e2226; color:var(--cyan); cursor:pointer; text-align:center; line-height:1.35;}
+  .laneBuy:disabled{border-color:var(--line); background:var(--panel2); color:var(--dim);}
+  .laneBuy b{display:block; font-size:12px;}
+  .cycle{position:absolute; left:0; bottom:0; height:3px; background:var(--cyan); width:0%; opacity:0.7;}
+  .cycle.blur{width:100% !important; opacity:0.25; animation:pulse 0.5s infinite alternate;}
+  .milePips{font-size:10px; color:var(--dim); margin-top:3px; letter-spacing:1px;}
+  .milePips b{color:var(--amber); font-weight:400;}
+
+  /* projects */
+  .proj{border:1px solid var(--line); border-radius:8px; background:var(--panel); margin-bottom:8px; padding:10px;}
+  .projTop{display:flex; justify-content:space-between; gap:10px; align-items:baseline;}
+  .projName{color:var(--txt); font-size:13px;}
+  .projCost{color:var(--amber); font-size:12px; white-space:nowrap;}
+  .projFlavor{color:var(--dim); font-size:11px; font-style:italic; margin-top:4px; line-height:1.4;}
+  .projFx{color:var(--cyan); font-size:11px; margin-top:4px;}
+  .projBtn{margin-top:8px; width:100%; padding:8px 0; font-family:inherit; font-size:12px; letter-spacing:1px;
+    border-radius:7px; border:1px solid #6b5200; background:#231b06; color:var(--amber); cursor:pointer;}
+  .projBtn:disabled{border-color:var(--line); background:var(--panel2); color:var(--dim);}
+  .projDone{border-color:#1e3a26; opacity:0.55;}
+  .projDone .projCost{color:var(--green);}
+
+  /* masks */
+  #tapeoutBox{border:1px solid #5a4a7a; border-radius:10px; background:#181226; padding:12px; margin-bottom:12px;}
+  #tapeoutBox h3{margin:0 0 4px; font-size:13px; letter-spacing:2px; color:var(--purple); font-weight:600;}
+  #tapeoutBox p{margin:4px 0; font-size:11px; color:var(--dim); line-height:1.5;}
+  #tapeoutBtn{width:100%; margin-top:8px; padding:12px 0; font-family:inherit; font-size:14px; letter-spacing:2px;
+    border-radius:8px; border:1px solid var(--purple); background:#241a3a; color:var(--purple); cursor:pointer;}
+  #tapeoutBtn:disabled{border-color:var(--line); background:var(--panel2); color:var(--dim);}
+  .mask{border:1px solid var(--line); border-radius:8px; background:var(--panel); margin-bottom:8px; padding:10px;}
+  .maskTop{display:flex; justify-content:space-between; align-items:baseline; gap:8px;}
+  .maskName{font-size:13px;}
+  .maskRank{color:var(--purple); font-size:11px;}
+  .maskFx{color:var(--cyan); font-size:11px; margin-top:4px; line-height:1.4;}
+  .maskFlavor{color:var(--dim); font-size:11px; font-style:italic; margin-top:3px;}
+  .maskBtn{margin-top:8px; width:100%; padding:8px 0; font-family:inherit; font-size:12px;
+    border-radius:7px; border:1px solid var(--purple); background:#1c1430; color:var(--purple); cursor:pointer;}
+  .maskBtn:disabled{border-color:var(--line); background:var(--panel2); color:var(--dim);}
+  #maskBal{font-size:13px; color:var(--purple); margin-bottom:10px; letter-spacing:1px;}
+  #statsBox{border-top:1px solid var(--line); margin-top:16px; padding-top:10px; font-size:11px; color:var(--dim); line-height:1.8;}
+  #wipe{color:#5a3a3a; font-size:10px; cursor:pointer; text-decoration:underline;}
+
+  /* toasts + overlays */
+  #toasts{position:fixed; left:50%; transform:translateX(-50%); bottom:14px; width:min(520px,92vw); z-index:50; pointer-events:none;}
+  .toast{background:#1a2230; border:1px solid #31405a; border-radius:8px; padding:9px 12px; margin-top:6px;
+    font-size:12px; color:var(--txt); animation:tIn 0.25s ease, tOut 0.6s ease 4.4s forwards;}
+  .toast i{color:var(--dim); font-style:italic; display:block; font-size:11px; margin-top:2px;}
+  @keyframes tIn{from{opacity:0; transform:translateY(8px);}to{opacity:1;}}
+  @keyframes tOut{to{opacity:0;}}
+  #modal{position:fixed; inset:0; background:rgba(4,6,10,0.86); z-index:100; display:none;
+    align-items:center; justify-content:center; padding:20px;}
+  #modalCard{background:var(--panel); border:1px solid #3a4654; border-radius:12px; padding:20px;
+    max-width:420px; width:100%; text-align:center;}
+  #modalCard h2{margin:0 0 8px; font-size:14px; letter-spacing:3px; color:var(--amber); font-weight:600;}
+  #modalCard .big{font-size:26px; color:#fff; margin:10px 0;}
+  #modalCard p{color:var(--dim); font-size:12px; line-height:1.6; margin:8px 0;}
+  #modalCard button{margin-top:10px; padding:10px 26px; font-family:inherit; font-size:13px; letter-spacing:1px;
+    border-radius:8px; border:1px solid #6b5200; background:#231b06; color:var(--amber); cursor:pointer;}
+  .float{position:absolute; color:var(--amber); font-size:12px; pointer-events:none; animation:floatUp 1.1s ease-out forwards; z-index:20;}
+  @keyframes floatUp{from{opacity:1;}to{opacity:0; transform:translateY(-34px);}}
+  .sectionHead{font-size:11px; letter-spacing:2px; color:var(--dim); margin:14px 2px 8px;}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="hdr"><span id="brand">SILICON</span><span id="eraTag">ERA 1 · BEDROOM</span></div>
+
+  <div id="countBox">
+    <div id="bigCount">0 <span class="unit">transistors</span></div>
+    <div id="rateLine"><b id="rateV">0</b>/s <span id="yieldChip"></span> <span id="frenzyChip"></span></div>
+  </div>
+
+  <div id="mapWrap">
+    <canvas id="map"></canvas>
+    <div id="mapEra"></div>
+    <div id="mapScale"><i></i><span id="mapScaleTxt">~2 m</span></div>
+  </div>
+
+  <div id="tabs">
+    <div class="tab on" id="tabFab" data-tab="fab">FAB<span class="dot"></span></div>
+    <div class="tab" id="tabProj" data-tab="proj">PROJECTS<span class="dot"></span></div>
+    <div class="tab" id="tabMasks" data-tab="masks">MASKS<span class="dot"></span></div>
+  </div>
+
+  <div id="paneFab">
+    <button id="tapBtn">PULL CRYSTAL &nbsp;+<span id="tapV">1</span><small>hand-grown silicon, one ingot at a time</small></button>
+    <div id="buyAmt">
+      <button data-amt="1" class="on">BUY x1</button>
+      <button data-amt="10">BUY x10</button>
+      <button data-amt="max">BUY MAX</button>
+    </div>
+    <div id="lanes"></div>
+  </div>
+
+  <div id="paneProj" style="display:none">
+    <div id="projList"></div>
+  </div>
+
+  <div id="paneMasks" style="display:none">
+    <div id="tapeoutBox">
+      <h3>TAPE-OUT</h3>
+      <p>Ship the design. Scrap the line. Keep the masks.</p>
+      <p id="tapeoutInfo"></p>
+      <button id="tapeoutBtn">TAPE-OUT</button>
+    </div>
+    <div id="maskBal"></div>
+    <div id="maskList"></div>
+    <div id="statsBox"></div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<div id="modal"><div id="modalCard">
+  <h2 id="mTitle"></h2><div class="big" id="mBig"></div><p id="mBody"></p>
+  <button id="mBtn">CONTINUE</button>
+</div></div>
+
+<script>
+"use strict";
+/* ============================================================
+   SILICON - an incremental about transistors, then the universe.
+   v1 slice: eras 1-4 (bedroom -> foundry), tape-outs, mask library.
+   ============================================================ */
+
+/* ---------- big numbers: {m: [1,10) or 0, e: int} ---------- */
+const D = (m,e)=>({m,e});
+function norm(x){
+  if(x.m===0) return D(0,0);
+  while(Math.abs(x.m)>=10){x.m/=10; x.e++;}
+  while(Math.abs(x.m)<1){x.m*=10; x.e--;}
+  return x;
+}
+function dN(n){ // number -> Dec
+  if(n===0) return D(0,0);
+  const e=Math.floor(Math.log10(Math.abs(n)));
+  return norm(D(n/Math.pow(10,e),e));
+}
+function dAdd(a,b){
+  if(a.m===0) return b; if(b.m===0) return a;
+  if(a.e-b.e>15) return a; if(b.e-a.e>15) return b;
+  if(a.e>=b.e) return norm(D(a.m+b.m*Math.pow(10,b.e-a.e),a.e));
+  return norm(D(b.m+a.m*Math.pow(10,a.e-b.e),b.e));
+}
+function dSub(a,b){
+  if(b.m===0) return a;
+  if(a.e-b.e>15) return a;
+  if(b.e-a.e>15) return D(0,0); // clamp at zero for game purposes
+  const r=(a.e>=b.e)? D(a.m-b.m*Math.pow(10,b.e-a.e),a.e) : D(a.m*Math.pow(10,a.e-b.e)-b.m,b.e);
+  if(r.m<=0) return D(0,0);
+  return norm(r);
+}
+function dMul(a,b){ if(a.m===0||b.m===0) return D(0,0); return norm(D(a.m*b.m,a.e+b.e)); }
+function dMulN(a,n){ if(n===0||a.m===0) return D(0,0); return norm(D(a.m*n,a.e)); }
+function dDiv(a,b){ if(a.m===0) return D(0,0); return norm(D(a.m/b.m,a.e-b.e)); }
+function dCmp(a,b){
+  if(a.m===0&&b.m===0) return 0;
+  if(a.m===0) return -1; if(b.m===0) return 1;
+  if(a.e!==b.e) return a.e>b.e?1:-1;
+  return a.m>b.m?1:(a.m<b.m?-1:0);
+}
+const dGte=(a,b)=>dCmp(a,b)>=0;
+function dLog10(a){ return a.m===0? -Infinity : a.e+Math.log10(a.m); }
+function dFromLog10(l){
+  const e=Math.floor(l);
+  return norm(D(Math.pow(10,l-e),e));
+}
+function dPowN(a,p){ // a^p, p plain number
+  if(a.m===0) return D(0,0);
+  return dFromLog10(dLog10(a)*p);
+}
+function dToNum(a){ return a.m*Math.pow(10,Math.min(a.e,300)); }
+
+const SUF=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No'];
+function fmt(a){
+  if(a.m===0) return '0';
+  const l=dLog10(a);
+  if(l<3) { const n=dToNum(a); return n<10&&n%1!==0 ? n.toFixed(1) : String(Math.floor(n)); }
+  if(l<33){
+    const t=Math.floor(a.e/3);
+    const m=a.m*Math.pow(10,a.e-t*3);
+    return (m>=100?m.toFixed(0):m.toFixed(m>=10?1:2))+SUF[t];
+  }
+  return a.m.toFixed(2)+'e'+a.e;
+}
+
+/* ---------- static data ---------- */
+const ERAS=[
+  null,
+  {name:'BEDROOM',   scale:'~2 m',   tag:'ERA 1 · BEDROOM'},
+  {name:'CLEANROOM', scale:'~40 m',  tag:'ERA 2 · CLEANROOM'},
+  {name:'FAB',       scale:'~1 km',  tag:'ERA 3 · FAB'},
+  {name:'FOUNDRY',   scale:'~80 km', tag:'ERA 4 · FOUNDRY ISLAND'},
+];
+
+// lanes: cost x13 per tier, prod x7.2 per tier -> always a next thing, each hands off
+const LANES=[
+  {n:'Crucible',          era:1, c:12,      p:0.5,    cyc:3.0,  d:'pulls one rough ingot at a time'},
+  {n:'Wire Saw',          era:1, c:126,     p:3.5,    cyc:3.8,  d:'slices ingots into wafers'},
+  {n:'Polishing Rig',     era:1, c:1.3e3,   p:24.5,   cyc:4.5,  d:'mirror-finish, mostly'},
+  {n:'Contact Printer',   era:1, c:1.4e4,   p:171,    cyc:5.2,  d:'prints transistors by touch'},
+  {n:'Mask Aligner',      era:2, c:1.5e5,   p:1.2e3,  cyc:6.0,  d:'lines the layers up'},
+  {n:'Diffusion Furnace', era:2, c:1.5e6,   p:8.4e3,  cyc:6.8,  d:'bakes dopants into silicon'},
+  {n:'Spin Coater',       era:2, c:1.6e7,   p:5.9e4,  cyc:7.5,  d:'photoresist, evenly, fast'},
+  {n:'Dicing Saw',        era:2, c:1.7e8,   p:4.1e5,  cyc:8.2,  d:'wafers become dies'},
+  {n:'Stepper',           era:3, c:6e8,     p:2.9e6,  cyc:9.0,  d:'projects the pattern, steps, repeats'},
+  {n:'Ion Implanter',     era:3, c:6e9,     p:2.0e7,  cyc:9.8,  d:'fires dopants like a railgun'},
+  {n:'CMP Station',       era:3, c:6e10,    p:1.4e8,  cyc:10.5, d:'grinds each layer perfectly flat'},
+  {n:'Wafer Robot',       era:3, c:6e11,    p:9.9e8,  cyc:11.2, d:'never sneezes near a wafer'},
+  {n:'DUV Scanner',       era:4, c:1e15,    p:6.9e9,  cyc:12.0, d:'deep ultraviolet lithography'},
+  {n:'EUV Machine',       era:4, c:3e16,    p:1.0e11, cyc:12.8, d:'the most complex machine ever shipped'},
+  {n:'Gigafab Wing',      era:4, c:1e17,    p:3.4e11, cyc:13.5, d:'a building that is also a machine'},
+  {n:'AI Design Cluster', era:4, c:1e18,    p:2.4e12, cyc:14.2, d:'your chips, designing your chips'},
+];
+const MILES=[5,15,30,50,75,100,150,200,300,400,500]; // owning these doubles the lane + halves its cycle
+
+// projects: one-off purchases; the narrative and the upgrade shop in one list
+// fx types: tap(xN), lane(i,xN), eraLanes(era,xN), all(xN), yield(v), era(n),
+//           offline(frac), node(xN), notap, tapeout, none
+const PROJECTS=[
+ {id:'steady',  era:1, cost:100,   n:'Steadier hands',              fx:{tap:5},        f:'Coffee, decaf.'},
+ {id:'heater',  era:1, cost:500,   n:'Secondhand crucible heater',  fx:{lane:[0,3]},   f:'Smells faintly of someone else\'s failed startup.'},
+ {id:'diamond', era:1, cost:3e3,   n:'Diamond wire',                fx:{lane:[1,3]},   f:'Cuts silicon. Cuts fingers. Mostly silicon now.'},
+ {id:'tweez',   era:1, cost:7e3,   n:'Vacuum tweezers',             fx:{tap:10},       f:'Your thumbprints were 40% of defects.'},
+ {id:'optics',  era:1, cost:3.5e4, n:'eBay projection optics',      fx:{lane:[3,3]},   f:'"Slight scratch, otherwise mint."'},
+ {id:'era2',    era:1, cost:1.2e5, n:'Borrow the university cleanroom', fx:{era:2},    f:'Sign here, and here, and initial here. Return by 21:00.'},
+
+ {id:'hepa',    era:2, cost:5e5,   n:'HEPA filtration',             fx:{yield:0.55},   f:'The dust was winning.'},
+ {id:'night',   era:2, cost:1.2e6, n:'Night shift',                 fx:{offline:0.5},  f:'The machines don\'t sleep. Now you don\'t have to watch them.'},
+ {id:'bunny',   era:2, cost:4e6,   n:'Bunny suits',                 fx:{yield:0.7},    f:'Everyone looks ridiculous. Yield disagrees.'},
+ {id:'notes',   era:2, cost:1.2e7, n:'Process notebook',            fx:{eraLanes:[1,5]},f:'Page one: "do not lick the wafer".'},
+ {id:'diwater', era:2, cost:4e7,   n:'Deionised water line',        fx:{yield:0.85},   f:'Purer than anything you have ever drunk. Do not drink it.'},
+ {id:'contam',  era:2, cost:8e7,   n:'Contamination protocol',      fx:{all:3},        f:'Shoes off. Beard nets on. The particles were coming from inside the team.'},
+ {id:'laminar', era:2, cost:1.6e8, n:'Laminar flow hoods',          fx:{eraLanes:[2,4]},f:'Air that only moves in straight lines.'},
+ {id:'era3',    era:2, cost:2e8,   n:'Lease the industrial unit',   fx:{era:3},        f:'It used to be a trampoline park. The floor is very flat.'},
+
+ {id:'notap',   era:3, cost:0, auto:true, n:'Manual fabrication deprecated', fx:{notap:1}, f:'HR will be in touch. Thank you for your fingers.'},
+ {id:'node10u', era:3, cost:2e9,   n:'Process node: 10 µm',         fx:{node:6},       f:'Features you could almost see. Almost.'},
+ {id:'scada',   era:3, cost:6e9,   n:'SCADA integration',           fx:{eraLanes:[2,5]},f:'The fab now reports its feelings in real time.'},
+ {id:'w150',    era:3, cost:2e10,  n:'Wafer size: 150 mm',          fx:{all:2},        f:'Bigger circles. More chips per circle. This is the whole industry.'},
+ {id:'node3u',  era:3, cost:6e10,  n:'Process node: 3 µm',          fx:{node:6},       f:'The features are now officially invisible.'},
+ {id:'class100',era:3, cost:1.5e11,n:'Cleanroom class 100',         fx:{yield:0.95},   f:'Fewer than 100 particles per cubic foot. All of them named.'},
+ {id:'logi',    era:3, cost:3e11,  n:'24/7 logistics',              fx:{offline:1.0},  f:'Trucks at 3am. The neighbours have stopped asking.'},
+ {id:'era4',    era:3, cost:2e12,  n:'Break ground on Fab One',     fx:{era:4},        f:'The island had planning permission and cheap electricity.'},
+
+ {id:'tapeout', era:3, cost:0, auto:true, lifetimeReq:1e12, n:'TAPE-OUT protocol', fx:{tapeout:1}, f:'Ship the design. Scrap the line. Keep the masks.'},
+
+ {id:'asml',    era:4, cost:0, auto:true, n:'ASML returns your call', fx:{none:1},     f:'They laughed at the first email. Then they saw the wire transfer.'},
+ {id:'node800', era:4, cost:2e15,  n:'Process node: 800 nm',        fx:{node:6},      f:'Light itself is starting to complain about the feature size.'},
+ {id:'w300',    era:4, cost:8e15,  n:'Wafer size: 300 mm',          fx:{all:2},       f:'The dinner-plate era begins.'},
+ {id:'node130', era:4, cost:5e16,  n:'Process node: 130 nm',        fx:{node:6},      f:'Copper interconnects. The chips are now mostly wiring.'},
+ {id:'qyield',  era:4, cost:2e17,  n:'Quantum yield',               fx:{yield:1.04},  f:'104% of dies are good. Do not investigate.'},
+ {id:'node7n',  era:4, cost:1e18,  n:'Process node: 7 nm',          fx:{node:6},      f:'Features 30 atoms wide. The atoms have opinions.'},
+ {id:'recurse', era:4, cost:1e19,  n:'Chips designing chips',       fx:{lane:[15,8]}, f:'You asked the cluster to improve the next node. It asked for compute. It always asks for compute.'},
+ {id:'era5',    era:4, cost:1e22,  n:'Recursive self-improvement',  fx:{none:1},      f:'ERA 5: SINGULARITY. (Coming in the next update. The cluster is disappointed too.)'},
+];
+const FX_DESC={
+  tap:v=>'crystal pulls x'+v, lane:v=>LANES[v[0]].n+' x'+v[1],
+  eraLanes:v=>'all era-'+v[0]+' machines x'+v[1], all:v=>'ALL production x'+v,
+  yield:v=>'yield -> '+Math.round(v*100)+'%', era:v=>'unlock '+ERAS[v].tag,
+  offline:v=>'offline production: '+Math.round(v*100)+'% (8h cap)',
+  node:v=>'ALL production x'+v, notap:()=>'removes the PULL CRYSTAL button',
+  tapeout:()=>'unlocks TAPE-OUT and the mask library', none:()=>'',
+};
+
+// mask library: every node is a real CPU trick
+const MASKS=[
+ {id:'spec', n:'Speculative Execution', ranks:[2,6,20],
+  fx:['new runs start with 1% of your previous run\'s output, pre-executed','...5% of the previous run, pre-executed','...20% of the previous run, pre-executed'],
+  f:'The fab guesses what you were going to do and does it before you arrive.'},
+ {id:'recipes', n:'Process Recipes', ranks:[3,12],
+  fx:['start every run with the cleanroom already unlocked (era 2)','start every run with the fab already leased (era 3)'],
+  f:'You wrote it down. You never have to learn it again.'},
+ {id:'stdcell', n:'Standard Cell Library', ranks:[2,5,15],
+  fx:['all machines cost /2','all machines cost /4','all machines cost /8'],
+  f:'Stop designing every transistor by hand like some kind of artisan.'},
+ {id:'turbo', n:'Turbo Boost', ranks:[4,16],
+  fx:['first 10 minutes of every run: production x50','first 10 minutes of every run: production x500'],
+  f:'Thermals are a problem for future you.'},
+ {id:'risc', n:'RISC Instruction Set', ranks:[5,25],
+  fx:['machine cost growth 1.15 -> 1.14','machine cost growth 1.14 -> 1.13'],
+  f:'Fewer instructions. Somehow, more everything.'},
+ {id:'shrink', n:'Die Shrink', ranks:[8,24,72],
+  fx:['ALL production ^1.01','ALL production ^1.02','ALL production ^1.03'],
+  f:'The same chip, smaller. Which makes it a different, better chip. Physics apologises.'},
+ {id:'lottery', n:'Silicon Lottery', ranks:[6],
+  fx:['every tape-out rolls a random x1-x10 multiplier for the whole next run'],
+  f:'Some chips just come out better. Nobody knows why. Bet on it.'},
+ {id:'vault', n:'Photomask Vault', ranks:[4,10,24],
+  fx:['+50% masks from every tape-out','+125% masks from every tape-out','+240% masks from every tape-out'],
+  f:'Climate-controlled. Earthquake-proof. The masks outlive the fab.'},
+ {id:'l1', n:'L1 Cache', ranks:[3],
+  fx:['keep 2% of your transistors through every tape-out'],
+  f:'Technically they were still in the pipeline.'},
+];
+
+/* ---------- state ---------- */
+const SAVE_KEY='silicon-save-v1';
+let S=null;
+function freshRun(){
+  return {
+    t:D(0,0), lifetime:D(0,0),          // bank, this-run lifetime
+    counts:LANES.map(()=>0),
+    done:{},                             // project id -> true
+    era:1, yield:0.4, nodeMult:D(1,0), allMult:D(1,0),
+    laneMult:LANES.map(()=>D(1,0)), tapMult:1, tapGone:false,
+    offline:0, tapeoutUnlocked:false,
+    runStart:Date.now(), lotteryMult:1,
+  };
+}
+function freshState(){
+  return {
+    run:freshRun(),
+    masks:0, masksEver:0, maskRanks:{}, tapeouts:0,
+    prevRunLifetime:D(0,0),
+    allLifetime:D(0,0),
+    lastSeen:Date.now(), lastRate:D(0,0),
+    buyAmt:1, tab:'fab',
+  };
+}
+
+/* ---------- save / load ---------- */
+function serialize(){
+  return JSON.stringify(S,(k,v)=>{
+    if(v&&typeof v==='object'&&'m'in v&&'e'in v&&Object.keys(v).length===2) return {__d:[v.m,v.e]};
+    return v;
+  });
+}
+let wiping=false;
+function save(){
+  if(wiping) return;
+  S.lastSeen=Date.now(); S.lastRate=totalRate();
+  try{ localStorage.setItem(SAVE_KEY,serialize()); }catch(e){}
+}
+function load(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return null;
+    return JSON.parse(raw,(k,v)=> (v&&v.__d)? D(v.__d[0],v.__d[1]) : v);
+  }catch(e){ return null; }
+}
+
+/* ---------- derived numbers ---------- */
+function maskRank(id){ return S.maskRanks[id]||0; }
+function costGrowth(){ return 1.15-0.01*maskRank('risc'); }
+function costDiv(){ return Math.pow(2,maskRank('stdcell')); }
+function laneCost(i,n){ // cost of buying n units of lane i from current count
+  const g=costGrowth();
+  const base=dMulN(dN(LANES[i].c),Math.pow(g,S.run.counts[i])/costDiv());
+  if(n===1) return base;
+  // geometric sum: base*(g^n-1)/(g-1)
+  return dMulN(dFromLog10(dLog10(base)+Math.log10((Math.pow(g,n)-1))),1/(g-1));
+}
+function laneMaxBuy(i){
+  const g=costGrowth();
+  const base=dMulN(dN(LANES[i].c),Math.pow(g,S.run.counts[i])/costDiv());
+  if(dCmp(S.run.t,base)<0) return 0;
+  // n = floor(log_g(bank*(g-1)/base + 1))
+  const ratio=dToNum(dDiv(S.run.t,base));
+  return Math.max(0,Math.floor(Math.log(ratio*(g-1)+1)/Math.log(g)));
+}
+function mileCount(c){ let k=0; for(const m of MILES) if(c>=m) k++; return k; }
+function globalMult(){
+  let m=dMulN(dMul(S.run.nodeMult,S.run.allMult),S.run.yield*S.run.lotteryMult);
+  if(frenzyUntil>now()) m=dMulN(m,7);
+  const tb=maskRank('turbo');
+  if(tb>0 && now()-S.run.runStart<600e3) m=dMulN(m,tb===1?50:500);
+  return m;
+}
+function laneRate(i){ // Dec /s
+  const c=S.run.counts[i];
+  if(c===0) return D(0,0);
+  let r=dMulN(dN(LANES[i].p),c*Math.pow(2,mileCount(c)));
+  r=dMul(r,S.run.laneMult[i]);
+  return r;
+}
+function totalRate(){
+  let r=D(0,0);
+  for(let i=0;i<LANES.length;i++) if(LANES[i].era<=S.run.era) r=dAdd(r,laneRate(i));
+  r=dMul(r,globalMult());
+  const sh=maskRank('shrink');
+  if(sh>0) r=dPowN(r, 1+0.01*sh);
+  return r;
+}
+function tapPower(){
+  return dMulN(dN(S.run.tapMult), S.run.lotteryMult*(frenzyUntil>now()?7:1));
+}
+function pendingMasks(){
+  // doubles every 100x lifetime past 1e12; keeps mask counts human-sized
+  const l=dLog10(S.run.lifetime);
+  if(l<12) return 0;
+  return Math.min(1e15,Math.floor(Math.pow(2,(l-12)/2)*Math.pow(1.5,maskRank('vault'))));
+}
+
+/* ---------- game actions ---------- */
+function gain(d){ S.run.t=dAdd(S.run.t,d); S.run.lifetime=dAdd(S.run.lifetime,d); S.allLifetime=dAdd(S.allLifetime,d); }
+
+function buyLane(i){
+  const amt = S.buyAmt==='max' ? Math.max(1,laneMaxBuy(i)) : S.buyAmt;
+  const cost=laneCost(i,amt);
+  if(!dGte(S.run.t,cost)) return;
+  const before=mileCount(S.run.counts[i]);
+  S.run.t=dSub(S.run.t,cost);
+  S.run.counts[i]+=amt;
+  if(mileCount(S.run.counts[i])>before)
+    toast(LANES[i].n+' hits '+S.run.counts[i]+' - line speed doubled','the crews barely look up any more');
+  dirty.lanes=true;
+}
+
+function applyFx(p){
+  const fx=p.fx;
+  if(fx.tap) S.run.tapMult*=fx.tap;
+  if(fx.lane) S.run.laneMult[fx.lane[0]]=dMulN(S.run.laneMult[fx.lane[0]],fx.lane[1]);
+  if(fx.eraLanes) LANES.forEach((l,i)=>{ if(l.era===fx.eraLanes[0]) S.run.laneMult[i]=dMulN(S.run.laneMult[i],fx.eraLanes[1]); });
+  if(fx.all) S.run.allMult=dMulN(S.run.allMult,fx.all);
+  if(fx.node) S.run.nodeMult=dMulN(S.run.nodeMult,fx.node);
+  if(fx.yield) S.run.yield=fx.yield;
+  if(fx.offline) S.run.offline=fx.offline;
+  if(fx.notap) S.run.tapGone=true;
+  if(fx.tapeout){ S.run.tapeoutUnlocked=true; document.getElementById('tabMasks').style.display='block'; }
+  if(fx.era){ setEra(fx.era); }
+}
+function setEra(n){
+  if(n<=S.run.era) return;
+  S.run.era=n;
+  mapZoomAt=now();
+  toast('ERA '+n+': '+ERAS[n].name,ERAS[n].scale+' of problem, and growing');
+  dirty.lanes=true; dirty.proj=true;
+}
+function buyProject(id){
+  const p=PROJECTS.find(p=>p.id===id);
+  if(!p||S.run.done[p.id]) return;
+  const cost=dN(p.cost);
+  if(!dGte(S.run.t,cost)) return;
+  S.run.t=dSub(S.run.t,cost);
+  S.run.done[p.id]=true;
+  applyFx(p);
+  toast(p.n,p.f);
+  dirty.proj=true; dirty.lanes=true;
+}
+function checkAutoProjects(){
+  for(const p of PROJECTS){
+    if(!p.auto||S.run.done[p.id]) continue;
+    if(p.era>S.run.era) continue;
+    if(p.lifetimeReq && dLog10(S.run.lifetime)<Math.log10(p.lifetimeReq)) continue;
+    S.run.done[p.id]=true; applyFx(p); toast(p.n,p.f); dirty.proj=true;
+  }
+}
+
+function doTapeout(){
+  const m=pendingMasks();
+  if(m<1) return;
+  S.masks+=m; S.masksEver+=m; S.tapeouts++;
+  S.prevRunLifetime=S.run.lifetime;
+  const keep = maskRank('l1')>0 ? dMulN(S.run.t,0.02) : D(0,0);
+  S.run=freshRun();
+  // silicon lottery
+  if(maskRank('lottery')>0){
+    S.run.lotteryMult=1+Math.floor(Math.random()*10);
+  }
+  // speculative execution: pre-run a slice of the previous run
+  const spec=[0,0.01,0.05,0.20][maskRank('spec')];
+  let bank=keep;
+  if(spec>0) bank=dAdd(bank,dMulN(S.prevRunLifetime,spec));
+  if(bank.m>0){ S.run.t=bank; S.run.lifetime=bank; }
+  // process recipes: start eras unlocked
+  if(maskRank('recipes')>=1){ S.run.era=2; S.run.done['era2']=true; }
+  if(maskRank('recipes')>=2){ S.run.era=3; S.run.done['era3']=true; }
+  S.run.tapeoutUnlocked=true; S.run.done['tapeout']=true;
+  checkAutoProjects();
+  mapZoomAt=now();
+  let msg='+'+m+' mask'+(m>1?'s':'')+' in the vault.';
+  if(S.run.lotteryMult>1) msg+=' Silicon lottery: x'+S.run.lotteryMult+' this run.';
+  showModal('TAPE-OUT #'+S.tapeouts, fmt(S.prevRunLifetime)+' transistors', msg+' The line is scrap. The design is forever.');
+  buildLanes(); buildProjects(); buildMasks(); lastEraBuilt=S.run.era;
+  dirty.all();
+  save();
+}
+function buyMask(id){
+  const m=MASKS.find(m=>m.id===id);
+  const r=maskRank(id);
+  if(r>=m.ranks.length) return;
+  const cost=m.ranks[r];
+  if(S.masks<cost) return;
+  S.masks-=cost; S.maskRanks[id]=r+1;
+  toast(m.n+' '+'I'.repeat(r+1),m.fx[r]);
+  buildMasks();
+}
+
+/* ---------- frenzy clickable (on the map) ---------- */
+let frenzyUntil=0, glitch=null, nextGlitch=0;
+function now(){ return Date.now(); }
+function maybeSpawnGlitch(){
+  if(S.run.era<2) return;
+  if(glitch||now()<nextGlitch) return;
+  glitch={x:0.1+Math.random()*0.8, y:0.2+Math.random()*0.55, born:now()};
+}
+function glitchTick(){
+  if(glitch&&now()-glitch.born>15e3){ glitch=null; nextGlitch=now()+(180+Math.random()*240)*1e3; }
+  maybeSpawnGlitch();
+}
+function tapGlitch(){
+  if(!glitch) return false;
+  glitch=null; nextGlitch=now()+(180+Math.random()*240)*1e3;
+  if(Math.random()<0.5){
+    frenzyUntil=now()+60e3;
+    toast('PARTICLE EXCURSION CONTAINED','production x7 for 60 seconds. Nobody asks what the particle was.');
+  }else{
+    const lump=dMulN(totalRate(),600);
+    gain(lump);
+    toast('A pallet was mislabelled in your favour','+'+fmt(lump)+' transistors');
+  }
+  return true;
+}
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+const dirty={lanes:true,proj:true,masks:true,all(){this.lanes=this.proj=this.masks=true;}};
+let laneEls=[],projEls={},maskEls={};
+
+function toast(t,sub){
+  const d=document.createElement('div');
+  d.className='toast'; d.textContent=t;
+  if(sub){ const i=document.createElement('i'); i.textContent=sub; d.appendChild(i); }
+  $('toasts').appendChild(d);
+  setTimeout(()=>d.remove(),5200);
+}
+function showModal(title,big,body){
+  $('mTitle').textContent=title; $('mBig').textContent=big; $('mBody').textContent=body;
+  $('modal').style.display='flex';
+}
+$('mBtn').onclick=()=>$('modal').style.display='none';
+
+function setTab(t){
+  S.tab=t;
+  for(const [id,pane] of [['tabFab','paneFab'],['tabProj','paneProj'],['tabMasks','paneMasks']]){
+    const on=$(id).dataset.tab===t;
+    $(id).classList.toggle('on',on);
+    $(pane).style.display=on?'block':'none';
+  }
+}
+document.querySelectorAll('.tab').forEach(el=>el.onclick=()=>setTab(el.dataset.tab));
+document.querySelectorAll('#buyAmt button').forEach(el=>el.onclick=()=>{
+  S.buyAmt=el.dataset.amt==='max'?'max':+el.dataset.amt;
+  document.querySelectorAll('#buyAmt button').forEach(b=>b.classList.toggle('on',b===el));
+  dirty.lanes=true;
+});
+
+function buildLanes(){
+  const box=$('lanes'); box.innerHTML=''; laneEls=[];
+  LANES.forEach((l,i)=>{
+    if(l.era>S.run.era){ laneEls.push(null); return; }
+    const d=document.createElement('div'); d.className='lane';
+    d.innerHTML=`<div class="laneTop"><div><div class="laneName">${l.n}<span class="cnt"></span></div>
+      <div class="laneRate"></div><div class="milePips"></div></div>
+      <button class="laneBuy"><b></b><span></span></button></div><div class="cycle"></div>`;
+    d.querySelector('.laneBuy').onclick=()=>buyLane(i);
+    box.appendChild(d);
+    laneEls.push({root:d,cnt:d.querySelector('.cnt'),rate:d.querySelector('.laneRate'),
+      pips:d.querySelector('.milePips'),btn:d.querySelector('.laneBuy'),
+      btnB:d.querySelector('.laneBuy b'),btnS:d.querySelector('.laneBuy span'),
+      cyc:d.querySelector('.cycle')});
+  });
+}
+function updateLanes(){
+  LANES.forEach((l,i)=>{
+    const el=laneEls[i]; if(!el) return;
+    const c=S.run.counts[i];
+    el.cnt.textContent=c>0?('x'+c):'';
+    el.rate.textContent=c>0? fmt(dMul(laneRate(i),globalMult()))+'/s' : l.d;
+    const next=MILES.find(m=>m>c);
+    el.pips.innerHTML=c>0? ('speed <b>x'+Math.pow(2,mileCount(c))+'</b>'+(next?' · next at '+next:'')) : '';
+    const amt=S.buyAmt==='max'?Math.max(1,laneMaxBuy(i)):S.buyAmt;
+    const cost=laneCost(i,amt);
+    el.btnB.textContent='BUY '+(S.buyAmt==='max'?('x'+amt):('x'+amt));
+    el.btnS.textContent=fmt(cost);
+    el.btn.disabled=!dGte(S.run.t,cost);
+  });
+}
+function updateCycles(t){
+  LANES.forEach((l,i)=>{
+    const el=laneEls[i]; if(!el) return;
+    const c=S.run.counts[i];
+    if(c===0){ el.cyc.style.width='0%'; el.cyc.classList.remove('blur'); return; }
+    const cyc=l.cyc/Math.pow(2,mileCount(c));
+    if(cyc<0.3){ el.cyc.classList.add('blur'); return; }
+    el.cyc.classList.remove('blur');
+    el.cyc.style.width=(((t/1000)%cyc)/cyc*100)+'%';
+  });
+}
+
+function projVisible(p){
+  if(p.auto) return S.run.done[p.id]; // autos appear only once fired (as done)
+  if(p.era>S.run.era) return false;
+  if(p.fx.tap&&S.run.tapGone&&!S.run.done[p.id]) return false; // no tap upgrades for the fingerless
+  return S.run.done[p.id] || dLog10(S.run.lifetime)>=Math.log10(p.cost)-0.9; // ~12% of cost
+}
+function buildProjects(){
+  const box=$('projList'); box.innerHTML=''; projEls={};
+  let era=0;
+  for(const p of PROJECTS){
+    if(!projVisible(p)) continue;
+    if(p.era!==era){ era=p.era;
+      const h=document.createElement('div'); h.className='sectionHead'; h.textContent=ERAS[era].tag; box.appendChild(h);
+    }
+    const d=document.createElement('div');
+    d.className='proj'+(S.run.done[p.id]?' projDone':'');
+    d.innerHTML=`<div class="projTop"><span class="projName">${p.n}</span>
+      <span class="projCost">${S.run.done[p.id]?'DONE':fmt(dN(p.cost))}</span></div>
+      <div class="projFx">${FX_DESC[Object.keys(p.fx)[0]](Object.values(p.fx)[0])}</div>
+      <div class="projFlavor">${p.f}</div>`;
+    if(!S.run.done[p.id]&&!p.auto){
+      const b=document.createElement('button'); b.className='projBtn'; b.textContent='FUND';
+      b.onclick=()=>buyProject(p.id); d.appendChild(b);
+      projEls[p.id]=b;
+    }
+    box.appendChild(d);
+  }
+}
+function updateProjects(){
+  let rebuild=false;
+  for(const p of PROJECTS){
+    const vis=projVisible(p), had=p.id in projEls||S.run.done[p.id];
+    if(vis&&!had&&!p.auto){ rebuild=true; break; }
+  }
+  if(rebuild){ buildProjects(); return; }
+  for(const [id,btn] of Object.entries(projEls)){
+    const p=PROJECTS.find(p=>p.id===id);
+    btn.disabled=!dGte(S.run.t,dN(p.cost));
+  }
+  // alert dot: any affordable undone project
+  const any=PROJECTS.some(p=>!p.auto&&!S.run.done[p.id]&&p.era<=S.run.era&&dGte(S.run.t,dN(p.cost)));
+  $('tabProj').classList.toggle('alert',any&&S.tab!=='proj');
+}
+
+function buildMasks(){
+  const box=$('maskList'); box.innerHTML=''; maskEls={};
+  for(const m of MASKS){
+    const r=maskRank(m.id), maxed=r>=m.ranks.length;
+    const d=document.createElement('div'); d.className='mask';
+    d.innerHTML=`<div class="maskTop"><span class="maskName">${m.n}</span>
+      <span class="maskRank">${'●'.repeat(r)}${'○'.repeat(m.ranks.length-r)}</span></div>
+      <div class="maskFx">${maxed?m.fx[r-1]:m.fx[r]}</div>
+      <div class="maskFlavor">${m.f}</div>`;
+    if(!maxed){
+      const b=document.createElement('button'); b.className='maskBtn';
+      b.textContent='ETCH · '+m.ranks[r]+' MASK'+(m.ranks[r]>1?'S':'');
+      b.onclick=()=>buyMask(m.id); d.appendChild(b);
+      maskEls[m.id]=b;
+    }
+    box.appendChild(d);
+  }
+}
+function updateMasks(){
+  $('maskBal').textContent='MASKS IN VAULT: '+S.masks;
+  for(const [id,btn] of Object.entries(maskEls)){
+    const m=MASKS.find(m=>m.id===id);
+    btn.disabled=S.masks<m.ranks[maskRank(id)];
+  }
+  const pm=pendingMasks();
+  $('tapeoutBtn').disabled=pm<1;
+  $('tapeoutBtn').textContent=pm<1?'TAPE-OUT (need 1e12 lifetime)':'TAPE-OUT · +'+pm+' MASK'+(pm>1?'S':'');
+  $('tapeoutInfo').textContent='This run: '+fmt(S.run.lifetime)+' lifetime transistors. Masks scale with how far you push before you scrap the line.';
+  $('statsBox').innerHTML=
+    'tape-outs: '+S.tapeouts+' · masks ever: '+S.masksEver+
+    '<br>all-time transistors: '+fmt(S.allLifetime)+
+    (S.run.lotteryMult>1?'<br>silicon lottery this run: x'+S.run.lotteryMult:'')+
+    '<br><br><span id="wipe">wipe save</span>';
+  $('wipe').onclick=()=>{ if(confirm('Wipe everything? All masks, all progress.')){ wiping=true; localStorage.removeItem(SAVE_KEY); location.reload(); } };
+  $('tabMasks').classList.toggle('alert',pendingMasks()>0&&S.tab!=='masks');
+}
+
+function updateHeader(){
+  $('bigCount').innerHTML=fmt(S.run.t)+' <span class="unit">transistors</span>';
+  $('rateV').textContent=fmt(totalRate());
+  $('eraTag').textContent=ERAS[S.run.era].tag;
+  const y=$('yieldChip');
+  if(S.run.era>=2){ y.style.display='inline'; y.textContent='· yield '+Math.round(S.run.yield*100)+'%'; }
+  const f=$('frenzyChip');
+  if(frenzyUntil>now()){ f.style.display='inline'; f.textContent='· FRENZY x7 ('+Math.ceil((frenzyUntil-now())/1000)+'s)'; }
+  else f.style.display='none';
+  $('tapBtn').style.display=S.run.tapGone?'none':'block';
+  $('tapV').textContent=fmt(tapPower());
+}
+
+/* ---------- tap ---------- */
+$('tapBtn').addEventListener('click',e=>{
+  const p=tapPower();
+  gain(p);
+  const fl=document.createElement('div');
+  fl.className='float'; fl.textContent='+'+fmt(p);
+  fl.style.left=(20+Math.random()*60)+'%'; fl.style.top='6px';
+  $('tapBtn').style.position='relative'; $('tapBtn').appendChild(fl);
+  setTimeout(()=>fl.remove(),1100);
+});
+
+/* ---------- the map: a scale gauge, not the game ---------- */
+const mapC=$('map'), mtx=mapC.getContext('2d');
+let mapZoomAt=0;
+function sizeMap(){
+  const r=mapC.parentElement.getBoundingClientRect();
+  mapC.width=r.width*devicePixelRatio; mapC.height=r.height*devicePixelRatio;
+  mtx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+}
+addEventListener('resize',sizeMap);
+
+mapC.addEventListener('pointerdown',e=>{
+  if(!glitch) return;
+  const r=mapC.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width, y=(e.clientY-r.top)/r.height;
+  if(Math.hypot(x-glitch.x,(y-glitch.y)*(r.height/r.width))<0.09) tapGlitch();
+});
+
+function drawMap(t){
+  const w=mapC.width/devicePixelRatio, h=mapC.height/devicePixelRatio;
+  mtx.clearRect(0,0,w,h);
+  // zoom-out flash on era change
+  let zoom=1;
+  const zt=(now()-mapZoomAt)/1200;
+  if(zt<1){ zoom=1+ (1-zt)*(1-zt)*2; }
+  mtx.save();
+  mtx.translate(w/2,h/2); mtx.scale(zoom,zoom); mtx.translate(-w/2,-h/2);
+  const era=S.run.era, T=t/1000;
+  const busy=Math.min(1,Math.log10(1+dToNum(dMulN(totalRate(),1)))/12); // 0..1 how alive the scene is
+  if(era===1) drawBedroom(w,h,T,busy);
+  else if(era===2) drawCleanroom(w,h,T,busy);
+  else if(era===3) drawFab(w,h,T,busy);
+  else drawIsland(w,h,T,busy);
+  mtx.restore();
+  // glitch clickable
+  if(glitch){
+    const gx=glitch.x*w, gy=glitch.y*h, ph=(now()-glitch.born)/1000;
+    mtx.save();
+    mtx.translate(gx,gy);
+    mtx.rotate(ph*0.8);
+    mtx.strokeStyle='#ffb000'; mtx.lineWidth=2;
+    mtx.globalAlpha=0.65+0.35*Math.sin(ph*8);
+    mtx.beginPath();
+    for(let k=0;k<6;k++){ const a=k*Math.PI/3; mtx[k?'lineTo':'moveTo'](Math.cos(a)*11,Math.sin(a)*11); }
+    mtx.closePath(); mtx.stroke();
+    mtx.fillStyle='rgba(255,176,0,0.2)'; mtx.fill();
+    mtx.restore();
+  }
+  $('mapEra').textContent=ERAS[era].name;
+  $('mapScaleTxt').textContent=ERAS[era].scale;
+}
+function glow(x,y,r,c,a){
+  const g=mtx.createRadialGradient(x,y,0,x,y,r);
+  g.addColorStop(0,c); g.addColorStop(1,'rgba(0,0,0,0)');
+  mtx.globalAlpha=a; mtx.fillStyle=g; mtx.fillRect(x-r,y-r,r*2,r*2); mtx.globalAlpha=1;
+}
+function drawBedroom(w,h,T,busy){
+  // desk, lamp, crucible glow, wafer stack grows with progress
+  mtx.fillStyle='#0a0d12'; mtx.fillRect(0,0,w,h);
+  mtx.fillStyle='#141a22'; mtx.fillRect(0,h*0.68,w,h*0.32);           // desk
+  mtx.strokeStyle='#232b36'; mtx.strokeRect(w*0.06,h*0.15,w*0.2,h*0.35); // window
+  mtx.fillStyle='#0e1420'; mtx.fillRect(w*0.06,h*0.15,w*0.2,h*0.35);
+  // lamp
+  mtx.strokeStyle='#3a4654'; mtx.beginPath();
+  mtx.moveTo(w*0.78,h*0.68); mtx.lineTo(w*0.72,h*0.40); mtx.lineTo(w*0.64,h*0.44); mtx.stroke();
+  glow(w*0.60,h*0.52,55,'rgba(255,220,150,0.5)',0.5);
+  // crucible
+  const cx=w*0.5, cy=h*0.62;
+  mtx.fillStyle='#2a2d33'; mtx.fillRect(cx-14,cy-4,28,12);
+  const heat=0.25+busy*0.75;
+  glow(cx,cy,26+Math.sin(T*3)*3,'rgba(255,120,30,'+(0.5*heat)+')',heat);
+  // rising ingot
+  const ing=((T*0.25)%1);
+  mtx.fillStyle='#8aa0b8'; mtx.fillRect(cx-3,cy-6-ing*22,6,10+ing*14);
+  // wafer stack: log of lifetime
+  const stack=Math.min(9,Math.floor(Math.max(0,dLog10(S.run.lifetime))));
+  for(let k=0;k<stack;k++){
+    mtx.fillStyle=k%2?'#5e7183':'#6d8296';
+    mtx.beginPath(); mtx.ellipse(w*0.28,h*0.66-k*4,16,4,0,0,7); mtx.fill();
+  }
+}
+function drawCleanroom(w,h,T,busy){
+  mtx.fillStyle='#0b0f14'; mtx.fillRect(0,0,w,h);
+  // corridor perspective
+  mtx.strokeStyle='#1d2833';
+  for(let k=0;k<5;k++){
+    const y=h*0.2+k*h*0.14;
+    mtx.beginPath(); mtx.moveTo(0,y); mtx.lineTo(w,y); mtx.stroke();
+  }
+  // hepa vents glow
+  for(let k=0;k<6;k++){
+    const x=w*(0.1+k*0.15);
+    mtx.fillStyle='rgba(120,200,255,'+(0.06+0.04*Math.sin(T*2+k))+')';
+    mtx.fillRect(x,0,w*0.09,h*0.12);
+  }
+  // machine rows
+  for(let k=0;k<4;k++){
+    const x=w*(0.12+k*0.22);
+    mtx.fillStyle='#1a2430'; mtx.fillRect(x,h*0.5,w*0.14,h*0.3);
+    mtx.fillStyle=Math.sin(T*3+k*2)>0?'#3fb950':'#20402a';
+    mtx.fillRect(x+4,h*0.54,4,4);
+  }
+  // bunny-suited figure shuffling
+  const fx=((T*0.05*(0.5+busy))%1.2-0.1)*w;
+  mtx.fillStyle='#d8dee6';
+  mtx.fillRect(fx,h*0.62,7,16);
+  mtx.beginPath(); mtx.arc(fx+3.5,h*0.60,4,0,7); mtx.fill();
+}
+function drawFab(w,h,T,busy){
+  mtx.fillStyle='#0a0e12'; mtx.fillRect(0,0,w,h);
+  // aerial industrial unit
+  mtx.fillStyle='#151d26'; mtx.fillRect(w*0.2,h*0.18,w*0.6,h*0.5);
+  mtx.strokeStyle='#232b36'; mtx.strokeRect(w*0.2,h*0.18,w*0.6,h*0.5);
+  // roof vents
+  for(let k=0;k<8;k++){
+    mtx.fillStyle='#0f141b';
+    mtx.fillRect(w*(0.25+k*0.07),h*0.24,w*0.04,h*0.08);
+  }
+  // blinking status lights
+  for(let k=0;k<5;k++){
+    mtx.fillStyle=Math.sin(T*2.5+k*1.7)>0.2?'#ffb000':'#402c00';
+    mtx.fillRect(w*(0.24+k*0.12),h*0.6,3,3);
+  }
+  // road + trucks
+  mtx.fillStyle='#10151c'; mtx.fillRect(0,h*0.78,w,h*0.1);
+  mtx.strokeStyle='#2a3442'; mtx.setLineDash([8,10]);
+  mtx.beginPath(); mtx.moveTo(0,h*0.83); mtx.lineTo(w,h*0.83); mtx.stroke(); mtx.setLineDash([]);
+  const trucks=1+Math.round(busy*3);
+  for(let k=0;k<trucks;k++){
+    const tx=((T*(0.08+busy*0.12)+k/trucks)%1.15-0.075)*w;
+    mtx.fillStyle='#4dd0e1'; mtx.fillRect(tx,h*0.795,16,7);
+    mtx.fillStyle='#2a6a74'; mtx.fillRect(tx+16,h*0.797,6,5);
+  }
+}
+function drawIsland(w,h,T,busy){
+  mtx.fillStyle='#060a10'; mtx.fillRect(0,0,w,h);
+  // sea shimmer
+  for(let k=0;k<12;k++){
+    mtx.fillStyle='rgba(70,130,180,'+(0.03+0.02*Math.sin(T+k*2))+')';
+    mtx.fillRect(0,h*k/12,w,2);
+  }
+  // island
+  mtx.fillStyle='#131a22';
+  mtx.beginPath();
+  mtx.ellipse(w*0.5,h*0.5,w*0.3,h*0.3,0,0,7); mtx.fill();
+  // gigafab grid lights
+  for(let gx=0;gx<7;gx++)for(let gy=0;gy<4;gy++){
+    const x=w*0.5+(gx-3)*w*0.055, y=h*0.5+(gy-1.5)*h*0.11;
+    const on=Math.sin(T*1.5+gx*2.4+gy*3.7)>-0.2+ (1-busy)*0.8;
+    mtx.fillStyle=on?'#ffb000':'#241d08';
+    mtx.fillRect(x-3,y-2,6,4);
+  }
+  glow(w*0.5,h*0.5,w*0.22,'rgba(255,176,0,0.10)',0.8);
+  // ships leaving
+  const ships=1+Math.round(busy*2);
+  for(let k=0;k<ships;k++){
+    const p=(T*0.045+k/ships)%1;
+    const sx=w*0.5+p*w*0.5, sy=h*0.5+p*h*0.4*(k%2?1:-0.8);
+    mtx.fillStyle='#4dd0e1'; mtx.fillRect(sx,sy,8,3);
+    mtx.strokeStyle='rgba(77,208,225,0.25)';
+    mtx.beginPath(); mtx.moveTo(w*0.5,h*0.5); mtx.lineTo(sx,sy); mtx.stroke();
+  }
+}
+
+/* ---------- boot / offline ---------- */
+function offlineCatchup(){
+  const dt=(Date.now()-S.lastSeen)/1000;
+  if(dt<90||S.run.offline<=0||!S.lastRate||S.lastRate.m===0) return;
+  const capped=Math.min(dt,8*3600);
+  const gainD=dMulN(S.lastRate,capped*S.run.offline);
+  gain(gainD);
+  const hrs=capped/3600;
+  showModal('WHILE YOU WERE AWAY',
+    '+'+fmt(gainD)+' transistors',
+    (hrs>=1? hrs.toFixed(1)+' hours':Math.round(capped/60)+' minutes')+
+    ' of night shift at '+Math.round(S.run.offline*100)+'% rate. The machines want you to know they did not need you.');
+}
+
+const loaded=load();
+S=loaded||freshState();
+if(!loaded) toast('A bedroom. A furnace. A theory.','Pull your first crystal.');
+if(S.run.tapeoutUnlocked) $('tabMasks').style.display='block';
+offlineCatchup();
+sizeMap();
+buildLanes(); buildProjects(); buildMasks();
+setTab(S.tab||'fab');
+document.querySelectorAll('#buyAmt button').forEach(b=>{
+  b.classList.toggle('on',(b.dataset.amt==='max'?'max':+b.dataset.amt)===S.buyAmt);
+});
+
+/* ---------- main loop ---------- */
+let lastTick=Date.now(), lastEraBuilt=S.run.era, lastUI=0;
+setInterval(()=>{
+  const t=Date.now();
+  const dt=Math.min(2,(t-lastTick)/1000);
+  lastTick=t;
+  gain(dMulN(totalRate(),dt));
+  checkAutoProjects();
+  glitchTick();
+  if(S.run.era!==lastEraBuilt){ buildLanes(); buildProjects(); lastEraBuilt=S.run.era; }
+},100);
+setInterval(save,10000);
+addEventListener('visibilitychange',()=>{ if(document.hidden) save(); });
+function frame(t){
+  drawMap(t);
+  updateCycles(t);
+  if(t-lastUI>200){
+    lastUI=t;
+    updateHeader();
+    if(dirty.lanes&&laneEls.length){ /* rebuild covered by era check */ dirty.lanes=false; }
+    updateLanes();
+    updateProjects();
+    if(S.run.tapeoutUnlocked) updateMasks();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
