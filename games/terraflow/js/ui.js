@@ -1,4 +1,6 @@
-// DOM UI: bank strip, goal chip, hints, bottom sheet, popup menus, end card.
+// DOM UI: bank strip, goal chip, hints, the upgrade catalogue sheet, popup
+// menus, end card. V2: one gesture on a catalogue row - tap = buy if you can
+// afford it, otherwise pin it as your goal (the Vat then shows what it needs).
 
 const UI = {
   els: {}, shownHints: new Set(), endShown: false, resetArmed: false,
@@ -10,6 +12,7 @@ function uiInit() {
     game: $('game'), bank: $('strip-bank'), pipes: $('strip-pipes'),
     goal: $('goal'), goalLabel: $('goal-label'), goalBar: $('goal-bar-fill'),
     hint: $('hint'), sheet: $('sheet'), handle: $('sheet-handle'),
+    sheetLabel: $('sheet-label'),
     upgrades: $('upgrades'), popup: $('popup'), endcard: $('endcard'),
     endStats: $('end-stats'), reset: $('btn-reset'),
   };
@@ -20,11 +23,11 @@ function uiInit() {
   UI.els.handle.addEventListener('touchmove', e => {
     if (sy === null) return;
     const dy = e.touches[0].clientY - sy;
-    if (dy < -25) { UI.els.sheet.classList.add('open'); sy = null; uiHintDone('sheet'); }
+    if (dy < -25) { UI.els.sheet.classList.add('open'); sy = null; uiHintDone('goal'); }
     if (dy > 25) { UI.els.sheet.classList.remove('open'); sy = null; }
   }, { passive: true });
 
-  buildUpgradeRows();
+  buildCatalogue();
 
   UI.els.reset.addEventListener('click', () => {
     if (!UI.resetArmed) {
@@ -57,9 +60,9 @@ function costHTML(cost) {
 
 let _lastStrip = '';
 function uiUpdate() {
-  const g = currentGoal();
+  const cost = pinnedCost();
   const key = Object.values(Sim.bank).join('|') + '|' + Sim.pipeStock + '|'
-    + Sim.goalIndex + '|' + Sim.ended + '|' + (g ? Sim.lifetime[g.paint] : '');
+    + Sim.pinned + '|' + ownedLevels() + '|' + Sim.ended + '|' + Sim.intakeEMA.toFixed(1);
   if (key !== _lastStrip) {
     _lastStrip = key;
     // bank: show a paint once some of it has ever been banked
@@ -67,85 +70,126 @@ function uiUpdate() {
       .filter(el => Sim.lifetime[el] > 0 || el === 'R')
       .map(el => `<span><i style="color:${PAINTS[el].color}">●</i>${fmt(Sim.bank[el])}</span>`)
       .join('');
-    UI.els.pipes.textContent = '▭ ×' + Sim.pipeStock;
-    uiRefreshGoalChip();
+    UI.els.pipes.textContent = '▭ ×' + Sim.pipeStock
+      + (Sim.intakeEMA >= 0.3 ? '  ⚡' + fmt(Sim.intakeEMA) + '/s' : '');
+    uiRefreshGoalChip(cost);
+    refreshCatalogue();
   }
-  uiUpdateGoalBar();
-  refreshUpgradeRows();
+  uiUpdateGoalBar(cost);
 }
 
-function uiRefreshGoalChip() {
-  const g = currentGoal();
-  if (!g) {
-    UI.els.goalLabel.innerHTML = Sim.ended ? 'MURAL COMPLETE ✓' : '';
-    UI.els.goal.classList.toggle('done', Sim.ended);
+function uiRefreshGoalChip(cost) {
+  const t = pinnedTrack();
+  if (!t || !cost) {
+    UI.els.goal.classList.add('idle');
+    UI.els.goalLabel.innerHTML = Sim.ended
+      ? 'machine complete ✓ &nbsp;keep flowing'
+      : 'no goal - swipe up ▲ and tap an upgrade';
     return;
   }
-  UI.els.goal.classList.remove('done');
-  const p = PAINTS[g.paint];
-  UI.els.goalLabel.innerHTML =
-    `the mural needs<br><i style="color:${p.color}">●</i> ${p.name.toLowerCase()} &nbsp;${fmt(Math.min(Sim.lifetime[g.paint], g.need))} / ${fmt(g.need)}`;
+  UI.els.goal.classList.remove('idle');
+  const parts = Object.entries(cost)
+    .map(([el, n]) => `<i style="color:${PAINTS[el].color}">●</i>${fmt(Math.min(Sim.bank[el], n))}/${fmt(n)}`)
+    .join(' &nbsp;');
+  const lvl = t.max > 1 ? ` <span class="goal-lvl">lv${trackLevel(t.id) + 1}</span>` : '';
+  UI.els.goalLabel.innerHTML = `<b>GOAL</b> ${t.name}${lvl}<br>${parts}`;
 }
 
-function uiUpdateGoalBar() {
-  const g = currentGoal();
-  const frac = g ? Math.min(1, Sim.lifetime[g.paint] / g.need) : 1;
+function uiUpdateGoalBar(cost) {
+  let frac = 0, col = CONFIG.colors.pin;
+  if (cost) {
+    let paid = 0, total = 0, worst = 0;
+    for (const el in cost) {
+      paid += Math.min(Sim.bank[el], cost[el]); total += cost[el];
+      const deficit = 1 - Math.min(1, Sim.bank[el] / cost[el]);
+      if (deficit >= worst) { worst = deficit; col = PAINTS[el].color; }
+    }
+    frac = total ? paid / total : 0;
+  }
   UI.els.goalBar.style.width = (frac * 100).toFixed(1) + '%';
-  const col = g ? PAINTS[g.paint].color : CONFIG.colors.good;
   if (UI.els.goalBar.dataset.col !== col) {
     UI.els.goalBar.dataset.col = col;
     UI.els.goalBar.style.background = col;
   }
 }
 
-// called from main when a goal completes
-function uiGoalComplete(goal) {
-  if (goal.toast) uiShowHint({ id: 'goal' + Sim.goalIndex, text: goal.toast });
+// called from main when the pinned upgrade auto-buys itself
+function uiGoalComplete(track) {
+  uiShowHint({ id: 'buy-' + track.id + '-' + trackLevel(track.id), text: '★ ' + track.name + ' - yours' });
   if (Sim.ended && !UI.endShown) uiShowEndCard();
 }
 
-// --- upgrades sheet ------------------------------------------------------------
+// --- the upgrade catalogue -------------------------------------------------------
 
-function buildUpgradeRows() {
+function buildCatalogue() {
   UI.els.upgrades.innerHTML = '';
-  for (const key of Object.keys(CONFIG.upgrades)) {
-    const u = CONFIG.upgrades[key];
-    const row = document.createElement('div');
-    row.className = 'upg';
-    row.innerHTML = `
-      <div class="upg-info">
-        <div class="upg-name">${u.name} <span class="upg-lvl"></span></div>
-        <div class="upg-desc">${u.desc}</div>
-      </div>
-      <button class="upg-buy"></button>`;
-    const btn = row.querySelector('.upg-buy');
-    btn.addEventListener('click', () => {
-      if (payCost(upgradeCost(key))) {
-        Sim.upgrades[key]++;
-        if (key === 'pipe') Sim.pipeStock++;
-        btn.classList.remove('bought'); void btn.offsetWidth; // restart anim
-        btn.classList.add('bought');
-      }
-    });
-    row.dataset.key = key;
-    UI.els.upgrades.appendChild(row);
+  for (const cat of TRACK_CATS) {
+    const h = document.createElement('div');
+    h.className = 'upg-cat';
+    h.textContent = cat.label;
+    h.dataset.cat = cat.id;
+    UI.els.upgrades.appendChild(h);
+    for (const t of TRACKS) {
+      if (t.cat !== cat.id) continue;
+      const row = document.createElement('div');
+      row.className = 'upg';
+      row.dataset.id = t.id;
+      row.innerHTML = `
+        <div class="upg-info">
+          <div class="upg-name">${t.name} <span class="upg-lvl"></span></div>
+          <div class="upg-desc">${t.desc}</div>
+        </div>
+        <button class="upg-buy"></button>`;
+      row.querySelector('.upg-buy').addEventListener('click', () => uiTapTrack(t, row));
+      UI.els.upgrades.appendChild(row);
+    }
   }
 }
 
-function refreshUpgradeRows() {
-  for (const row of UI.els.upgrades.children) {
-    const key = row.dataset.key;
-    const u = CONFIG.upgrades[key];
-    row.hidden = Sim.goalIndex < u.showGoal;
-    if (row.hidden) continue;
-    const cost = upgradeCost(key);
+// the one catalogue gesture: afford it -> buy now; can't -> pin it as the goal
+function uiTapTrack(t, row) {
+  if (trackMaxed(t)) return;
+  if (canAfford(trackCost(t))) {
+    if (buyTrack(t)) {
+      checkSpawns();
+      if (Sim.ended && !UI.endShown) uiShowEndCard();
+      const btn = row.querySelector('.upg-buy');
+      btn.classList.remove('bought'); void btn.offsetWidth; // restart anim
+      btn.classList.add('bought');
+    }
+  } else {
+    Sim.pinned = Sim.pinned === t.id ? null : t.id;
+  }
+  _lastStrip = ''; // force refresh
+}
+
+function refreshCatalogue() {
+  const owned = ownedLevels();
+  UI.els.sheetLabel.textContent = `Upgrades ${owned} / ${TOTAL_LEVELS}`;
+  let row = UI.els.upgrades.firstElementChild;
+  const catShown = {};
+  for (; row; row = row.nextElementSibling) {
+    if (!row.dataset.id) continue; // category header, handled after
+    const t = TRACK_BY_ID[row.dataset.id];
+    const visible = trackVisible(t);
+    row.hidden = !visible;
+    if (!visible) continue;
+    catShown[t.cat] = true;
+    const maxed = trackMaxed(t);
     const btn = row.querySelector('.upg-buy');
-    const html = costHTML(cost);
+    row.classList.toggle('pinned', Sim.pinned === t.id);
+    row.classList.toggle('maxed', maxed);
+    const html = maxed ? 'MAX'
+      : Sim.pinned === t.id ? '★ goal'
+      : costHTML(trackCost(t));
     if (btn.innerHTML !== html) btn.innerHTML = html;
-    btn.disabled = !canAfford(cost);
+    btn.classList.toggle('afford', !maxed && canAfford(trackCost(t)));
     const lvl = row.querySelector('.upg-lvl');
-    const ltxt = key !== 'pipe' && Sim.upgrades[key] > 0 ? 'lv' + Sim.upgrades[key] : '';
+    const ltxt = t.max > 1 ? `lv${trackLevel(t.id)}/${t.max}` : '';
     if (lvl.textContent !== ltxt) lvl.textContent = ltxt;
+  }
+  for (const h of UI.els.upgrades.querySelectorAll('.upg-cat')) {
+    h.hidden = !catShown[h.dataset.cat];
   }
 }
 
@@ -162,10 +206,10 @@ function popupAt(x, y) {
   return p;
 }
 
-// a recipe rendered as paint dots: ●●● + ● → ● Light green
+// a recipe rendered as paint dots / counts: ●×6 + ●×6 → ● Orange
 function recipeHTML(r) {
-  const parts = Object.entries(r.inputs)
-    .map(([el, q]) => `<i style="color:${PAINTS[el].color}">${'●'.repeat(q)}</i>`)
+  const parts = Object.entries(recipeInputs(r))
+    .map(([el, q]) => `<i style="color:${PAINTS[el].color}">●</i>×${q}`)
     .join(' + ');
   return `${parts} → <i style="color:${PAINTS[r.out].color}">●</i> ${PAINTS[r.out].name}`;
 }
@@ -189,6 +233,14 @@ function uiOpenRadial(slotNode) {
 function uiOpenConverterMenu(node) {
   uiCloseMenus();
   const p = popupAt(node.x, node.y);
+  for (const r of unlockedRecipes()) {
+    if (r.id === node.recipe) continue;
+    const b = document.createElement('button');
+    b.className = 'pop-btn';
+    b.innerHTML = '⇄ ' + recipeHTML(r);
+    b.addEventListener('click', () => { swapConverter(node, r.id); uiHintDone('swap'); uiCloseMenus(); });
+    p.appendChild(b);
+  }
   const b = document.createElement('button');
   b.className = 'pop-btn danger';
   b.textContent = '✕ Remove mixer';
@@ -199,7 +251,7 @@ function uiOpenConverterMenu(node) {
 function uiOpenPipeChip(pipe, x, y) {
   uiCloseMenus();
   const p = popupAt(x, y);
-  if (pipe.lanes < CONFIG.maxLanes) {
+  if (pipe.lanes < maxLanes()) {
     const cost = laneCost(pipe);
     const b = document.createElement('button');
     b.className = 'pop-btn';
@@ -224,7 +276,7 @@ let _hintTimer = null;
 function uiCheckHints() {
   for (const h of HINTS) {
     if (UI.shownHints.has(h.id)) continue;
-    if (Sim.goalIndex >= h.gate.goal) { uiShowHint(h); break; }
+    if (h.when()) { uiShowHint(h); break; }
   }
 }
 
@@ -248,6 +300,7 @@ function uiShowEndCard() {
   UI.els.endStats.innerHTML = `
     <div><span>Time</span><b>${mm}:${String(ss).padStart(2, '0')}</b></div>
     <div><span>Paint banked</span><b>${fmt(total)}</b></div>
-    <div><span>Peak flow</span><b>${fmt(Sim.peakIntake)}/s</b></div>`;
+    <div><span>Peak flow</span><b>${fmt(Sim.peakIntake)}/s</b></div>
+    <div><span>Upgrades</span><b>${ownedLevels()} / ${TOTAL_LEVELS}</b></div>`;
   UI.els.endcard.classList.add('show');
 }

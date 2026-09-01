@@ -5,26 +5,66 @@
 
 const _zeroPaints = () => Object.fromEntries(Object.keys(PAINTS).map(k => [k, 0]));
 
+const TRACK_BY_ID = Object.fromEntries(TRACKS.map(t => [t.id, t]));
+const TOTAL_LEVELS = TRACKS.reduce((a, t) => a + t.max, 0);
+
 const Sim = {
   nodes: [], pipes: [], nodeById: {},
   time: 0,
   bank: _zeroPaints(),       // spendable
-  lifetime: _zeroPaints(),   // drives goals, never decreases
+  lifetime: _zeroPaints(),   // total ever banked, never decreases
   pipeStock: CONFIG.pipeStockStart,
-  goalIndex: 0,
+  up: {},                    // trackId -> owned level
+  pinned: null,              // trackId chosen as the current goal
   intakeEMA: 0, peakIntake: 0,
-  upgrades: { flow: 0, source: 0, converter: 0, pipe: 0 },
-  ended: false,
+  ended: false,              // magnum opus bought
   _pipeSeq: 0, _intakeAcc: 0,
 };
 
+// --- upgrade tracks ----------------------------------------------------------
+
+function trackLevel(id) { return Sim.up[id] || 0; }
+function trackMaxed(t) { return trackLevel(t.id) >= t.max; }
+function trackVisible(t) { return (t.requires || []).every(r => trackLevel(r) >= 1); }
+function ownedLevels() { return Object.values(Sim.up).reduce((a, b) => a + b, 0); }
+
+// cost of the NEXT level of a track
+function trackCost(t) {
+  const level = trackLevel(t.id);
+  let tier = t.tiers[0];
+  for (const ti of t.tiers) if (ti.at <= level) tier = ti;
+  const g = tier.growth || 1;
+  const out = {};
+  for (const el in tier.cost) out[el] = Math.round(tier.cost[el] * Math.pow(g, level - tier.at));
+  return out;
+}
+
+function buyTrack(t) {
+  if (trackMaxed(t) || !payCost(trackCost(t))) return false;
+  Sim.up[t.id] = trackLevel(t.id) + 1;
+  if (t.grantPipes) Sim.pipeStock += t.grantPipes;
+  if (t.id === 'opus') Sim.ended = true;
+  if (Sim.pinned === t.id) Sim.pinned = null; // goal achieved
+  return true;
+}
+
+// pinned goal helpers (the self-directed mini-level)
+function pinnedTrack() { return Sim.pinned ? TRACK_BY_ID[Sim.pinned] : null; }
+function pinnedCost() {
+  const t = pinnedTrack();
+  return t && !trackMaxed(t) ? trackCost(t) : null;
+}
+
 // --- derived rates -----------------------------------------------------------
 
-function flowSpeed() { return CONFIG.baseFlowSpeed * Math.pow(CONFIG.upgrades.flow.mult, Sim.upgrades.flow); }
-function sourceRate() { return CONFIG.baseSourceRate * Math.pow(CONFIG.upgrades.source.mult, Sim.upgrades.source); }
-function converterRate(recipe) { return recipe.baseRate * Math.pow(CONFIG.upgrades.converter.mult, Sim.upgrades.converter); }
-function currentGoal() { return Sim.ended ? null : GOALS[Sim.goalIndex] || null; }
-function unlockedRecipes() { return Object.values(RECIPES).filter(r => Sim.goalIndex >= r.gate); }
+function flowSpeed() { return CONFIG.baseFlowSpeed * Math.pow(CONFIG.flowMult, trackLevel('flow')); }
+function sourceRate(el) { return CONFIG.baseSourceRate * Math.pow(CONFIG.rateMult, trackLevel('rate-' + el)); }
+function converterRate(recipe) { return recipe.baseRate * Math.pow(CONFIG.mixMult, trackLevel('mixspeed')); }
+function maxLanes() { return CONFIG.baseMaxLanes + trackLevel('lanecap'); }
+function recipeInputs(r) {
+  return r.ratios[Math.min(trackLevel('ratio-' + r.id), r.ratios.length - 1)];
+}
+function unlockedRecipes() { return Object.values(RECIPES).filter(r => trackLevel(r.unlock) >= 1); }
 
 // --- resource costs ----------------------------------------------------------
 
@@ -32,10 +72,6 @@ function scaleCost(cost, growth, level) {
   const out = {};
   for (const el in cost) out[el] = Math.round(cost[el] * Math.pow(growth, level));
   return out;
-}
-function upgradeCost(key) {
-  const u = CONFIG.upgrades[key];
-  return scaleCost(u.cost, u.growth, Sim.upgrades[key]);
 }
 function laneCost(pipe) { return scaleCost(CONFIG.laneCost, CONFIG.laneCostGrowth, pipe.lanes - 1); }
 function canAfford(cost) { return Object.entries(cost).every(([el, n]) => Sim.bank[el] >= n); }
@@ -61,8 +97,18 @@ function spawnNode(def) {
 function placeConverter(node, recipeId) {
   const r = RECIPES[recipeId];
   node.kind = 'converter'; node.recipe = recipeId;
-  node.buffers = {}; for (const el in r.inputs) node.buffers[el] = 0;
+  node.buffers = {}; for (const el in r.ratios[0]) node.buffers[el] = 0;
   node.outBuf = 0; node.prog = 0; node.firePulse = 0; node.rr = 0;
+}
+
+// swap recipe in place: keep pipes that still make sense, refund the rest
+function swapConverter(node, recipeId) {
+  const r = RECIPES[recipeId];
+  for (const p of Sim.pipes.slice()) {
+    if (p.from === node.id) removePipe(p); // output colour changes
+    else if (p.to === node.id && !r.ratios[0][p.element]) removePipe(p);
+  }
+  placeConverter(node, recipeId);
 }
 
 function removeConverter(node) {
@@ -82,7 +128,7 @@ function nodeOutputElement(node) {
 // structural: does this node type ever take this element?
 function structuralAccepts(node, el) {
   if (node.kind === 'hub') return true;
-  if (node.kind === 'converter') return !!RECIPES[node.recipe].inputs[el];
+  if (node.kind === 'converter') return !!recipeInputs(RECIPES[node.recipe])[el];
   return false;
 }
 
@@ -90,7 +136,7 @@ function structuralAccepts(node, el) {
 function nodeAccepts(node, el) {
   if (node.kind === 'hub') return true;
   if (node.kind === 'converter') {
-    const ratio = RECIPES[node.recipe].inputs[el];
+    const ratio = recipeInputs(RECIPES[node.recipe])[el];
     return !!ratio && node.buffers[el] < ratio * CONFIG.stubCapMult;
   }
   return false;
@@ -229,16 +275,17 @@ function reflowPipes() {
   }
 }
 
-// --- goals -------------------------------------------------------------------
+// --- pinned goal auto-buy ------------------------------------------------------
 
-// returns the just-completed goal (for UI toast / end card), else null
-function checkGoal() {
-  const g = currentGoal();
-  if (!g || Sim.lifetime[g.paint] < g.need) return null;
-  Sim.goalIndex++;
-  Sim.pipeStock += g.grantPipes;
-  if (Sim.goalIndex >= GOALS.length) Sim.ended = true;
-  return g;
+// once the bank covers the pinned upgrade, it buys itself (the payoff moment);
+// returns the just-bought track for UI celebration, else null
+function autoBuyPinned() {
+  const t = pinnedTrack();
+  if (!t) return null;
+  if (trackMaxed(t)) { Sim.pinned = null; return null; }
+  if (!canAfford(trackCost(t))) return null;
+  buyTrack(t);
+  return t;
 }
 
 // --- tick --------------------------------------------------------------------
@@ -275,18 +322,19 @@ function simStep(dt) {
     if (n.emitPulse > 0) n.emitPulse = Math.max(0, n.emitPulse - dt * 2.5);
 
     if (n.kind === 'source') {
-      n.acc = Math.min(n.acc + sourceRate() * dt, 2);
+      n.acc = Math.min(n.acc + sourceRate(n.element) * dt, 2);
       while (n.acc >= 1 && tryEmit(n)) { n.acc -= 1; n.emitPulse = 1; }
       n.blocked = n.acc >= 1;
 
     } else if (n.kind === 'converter') {
       const r = RECIPES[n.recipe];
+      const inputs = recipeInputs(r);
       const ready = () => n.outBuf < CONFIG.outBufCap &&
-        Object.entries(r.inputs).every(([el, q]) => n.buffers[el] >= q);
+        Object.entries(inputs).every(([el, q]) => n.buffers[el] >= q);
       if (ready()) {
         n.prog += converterRate(r) * dt;
         while (n.prog >= 1 && ready()) {
-          for (const [el, q] of Object.entries(r.inputs)) n.buffers[el] -= q;
+          for (const [el, q] of Object.entries(inputs)) n.buffers[el] -= q;
           n.outBuf++; n.prog -= 1; n.firePulse = 1;
         }
         if (n.prog >= 1) n.prog = 1;

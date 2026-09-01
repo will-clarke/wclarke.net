@@ -10,7 +10,7 @@ function layoutAllNodes() {
 function checkSpawns() {
   for (const def of NODE_DEFS) {
     if (Sim.nodeById[def.id]) continue;
-    if (Sim.goalIndex >= def.gate.goal) {
+    if (!def.gate || trackLevel(def.gate) >= 1) {
       const n = spawnNode(def);
       layoutNode(n);
     }
@@ -23,7 +23,10 @@ function init() {
   renderInit(canvas);
   inputInit(canvas);
 
-  if (!loadGame()) checkSpawns(); // fresh game: spawn goal-0 nodes
+  if (!loadGame()) {
+    checkSpawns();            // fresh game: red spring + the Vat
+    Sim.pinned = 'y-spring';  // first goal pre-pinned: the Vat asks for red
+  }
   layoutAllNodes();
 
   window.addEventListener('resize', renderResize);
@@ -37,8 +40,8 @@ function init() {
     let steps = 0;
     while (acc >= DT && steps < 5) { simStep(DT); acc -= DT; steps++; }
     if (steps === 5) acc = 0;
-    const done = checkGoal();
-    if (done) { checkSpawns(); uiGoalComplete(done); }
+    const bought = autoBuyPinned();
+    if (bought) { checkSpawns(); uiGoalComplete(bought); }
     uiCheckHints();
     uiUpdate();
     renderDraw();

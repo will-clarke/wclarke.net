@@ -32,19 +32,23 @@ html, body {
   pointer-events: none;
   text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
-#strip-bank { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+#strip-bank { display: flex; gap: 7px 8px; font-size: 12px; flex-wrap: wrap; flex: 1; }
 #strip-bank i, .upg-buy i, #goal-label i, .pop-btn i { font-style: normal; margin-right: 3px; }
-#strip-pipes { color: #8a93a6; font-size: 13px; }
+#strip-pipes { color: #8a93a6; font-size: 12px; white-space: nowrap; }
 
-/* goal chip - sits to the right of the mural board (canvas-drawn at top-left) */
+/* goal chip - the pinned upgrade (full width, the mural is gone in V2) */
 #goal {
-  position: absolute; top: 64px; left: 188px; right: 18px;
-  display: flex; flex-direction: column; align-items: stretch; gap: 9px;
+  position: absolute; top: 62px; left: 18px; right: 18px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 7px;
   pointer-events: none;
-  font-size: 12px; font-weight: 600; color: #c9d2e0;
+  font-size: 12.5px; font-weight: 600; color: #c9d2e0;
   text-shadow: 0 1px 4px rgba(0,0,0,.6);
 }
-#goal-label { letter-spacing: .04em; line-height: 1.7; }
+#goal-label { letter-spacing: .03em; line-height: 1.65; }
+#goal-label b { color: #9aa7ff; letter-spacing: .1em; font-size: 10.5px; margin-right: 4px; }
+.goal-lvl { color: #9aa7ff; font-size: 11px; }
+#goal.idle #goal-label { color: #5a6577; font-weight: 500; }
+#goal.idle #goal-bar { opacity: 0; }
 #goal-bar {
   height: 5px; border-radius: 3px;
   background: #232c3a; overflow: hidden;
@@ -53,12 +57,10 @@ html, body {
   display: block; height: 100%; width: 0;
   border-radius: 2px; transition: width .3s;
 }
-#goal.done #goal-label { color: #5fd68a; }
-#goal.done #goal-bar { opacity: 0; }
 
 /* hint toast */
 #hint {
-  position: absolute; top: 146px; left: 50%;
+  position: absolute; top: 128px; left: 50%;
   transform: translateX(-50%) translateY(-6px);
   background: rgba(26,33,44,.92);
   border: 1px solid #2a3342;
@@ -107,12 +109,25 @@ html, body {
 }
 #sheet-handle .label { font-size: 11px; color: #8a93a6; letter-spacing: .12em; text-transform: uppercase; }
 
-#upgrades { padding: 2px 16px 10px; display: flex; flex-direction: column; gap: 10px; }
+#upgrades {
+  padding: 2px 16px 10px; display: flex; flex-direction: column; gap: 8px;
+  max-height: 52vh; overflow-y: auto; overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+#upgrades::-webkit-scrollbar { display: none; }
+.upg-cat {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: #5a6577; padding: 8px 2px 0;
+}
 .upg {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   background: #1a212c; border: 1px solid #242e3d; border-radius: 14px;
-  padding: 12px 14px;
+  padding: 10px 12px;
 }
+.upg.pinned { border-color: #9aa7ff; background: #1c2438; }
+.upg.pinned .upg-buy { color: #c3ccff; border-color: #55639a; }
+.upg.maxed { opacity: .45; }
+.upg-buy.afford { background: #24503c; color: #8ff0b4; border-color: #337a58; }
 .upg-name { font-size: 14px; font-weight: 700; }
 .upg-lvl { color: #9aa7ff; font-size: 12px; font-weight: 600; margin-left: 4px; }
 .upg-desc { font-size: 11.5px; color: #8a93a6; margin-top: 2px; }

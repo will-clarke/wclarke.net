@@ -49,6 +49,8 @@ function renderDraw() {
   ctx.fillStyle = CONFIG.colors.bg;
   ctx.fillRect(0, 0, Render.w, Render.h);
 
+  drawGoalGlow(ctx, t);
+
   for (const st of Render.stars) {
     ctx.globalAlpha = st.a;
     ctx.fillStyle = '#cdd6e4';
@@ -61,79 +63,29 @@ function renderDraw() {
   for (const p of Sim.pipes) drawParticles(ctx, p, t);
   for (const n of Sim.nodes) drawNode(ctx, n, t);
   for (const p of Sim.pipes) drawRateLabel(ctx, p);
-  drawMural(ctx, t);
 }
 
-// --- the mural (goal board) ----------------------------------------------------
+// --- goal glow (feedback v2: "the whole background goes red") -------------------
 
-function regionPath(ctx, r, M) {
-  ctx.beginPath();
-  if (r.kind === 'rect') {
-    ctx.rect(M.x + r.x * M.w, M.y + r.y * M.h, r.w * M.w, r.h * M.h);
-  } else if (r.kind === 'circle') {
-    ctx.arc(M.x + r.cx * M.w, M.y + r.cy * M.h, r.r * M.w, 0, 7);
-  } else {
-    r.pts.forEach(([px, py], i) => {
-      if (i === 0) ctx.moveTo(M.x + px * M.w, M.y + py * M.h);
-      else ctx.lineTo(M.x + px * M.w, M.y + py * M.h);
-    });
-    ctx.closePath();
+// soft radial wash around the Vat in the pinned goal's most-missing colour
+function drawGoalGlow(ctx, t) {
+  const cost = pinnedCost();
+  const hub = Sim.nodeById.hub;
+  if (!cost || !hub) return;
+  let el = null, worst = 0;
+  for (const c in cost) {
+    const deficit = 1 - Math.min(1, Sim.bank[c] / cost[c]);
+    if (deficit > worst) { worst = deficit; el = c; }
   }
-}
-
-function regionBBox(r, M) {
-  if (r.kind === 'rect') return { x: M.x + r.x * M.w, y: M.y + r.y * M.h, w: r.w * M.w, h: r.h * M.h };
-  if (r.kind === 'circle') {
-    const R = r.r * M.w;
-    return { x: M.x + r.cx * M.w - R, y: M.y + r.cy * M.h - R, w: R * 2, h: R * 2 };
-  }
-  const xs = r.pts.map(p => p[0]), ys = r.pts.map(p => p[1]);
-  const x0 = Math.min(...xs), y0 = Math.min(...ys);
-  return { x: M.x + x0 * M.w, y: M.y + y0 * M.h, w: (Math.max(...xs) - x0) * M.w, h: (Math.max(...ys) - y0) * M.h };
-}
-
-function drawMural(ctx, t) {
-  const M = CONFIG.mural;
-  roundRect(ctx, M.x - 5, M.y - 5, M.w + 10, M.h + 10, 8);
-  ctx.fillStyle = '#161d28'; ctx.fill();
-  ctx.strokeStyle = '#2a3342'; ctx.lineWidth = 1.5; ctx.stroke();
-  ctx.save();
-  roundRect(ctx, M.x, M.y, M.w, M.h, 4);
-  ctx.clip();
-  ctx.fillStyle = '#0c0f14';
-  ctx.fillRect(M.x, M.y, M.w, M.h);
-  for (const r of MURAL_REGIONS) {
-    const g = GOALS[r.goal];
-    const col = PAINTS[g.paint].color;
-    const done = r.goal < Sim.goalIndex;
-    const current = r.goal === Sim.goalIndex;
-    ctx.save();
-    regionPath(ctx, r, M);
-    ctx.clip();
-    if (done) {
-      ctx.fillStyle = col;
-      ctx.fillRect(M.x, M.y, M.w, M.h);
-    } else if (current) {
-      // paint floods the region bottom-up as the vat banks it
-      const frac = Math.min(1, Sim.lifetime[g.paint] / g.need);
-      const bb = regionBBox(r, M);
-      ctx.fillStyle = col;
-      ctx.globalAlpha = 0.16;
-      ctx.fillRect(bb.x, bb.y, bb.w, bb.h);
-      ctx.globalAlpha = 1;
-      ctx.fillRect(bb.x, bb.y + bb.h * (1 - frac), bb.w, bb.h * frac);
-    }
-    ctx.restore();
-    if (!done) {
-      regionPath(ctx, r, M);
-      ctx.strokeStyle = current ? col : '#39445a';
-      ctx.globalAlpha = current ? 0.65 + 0.3 * Math.sin(t * 3) : 0.55;
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-  }
-  ctx.restore();
+  if (!el) return;
+  const rad = Math.max(Render.w, Render.h) * 0.55;
+  const g = ctx.createRadialGradient(hub.x, hub.y, CONFIG.hubR, hub.x, hub.y, rad);
+  g.addColorStop(0, PAINTS[el].color);
+  g.addColorStop(1, 'transparent');
+  ctx.globalAlpha = 0.10 + 0.025 * Math.sin(t * 1.4);
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, Render.w, Render.h);
+  ctx.globalAlpha = 1;
 }
 
 // --- pipes -------------------------------------------------------------------
@@ -277,10 +229,32 @@ function drawNode(ctx, n, t) {
       ctx.beginPath(); ctx.arc(0, 0, HR - 6 - i * 6, a0, a0 + 1.9); ctx.stroke();
     }
     ctx.globalAlpha = 1;
+    // goal donut: what the pinned upgrade needs, arc per colour, fill = banked
+    const cost = pinnedCost();
+    if (cost) {
+      const entries = Object.entries(cost);
+      const total = entries.reduce((a, [, n]) => a + n, 0);
+      const gap = entries.length > 1 ? 0.16 : 0.001;
+      let a0 = -Math.PI / 2;
+      ctx.lineWidth = 4.5; ctx.lineCap = 'butt';
+      for (const [el, n] of entries) {
+        const span = (n / total) * Math.PI * 2 - gap;
+        ctx.strokeStyle = PAINTS[el].color;
+        ctx.globalAlpha = 0.22;
+        ctx.beginPath(); ctx.arc(0, 0, HR + 9, a0, a0 + span); ctx.stroke();
+        const frac = Math.min(1, Sim.bank[el] / n);
+        if (frac > 0) {
+          ctx.globalAlpha = 1;
+          ctx.beginPath(); ctx.arc(0, 0, HR + 9, a0, a0 + span * frac); ctx.stroke();
+        }
+        a0 += span + gap;
+      }
+      ctx.globalAlpha = 1;
+    }
     ctx.fillStyle = CONFIG.colors.dim;
     ctx.font = '700 8.5px system-ui, sans-serif';
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('THE VAT', 0, HR + 13);
+    ctx.fillText('THE VAT', 0, HR + 20);
 
   } else if (n.kind === 'slot') {
     ctx.strokeStyle = CONFIG.colors.slot;
@@ -314,19 +288,30 @@ function drawNode(ctx, n, t) {
     ctx.globalAlpha = 0.9;
     ctx.fillRect(-R + 2, R - 4, (R - 2) * 2 * Math.min(1, n.prog), 2.5);
     ctx.globalAlpha = 1;
-    // input stub pips (a row per ingredient; ×2 shows two pips)
+    // input stubs (a row per ingredient): pips for small ratios, have/need
+    // counts for the big v2 batches (mixing is expensive by design)
     let row = 0;
-    const els = Object.keys(r.inputs);
+    const inputs = recipeInputs(r);
+    const els = Object.keys(inputs);
     for (const el of els) {
-      const ratio = r.inputs[el];
+      const ratio = inputs[el];
       const y = -6 + row * 11 - (els.length - 1) * 2;
-      ctx.fillStyle = PAINTS[el].color;
       const have = Math.min(ratio, Math.floor(n.buffers[el]));
-      for (let i = 0; i < ratio; i++) {
-        ctx.globalAlpha = i < have ? 1 : 0.22;
-        ctx.beginPath(); ctx.arc(-R + 8 + i * 9, y, 3.2, 0, 7); ctx.fill();
+      ctx.fillStyle = PAINTS[el].color;
+      if (ratio <= 4) {
+        for (let i = 0; i < ratio; i++) {
+          ctx.globalAlpha = i < have ? 1 : 0.22;
+          ctx.beginPath(); ctx.arc(-R + 8 + i * 8, y, 3.1, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.beginPath(); ctx.arc(-R + 7, y, 3.1, 0, 7); ctx.fill();
+        ctx.font = '700 8.5px system-ui, sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.globalAlpha = have >= ratio ? 1 : 0.75;
+        ctx.fillText(have + '/' + ratio, -R + 13, y + 0.5);
+        ctx.globalAlpha = 1;
       }
-      ctx.globalAlpha = 1;
       row++;
     }
     // output swatch + buffer pips

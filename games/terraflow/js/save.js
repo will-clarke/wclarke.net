@@ -1,5 +1,5 @@
 // localStorage save/load. Particles and small buffers are not persisted.
-// v3 format (paint pivot); older saves are ignored (different game).
+// v4 format (upgrade-tree V2); older saves are ignored (different game).
 
 let _saveCleared = false;
 
@@ -7,11 +7,10 @@ function saveGame() {
   if (_saveCleared) return; // reset in progress: don't resurrect the save on unload
   try {
     const data = {
-      v: 3,
+      v: 4,
       time: Sim.time, bank: Sim.bank, lifetime: Sim.lifetime,
-      pipeStock: Sim.pipeStock, goalIndex: Sim.goalIndex,
+      pipeStock: Sim.pipeStock, up: Sim.up, pinned: Sim.pinned,
       peakIntake: Sim.peakIntake, ended: Sim.ended,
-      upgrades: Sim.upgrades,
       hints: [...UI.shownHints],
       endShown: UI.endShown,
       nodes: Sim.nodes.map(n => ({ id: n.id, kind: n.kind, recipe: n.recipe })),
@@ -24,16 +23,16 @@ function saveGame() {
 function loadGame() {
   let data = null;
   try { data = JSON.parse(localStorage.getItem(CONFIG.saveKey)); } catch (e) { return false; }
-  if (!data || data.v !== 3) return false;
+  if (!data || data.v !== 4) return false;
 
   Sim.time = data.time;
   Object.assign(Sim.bank, data.bank);
   Object.assign(Sim.lifetime, data.lifetime);
   Sim.pipeStock = data.pipeStock;
-  Sim.goalIndex = data.goalIndex;
+  Sim.up = data.up || {};
+  Sim.pinned = data.pinned && TRACK_BY_ID[data.pinned] ? data.pinned : null;
   Sim.peakIntake = data.peakIntake || 0;
   Sim.ended = !!data.ended;
-  Object.assign(Sim.upgrades, data.upgrades);
   UI.shownHints = new Set(data.hints || []);
   UI.endShown = !!data.endShown;
 
@@ -49,7 +48,7 @@ function loadGame() {
     const from = Sim.nodeById[sp.from], to = Sim.nodeById[sp.to];
     if (!from || !to || !canConnect(from, to)) continue;
     const pipe = addPipe(from, to, { free: true }); // stock already reflects them
-    while (pipe.lanes < Math.min(sp.lanes, CONFIG.maxLanes)) addLane(pipe);
+    while (pipe.lanes < Math.min(sp.lanes, maxLanes())) addLane(pipe);
     pipe.bornT = Sim.time - 1;
   }
   return true;
