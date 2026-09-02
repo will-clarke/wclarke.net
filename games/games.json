@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "dropforge",
+      "name": "Dropforge",
+      "accent": "#ff7a1a",
+      "tagline": "Factorio, dropped down a mineshaft. Ore rains from the seams, falls through every machine you slot into the column, and feeds the hungry eye at the bottom. Gravity is the only conveyor: pile-ups mean blocked, holes mean starved, and you diagnose by looking. Rearranging is always free, your thumb hand-cranks anything in a crisis, and the Core is forever hungrier than your iron line."
+    },
+    {
       "slug": "silicon",
       "name": "Silicon",
       "accent": "#ffb000",

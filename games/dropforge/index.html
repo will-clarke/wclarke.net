@@ -1,0 +1,1745 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#14100c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚒️</text></svg>">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Dropforge</title>
+<style>
+:root{
+  --bg:#14100c; --panel:#221b14; --panel2:#2c231a; --line:#453626;
+  --ink:#f2e7d8; --dim:#a3937e; --amber:#ffb347; --hot:#ff7a1a;
+  --good:#6fd98a; --bad:#ff6b57;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--ink);
+  overscroll-behavior:none;}
+canvas#cv{position:fixed;inset:0;touch-action:none;display:block;}
+button{font:inherit;color:inherit;background:none;border:none;padding:0;}
+
+/* ---------- top HUD ---------- */
+#topbar{position:fixed;top:0;left:0;right:0;padding:calc(var(--sat) + 8px) 10px 0;
+  display:flex;flex-direction:column;gap:6px;pointer-events:none;z-index:5;}
+#orderrow{display:flex;gap:8px;align-items:stretch;}
+#orderchip{pointer-events:auto;flex:1;background:linear-gradient(180deg,#2c231aee,#221b14ee);
+  border:1px solid var(--line);border-radius:14px;padding:8px 12px 9px;position:relative;overflow:hidden;
+  box-shadow:0 4px 18px #0009;}
+#orderchip .bar{position:absolute;left:0;top:0;bottom:0;background:#ffb34722;width:0%;transition:width .25s;}
+#orderchip .row1{display:flex;align-items:center;gap:8px;position:relative;}
+#orderchip .row1 canvas{width:26px;height:26px;flex:none;}
+#orderchip .otxt{font-weight:700;font-size:15px;letter-spacing:.2px;}
+#orderchip .osub{position:relative;font-size:11.5px;color:var(--dim);margin-top:2px;}
+#orderchip .flame{display:none;position:relative;margin-top:5px;}
+#orderchip .flame .fuel,#orderchip .flame .sus{height:5px;border-radius:3px;background:#0006;overflow:hidden;margin-top:3px;}
+#orderchip .flame .fuel i{display:block;height:100%;background:linear-gradient(90deg,#ff7a1a,#ffb347);width:0%;}
+#orderchip .flame .sus i{display:block;height:100%;background:var(--good);width:0%;}
+#gearbtn{pointer-events:auto;width:42px;border-radius:14px;background:#221b14ee;border:1px solid var(--line);
+  font-size:18px;color:var(--dim);box-shadow:0 4px 18px #0009;}
+#stockbar{pointer-events:auto;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 1px;}
+#stockbar::-webkit-scrollbar{display:none;}
+.schip{flex:none;display:flex;align-items:center;gap:4px;background:#221b14cc;border:1px solid #45362688;
+  border-radius:10px;padding:3px 7px 3px 4px;font-size:12px;font-weight:700;color:var(--ink);}
+.schip canvas{width:17px;height:17px;}
+#hintbar{pointer-events:none;align-self:center;max-width:92%;background:#000a;border:1px solid #ffb34733;
+  color:#ffd9a3;border-radius:12px;padding:6px 12px;font-size:12.5px;text-align:center;
+  opacity:0;transition:opacity .4s;}
+#hintbar.on{opacity:1;}
+
+/* ---------- floating buttons ---------- */
+#fabs{position:fixed;right:10px;bottom:calc(var(--sab) + 14px);display:flex;flex-direction:column;gap:10px;z-index:5;}
+.fab{width:48px;height:48px;border-radius:16px;background:#221b14ee;border:1px solid var(--line);
+  font-size:20px;box-shadow:0 4px 18px #000a;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+.fab:active{transform:scale(.94);}
+#chokebtn{display:none;border-color:#ff6b5788;color:var(--bad);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 #ff6b5744}50%{box-shadow:0 0 0 9px #ff6b5700}}
+
+/* ---------- placement banner ---------- */
+#placebar{position:fixed;left:10px;right:10px;top:calc(var(--sat) + 8px);z-index:8;display:none;
+  background:#2c231af2;border:1px solid var(--amber);border-radius:14px;padding:10px 12px;
+  box-shadow:0 6px 24px #000c;align-items:center;gap:10px;}
+#placebar.on{display:flex;}
+#placebar .ptxt{flex:1;font-size:13.5px;font-weight:600;}
+#placebar button{background:#453626;border-radius:10px;padding:7px 12px;font-size:13px;font-weight:700;}
+
+/* ---------- sheets ---------- */
+#scrim{position:fixed;inset:0;background:#0008;z-index:9;opacity:0;transition:opacity .2s;pointer-events:none;}
+#scrim.on{opacity:1;pointer-events:auto;}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:10;background:linear-gradient(180deg,#2c231a,#221b14);
+  border-top:1px solid var(--line);border-radius:20px 20px 0 0;box-shadow:0 -8px 40px #000c;
+  padding:14px 14px calc(var(--sab) + 16px);transform:translateY(105%);transition:transform .24s cubic-bezier(.3,1.1,.4,1);
+  max-height:72vh;overflow-y:auto;}
+#sheet.on{transform:translateY(0);}
+.shead{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.shead canvas{width:40px;height:40px;}
+.shead .t{font-size:17px;font-weight:800;}
+.shead .s{font-size:12px;color:var(--dim);margin-top:1px;}
+.shead .x{margin-left:auto;width:34px;height:34px;border-radius:12px;background:#453626;font-size:15px;}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;}
+.bcard{display:flex;gap:9px;align-items:center;background:var(--panel2);border:1px solid var(--line);
+  border-radius:14px;padding:9px;text-align:left;}
+.bcard:active{background:#3a2e20;}
+.bcard.off{opacity:.42;}
+.bcard canvas{width:38px;height:38px;flex:none;}
+.bcard .n{font-size:13px;font-weight:700;}
+.bcard .d{font-size:10.5px;color:var(--dim);margin-top:1px;line-height:1.25;}
+.cost{display:flex;gap:6px;margin-top:3px;flex-wrap:wrap;}
+.cost span{display:flex;align-items:center;gap:2px;font-size:11px;font-weight:700;}
+.cost canvas{width:13px;height:13px;}
+.cost .lack{color:var(--bad);}
+.cost .free{color:var(--good);font-size:11px;}
+.rowtools{display:flex;gap:8px;margin-top:12px;}
+.rowtools button{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:9px 4px;font-size:12px;font-weight:600;color:var(--dim);}
+.rowtools button:disabled{opacity:.35;}
+.ibtns{display:flex;gap:8px;margin-top:12px;}
+.ibtns button{flex:1;background:var(--panel2);border:1px solid var(--line);border-radius:12px;
+  padding:11px 4px;font-size:13px;font-weight:700;}
+.ibtns button.warn{color:var(--bad);border-color:#ff6b5744;}
+.meter{margin:7px 0;}
+.meter .lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:3px;}
+.meter .bar{height:7px;border-radius:4px;background:#0007;overflow:hidden;}
+.meter .bar i{display:block;height:100%;border-radius:4px;}
+.kv{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid #ffffff0d;}
+.kv b{font-variant-numeric:tabular-nums;}
+.stockgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;}
+.stockgrid .sc{display:flex;align-items:center;gap:7px;background:var(--panel2);border-radius:12px;padding:8px;}
+.stockgrid canvas{width:24px;height:24px;}
+.stockgrid .n{font-size:11px;color:var(--dim);}
+.stockgrid .v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;}
+
+/* ---------- banner (order complete / report / end) ---------- */
+#banner{position:fixed;inset:0;z-index:12;display:none;align-items:center;justify-content:center;padding:24px;}
+#banner.on{display:flex;}
+#banner .card{width:min(400px,100%);background:linear-gradient(180deg,#2c231a,#1b150f);
+  border:1px solid var(--amber);border-radius:22px;padding:22px 20px calc(16px);text-align:center;
+  box-shadow:0 0 60px #ff7a1a33, 0 20px 60px #000d;animation:bpop .35s cubic-bezier(.2,1.4,.4,1);}
+@keyframes bpop{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+#banner .k{font-size:11px;letter-spacing:3px;color:var(--amber);font-weight:800;}
+#banner .t{font-size:22px;font-weight:900;margin:6px 0 2px;}
+#banner .b{font-size:13.5px;color:var(--dim);line-height:1.45;margin:10px 0 4px;}
+#banner .rew{display:flex;flex-direction:column;gap:7px;margin:12px 0 4px;}
+#banner .rew div{display:flex;align-items:center;gap:9px;justify-content:center;background:#ffb34712;
+  border:1px solid #ffb34733;border-radius:12px;padding:8px 12px;font-size:13.5px;font-weight:700;}
+#banner .rew canvas{width:22px;height:22px;}
+#banner .go{margin-top:14px;width:100%;background:linear-gradient(180deg,var(--hot),#d95c05);
+  border-radius:14px;padding:13px;font-size:15px;font-weight:900;color:#fff;letter-spacing:.5px;
+  box-shadow:0 6px 18px #ff7a1a44;}
+#banner .go:active{transform:scale(.97);}
+#banner .aux{margin-top:10px;font-size:12.5px;color:var(--dim);padding:6px;width:100%;}
+.chokeline{background:#ff6b5715!important;border-color:#ff6b5740!important;color:#ffb0a5;}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<div id="topbar">
+  <div id="orderrow">
+    <div id="orderchip">
+      <div class="bar"></div>
+      <div class="row1"><canvas width="52" height="52"></canvas><div style="flex:1">
+        <div class="otxt">—</div><div class="osub">—</div></div>
+        <div class="opct" style="font-weight:900;font-size:15px;font-variant-numeric:tabular-nums;"></div>
+      </div>
+      <div class="flame">
+        <div class="fuel"><i></i></div>
+        <div class="sus"><i></i></div>
+      </div>
+    </div>
+    <button id="gearbtn">⚙︎</button>
+  </div>
+  <div id="stockbar"></div>
+  <div id="hintbar"></div>
+</div>
+
+<div id="placebar"><div class="ptxt"></div><button id="placecancel">Cancel</button></div>
+
+<div id="fabs">
+  <button class="fab" id="chokebtn">⚠</button>
+  <button class="fab" id="zoombtn">⛶</button>
+</div>
+
+<div id="scrim"></div>
+<div id="sheet"></div>
+<div id="banner"><div class="card"></div></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   DROPFORGE — Factorio distilled into a falling column.  spec v1.1
+   Deterministic integer sim @ 8tps. Constants mirrored in pace.mjs.
+===================================================================== */
+
+// ---------------------------------------------------------------- constants
+const TPS = 8, TICK_MS = 1000 / TPS;
+const SAVE_KEY = 'dropforge.v1';
+const MAXW = 8, MAXDEPTH = 28, START_DEPTH = 8, START_LANES = 3;
+const OFFLINE_CAP_TICKS = 8 * 3600 * TPS;
+const EXTRACT_T = { 1: 16, 2: 10, 3: 6 };
+const CHUTE_T = 24;          // ticks to digest one slag (slow: grates saturate under load)
+const HOPPER_CAP = 20;
+const EMA_A = 1 / (TPS * 30); // ~30s window for starve/block meters
+
+const VEINS = { 0: 'iron', 1: 'iron', 4: 'copper', 6: 'iron' };
+
+const ITEMS = {
+  iron_ore:     { name: 'Iron ore',     color: '#9aa3ad' },
+  iron_plate:   { name: 'Iron plate',   color: '#d7dee6' },
+  copper_ore:   { name: 'Copper ore',   color: '#c9713b' },
+  copper_plate: { name: 'Copper plate', color: '#e89a5c' },
+  wire:         { name: 'Wire',         color: '#ffb02e' },
+  gear:         { name: 'Gear',         color: '#aebdc6' },
+  circuit:      { name: 'Circuit',      color: '#52d97b' },
+  tool:         { name: 'Tool',         color: '#8fc7ff' },
+  module:       { name: 'Module',       color: '#c77dff' },
+  slag:         { name: 'Slag',         color: '#7a3328' },
+};
+
+const MACH = {
+  extractor: { name: 'Extractor', w: 1, row0: true, cost: { iron_plate: 10 },
+    desc: 'Sits on a seam. Mines forever.' },
+  smelter:   { name: 'Smelter', w: 1, craft: 30, cost: { iron_plate: 5 },
+    desc: 'Ore in, plate out.',
+    recipes: [ { in: { iron_ore: 1 },   out: { iron_plate: 1 } },
+               { in: { copper_ore: 1 }, out: { copper_plate: 1 }, slag: 3 } ] },
+  press:     { name: 'Press', w: 1, craft: 36, cost: { iron_plate: 8 },
+    desc: '2 iron plates → 1 gear.',
+    recipes: [ { in: { iron_plate: 2 }, out: { gear: 1 } } ] },
+  wiremill:  { name: 'Wire Mill', w: 1, craft: 30, cost: { iron_plate: 6, gear: 2 },
+    desc: '1 copper plate → 2 wire.',
+    recipes: [ { in: { copper_plate: 1 }, out: { wire: 2 } } ] },
+  fab:       { name: 'Circuit Fab', w: 2, craft: 44, cost: { iron_plate: 10, gear: 4 },
+    desc: 'Wire (left) + iron plate (right) → circuit.', inL: 'wire', inR: 'iron_plate',
+    recipes: [ { in: { wire: 1, iron_plate: 1 }, out: { circuit: 1 } } ] },
+  toolworks: { name: 'Toolworks', w: 2, craft: 48, cost: { iron_plate: 12, gear: 6 },
+    desc: 'Gear (left) + iron plate (right) → tool.', inL: 'gear', inR: 'iron_plate',
+    recipes: [ { in: { gear: 1, iron_plate: 1 }, out: { tool: 1 } } ] },
+  modulebay: { name: 'Module Bay', w: 2, craft: 64, cost: { circuit: 8, gear: 4 },
+    desc: 'Circuit (left) + gear (right) → module.', inL: 'circuit', inR: 'gear',
+    recipes: [ { in: { circuit: 1, gear: 1 }, out: { module: 1 } } ] },
+  diverter:  { name: 'Diverter', w: 1, transit: true, cost: { iron_plate: 3 },
+    desc: 'Nudges items one lane over.' },
+  splitter:  { name: 'Splitter', w: 1, transit: true, cost: { iron_plate: 4 },
+    desc: 'Alternates output left / right.' },
+  crossover: { name: 'Crossover', w: 2, transit: true, cost: { iron_plate: 5, gear: 2 },
+    desc: 'Two lanes trade places.' },
+  hopper:    { name: 'Hopper', w: 1, transit: true, cost: { iron_plate: 6 },
+    desc: 'Stores 20, drips them out. Smooths bursts.' },
+  chute:     { name: 'Slag Grate', w: 1, transit: true, cost: { iron_plate: 3 },
+    desc: 'Catches slag and digests it slowly. Everything else falls through.' },
+};
+const TIER_COST = { 2: { gear: 8 }, 3: { circuit: 6 } };
+
+// ---------------------------------------------------------------- orders
+const ORDERS = [
+  { kind:'deliver', item:'iron_ore', count:5, era:'ERA 0 · BARE HANDS',
+    hint:'The Core hungers. Tap an ore seam up top — hold to pour.',
+    reward:{ unlock:['smelter'], grant:'smelter',
+      lines:['Smelter unlocked — a gift from below'] } },
+  { kind:'deliver', item:'iron_plate', count:4, era:'ERA 0 · BARE HANDS',
+    hint:'Pour ore into the smelter. Hold the smelter to crank it.',
+    reward:{ unlock:['extractor'], grant:'extractor',
+      lines:['Extractor unlocked — it mines while you sleep'] } },
+  { kind:'deliver', item:'iron_plate', count:12, era:'ERA 0 · BARE HANDS',
+    hint:'Let it run. Your finger is off duty.',
+    reward:{ unlock:['press'], grant:'press', stock:{ iron_plate:10 },
+      lines:['Press unlocked — 2 plates → 1 gear','+10 iron plate'] } },
+  { kind:'deliver', item:'gear', count:8, era:'ERA 1 · IRON',
+    hint:'The press needs a diet of plates. Feed it.',
+    reward:{ unlock:['splitter','diverter'], stock:{ iron_plate:8 },
+      lines:['Splitter + Diverter unlocked — routing begins','+8 iron plate'] } },
+  { kind:'deliver', item:'gear', count:24, era:'ERA 1 · IRON',
+    hint:'One seam can feed two smelters — if you split it.',
+    reward:{ width:5, unlock:['wiremill','chute'], stock:{ iron_plate:12 },
+      lines:['The shaft widens — a COPPER seam is exposed',
+             'Wire Mill + Slag Grate unlocked','+12 iron plate'] } },
+  { kind:'deliver', item:'copper_plate', count:15, era:'ERA 2 · COPPER',
+    hint:'Copper smelting leaves SLAG. A grate in the lane catches it — until it clogs.',
+    reward:{ unlock:['fab'], stock:{ gear:6 },
+      lines:['Circuit Fab unlocked — wire meets iron','+6 gear'] } },
+  { kind:'deliver', item:'wire', count:30, era:'ERA 2 · COPPER',
+    hint:'The mill doubles copper. Wire wants to travel left.',
+    reward:{ unlock:['hopper','crossover'],
+      lines:['Hopper + Crossover unlocked'] } },
+  { kind:'deliver', item:'circuit', count:10, era:'ERA 2 · CIRCUITS',
+    hint:'The fab eats from BOTH lanes. Make the streams touch.',
+    reward:{ tier:2,
+      lines:['Extractor Mk.II available — upgrade from its card'] } },
+  { kind:'flow', item:'circuit', fuelPer:5*TPS, sustain:60*TPS, era:'ERA 2 · CIRCUITS',
+    hint:'Keep the Core lit. Every circuit buys 5s of flame. Slag snuffs it.',
+    reward:{ unlock:['toolworks'], stock:{ iron_plate:20 },
+      lines:['Toolworks unlocked','+20 iron plate'] } },
+  { kind:'deliver', item:'tool', count:12, era:'ERA 3 · MODULES',
+    hint:'Tools eat your gear line. Something upstream will starve.',
+    reward:{ width:7, unlock:['modulebay'],
+      lines:['The shaft widens again — a second IRON seam','Module Bay unlocked'] } },
+  { kind:'deliver', item:'module', count:6, era:'ERA 3 · MODULES',
+    hint:'Modules eat circuits AND gears. Your old iron line is too small now.',
+    reward:{ tier:3, stock:{ gear:10 },
+      lines:['Extractor Mk.III available','+10 gear'] } },
+  { kind:'flow', item:'module', fuelPer:8*TPS, sustain:80*TPS, era:'ERA 3 · MODULES',
+    hint:'Keep the Core lit with modules. Both lines, at once, forever.',
+    reward:{ stock:{ circuit:10 }, lines:['+10 circuit — the Core is… pleased'] } },
+  { kind:'deliver', item:'module', count:25, era:'ERA 3 · MODULES',
+    hint:'One last feast.',
+    reward:{ end:true, lines:['…'] } },
+];
+
+// ---------------------------------------------------------------- state
+let S = null;
+function freshState(){
+  return {
+    v:1, tick:0, lanes:START_LANES, depth:START_DEPTH, maxTier:1,
+    nextId:1, machines:[], items:[],
+    stock:{}, unlocked:[],
+    orderIdx:0, oCount:0, fuel:0, sustain:0,
+    made:{},              // crafted+mined totals per item
+    delivered:{},         // totals delivered to core
+    ended:false, pendingGrant:null, lastSeen:Date.now(),
+  };
+}
+// derived grids
+let GM = null, GI = null; // [r][l] -> machine / item
+function rebuildGrids(){
+  GM = []; GI = [];
+  for(let r=0;r<S.depth;r++){ GM.push(new Array(MAXW).fill(null)); GI.push(new Array(MAXW).fill(null)); }
+  for(const m of S.machines) for(let i=0;i<MACH[m.type].w;i++) GM[m.r][m.l+i]=m;
+  S.items = S.items.filter(it=> it.r>=0 && it.r<S.depth && it.l<S.lanes && !GM[it.r][it.l]);
+  for(const it of S.items) GI[it.r][it.l]=it;
+}
+function machineAt(r,l){ return (r>=0&&r<S.depth)?GM[r][l]:null; }
+function itemAt(r,l){ return (r>=0&&r<S.depth)?GI[r][l]:null; }
+
+function newMachine(type,r,l,mir){
+  const m = { id:S.nextId++, type, r, l, mir:!!mir, tier:1, buf:{}, craft:0, recipe:null,
+    out:[], hold:[], digest:0, split:0, slagCtr:0,
+    starve:0, block:0, inAcc:0, outAcc:0, inEma:0, outEma:0, blockStreak:0 };
+  if(type==='extractor') m.t = EXTRACT_T[1];
+  return m;
+}
+
+// ---------------------------------------------------------------- sim
+const crank = { active:false, kind:null, id:0, lane:0 };
+function crankMult(m){ return (crank.active && crank.kind==='machine' && crank.id===m.id) ? 3 : 1; }
+
+function ema(m,k,v){ m[k] += EMA_A*(v-m[k]); }
+
+function startableRecipe(m){
+  const D = MACH[m.type]; if(!D.recipes) return null;
+  for(const rec of D.recipes){
+    let ok = true;
+    for(const k in rec.in) if((m.buf[k]||0) < rec.in[k]){ ok=false; break; }
+    if(ok) return rec;
+  }
+  return null;
+}
+
+function stepMachine(m){
+  const D = MACH[m.type];
+  if(m.type==='extractor'){
+    if(m.out.length===0){
+      m.t -= crankMult(m);
+      if(m.t<=0){
+        const ore = VEINS[m.l]==='copper' ? 'copper_ore' : 'iron_ore';
+        m.out.push(ore); made(ore);
+        m.t += EXTRACT_T[m.tier];
+      }
+    }
+    ema(m,'starve',0);
+    return;
+  }
+  if(m.type==='chute'){
+    if(m.digest>0) m.digest--;
+    else if(m.hold.length){ m.hold.shift(); m.digest = CHUTE_T; }
+    return;
+  }
+  if(D.transit) return;
+  // crafters
+  if(m.craft>0){
+    m.craft -= crankMult(m);
+    if(m.craft<=0){ finishCraft(m); m.craft=0; }
+    ema(m,'starve',0);
+    return;
+  }
+  if(m.out.length>0){ ema(m,'starve',0); return; } // waiting to eject
+  const rec = startableRecipe(m);
+  if(rec){
+    for(const k in rec.in) m.buf[k]-=rec.in[k];
+    m.recipe = rec; m.craft = D.craft;
+    ema(m,'starve',0);
+  } else ema(m,'starve',1);
+}
+function finishCraft(m){
+  const rec = m.recipe; if(!rec) return;
+  for(const k in rec.out) for(let i=0;i<rec.out[k];i++){ m.out.push(k); made(k); }
+  if(rec.slag){
+    m.slagCtr++;
+    if(m.slagCtr>=rec.slag){ m.slagCtr=0; m.out.push('slag'); made('slag'); }
+  }
+  m.recipe=null;
+}
+function made(t){ S.made[t]=(S.made[t]||0)+1; }
+
+function tryAccept(m,t,lane){
+  switch(m.type){
+    case 'extractor': return false;
+    case 'chute':
+      if(t==='slag'){
+        if(m.hold.length>=2) return false;
+        m.hold.push(t); m.inAcc++; return true;
+      }
+      if(m.out.length) return false;
+      m.out.push(t); m.inAcc++; return true; // grate: non-slag passes through
+    case 'hopper':
+      if(m.hold.length>=HOPPER_CAP) return false;
+      m.hold.push(t); m.inAcc++; return true;
+    case 'diverter': {
+      if(m.out.length) return false;
+      const tl = m.l + (m.mir?-1:1);
+      if(tl<0||tl>=S.lanes) return false;
+      m.out.push(t); m.inAcc++; return true;
+    }
+    case 'splitter':
+      if(m.out.length) return false;
+      m.out.push(t); m.inAcc++; return true;
+    case 'crossover': {
+      const side = (lane===m.l)?'L':'R';
+      if(m.out.some(o=>o.side===side)) return false;
+      m.out.push({ it:t, side }); m.inAcc++; return true;
+    }
+    default: {
+      const D = MACH[m.type];
+      let want = null;
+      if(D.w===2){
+        const leftIng = m.mir?D.inR:D.inL, rightIng = m.mir?D.inL:D.inR;
+        want = (lane===m.l)?leftIng:rightIng;
+        if(t!==want) return false;
+      } else {
+        let ok=false;
+        for(const rec of D.recipes) if(rec.in[t]) ok=true;
+        if(!ok) return false;
+      }
+      let cap = 2;
+      for(const rec of D.recipes) if(rec.in[t]) cap = Math.max(cap, rec.in[t]*2);
+      if((m.buf[t]||0)>=cap) return false;
+      m.buf[t]=(m.buf[t]||0)+1; m.inAcc++; return true;
+    }
+  }
+}
+
+function movePass(){
+  for(const it of S.items){ it.pr=it.r; it.pl=it.l; }
+  for(let r=S.depth-1;r>=0;r--) for(let l=0;l<S.lanes;l++){
+    const it = GI[r][l]; if(!it) continue;
+    if(r+1===S.depth){ GI[r][l]=null; removeItem(it); deliver(it.t); continue; }
+    const m2 = GM[r+1][l];
+    if(m2){
+      if(tryAccept(m2,it.t,l)){ GI[r][l]=null; removeItem(it); acceptFx(m2,it); }
+      continue;
+    }
+    if(!GI[r+1][l]){ GI[r][l]=null; GI[r+1][l]=it; it.r=r+1; }
+  }
+}
+function removeItem(it){ const i=S.items.indexOf(it); if(i>=0) S.items.splice(i,1); }
+
+function outTargets(m){
+  // returns list of {q, idx, lane} candidates to eject this tick
+  if(m.type==='chute') return m.out.length?[{arr:m.out,idx:0,lane:m.l}]:[];
+  if(m.type==='hopper') return m.hold.length?[{arr:m.hold,idx:0,lane:m.l}]:[];
+  if(m.type==='crossover'){
+    const list=[];
+    m.out.forEach((o,i)=>{ list.push({arr:m.out,idx:i,lane:o.side==='L'?m.l+1:m.l,val:o.it}); });
+    return list;
+  }
+  if(!m.out.length) return [];
+  if(m.type==='diverter') return [{arr:m.out,idx:0,lane:m.l+(m.mir?-1:1)}];
+  if(m.type==='splitter'){
+    const sides=[m.l-1,m.l+1];
+    const order = m.split? [sides[1],sides[0]] : sides;
+    return [{arr:m.out,idx:0,lanes:order,splitter:true}];
+  }
+  if(MACH[m.type].w===2) return [{arr:m.out,idx:0,lane:m.mir?m.l+1:m.l}];
+  return [{arr:m.out,idx:0,lane:m.l}];
+}
+function tryDeposit(t,r,l,m){
+  if(l<0||l>=S.lanes) return false;
+  if(r===S.depth){ deliver(t); return true; }
+  const m2 = GM[r][l];
+  if(m2) return tryAccept(m2,t,l);
+  if(GI[r][l]) return false;
+  const it = { t, r, l, pr:m.r, pl:l };
+  S.items.push(it); GI[r][l]=it;
+  return true;
+}
+function ejectPass(){
+  for(const m of S.machines){
+    const cands = outTargets(m);
+    if(!cands.length){ ema(m,'block',0); m.blockStreak=0; continue; }
+    let any=false;
+    for(const c of cands){
+      const val = c.val!==undefined? c.val : c.arr[c.idx];
+      if(c.splitter){
+        for(const ln of c.lanes){
+          if(tryDeposit(val,m.r+1,ln,m)){ c.arr.splice(c.idx,1); m.split^=1; m.outAcc++; any=true; break; }
+        }
+      } else if(tryDeposit(val,m.r+1,c.lane,m)){
+        c.arr.splice(c.idx,1); m.outAcc++; any=true;
+      }
+      if(any) break; // one ejection per machine per tick
+    }
+    ema(m,'block', any?0:1);
+    if(any){ if(m.blockStreak>TPS*20) unclogFx(m); m.blockStreak=0; }
+    else m.blockStreak++;
+  }
+}
+
+function curOrder(){ return S.ended?null:ORDERS[S.orderIdx]||null; }
+function deliver(t){
+  S.delivered[t]=(S.delivered[t]||0)+1;
+  const o = curOrder();
+  coreFx(t);
+  if(o){
+    if(o.kind==='deliver' && t===o.item && S.oCount<o.count){
+      S.oCount++;
+      if(S.oCount>=o.count) completeOrder();
+      return;
+    }
+    if(o.kind==='flow'){
+      if(t===o.item){ S.fuel = Math.min(S.fuel+o.fuelPer, o.fuelPer*3); return; }
+      if(t==='slag'){ S.fuel = Math.max(0, S.fuel-o.fuelPer); return; }
+    }
+  }
+  if(t!=='slag') S.stock[t]=(S.stock[t]||0)+1;
+}
+function orderTick(){
+  const o = curOrder();
+  if(o && o.kind==='flow'){
+    if(S.fuel>0){ S.fuel--; S.sustain++; }
+    else S.sustain = Math.max(0, S.sustain-2);
+    if(S.sustain>=o.sustain) completeOrder();
+  }
+}
+
+function step(){
+  S.tick++;
+  if(crank.active && crank.kind==='vein' && S.tick%3===0) spawnVeinOre(crank.lane,true);
+  for(const m of S.machines) stepMachine(m);
+  movePass();
+  ejectPass();
+  orderTick();
+  for(const m of S.machines){
+    m.inEma += (m.inAcc-m.inEma)/160; m.outEma += (m.outAcc-m.outEma)/160;
+    m.inAcc=0; m.outAcc=0;
+  }
+}
+
+function spawnVeinOre(l, fromPour){
+  if(l<0||l>=S.lanes||!VEINS[l]) return false;
+  if(GM[0][l]){ return false; } // extractor there
+  if(GI[0][l]) return false;
+  const t = VEINS[l]==='copper'?'copper_ore':'iron_ore';
+  const it = { t, r:0, l, pr:-0.8, pl:l };
+  S.items.push(it); GI[0][l]=it; made(t);
+  if(!fromPour) sparks(l+0.5, 0.4, ITEMS[t].color, 4);
+  return true;
+}
+
+// ---------------------------------------------------------------- economy
+function canAfford(cost){ for(const k in cost) if((S.stock[k]||0)<cost[k]) return false; return true; }
+function pay(cost){ for(const k in cost) S.stock[k]-=cost[k]; }
+function refundOf(m){
+  const c = Object.assign({},MACH[m.type].cost);
+  for(let t=2;t<=m.tier;t++) for(const k in TIER_COST[t]) c[k]=(c[k]||0)+TIER_COST[t][k];
+  return c;
+}
+function grant(stock){ for(const k in stock) S.stock[k]=(S.stock[k]||0)+stock[k]; }
+
+function validPlace(type,r,l,ignoreId){
+  const D = MACH[type];
+  if(l<0 || l+D.w>S.lanes) return false;
+  if(D.row0){ if(r!==0 || !VEINS[l]) return false; }
+  else { if(r<1 || r>=S.depth) return false; }
+  for(let i=0;i<D.w;i++){
+    const m = GM[r][l+i];
+    if(m && m.id!==ignoreId) return false;
+  }
+  return true;
+}
+function placeMachine(type,r,l,free){
+  const D = MACH[type];
+  let mir = false;
+  if(type==='diverter' && l===S.lanes-1) mir = true;
+  if(!free) pay(D.cost);
+  const m = newMachine(type,r,l,mir);
+  S.machines.push(m);
+  for(let i=0;i<D.w;i++){ const it=GI[r][l+i]; if(it){ GI[r][l+i]=null; removeItem(it); } }
+  rebuildGrids();
+  sparks(l+D.w/2, r+0.5, '#ffb347', 10);
+  buzz(12); save();
+  return m;
+}
+function sellMachine(m){
+  grant(refundOf(m));
+  S.machines.splice(S.machines.indexOf(m),1);
+  rebuildGrids(); sparks(m.l+MACH[m.type].w/2, m.r+0.5, '#a3937e', 8);
+  buzz(8); save();
+}
+function insertRow(k){
+  if(S.depth>=MAXDEPTH){ hint('The shaft can go no deeper.',2500); return false; }
+  for(const m of S.machines) if(m.r>=k) m.r++;
+  for(const it of S.items) if(it.r>=k) it.r++;
+  S.depth++; rebuildGrids(); buzz(10); save(); return true;
+}
+function removeRow(k){
+  if(S.depth<=5) return false;
+  if(S.machines.some(m=>m.r===k)) return false;
+  for(const it of S.items.slice()) if(it.r===k) removeItem(it);
+  for(const m of S.machines) if(m.r>k) m.r--;
+  for(const it of S.items) if(it.r>k) it.r--;
+  S.depth--; rebuildGrids(); save(); return true;
+}
+
+// ---------------------------------------------------------------- orders / rewards
+
+function completeOrder(){
+  const o = ORDERS[S.orderIdx];
+  applyReward(o.reward);
+  S.orderIdx++; S.oCount=0; S.fuel=0; S.sustain=0;
+  save();
+  buzz([30,40,60]);
+  if(o.reward.end) showEnd();
+  else showOrderBanner(o);
+}
+function applyReward(rw){
+  if(rw.unlock) for(const t of rw.unlock) if(!S.unlocked.includes(t)) S.unlocked.push(t);
+  if(rw.stock) grant(rw.stock);
+  if(rw.width && rw.width>S.lanes){ S.lanes=rw.width; rebuildGrids(); }
+  if(rw.tier) S.maxTier = Math.max(S.maxTier, rw.tier);
+  if(rw.grant) S.pendingGrant = rw.grant;
+  if(rw.end) S.ended = true;
+}
+
+// ---------------------------------------------------------------- save / load / offline
+let saveTimer = 0, resetting = false;
+function save(){
+  if(!S || resetting) return;
+  S.lastSeen = Date.now();
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }catch(e){}
+}
+function load(){
+  let raw = null;
+  try{ raw = localStorage.getItem(SAVE_KEY); }catch(e){}
+  if(!raw) return null;
+  try{
+    const d = JSON.parse(raw);
+    if(!d || d.v!==1 || !Array.isArray(d.machines)) throw 0;
+    return d;
+  }catch(e){
+    try{ localStorage.setItem(SAVE_KEY+'.corrupt', raw); }catch(_){}
+    return null;
+  }
+}
+function runOffline(){
+  const elapsed = Date.now() - (S.lastSeen||Date.now());
+  let ticks = Math.floor(elapsed/TICK_MS);
+  if(ticks < 2*60*TPS) return null;
+  ticks = Math.min(ticks, OFFLINE_CAP_TICKS);
+  if(!S.machines.some(m=>m.type==='extractor')) return null;
+  const before = Object.assign({},S.made);
+  const oBefore = S.orderIdx;
+  // run without UI side effects
+  offlineMode = true;
+  for(let i=0;i<ticks;i++){
+    step();
+    if(S.ended) break;
+    if(S.orderIdx!==oBefore) break; // an order completed offline: stop there, let the player see it
+  }
+  offlineMode = false;
+  const prod = {};
+  for(const k in S.made){ const d = S.made[k]-(before[k]||0); if(d>0 && k!=='slag') prod[k]=d; }
+  let worst=null, wv=0.3;
+  for(const m of S.machines){
+    if(m.starve>wv){ wv=m.starve; worst={m,kind:'starved',v:m.starve}; }
+    if(m.block>wv){ wv=m.block; worst={m,kind:'blocked',v:m.block}; }
+  }
+  return { ms: Math.min(elapsed, OFFLINE_CAP_TICKS*TICK_MS), prod, worst,
+           orderDone: S.orderIdx!==oBefore };
+}
+let offlineMode = false;
+
+// ---------------------------------------------------------------- fx / render helpers
+const parts = [];
+function sparks(x,y,color,n){
+  if(offlineMode) return;
+  for(let i=0;i<n;i++) parts.push({ x,y, vx:(Math.random()-0.5)*3, vy:-Math.random()*2.5-0.5,
+    life:0.5+Math.random()*0.3, t:0, color, s:0.05+Math.random()*0.05 });
+}
+function acceptFx(m,it){ }
+function unclogFx(m){
+  if(offlineMode) return;
+  sparks(m.l+MACH[m.type].w/2, m.r+0.5, '#6fd98a', 14);
+  flushes.push({ r:m.r, t:0 });
+}
+const flushes = [];
+let coreGlow = 0, corePain = 0;
+function coreFx(t){
+  if(offlineMode) return;
+  if(t==='slag'){ corePain = 1; }
+  else coreGlow = Math.min(1, coreGlow+0.35);
+  const o = curOrder();
+  if(o && ((o.kind==='deliver'&&t===o.item)||(o.kind==='flow'&&t===o.item)))
+    sparks((S.lanes/2), S.depth+0.4, '#ffb347', 3);
+}
+function buzz(p){ if(navigator.vibrate) try{ navigator.vibrate(p); }catch(e){} }
+
+// ---------------------------------------------------------------- canvas
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let W=0,H=0,DPR=1, cellPx=52;
+function resize(){
+  DPR = Math.min(2, window.devicePixelRatio||1);
+  W = window.innerWidth; H = window.innerHeight;
+  cv.width = W*DPR; cv.height = H*DPR;
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+  cellPx = Math.max(44, Math.min(68, Math.floor((W-16)/S.lanes)));
+}
+window.addEventListener('resize', ()=>{ if(S) resize(); });
+
+const cam = { y:-1.2, s:1, ty:-1.2, ts:1, mode:'work' };
+function worldH(){ return S.depth + 2.6; } // rows + sky + core band
+function fitScale(){
+  const cs = cellPx;
+  return Math.min(1, (H-140)/(worldH()*cs), (W-12)/(S.lanes*cs));
+}
+let hudH = 110;
+function clampCamY(){
+  const cs = cellPx*cam.s, vis = H/cs;
+  const min = -(hudH+18)/cs - 0.55, max = Math.max(min, worldH()-vis+1.2);
+  cam.ty = Math.max(min, Math.min(max, cam.ty));
+}
+function setZoom(mode, focusRow){
+  cam.mode = mode;
+  if(mode==='over'){ cam.ts = fitScale(); cam.ty = -(hudH+18)/(cellPx*cam.ts) - 0.55; }
+  else {
+    cam.ts = 1;
+    if(focusRow!==undefined){ cam.ty = focusRow - (H/cellPx)/2 + 1; }
+    clampCamY();
+  }
+  document.getElementById('zoombtn').textContent = mode==='over'?'⊕':'⛶';
+}
+function view(){
+  const cs = cellPx*cam.s;
+  const ox = (W - S.lanes*cs)/2;
+  const oy = -cam.y*cs;
+  return { cs, ox, oy };
+}
+function w2px(x,y){ const v=view(); return [v.ox+x*v.cs, v.oy+y*v.cs]; }
+function px2w(px,py){ const v=view(); return [(px-v.ox)/v.cs, (py-v.oy)/v.cs]; }
+
+function rr(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+// ---- item drawing (px coords, s = size px)
+function drawItem(c,t,x,y,s){
+  const col = ITEMS[t].color;
+  c.save(); c.translate(x,y);
+  c.fillStyle = col; c.strokeStyle = '#00000055'; c.lineWidth = Math.max(1,s*0.08);
+  switch(t){
+    case 'iron_ore': case 'copper_ore': {
+      c.beginPath();
+      c.moveTo(-s*.45,s*.28); c.lineTo(-s*.3,-s*.32); c.lineTo(s*.08,-s*.44);
+      c.lineTo(s*.46,-s*.05); c.lineTo(s*.32,s*.4); c.lineTo(-s*.12,s*.46);
+      c.closePath(); c.fill(); c.stroke();
+      c.fillStyle='#ffffff33'; c.beginPath(); c.arc(-s*.1,-s*.12,s*.13,0,7); c.fill();
+      break; }
+    case 'iron_plate': case 'copper_plate': {
+      rrOn(c,-s*.42,-s*.42,s*.84,s*.84,s*.14); c.fill(); c.stroke();
+      c.strokeStyle='#ffffff55'; c.beginPath(); c.moveTo(-s*.24,-s*.18); c.lineTo(s*.18,-s*.18); c.stroke();
+      break; }
+    case 'wire': {
+      c.strokeStyle = col; c.lineWidth = s*0.16; c.lineCap='round';
+      c.beginPath();
+      for(let i=-1;i<=1;i++) c.arc(i*s*.22, 0, s*.2, Math.PI*0.9, Math.PI*2.1);
+      c.stroke();
+      break; }
+    case 'gear': {
+      c.beginPath();
+      for(let i=0;i<8;i++){
+        const a = i/8*Math.PI*2;
+        c.moveTo(Math.cos(a)*s*.3, Math.sin(a)*s*.3);
+        c.lineTo(Math.cos(a)*s*.48, Math.sin(a)*s*.48);
+      }
+      c.strokeStyle=col; c.lineWidth=s*.16; c.stroke();
+      c.beginPath(); c.arc(0,0,s*.28,0,7); c.fillStyle=col; c.fill();
+      c.beginPath(); c.arc(0,0,s*.12,0,7); c.fillStyle='#14100c'; c.fill();
+      break; }
+    case 'circuit': {
+      rrOn(c,-s*.42,-s*.42,s*.84,s*.84,s*.12); c.fill(); c.stroke();
+      c.strokeStyle='#0a3d1c'; c.lineWidth=s*.07;
+      c.beginPath(); c.moveTo(-s*.24,s*.2); c.lineTo(-s*.24,-s*.05); c.lineTo(s*.05,-s*.05); c.lineTo(s*.05,-s*.24); c.stroke();
+      c.fillStyle='#0a3d1c'; c.beginPath(); c.arc(s*.2,s*.18,s*.09,0,7); c.fill();
+      break; }
+    case 'tool': {
+      c.strokeStyle=col; c.lineWidth=s*.17; c.lineCap='round';
+      c.beginPath(); c.moveTo(-s*.3,s*.32); c.lineTo(s*.14,-s*.12); c.stroke();
+      c.beginPath(); c.arc(s*.24,-s*.22,s*.2,Math.PI*0.65,Math.PI*2.15); c.stroke();
+      break; }
+    case 'module': {
+      c.beginPath(); c.moveTo(0,-s*.48); c.lineTo(s*.4,0); c.lineTo(0,s*.48); c.lineTo(-s*.4,0);
+      c.closePath(); c.fill(); c.stroke();
+      c.fillStyle='#ffffff66'; c.beginPath(); c.arc(0,0,s*.12,0,7); c.fill();
+      break; }
+    case 'slag': {
+      c.beginPath();
+      c.moveTo(-s*.4,s*.2); c.quadraticCurveTo(-s*.5,-s*.25,-s*.1,-s*.35);
+      c.quadraticCurveTo(s*.3,-s*.5,s*.45,-s*.05); c.quadraticCurveTo(s*.5,s*.35,s*.05,s*.42);
+      c.quadraticCurveTo(-s*.25,s*.48,-s*.4,s*.2); c.closePath(); c.fill(); c.stroke();
+      c.strokeStyle='#ff5a2a88'; c.lineWidth=s*.06;
+      c.beginPath(); c.moveTo(-s*.15,s*.05); c.lineTo(s*.05,-s*.1); c.lineTo(s*.2,s*.12); c.stroke();
+      break; }
+  }
+  c.restore();
+}
+function rrOn(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+
+// ---- machine glyphs (px coords centered, s size)
+function drawGlyph(c,type,x,y,s,mir){
+  c.save(); c.translate(x,y); if(mir) c.scale(-1,1);
+  c.strokeStyle='#ffd9a3'; c.fillStyle='#ffd9a3'; c.lineWidth=Math.max(1.4,s*.09); c.lineCap='round'; c.lineJoin='round';
+  switch(type){
+    case 'extractor':
+      c.beginPath(); c.moveTo(-s*.3,-s*.35); c.lineTo(s*.3,-s*.35); c.lineTo(s*.3,-s*.1);
+      c.lineTo(-s*.3,-s*.1); c.closePath(); c.stroke();
+      c.beginPath(); c.moveTo(-s*.18,-s*.05); c.lineTo(0,s*.42); c.lineTo(s*.18,-s*.05); c.closePath(); c.fill();
+      break;
+    case 'smelter':
+      c.beginPath(); c.moveTo(-s*.34,s*.35); c.lineTo(-s*.34,-s*.05);
+      c.quadraticCurveTo(-s*.34,-s*.4,0,-s*.4); c.quadraticCurveTo(s*.34,-s*.4,s*.34,-s*.05);
+      c.lineTo(s*.34,s*.35); c.stroke();
+      c.fillStyle='#ff7a1a'; c.beginPath(); c.arc(0,s*.12,s*.16,0,7); c.fill();
+      break;
+    case 'press':
+      c.beginPath(); c.rect(-s*.3,-s*.42,s*.6,s*.2); c.stroke();
+      c.beginPath(); c.moveTo(0,-s*.2); c.lineTo(0,s*.05); c.stroke();
+      c.beginPath(); c.rect(-s*.22,s*.05,s*.44,s*.16); c.fill();
+      c.beginPath(); c.moveTo(-s*.36,s*.4); c.lineTo(s*.36,s*.4); c.stroke();
+      break;
+    case 'wiremill':
+      c.beginPath(); c.arc(0,0,s*.32,0,7); c.stroke();
+      c.beginPath();
+      for(let i=-1;i<=1;i++) c.arc(i*s*.13,0,s*.11,Math.PI*.9,Math.PI*2.1);
+      c.stroke();
+      break;
+    case 'fab': case 'toolworks': case 'modulebay':
+      c.beginPath(); c.moveTo(-s*.35,-s*.35); c.lineTo(-s*.35,-s*.1); c.lineTo(0,s*.08);
+      c.moveTo(s*.35,-s*.35); c.lineTo(s*.35,-s*.1); c.lineTo(0,s*.08);
+      c.moveTo(0,s*.08); c.lineTo(0,s*.4); c.stroke();
+      c.beginPath(); c.arc(0,s*.08,s*.1,0,7); c.fill();
+      break;
+    case 'diverter':
+      c.beginPath(); c.moveTo(-s*.25,-s*.4); c.lineTo(-s*.25,-s*.05); c.quadraticCurveTo(-s*.25,s*.22,s*.05,s*.22);
+      c.lineTo(s*.22,s*.22); c.stroke();
+      c.beginPath(); c.moveTo(s*.12,s*.06); c.lineTo(s*.34,s*.22); c.lineTo(s*.12,s*.38); c.closePath(); c.fill();
+      break;
+    case 'splitter':
+      c.beginPath(); c.moveTo(0,-s*.4); c.lineTo(0,-s*.05); c.stroke();
+      c.beginPath(); c.moveTo(0,-s*.05); c.lineTo(-s*.28,s*.3); c.moveTo(0,-s*.05); c.lineTo(s*.28,s*.3); c.stroke();
+      c.beginPath(); c.moveTo(-s*.34,s*.22); c.lineTo(-s*.28,s*.42); c.lineTo(-s*.12,s*.32); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(s*.34,s*.22); c.lineTo(s*.28,s*.42); c.lineTo(s*.12,s*.32); c.closePath(); c.fill();
+      break;
+    case 'crossover':
+      c.beginPath(); c.moveTo(-s*.3,-s*.38); c.lineTo(s*.3,s*.38); c.moveTo(s*.3,-s*.38); c.lineTo(-s*.3,s*.38); c.stroke();
+      c.beginPath(); c.moveTo(s*.18,s*.18); c.lineTo(s*.34,s*.42); c.lineTo(s*.08,s*.36); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(-s*.18,s*.18); c.lineTo(-s*.34,s*.42); c.lineTo(-s*.08,s*.36); c.closePath(); c.fill();
+      break;
+    case 'hopper':
+      c.beginPath(); c.moveTo(-s*.36,-s*.35); c.lineTo(s*.36,-s*.35); c.lineTo(s*.1,s*.15); c.lineTo(s*.1,s*.4);
+      c.moveTo(-s*.36,-s*.35); c.lineTo(-s*.1,s*.15); c.lineTo(-s*.1,s*.4); c.stroke();
+      break;
+    case 'chute':
+      c.beginPath();
+      for(let i=-1;i<=1;i++){ c.moveTo(i*s*.2,-s*.3); c.lineTo(i*s*.2,s*.05); }
+      c.stroke();
+      c.beginPath(); c.moveTo(-s*.34,s*.18); c.lineTo(s*.34,s*.18); c.stroke();
+      c.fillStyle='#ff5a2a'; c.beginPath(); c.arc(0,s*.32,s*.08,0,7); c.fill();
+      break;
+  }
+  c.restore();
+}
+
+function iconCanvas(type,sz){
+  const c = document.createElement('canvas');
+  c.width=c.height=(sz||40)*2; c.style.width=(sz||40)+'px'; c.style.height=(sz||40)+'px';
+  const g = c.getContext('2d'); g.scale(2,2);
+  const s=(sz||40);
+  g.fillStyle='#3a2e20'; rrOn(g,1,1,s-2,s-2,8); g.fill();
+  g.strokeStyle='#5a4832'; g.stroke();
+  drawGlyph(g,type,s/2,s/2,s*0.42,false);
+  return c;
+}
+function itemCanvas(t,sz){
+  const c = document.createElement('canvas');
+  c.width=c.height=(sz||24)*2; c.style.width=(sz||24)+'px'; c.style.height=(sz||24)+'px';
+  const g = c.getContext('2d'); g.scale(2,2);
+  drawItem(g,t,(sz||24)/2,(sz||24)/2,(sz||24)*0.82);
+  return c;
+}
+
+// ---------------------------------------------------------------- main render
+let lastTickAt = performance.now();
+let flashMachine = { id:0, until:0 };
+function render(now){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  const v = view();
+  const cs = v.cs;
+  // background
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0,'#2a3038'); g.addColorStop(0.16,'#1b1712'); g.addColorStop(0.75,'#14100c'); g.addColorStop(1,'#26100a');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+
+  const colX = v.ox, colW = S.lanes*cs;
+  const topY = v.oy, coreY = v.oy + S.depth*cs;
+
+  // shaft walls
+  ctx.fillStyle='#0c0906';
+  ctx.fillRect(colX-8, topY-4, colW+16, S.depth*cs+8);
+  // strata
+  ctx.strokeStyle='#ffffff08'; ctx.lineWidth=1;
+  for(let r=0;r<=S.depth;r++){
+    ctx.beginPath(); ctx.moveTo(colX-8, topY+r*cs); ctx.lineTo(colX+colW+8, topY+r*cs); ctx.stroke();
+  }
+  ctx.strokeStyle='#ffffff0d';
+  for(let l=0;l<=S.lanes;l++){
+    ctx.beginPath(); ctx.moveTo(colX+l*cs, topY); ctx.lineTo(colX+l*cs, coreY); ctx.stroke();
+  }
+  // surface / sky
+  ctx.fillStyle='#33291d';
+  ctx.fillRect(colX-30, topY-cs*0.55, colW+60, cs*0.55);
+  ctx.fillStyle='#0c0906';
+  ctx.fillRect(colX-2, topY-cs*0.5, colW+4, cs*0.5);
+
+  // veins
+  const tsec = now/1000;
+  for(let l=0;l<S.lanes;l++){
+    if(!VEINS[l]) continue;
+    const oreT = VEINS[l]==='copper'?'copper_ore':'iron_ore';
+    const cx0 = colX+l*cs;
+    ctx.fillStyle = VEINS[l]==='copper' ? '#5a3822' : '#3c434c';
+    rr(cx0+2, topY-cs*0.46, cs-4, cs*0.42, 5); ctx.fill();
+    for(let i=0;i<4;i++){
+      drawItem(ctx, oreT, cx0+cs*(0.2+((i*53)%60)/100), topY-cs*(0.12+((i*37)%28)/100), cs*0.14);
+    }
+    // TAP pulse until first ore
+    if(!GM[0][l] && (S.made.iron_ore||0)+(S.made.copper_ore||0) < 5){
+      const p = 0.5+0.5*Math.sin(tsec*4);
+      ctx.fillStyle=`rgba(255,179,71,${0.25+0.35*p})`;
+      ctx.font=`700 ${cs*0.2}px -apple-system,sans-serif`; ctx.textAlign='center';
+      ctx.fillText('TAP', cx0+cs/2, topY-cs*0.55);
+    }
+  }
+
+  // placement highlights
+  if(placing){
+    const D = MACH[placing.type];
+    const p = 0.5+0.5*Math.sin(tsec*5);
+    for(let r=0;r<S.depth;r++) for(let l=0;l<S.lanes;l++){
+      if(!validPlace(placing.type,r,l,placing.moveId)) continue;
+      ctx.fillStyle=`rgba(255,179,71,${0.10+0.14*p})`;
+      ctx.strokeStyle=`rgba(255,179,71,${0.5+0.4*p})`; ctx.lineWidth=1.5;
+      rr(colX+l*cs+3, topY+r*cs+3, D.w*cs-6, cs-6, 7); ctx.fill(); ctx.stroke();
+    }
+  }
+
+  // flushes (unclog rings)
+  for(let i=flushes.length-1;i>=0;i--){
+    const f = flushes[i]; f.t += 0.03;
+    if(f.t>1){ flushes.splice(i,1); continue; }
+    ctx.strokeStyle=`rgba(111,217,138,${(1-f.t)*0.5})`; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(colX, topY+(f.r+0.5)*cs); ctx.lineTo(colX+colW, topY+(f.r+0.5)*cs+f.t*cs*6); ctx.stroke();
+  }
+
+  // machines
+  const overview = cam.s < 0.75;
+  for(const m of S.machines) drawMachine(m, v, now, overview);
+
+  // items
+  const f = Math.min(1,(now-lastTickAt)/TICK_MS);
+  for(const it of S.items){
+    const x = colX + (it.pl+(it.l-it.pl)*f + 0.5)*cs;
+    const y = topY + (it.pr+(it.r-it.pr)*f + 0.5)*cs;
+    if(y<-cs||y>H+cs) continue;
+    if(overview){
+      ctx.fillStyle = ITEMS[it.t].color;
+      ctx.beginPath(); ctx.arc(x,y,Math.max(1.6,cs*0.18),0,7); ctx.fill();
+    } else drawItem(ctx, it.t, x, y, cs*0.5);
+  }
+
+  // core band
+  drawCore(v, now);
+
+  // particles
+  const dtp = 1/60;
+  for(let i=parts.length-1;i>=0;i--){
+    const p = parts[i]; p.t+=dtp;
+    if(p.t>p.life){ parts.splice(i,1); continue; }
+    p.x+=p.vx*dtp; p.y+=p.vy*dtp; p.vy+=6*dtp;
+    const a = 1-p.t/p.life;
+    ctx.fillStyle=p.color; ctx.globalAlpha=a;
+    ctx.fillRect(colX+p.x*cs-p.s*cs/2, topY+p.y*cs-p.s*cs/2, p.s*cs, p.s*cs);
+    ctx.globalAlpha=1;
+  }
+}
+
+function drawMachine(m, v, now, overview){
+  const D = MACH[m.type];
+  const cs = v.cs;
+  const x = v.ox + m.l*cs, y = v.oy + m.r*cs, w = D.w*cs;
+  if(y>H+cs || y<-cs*1.5) return;
+  const tsec = now/1000;
+  const starved = m.starve>0.35 && !D.transit && m.type!=='extractor';
+  const blocked = m.block>0.35;
+  const crafting = m.craft>0;
+  // body
+  let body = '#3a2e20';
+  if(starved) body = '#2a2119';
+  ctx.fillStyle = body;
+  rr(x+2.5, y+2.5, w-5, cs-5, 8); ctx.fill();
+  ctx.lineWidth = 1.5;
+  if(blocked){
+    const p=0.5+0.5*Math.sin(tsec*6);
+    ctx.strokeStyle=`rgba(255,107,87,${0.5+0.5*p})`;
+  } else if(starved){
+    const p=0.5+0.5*Math.sin(tsec*3);
+    ctx.strokeStyle=`rgba(163,147,126,${0.25+0.3*p})`;
+    ctx.setLineDash([4,4]);
+  } else ctx.strokeStyle='#5a4832';
+  ctx.stroke(); ctx.setLineDash([]);
+  if(flashMachine.id===m.id && now<flashMachine.until){
+    const p=0.5+0.5*Math.sin(tsec*10);
+    ctx.strokeStyle=`rgba(255,179,71,${p})`; ctx.lineWidth=3;
+    rr(x+1,y+1,w-2,cs-2,9); ctx.stroke(); ctx.lineWidth=1.5;
+  }
+  if(overview){
+    // chip form: state color block only
+    let ccol = '#7a6a52';
+    if(blocked) ccol = '#ff6b57'; else if(starved) ccol='#4a4038'; else if(crafting||m.type==='extractor') ccol='#ffb347';
+    ctx.fillStyle=ccol;
+    rr(x+cs*0.18, y+cs*0.18, w-cs*0.36, cs-cs*0.36, 4); ctx.fill();
+    return;
+  }
+  // glyph
+  const gy = crafting && m.type==='press' ? y+cs/2 + Math.sin(tsec*12)*1.5 : y+cs/2;
+  drawGlyph(ctx, m.type, x+w/2, gy, cs*0.4, m.mir);
+  if(starved) ctx.globalAlpha=1;
+  // smelter breathing glow
+  if(m.type==='smelter' && crafting){
+    const p=0.5+0.5*Math.sin(tsec*5);
+    ctx.fillStyle=`rgba(255,122,26,${0.12+0.18*p})`;
+    rr(x+2.5,y+2.5,w-5,cs-5,8); ctx.fill();
+  }
+  // craft progress
+  if(crafting && D.craft){
+    const pr = 1 - m.craft/D.craft;
+    ctx.fillStyle='#ffb347';
+    ctx.fillRect(x+6, y+cs-6, (w-12)*pr, 2.5);
+  }
+  // extractor progress + tier pips
+  if(m.type==='extractor'){
+    const pr = 1 - m.t/EXTRACT_T[m.tier];
+    ctx.fillStyle='#ffb347'; ctx.fillRect(x+6, y+cs-6, (w-12)*Math.max(0,Math.min(1,pr)), 2.5);
+    for(let i=0;i<m.tier;i++){ ctx.fillStyle='#ffd9a3'; ctx.fillRect(x+6+i*6, y+5, 4, 3); }
+  }
+  // buffer pips (top edge)
+  let bp = 0;
+  for(const k in m.buf) for(let i=0;i<m.buf[k];i++){
+    drawItem(ctx, k, x+10+bp*10, y+8, 8); bp++;
+  }
+  // hopper fill
+  if(m.type==='hopper' && m.hold.length){
+    ctx.fillStyle='#a3937e';
+    const hh = (cs-14)*(m.hold.length/HOPPER_CAP);
+    ctx.fillRect(x+w-9, y+cs-7-hh, 4, hh);
+  }
+  if(m.type==='chute' && m.hold.length){
+    drawItem(ctx,'slag', x+w-11, y+11, 9);
+  }
+  // output held bulge
+  if(m.out.length && !D.transit){
+    const t0 = m.out[0];
+    drawItem(ctx, typeof t0==='string'?t0:t0.it, x+w/2, y+cs-7, 10);
+  }
+  // ghost of missing/expected ingredient
+  if(D.w===2 && !D.transit){
+    const leftIng = m.mir?D.inR:D.inL, rightIng = m.mir?D.inL:D.inR;
+    ctx.globalAlpha = 0.34;
+    drawItem(ctx, leftIng, x+cs*0.5, y+8, 9);
+    drawItem(ctx, rightIng, x+cs*1.5, y+8, 9);
+    ctx.globalAlpha = 1;
+  } else if(starved){
+    const rec = D.recipes && D.recipes[0];
+    if(rec){
+      const missing = Object.keys(rec.in).find(k=>(m.buf[k]||0)<rec.in[k]);
+      if(missing){
+        const p=0.4+0.4*Math.sin(tsec*4);
+        ctx.globalAlpha=p;
+        drawItem(ctx, missing, x+w/2, y+8, 10);
+        ctx.globalAlpha=1;
+      }
+    }
+  }
+}
+
+let eyeBlink = 0;
+function drawCore(v, now){
+  const cs = v.cs;
+  const x = v.ox-10, y = v.oy + S.depth*cs, w = S.lanes*cs+20, h = cs*1.25;
+  if(y>H+h) return;
+  const tsec = now/1000;
+  coreGlow = Math.max(0, coreGlow-0.012);
+  corePain = Math.max(0, corePain-0.03);
+  const o = curOrder();
+  const lit = o && o.kind==='flow' && S.fuel>0;
+  // maw
+  const g = ctx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,'#26100a'); g.addColorStop(1,'#4a1607');
+  ctx.fillStyle=g; ctx.fillRect(x,y,w,h);
+  // glow
+  const glow = 0.25+coreGlow*0.5+(lit?0.3+0.1*Math.sin(tsec*6):0);
+  const rg = ctx.createRadialGradient(x+w/2,y+h*0.7,4, x+w/2,y+h*0.7,w*0.5);
+  rg.addColorStop(0,`rgba(255,122,26,${glow})`); rg.addColorStop(1,'rgba(255,122,26,0)');
+  ctx.fillStyle=rg; ctx.fillRect(x,y-6,w,h+6);
+  if(corePain>0){
+    ctx.fillStyle=`rgba(122,51,40,${corePain*0.5})`; ctx.fillRect(x,y,w,h);
+  }
+  // teeth
+  ctx.fillStyle='#14100c';
+  const n = Math.floor(w/(cs*0.5));
+  ctx.beginPath();
+  for(let i=0;i<=n;i++){
+    const tx = x+i*(w/n);
+    ctx.moveTo(tx,y); ctx.lineTo(tx+w/n/2, y+cs*0.22); ctx.lineTo(tx+w/n, y);
+  }
+  ctx.fill();
+  // the eye
+  if(tsec>eyeBlink){ eyeBlink = tsec + 3 + Math.random()*4; }
+  const blinkT = Math.max(0, Math.min(1, (eyeBlink-tsec)/0.15));
+  const open = blinkT<1 ? blinkT : 1;
+  const ex = x+w/2, ey = y+h*0.62, er = cs*0.30;
+  ctx.fillStyle='#1a0b06';
+  ctx.beginPath(); ctx.ellipse(ex,ey,er*1.7,er*open+0.5,0,0,7); ctx.fill();
+  ctx.fillStyle=`rgba(255,${140+Math.floor(coreGlow*80)},40,${0.8})`;
+  ctx.beginPath(); ctx.ellipse(ex,ey,er*0.9,er*0.9*open,0,0,7); ctx.fill();
+  ctx.fillStyle='#14100c';
+  ctx.beginPath(); ctx.ellipse(ex,ey,er*0.3,er*0.75*open,0,0,7); ctx.fill();
+}
+
+// ---------------------------------------------------------------- game loop
+let acc = 0, lastNow = performance.now();
+let paused = false;
+function frame(now){
+  requestAnimationFrame(frame);
+  const dt = Math.min(200, now-lastNow); lastNow = now;
+  paused = sheetOpen || bannerOpen || !!placing || document.hidden;
+  if(!paused){
+    acc += dt;
+    let n = 0;
+    while(acc>=TICK_MS && n<6){ step(); acc-=TICK_MS; n++; lastTickAt=now; }
+    if(acc>=TICK_MS) acc = 0;
+  }
+  // camera tween
+  cam.s += (cam.ts-cam.s)*0.18; cam.y += (cam.ty-cam.y)*0.2;
+  if(Math.abs(cam.s-cam.ts)<0.002) cam.s=cam.ts;
+  render(now);
+  updateHud(now);
+  saveTimer += dt;
+  if(saveTimer>5000){ saveTimer=0; if(!offlineMode) save(); }
+}
+
+// ---------------------------------------------------------------- HUD
+const $ = s=>document.querySelector(s);
+const orderchip = $('#orderchip'), stockbar = $('#stockbar'), hintbar = $('#hintbar');
+let hudCache = '';
+let hintUntil = 0, hintShownFor = -1;
+function hint(msg, ms){
+  hintbar.textContent = msg; hintbar.classList.add('on');
+  hintUntil = performance.now() + (ms||6000);
+}
+function updateHud(now){
+  const o = curOrder();
+  let key;
+  if(S.ended) key = 'end';
+  else if(!o) key='none';
+  else key = S.orderIdx+':'+S.oCount+':'+Math.floor(S.fuel/4)+':'+Math.floor(S.sustain/8);
+  const stockKey = JSON.stringify(S.stock);
+  if(key+stockKey !== hudCache){
+    hudCache = key+stockKey;
+    renderOrderChip(o);
+    renderStockbar();
+  }
+  hudH = document.getElementById('topbar').offsetHeight || 110;
+  if(now>hintUntil) hintbar.classList.remove('on');
+  else if(o && o.hint && hintShownFor!==S.orderIdx && S.oCount===0 && S.sustain===0){
+    // handled at order start
+  }
+  // choke button
+  const c = worstChoke();
+  $('#chokebtn').style.display = c?'flex':'none';
+}
+function renderOrderChip(o){
+  const cnv = orderchip.querySelector('canvas');
+  const g = cnv.getContext('2d'); g.clearRect(0,0,52,52);
+  const flame = orderchip.querySelector('.flame');
+  if(S.ended || !o){
+    orderchip.querySelector('.otxt').textContent = 'THE CORE STIRS';
+    orderchip.querySelector('.osub').textContent = 'It is sated. For now. Keep forging.';
+    orderchip.querySelector('.opct').textContent='';
+    orderchip.querySelector('.bar').style.width='100%';
+    flame.style.display='none';
+    g.save(); g.scale(2,2); drawItem(g,'module',13,13,20); g.restore();
+    return;
+  }
+  g.save(); g.scale(2,2); drawItem(g,o.item,13,13,20); g.restore();
+  const next = ORDERS[S.orderIdx+1];
+  const peek = next ? ('next: '+(next.kind==='flow'?'keep it lit — ':'')+ITEMS[next.item].name.toLowerCase()) : 'next: ???';
+  if(o.kind==='deliver'){
+    orderchip.querySelector('.otxt').textContent = `Feed the Core: ${ITEMS[o.item].name}`;
+    orderchip.querySelector('.osub').textContent = o.era+'  ·  '+peek;
+    orderchip.querySelector('.opct').textContent = `${S.oCount}/${o.count}`;
+    orderchip.querySelector('.bar').style.width = (100*S.oCount/o.count)+'%';
+    flame.style.display='none';
+  } else {
+    orderchip.querySelector('.otxt').textContent = `Keep the Core lit: ${ITEMS[o.item].name}s`;
+    orderchip.querySelector('.osub').textContent = o.era+'  ·  '+peek;
+    orderchip.querySelector('.opct').textContent = Math.floor(S.sustain/TPS)+'s/'+Math.floor(o.sustain/TPS)+'s';
+    orderchip.querySelector('.bar').style.width = (100*S.sustain/o.sustain)+'%';
+    flame.style.display='block';
+    flame.querySelector('.fuel i').style.width = Math.min(100,100*S.fuel/(o.fuelPer*3))+'%';
+    flame.querySelector('.sus i').style.width = (100*S.sustain/o.sustain)+'%';
+  }
+}
+const STOCK_ORDER = ['iron_plate','gear','copper_plate','wire','circuit','tool','module','iron_ore','copper_ore'];
+function renderStockbar(){
+  stockbar.innerHTML='';
+  for(const t of STOCK_ORDER){
+    const n = S.stock[t]||0;
+    if(!n) continue;
+    const d = document.createElement('div'); d.className='schip';
+    d.appendChild(itemCanvas(t,17));
+    const s = document.createElement('span'); s.textContent=n; d.appendChild(s);
+    stockbar.appendChild(d);
+  }
+}
+function worstChoke(){
+  let best=null,bv=0.45;
+  for(const m of S.machines){
+    if(m.type==='extractor'||MACH[m.type].transit) {
+      if(m.block>bv){bv=m.block;best=m;}
+      continue;
+    }
+    const v = Math.max(m.starve, m.block);
+    if(v>bv){ bv=v; best=m; }
+  }
+  return best;
+}
+
+// ---------------------------------------------------------------- sheets
+const sheet = $('#sheet'), scrim = $('#scrim');
+let sheetOpen = false, bannerOpen = false;
+function openSheet(html){
+  sheet.innerHTML = html;
+  sheet.classList.add('on'); scrim.classList.add('on');
+  sheetOpen = true;
+}
+function closeSheet(){
+  sheet.classList.remove('on'); scrim.classList.remove('on');
+  sheetOpen = false;
+}
+scrim.addEventListener('click', ()=>{ if(sheetOpen) closeSheet(); });
+
+function costHtml(cost, cls){
+  let h = `<div class="cost ${cls||''}">`;
+  const ks = Object.keys(cost);
+  if(!ks.length) return '';
+  for(const k of ks){
+    const lack = (S.stock[k]||0)<cost[k];
+    h += `<span class="${lack?'lack':''}" data-ic="${k}">${cost[k]}</span>`;
+  }
+  return h+'</div>';
+}
+function hydrateIcons(root){
+  root.querySelectorAll('[data-ic]').forEach(el=>{
+    el.prepend(itemCanvas(el.dataset.ic,13));
+  });
+  root.querySelectorAll('[data-mc]').forEach(el=>{
+    el.prepend(iconCanvas(el.dataset.mc, parseInt(el.dataset.sz||'38')));
+  });
+  root.querySelectorAll('[data-itc]').forEach(el=>{
+    el.prepend(itemCanvas(el.dataset.itc, parseInt(el.dataset.sz||'24')));
+  });
+}
+
+// ---- build sheet
+function openBuildSheet(r,l){
+  const rows = [];
+  const types = Object.keys(MACH).filter(t=>S.unlocked.includes(t));
+  let cards = '';
+  for(const t of types){
+    const D = MACH[t];
+    const fits = validPlace(t,r,l) || (D.w===2 && validPlace(t,r,l-1));
+    const afford = canAfford(D.cost);
+    const off = (!fits||!afford);
+    let why = '';
+    if(!afford) why = '';
+    else if(!fits) why = D.row0? '<div class="d" style="color:var(--bad)">needs an ore seam</div>'
+                        : '<div class="d" style="color:var(--bad)">doesn\'t fit here</div>';
+    cards += `<button class="bcard ${off?'off':''}" data-build="${t}" data-mc="${t}">
+      <div><div class="n">${D.name}</div><div class="d">${D.desc}</div>${costHtml(D.cost)}${why}</div></button>`;
+  }
+  const canRemove = S.depth>5 && r>0 && !S.machines.some(m=>m.r===r);
+  openSheet(`
+    <div class="shead"><div>
+      <div class="t">Build</div><div class="s">row ${r} · lane ${l+1}</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    <div class="bgrid">${cards||'<div class="d" style="color:var(--dim);font-size:13px">Nothing unlocked yet — feed the Core.</div>'}</div>
+    <div class="rowtools">
+      <button data-act="rowabove" ${S.depth>=MAXDEPTH?'disabled':''}>⤒ Insert row above</button>
+      <button data-act="rowbelow" ${S.depth>=MAXDEPTH?'disabled':''}>⤓ Insert row below</button>
+      <button data-act="rowdel" ${canRemove?'':'disabled'}>✂ Remove row</button>
+    </div>`);
+  hydrateIcons(sheet);
+  sheet.onclick = (e)=>{
+    const b = e.target.closest('[data-build]');
+    if(b){
+      const t = b.dataset.build, D = MACH[t];
+      if(!canAfford(D.cost)){ hint('Not enough goods — feed the Core more.', 2500); return; }
+      let pl = l;
+      if(!validPlace(t,r,pl) && D.w===2 && validPlace(t,r,l-1)) pl = l-1;
+      if(validPlace(t,r,pl)){
+        placeMachine(t,r,pl,false);
+        closeSheet();
+      } else {
+        closeSheet();
+        startPlacing(t,{free:false});
+      }
+      return;
+    }
+    const a = e.target.closest('[data-act]');
+    if(!a) return;
+    if(a.dataset.act==='close') closeSheet();
+    if(a.dataset.act==='rowabove'){ insertRow(r); closeSheet(); }
+    if(a.dataset.act==='rowbelow'){ insertRow(r+1); closeSheet(); }
+    if(a.dataset.act==='rowdel'){ removeRow(r); closeSheet(); }
+  };
+}
+
+// ---- inspect sheet
+function openInspect(m){
+  const D = MACH[m.type];
+  const pct = v=>Math.round(v*100)+'%';
+  const inR = (m.inEma*TPS*60).toFixed(1), outR = (m.outEma*TPS*60).toFixed(1);
+  let meters = '';
+  if(!D.transit && m.type!=='extractor'){
+    meters = `
+    <div class="meter"><div class="lbl"><span>Starved (last min)</span><span>${pct(m.starve)}</span></div>
+      <div class="bar"><i style="width:${m.starve*100}%;background:var(--dim)"></i></div></div>`;
+  }
+  meters += `
+    <div class="meter"><div class="lbl"><span>Blocked (last min)</span><span>${pct(m.block)}</span></div>
+      <div class="bar"><i style="width:${m.block*100}%;background:var(--bad)"></i></div></div>`;
+  let extra = '';
+  if(m.type==='extractor'){
+    extra = `<div class="kv"><span>Mark</span><b>Mk.${'I'.repeat(m.tier)}</b></div>
+      <div class="kv"><span>Rate</span><b>${(TPS/EXTRACT_T[m.tier]).toFixed(2)}/s</b></div>`;
+  }
+  if(m.type==='hopper') extra += `<div class="kv"><span>Held</span><b>${m.hold.length}/${HOPPER_CAP}</b></div>`;
+  let upBtn = '';
+  if(m.type==='extractor' && m.tier<S.maxTier){
+    const c = TIER_COST[m.tier+1];
+    upBtn = `<button data-act="upgrade">Upgrade ${costHtml(c)}</button>`;
+  }
+  const canMirror = ['diverter','fab','toolworks','modulebay','crossover'].includes(m.type);
+  openSheet(`
+    <div class="shead" data-mc="${m.type}" data-sz="40"><div>
+      <div class="t">${D.name}</div><div class="s">${D.desc}</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    <div class="kv"><span>In</span><b>${inR}/min</b></div>
+    <div class="kv"><span>Out</span><b>${outR}/min</b></div>
+    ${extra}${meters}
+    <div style="font-size:11.5px;color:var(--dim);margin:4px 0 2px">Hold the machine to hand-crank it at 3× speed.</div>
+    <div class="ibtns">
+      ${upBtn}
+      <button data-act="move">Move</button>
+      ${canMirror?'<button data-act="mirror">Mirror</button>':''}
+      <button class="warn" data-act="sell">Sell ↩</button>
+    </div>`);
+  hydrateIcons(sheet);
+  sheet.onclick = (e)=>{
+    const a = e.target.closest('[data-act]'); if(!a) return;
+    const act = a.dataset.act;
+    if(act==='close') closeSheet();
+    if(act==='sell'){ sellMachine(m); closeSheet(); }
+    if(act==='move'){ closeSheet(); startPlacing(m.type,{moveId:m.id}); }
+    if(act==='mirror'){
+      if(m.type==='diverter'){
+        const tl = m.l + (m.mir?1:-1); // direction after mirror
+        if(tl<0||tl>=S.lanes){ hint('No lane on that side.',2000); return; }
+      }
+      m.mir=!m.mir; save(); closeSheet();
+    }
+    if(act==='upgrade'){
+      const c = TIER_COST[m.tier+1];
+      if(!canAfford(c)){ hint('Not enough goods for the upgrade.',2500); return; }
+      pay(c); m.tier++; m.t=Math.min(m.t,EXTRACT_T[m.tier]); buzz(15); save();
+      openInspect(m);
+    }
+  };
+}
+
+// ---- stock / stats sheet (tap the Core)
+function openStock(){
+  let cells='';
+  for(const t of STOCK_ORDER){
+    cells += `<div class="sc" data-itc="${t}"><div><div class="n">${ITEMS[t].name}</div>
+      <div class="v">${S.stock[t]||0}</div></div></div>`;
+  }
+  let madeRows='';
+  for(const t of Object.keys(ITEMS)){
+    if(!S.made[t]) continue;
+    madeRows += `<div class="kv"><span>${ITEMS[t].name}</span><b>${S.made[t]}</b></div>`;
+  }
+  openSheet(`
+    <div class="shead"><div>
+      <div class="t">The Core's hoard</div><div class="s">Everything it swallowed. Build costs come from here.</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    <div class="stockgrid">${cells}</div>
+    <div style="margin-top:14px;font-size:12px;color:var(--dim);font-weight:700;letter-spacing:1px">EVER MADE</div>
+    ${madeRows||'<div class="kv"><span>Nothing yet</span><b>—</b></div>'}`);
+  hydrateIcons(sheet);
+  sheet.onclick = e=>{ if(e.target.closest('[data-act="close"]')) closeSheet(); };
+}
+
+// ---- settings
+function openSettings(){
+  openSheet(`
+    <div class="shead"><div>
+      <div class="t">Dropforge</div><div class="s">a hungry hole in the ground</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    <div style="font-size:13px;color:var(--dim);line-height:1.6">
+      <b style="color:var(--ink)">Tap</b> a machine to inspect, an empty cell to build, a seam to chip ore.<br>
+      <b style="color:var(--ink)">Hold</b> anything to crank it at 3× — your finger is the best machine in a crisis.<br>
+      <b style="color:var(--ink)">Drag</b> to scroll. <b style="color:var(--ink)">⛶</b> for the ant-farm view.<br>
+      Moving and selling are always free and fully refunded. Rebuild without fear.<br>
+      Pile-ups mean blocked. Holes mean starved. Look, don't read.
+    </div>
+    <div class="ibtns" style="margin-top:16px">
+      <button class="warn" data-act="reset">Reset save</button>
+    </div>`);
+  sheet.onclick = e=>{
+    const a = e.target.closest('[data-act]'); if(!a) return;
+    if(a.dataset.act==='close') closeSheet();
+    if(a.dataset.act==='reset'){
+      if(a.dataset.armed){ resetting=true; localStorage.removeItem(SAVE_KEY); location.reload(); }
+      else { a.dataset.armed='1'; a.textContent='Really destroy everything?'; }
+    }
+  };
+}
+
+// ---------------------------------------------------------------- banners
+const banner = $('#banner');
+function showOrderBanner(o){
+  bannerOpen = true;
+  const lines = (o.reward.lines||[]).map(t=>`<div>${t}</div>`).join('');
+  banner.querySelector('.card').innerHTML = `
+    <div class="k">ORDER COMPLETE</div>
+    <div class="t">The Core is fed</div>
+    <div class="rew">${lines}</div>
+    <button class="go">FORGE ON</button>`;
+  banner.classList.add('on');
+  banner.querySelector('.go').onclick = dismissBanner;
+}
+function dismissBanner(){
+  banner.classList.remove('on');
+  bannerOpen = false;
+  resize(); clampCamY();
+  const o = curOrder();
+  if(S.pendingGrant){
+    const g = S.pendingGrant; S.pendingGrant=null;
+    startPlacing(g,{free:true});
+  } else if(o && o.hint){ hint(o.hint, 8000); hintShownFor=S.orderIdx; }
+  save();
+}
+function showEnd(){
+  bannerOpen = true;
+  const mods = S.made.module||0;
+  banner.querySelector('.card').innerHTML = `
+    <div class="k">DEEP BELOW</div>
+    <div class="t">THE CORE STIRS…</div>
+    <div class="b">Something vast shifts in its sleep. The orders stop.<br>
+    The forge keeps falling. You built this. ${mods} modules deep.<br><br>
+    <i>End of the vein — for now.</i></div>
+    <button class="go">KEEP FORGING</button>`;
+  banner.classList.add('on');
+  banner.querySelector('.go').onclick = ()=>{ banner.classList.remove('on'); bannerOpen=false; save(); };
+}
+function showChokeReport(rep){
+  bannerOpen = true;
+  const dur = fmtDur(rep.ms);
+  let prod = Object.keys(rep.prod).map(k=>
+    `<div><span data-itc="${k}" data-sz="22"></span> ${rep.prod[k]} ${ITEMS[k].name.toLowerCase()}</div>`).join('');
+  if(!prod) prod = '<div>Nothing moved. The shaft waited for you.</div>';
+  let choke = '';
+  if(rep.worst){
+    choke = `<div class="chokeline" data-jump="${rep.worst.m.id}">⚠ ${MACH[rep.worst.m.type].name} ${rep.worst.kind} ${Math.round(rep.worst.v*100)}% of the time — tap to go</div>`;
+  }
+  if(rep.orderDone) choke += `<div>✓ An order was completed while you were away</div>`;
+  banner.querySelector('.card').innerHTML = `
+    <div class="k">WHILE YOU WERE AWAY</div>
+    <div class="t">Ran ${dur}</div>
+    <div class="rew">${prod}${choke}</div>
+    <button class="go">BACK TO THE FORGE</button>`;
+  hydrateIcons(banner);
+  banner.classList.add('on');
+  banner.querySelector('.go').onclick = ()=>{
+    banner.classList.remove('on'); bannerOpen=false;
+    if(S.orderIdx>0 && ORDERS[S.orderIdx-1] && S.oCount===0){} // no-op
+    save();
+  };
+  const cl = banner.querySelector('[data-jump]');
+  if(cl) cl.onclick = ()=>{
+    banner.classList.remove('on'); bannerOpen=false;
+    jumpToMachine(rep.worst.m);
+  };
+}
+function fmtDur(ms){
+  const m = Math.floor(ms/60000);
+  if(m<60) return m+'m';
+  return Math.floor(m/60)+'h '+(m%60)+'m';
+}
+function jumpToMachine(m){
+  setZoom('work', m.r);
+  flashMachine = { id:m.id, until:performance.now()+2600 };
+}
+
+// ---------------------------------------------------------------- placement
+let placing = null;
+function startPlacing(type, opt){
+  placing = { type, free:!!(opt&&opt.free), moveId:opt&&opt.moveId };
+  const pb = $('#placebar');
+  const nm = MACH[type].name;
+  pb.querySelector('.ptxt').textContent =
+    (opt&&opt.moveId?`Move the ${nm}`:`Place the ${nm}`) + ' — tap a glowing cell';
+  pb.classList.add('on');
+  if(cam.mode==='over') setZoom('work');
+  if(type==='extractor') { cam.ty = -1.4; }
+}
+function stopPlacing(cancelled){
+  const wasMove = placing && placing.moveId;
+  const wasFree = placing && placing.free;
+  const t = placing && placing.type;
+  placing = null;
+  $('#placebar').classList.remove('on');
+  if(cancelled && wasFree && t){
+    // re-offer the grant later via build sheet: just add to stock? keep simple: grant stays pending
+    S.pendingGrant = t;
+    hint('Granted machine waiting — tap any empty cell to place it free.', 5000);
+  }
+}
+$('#placecancel').addEventListener('click', ()=>stopPlacing(true));
+function tryPlaceAt(r,l){
+  const p = placing;
+  const D = MACH[p.type];
+  let pl = l;
+  if(!validPlace(p.type,r,pl,p.moveId) && D.w===2 && validPlace(p.type,r,l-1,p.moveId)) pl=l-1;
+  if(!validPlace(p.type,r,pl,p.moveId)) return false;
+  if(p.moveId){
+    const m = S.machines.find(mm=>mm.id===p.moveId);
+    if(m){ m.r=r; m.l=pl;
+      if(m.type==='diverter' && m.l+(m.mir?-1:1)>=S.lanes) m.mir=true;
+      if(m.type==='diverter' && m.l+(m.mir?-1:1)<0) m.mir=false;
+      rebuildGrids(); buzz(10); save(); }
+  } else {
+    placeMachine(p.type,r,pl,p.free);
+  }
+  stopPlacing(false);
+  return true;
+}
+
+// ---------------------------------------------------------------- input
+let ptr = null;
+cv.addEventListener('pointerdown', e=>{
+  if(sheetOpen){ closeSheet(); return; }
+  if(bannerOpen) return;
+  cv.setPointerCapture(e.pointerId);
+  ptr = { id:e.pointerId, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY,
+    t0:performance.now(), moved:false, holdFired:false,
+    holdTimer: setTimeout(()=>holdFire(), 270) };
+});
+cv.addEventListener('pointermove', e=>{
+  if(!ptr || e.pointerId!==ptr.id) return;
+  const dx = e.clientX-ptr.x, dy = e.clientY-ptr.y;
+  ptr.x=e.clientX; ptr.y=e.clientY;
+  if(!ptr.moved && Math.hypot(e.clientX-ptr.x0, e.clientY-ptr.y0)>9){
+    ptr.moved = true;
+    clearTimeout(ptr.holdTimer);
+    endCrank();
+  }
+  if(ptr.moved && !crank.active && cam.mode==='work'){
+    cam.ty -= dy/(cellPx*cam.s); cam.y = cam.ty; clampCamY();
+  }
+});
+function upOrCancel(e){
+  if(!ptr || e.pointerId!==ptr.id) return;
+  clearTimeout(ptr.holdTimer);
+  const wasHold = ptr.holdFired;
+  const wasMoved = ptr.moved;
+  const x = ptr.x0, y = ptr.y0;
+  ptr = null;
+  endCrank();
+  if(wasHold || wasMoved || e.type==='pointercancel') return;
+  handleTap(x,y);
+}
+cv.addEventListener('pointerup', upOrCancel);
+cv.addEventListener('pointercancel', upOrCancel);
+
+function holdFire(){
+  if(!ptr || ptr.moved) return;
+  ptr.holdFired = true;
+  const [wx,wy] = px2w(ptr.x0, ptr.y0);
+  const l = Math.floor(wx), r = Math.floor(wy);
+  if(cam.mode!=='work' || placing) return;
+  // vein pour (also the strip just above row 0)
+  if(r<=0 && r>=-1 && l>=0 && l<S.lanes && VEINS[l] && !machineAt(0,l)){
+    crank.active=true; crank.kind='vein'; crank.lane=l;
+    spawnVeinOre(l,false); buzz(8);
+    return;
+  }
+  const m = machineAt(Math.max(0,r),Math.max(0,Math.min(S.lanes-1,l)));
+  if(m){
+    crank.active=true; crank.kind='machine'; crank.id=m.id;
+    sparks(m.l+MACH[m.type].w/2, m.r+0.5, '#ffd9a3', 5);
+    buzz(8);
+  }
+}
+function endCrank(){ crank.active=false; crank.kind=null; crank.id=0; }
+
+function handleTap(px,py){
+  const [wx,wy] = px2w(px,py);
+  const l = Math.floor(wx), r = Math.floor(wy);
+  if(cam.mode==='over'){
+    // dive to that row
+    setZoom('work', Math.max(0,Math.min(S.depth-1,r)));
+    return;
+  }
+  if(placing){
+    if(r>=0 && r<S.depth && l>=0 && l<S.lanes){
+      if(!tryPlaceAt(r,l)) hint("Can't place there.",1600);
+    }
+    return;
+  }
+  // core tap
+  if(wy>=S.depth && wy<S.depth+1.5){ openStock(); return; }
+  if(l<0||l>=S.lanes) return;
+  // vein strip (above and including row 0)
+  if(r<=0 && r>=-1 && VEINS[l] && !machineAt(0,l)){
+    if(spawnVeinOre(l,false)) buzz(6);
+    return;
+  }
+  if(r<0||r>=S.depth) return;
+  const m = machineAt(r,l);
+  if(m){ openInspect(m); return; }
+  if(S.pendingGrant){
+    const g = S.pendingGrant; S.pendingGrant = null;
+    startPlacing(g,{free:true});
+    return;
+  }
+  if(r===0){
+    if(VEINS[l]) { if(spawnVeinOre(l,false)) buzz(6); return; }
+    hint('The surface. Machines go below — except extractors, on seams.',2600);
+    return;
+  }
+  openBuildSheet(r,l);
+}
+
+$('#zoombtn').addEventListener('click', ()=>{
+  setZoom(cam.mode==='work'?'over':'work',
+    cam.mode==='over'? Math.floor(cam.y + (H/cellPx)/2) : undefined);
+});
+$('#chokebtn').addEventListener('click', ()=>{
+  const m = worstChoke(); if(m) jumpToMachine(m);
+});
+$('#gearbtn').addEventListener('click', openSettings);
+$('#orderchip').addEventListener('click', ()=>{
+  const o = curOrder();
+  if(o && o.hint) hint(o.hint, 6000);
+});
+
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
+window.addEventListener('pagehide', save);
+
+// ---------------------------------------------------------------- boot
+function boot(){
+  const loaded = load();
+  if(loaded){
+    S = loaded;
+    // rebuild machine transient fields lost pre-v1 saves (defensive)
+    for(const m of S.machines){
+      m.buf=m.buf||{}; m.out=m.out||[]; m.hold=m.hold||[];
+      m.starve=m.starve||0; m.block=m.block||0; m.inEma=m.inEma||0; m.outEma=m.outEma||0;
+      m.inAcc=0; m.outAcc=0; m.blockStreak=m.blockStreak||0;
+    }
+    resize(); rebuildGrids();
+    // softlock guard: no machines, no grant pending, can't afford a smelter -> regrant
+    if(!S.pendingGrant && S.machines.length===0 && S.orderIdx>0 && !canAfford(MACH.smelter.cost)){
+      for(let i=S.orderIdx-1;i>=0;i--) if(ORDERS[i].reward.grant){ S.pendingGrant=ORDERS[i].reward.grant; break; }
+    }
+    const rep = runOffline();
+    save();
+    setZoom('work', 0);
+    if(rep) showChokeReport(rep);
+    else if(S.pendingGrant){
+      hint(`A free ${MACH[S.pendingGrant].name} is waiting — tap any empty cell to place it.`, 9000);
+    } else {
+      const o = curOrder();
+      if(o && o.hint){ hint(o.hint, 7000); hintShownFor=S.orderIdx; }
+    }
+  } else {
+    S = freshState();
+    resize(); rebuildGrids();
+    setZoom('work', 0);
+    cam.y = cam.ty;
+    const o = curOrder();
+    hint(o.hint, 9000); hintShownFor = 0;
+    save();
+  }
+  cam.y = cam.ty; cam.s = cam.ts;
+  requestAnimationFrame(frame);
+}
+boot();
+
+// ---------------------------------------------------------------- debug hook
+window.__dbg = {
+  get S(){ return S; },
+  step, tickN(n){ for(let i=0;i<n;i++) step(); },
+  place:(t,r,l)=>placeMachine(t,r,l,true),
+  spawn:(l)=>spawnVeinOre(l,false),
+  give:(t,n)=>{ S.stock[t]=(S.stock[t]||0)+n; },
+  unlockAll(){ for(const t in MACH) if(!S.unlocked.includes(t)) S.unlocked.push(t); },
+  finishOrder(){ const o=curOrder(); if(!o)return; if(o.kind==='deliver'){S.oCount=o.count-1; deliver(o.item);} else {S.fuel=2; S.sustain=o.sustain; orderTick();} },
+  dismiss(){ if(bannerOpen){ banner.classList.remove('on'); bannerOpen=false; if(S.pendingGrant){S.pendingGrant=null;} } },
+  save, rebuildGrids,
+  reset(){ resetting=true; localStorage.removeItem(SAVE_KEY); location.reload(); },
+};
+</script>
+</body>
+</html>
