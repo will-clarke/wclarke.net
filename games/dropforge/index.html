@@ -113,6 +113,22 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;}
 .stockgrid .n{font-size:11px;color:var(--dim);}
 .stockgrid .v{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;}
 
+/* ---------- quick menu (hold a machine) ---------- */
+#qmenu{position:fixed;z-index:11;display:none;flex-direction:column;gap:4px;min-width:148px;
+  background:linear-gradient(180deg,#2c231a,#221b14);border:1px solid var(--amber);
+  border-radius:16px;padding:7px;box-shadow:0 10px 34px #000d, 0 0 24px #ff7a1a22;
+  animation:qpop .14s cubic-bezier(.2,1.4,.4,1);}
+#qmenu.on{display:flex;}
+@keyframes qpop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+#qmenu .qt{font-size:11px;font-weight:800;letter-spacing:1px;color:var(--amber);
+  padding:3px 8px 5px;text-transform:uppercase;}
+#qmenu button{display:flex;align-items:center;gap:9px;padding:10px 10px;border-radius:11px;
+  font-size:14px;font-weight:700;background:var(--panel2);text-align:left;}
+#qmenu button:active{background:#3a2e20;}
+#qmenu button .qi{width:20px;text-align:center;font-size:15px;}
+#qmenu button.warn{color:var(--bad);}
+#qmenu button .cost{margin-top:0;margin-left:auto;}
+
 /* ---------- banner (order complete / report / end) ---------- */
 #banner{position:fixed;inset:0;z-index:12;display:none;align-items:center;justify-content:center;padding:24px;}
 #banner.on{display:flex;}
@@ -165,6 +181,7 @@ button{font:inherit;color:inherit;background:none;border:none;padding:0;}
 </div>
 
 <div id="scrim"></div>
+<div id="qmenu"></div>
 <div id="sheet"></div>
 <div id="banner"><div class="card"></div></div>
 
@@ -242,7 +259,7 @@ const ORDERS = [
     reward:{ unlock:['smelter'], grant:'smelter',
       lines:['Smelter unlocked — a gift from below'] } },
   { kind:'deliver', item:'iron_plate', count:4, era:'ERA 0 · BARE HANDS',
-    hint:'Pour ore into the smelter. Hold the smelter to crank it.',
+    hint:'Pour ore into the smelter. Wrong spot? Hold a machine to move it.',
     reward:{ unlock:['extractor'], grant:'extractor',
       lines:['Extractor unlocked — it mines while you sleep'] } },
   { kind:'deliver', item:'iron_plate', count:12, era:'ERA 0 · BARE HANDS',
@@ -324,8 +341,7 @@ function newMachine(type,r,l,mir){
 }
 
 // ---------------------------------------------------------------- sim
-const crank = { active:false, kind:null, id:0, lane:0 };
-function crankMult(m){ return (crank.active && crank.kind==='machine' && crank.id===m.id) ? 3 : 1; }
+const pour = { active:false, lane:0 };
 
 function ema(m,k,v){ m[k] += EMA_A*(v-m[k]); }
 
@@ -343,7 +359,7 @@ function stepMachine(m){
   const D = MACH[m.type];
   if(m.type==='extractor'){
     if(m.out.length===0){
-      m.t -= crankMult(m);
+      m.t--;
       if(m.t<=0){
         const ore = VEINS[m.l]==='copper' ? 'copper_ore' : 'iron_ore';
         m.out.push(ore); made(ore);
@@ -361,7 +377,7 @@ function stepMachine(m){
   if(D.transit) return;
   // crafters
   if(m.craft>0){
-    m.craft -= crankMult(m);
+    m.craft--;
     if(m.craft<=0){ finishCraft(m); m.craft=0; }
     ema(m,'starve',0);
     return;
@@ -527,7 +543,7 @@ function orderTick(){
 
 function step(){
   S.tick++;
-  if(crank.active && crank.kind==='vein' && S.tick%3===0) spawnVeinOre(crank.lane,true);
+  if(pour.active && S.tick%3===0) spawnVeinOre(pour.lane,true);
   for(const m of S.machines) stepMachine(m);
   movePass();
   ejectPass();
@@ -581,6 +597,10 @@ function placeMachine(type,r,l,free){
   rebuildGrids();
   sparks(l+D.w/2, r+0.5, '#ffb347', 10);
   buzz(12); save();
+  if(!offlineMode && !S.hintHold){
+    S.hintHold = 1;
+    hint('Misplaced? HOLD a machine to move, mirror or sell it — always free.', 7000);
+  }
   return m;
 }
 function sellMachine(m){
@@ -1150,7 +1170,7 @@ let paused = false;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(200, now-lastNow); lastNow = now;
-  paused = sheetOpen || bannerOpen || !!placing || document.hidden;
+  paused = sheetOpen || bannerOpen || qmenuOpen || !!placing || document.hidden;
   if(!paused){
     acc += dt;
     let n = 0;
@@ -1289,6 +1309,47 @@ function hydrateIcons(root){
   });
 }
 
+// ---- quick menu (hold a machine)
+const qmenu = $('#qmenu');
+let qmenuOpen = false;
+function openQuickMenu(m){
+  const D = MACH[m.type];
+  let h = `<div class="qt">${D.name}</div>`;
+  h += `<button data-q="move"><span class="qi">✥</span>Move</button>`;
+  if(['diverter','fab','toolworks','modulebay'].includes(m.type))
+    h += `<button data-q="mirror"><span class="qi">⇋</span>Mirror</button>`;
+  if(m.type==='extractor' && m.tier<S.maxTier)
+    h += `<button data-q="upgrade"><span class="qi">▲</span>Upgrade${costHtml(TIER_COST[m.tier+1])}</button>`;
+  h += `<button data-q="info"><span class="qi">◔</span>Details</button>`;
+  h += `<button class="warn" data-q="sell"><span class="qi">↩</span>Sell (refund)</button>`;
+  qmenu.innerHTML = h;
+  hydrateIcons(qmenu);
+  qmenu.classList.add('on');
+  qmenuOpen = true;
+  const [mx,my] = w2px(m.l + D.w/2, m.r + 0.5);
+  const mw = qmenu.offsetWidth, mh = qmenu.offsetHeight;
+  let x = mx + cellPx*0.75;
+  if(x+mw > W-8) x = mx - cellPx*0.75 - mw;
+  x = Math.max(8, Math.min(W-mw-8, x));
+  const y = Math.max(hudH+8, Math.min(H-mh-24, my-mh/2));
+  qmenu.style.left = x+'px'; qmenu.style.top = y+'px';
+  flashMachine = { id:m.id, until:performance.now()+9e7 };
+  buzz(10);
+  qmenu.onclick = (e)=>{
+    const b = e.target.closest('[data-q]'); if(!b) return;
+    const q = b.dataset.q;
+    if(q==='move'){ closeQuickMenu(); startPlacing(m.type,{moveId:m.id}); }
+    if(q==='mirror'){ if(mirrorMachine(m)) closeQuickMenu(); }
+    if(q==='upgrade'){ if(upgradeMachine(m)) closeQuickMenu(); }
+    if(q==='info'){ closeQuickMenu(); openInspect(m); }
+    if(q==='sell'){ sellMachine(m); closeQuickMenu(); }
+  };
+}
+function closeQuickMenu(){
+  qmenu.classList.remove('on'); qmenuOpen = false;
+  if(flashMachine.until > performance.now()+1e7) flashMachine.until = 0;
+}
+
 // ---- build sheet
 function openBuildSheet(r,l){
   const rows = [];
@@ -1376,7 +1437,7 @@ function openInspect(m){
     <div class="kv"><span>In</span><b>${inR}/min</b></div>
     <div class="kv"><span>Out</span><b>${outR}/min</b></div>
     ${extra}${meters}
-    <div style="font-size:11.5px;color:var(--dim);margin:4px 0 2px">Hold the machine to hand-crank it at 3× speed.</div>
+    <div style="font-size:11.5px;color:var(--dim);margin:4px 0 2px">Tip: hold a machine on the board for quick actions.</div>
     <div class="ibtns">
       ${upBtn}
       <button data-act="move">Move</button>
@@ -1390,20 +1451,21 @@ function openInspect(m){
     if(act==='close') closeSheet();
     if(act==='sell'){ sellMachine(m); closeSheet(); }
     if(act==='move'){ closeSheet(); startPlacing(m.type,{moveId:m.id}); }
-    if(act==='mirror'){
-      if(m.type==='diverter'){
-        const tl = m.l + (m.mir?1:-1); // direction after mirror
-        if(tl<0||tl>=S.lanes){ hint('No lane on that side.',2000); return; }
-      }
-      m.mir=!m.mir; save(); closeSheet();
-    }
-    if(act==='upgrade'){
-      const c = TIER_COST[m.tier+1];
-      if(!canAfford(c)){ hint('Not enough goods for the upgrade.',2500); return; }
-      pay(c); m.tier++; m.t=Math.min(m.t,EXTRACT_T[m.tier]); buzz(15); save();
-      openInspect(m);
-    }
+    if(act==='mirror'){ if(mirrorMachine(m)) closeSheet(); }
+    if(act==='upgrade'){ if(upgradeMachine(m)) openInspect(m); }
   };
+}
+function mirrorMachine(m){
+  if(m.type==='diverter'){
+    const tl = m.l + (m.mir?1:-1); // direction after mirror
+    if(tl<0||tl>=S.lanes){ hint('No lane on that side.',2000); return false; }
+  }
+  m.mir=!m.mir; buzz(8); save(); return true;
+}
+function upgradeMachine(m){
+  const c = TIER_COST[m.tier+1];
+  if(!canAfford(c)){ hint('Not enough goods for the upgrade.',2500); return false; }
+  pay(c); m.tier++; m.t=Math.min(m.t,EXTRACT_T[m.tier]); buzz(15); save(); return true;
 }
 
 // ---- stock / stats sheet (tap the Core)
@@ -1437,7 +1499,7 @@ function openSettings(){
       <button class="x" data-act="close">✕</button></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.6">
       <b style="color:var(--ink)">Tap</b> a machine to inspect, an empty cell to build, a seam to chip ore.<br>
-      <b style="color:var(--ink)">Hold</b> anything to crank it at 3× — your finger is the best machine in a crisis.<br>
+      <b style="color:var(--ink)">Hold</b> a machine for quick actions (move · mirror · sell). Hold a seam to pour ore.<br>
       <b style="color:var(--ink)">Drag</b> to scroll. <b style="color:var(--ink)">⛶</b> for the ant-farm view.<br>
       Moving and selling are always free and fully refunded. Rebuild without fear.<br>
       Pile-ups mean blocked. Holes mean starved. Look, don't read.
@@ -1578,23 +1640,24 @@ function tryPlaceAt(r,l){
 // ---------------------------------------------------------------- input
 let ptr = null;
 cv.addEventListener('pointerdown', e=>{
+  if(qmenuOpen){ closeQuickMenu(); return; }
   if(sheetOpen){ closeSheet(); return; }
   if(bannerOpen) return;
   cv.setPointerCapture(e.pointerId);
   ptr = { id:e.pointerId, x0:e.clientX, y0:e.clientY, x:e.clientX, y:e.clientY,
     t0:performance.now(), moved:false, holdFired:false,
-    holdTimer: setTimeout(()=>holdFire(), 270) };
+    holdTimer: setTimeout(()=>holdFire(), 350) };
 });
 cv.addEventListener('pointermove', e=>{
   if(!ptr || e.pointerId!==ptr.id) return;
   const dx = e.clientX-ptr.x, dy = e.clientY-ptr.y;
   ptr.x=e.clientX; ptr.y=e.clientY;
-  if(!ptr.moved && Math.hypot(e.clientX-ptr.x0, e.clientY-ptr.y0)>9){
+  if(!ptr.moved && Math.hypot(e.clientX-ptr.x0, e.clientY-ptr.y0)>12){
     ptr.moved = true;
     clearTimeout(ptr.holdTimer);
-    endCrank();
+    endPour();
   }
-  if(ptr.moved && !crank.active && cam.mode==='work'){
+  if(ptr.moved && !pour.active && !qmenuOpen && cam.mode==='work'){
     cam.ty -= dy/(cellPx*cam.s); cam.y = cam.ty; clampCamY();
   }
 });
@@ -1605,7 +1668,7 @@ function upOrCancel(e){
   const wasMoved = ptr.moved;
   const x = ptr.x0, y = ptr.y0;
   ptr = null;
-  endCrank();
+  endPour();
   if(wasHold || wasMoved || e.type==='pointercancel') return;
   handleTap(x,y);
 }
@@ -1614,24 +1677,23 @@ cv.addEventListener('pointercancel', upOrCancel);
 
 function holdFire(){
   if(!ptr || ptr.moved) return;
-  ptr.holdFired = true;
   const [wx,wy] = px2w(ptr.x0, ptr.y0);
   const l = Math.floor(wx), r = Math.floor(wy);
   if(cam.mode!=='work' || placing) return;
   // vein pour (also the strip just above row 0)
   if(r<=0 && r>=-1 && l>=0 && l<S.lanes && VEINS[l] && !machineAt(0,l)){
-    crank.active=true; crank.kind='vein'; crank.lane=l;
+    ptr.holdFired = true;
+    pour.active=true; pour.lane=l;
     spawnVeinOre(l,false); buzz(8);
     return;
   }
-  const m = machineAt(Math.max(0,r),Math.max(0,Math.min(S.lanes-1,l)));
+  const m = machineAt(Math.max(0,Math.min(S.depth-1,r)), Math.max(0,Math.min(S.lanes-1,l)));
   if(m){
-    crank.active=true; crank.kind='machine'; crank.id=m.id;
-    sparks(m.l+MACH[m.type].w/2, m.r+0.5, '#ffd9a3', 5);
-    buzz(8);
+    ptr.holdFired = true;
+    openQuickMenu(m);
   }
 }
-function endCrank(){ crank.active=false; crank.kind=null; crank.id=0; }
+function endPour(){ pour.active=false; }
 
 function handleTap(px,py){
   const [wx,wy] = px2w(px,py);
