@@ -1008,6 +1008,25 @@ function render(now){
   // core band
   drawCore(v, now);
 
+  // lifted machine being carried
+  if(dragMove){
+    const m = dragMove.m, D = MACH[m.type];
+    const tl = Math.round(dragMove.wx - D.w/2), tr = Math.floor(dragMove.wy);
+    const ok = validPlace(m.type, tr, tl, m.id);
+    if(tr>=0 && tr<S.depth){
+      ctx.strokeStyle = ok? 'rgba(111,217,138,.9)' : 'rgba(255,107,87,.9)';
+      ctx.lineWidth = 2.5;
+      rr(colX+tl*cs+3, topY+tr*cs+3, D.w*cs-6, cs-6, 7); ctx.stroke();
+    }
+    const gx = colX+(dragMove.wx - D.w/2)*cs, gy = topY+(dragMove.wy-0.55)*cs;
+    ctx.globalAlpha = .85;
+    ctx.fillStyle = '#3a2e20';
+    rr(gx+2.5, gy+2.5, D.w*cs-5, cs-5, 8); ctx.fill();
+    ctx.strokeStyle = '#ffb347'; ctx.lineWidth = 1.5; ctx.stroke();
+    drawGlyph(ctx, m.type, gx+D.w*cs/2, gy+cs/2, cs*0.4, m.mir);
+    ctx.globalAlpha = 1;
+  }
+
   // particles
   const dtp = 1/60;
   for(let i=parts.length-1;i>=0;i--){
@@ -1170,7 +1189,7 @@ let paused = false;
 function frame(now){
   requestAnimationFrame(frame);
   const dt = Math.min(200, now-lastNow); lastNow = now;
-  paused = sheetOpen || bannerOpen || qmenuOpen || !!placing || document.hidden;
+  paused = sheetOpen || bannerOpen || qmenuOpen || !!placing || !!dragMove || document.hidden;
   if(!paused){
     acc += dt;
     let n = 0;
@@ -1285,7 +1304,7 @@ function closeSheet(){
   sheet.classList.remove('on'); scrim.classList.remove('on');
   sheetOpen = false;
 }
-scrim.addEventListener('click', ()=>{ if(sheetOpen) closeSheet(); });
+scrim.addEventListener('pointerdown', ()=>{ if(sheetOpen) closeSheet(); });
 
 function costHtml(cost, cls){
   let h = `<div class="cost ${cls||''}">`;
@@ -1311,8 +1330,9 @@ function hydrateIcons(root){
 
 // ---- quick menu (hold a machine)
 const qmenu = $('#qmenu');
-let qmenuOpen = false;
+let qmenuOpen = false, qmenuFor = null;
 function openQuickMenu(m){
+  qmenuFor = m;
   const D = MACH[m.type];
   let h = `<div class="qt">${D.name}</div>`;
   h += `<button data-q="move"><span class="qi">✥</span>Move</button>`;
@@ -1346,38 +1366,59 @@ function openQuickMenu(m){
   };
 }
 function closeQuickMenu(){
-  qmenu.classList.remove('on'); qmenuOpen = false;
+  qmenu.classList.remove('on'); qmenuOpen = false; qmenuFor = null;
   if(flashMachine.until > performance.now()+1e7) flashMachine.until = 0;
+}
+
+// ---- hold-drag: carry a machine under the finger
+let dragMove = null; // {m, wx, wy}
+function dropDrag(cancelled){
+  const dm = dragMove; dragMove = null;
+  if(!dm || cancelled) return;
+  const m = dm.m, D = MACH[m.type];
+  const l = Math.round(dm.wx - D.w/2), r = Math.floor(dm.wy);
+  if(validPlace(m.type, r, l, m.id)){
+    m.r = r; m.l = l;
+    if(m.type==='diverter'){
+      if(m.l+(m.mir?-1:1)>=S.lanes) m.mir = true;
+      if(m.l+(m.mir?-1:1)<0) m.mir = false;
+    }
+    rebuildGrids(); buzz(10); save();
+    sparks(m.l+D.w/2, m.r+0.5, '#ffb347', 8);
+  } else {
+    sparks(m.l+D.w/2, m.r+0.5, '#a3937e', 5); // snaps home
+  }
 }
 
 // ---- build sheet
 function openBuildSheet(r,l){
-  const rows = [];
-  const types = Object.keys(MACH).filter(t=>S.unlocked.includes(t));
+  const onSeam = (r===0);
+  const types = Object.keys(MACH).filter(t=>S.unlocked.includes(t) && (onSeam ? MACH[t].row0 : true));
   let cards = '';
   for(const t of types){
     const D = MACH[t];
     const fits = validPlace(t,r,l) || (D.w===2 && validPlace(t,r,l-1));
     const afford = canAfford(D.cost);
-    const off = (!fits||!afford);
     let why = '';
-    if(!afford) why = '';
-    else if(!fits) why = D.row0? '<div class="d" style="color:var(--bad)">needs an ore seam</div>'
-                        : '<div class="d" style="color:var(--bad)">doesn\'t fit here</div>';
-    cards += `<button class="bcard ${off?'off':''}" data-build="${t}" data-mc="${t}">
+    if(afford && !fits) why = D.row0? '<div class="d" style="color:var(--amber)">goes on an ore seam — tap to pick one</div>'
+                        : '<div class="d" style="color:var(--amber)">no room here — tap to pick a spot</div>';
+    cards += `<button class="bcard ${afford?'':'off'}" data-build="${t}" data-mc="${t}">
       <div><div class="n">${D.name}</div><div class="d">${D.desc}</div>${costHtml(D.cost)}${why}</div></button>`;
   }
   const canRemove = S.depth>5 && r>0 && !S.machines.some(m=>m.r===r);
-  openSheet(`
-    <div class="shead"><div>
-      <div class="t">Build</div><div class="s">row ${r} · lane ${l+1}</div></div>
-      <button class="x" data-act="close">✕</button></div>
-    <div class="bgrid">${cards||'<div class="d" style="color:var(--dim);font-size:13px">Nothing unlocked yet — feed the Core.</div>'}</div>
+  const rowtools = onSeam ? '' : `
     <div class="rowtools">
       <button data-act="rowabove" ${S.depth>=MAXDEPTH?'disabled':''}>⤒ Insert row above</button>
       <button data-act="rowbelow" ${S.depth>=MAXDEPTH?'disabled':''}>⤓ Insert row below</button>
       <button data-act="rowdel" ${canRemove?'':'disabled'}>✂ Remove row</button>
-    </div>`);
+    </div>`;
+  openSheet(`
+    <div class="shead"><div>
+      <div class="t">${onSeam?'Build on the seam':'Build'}</div>
+      <div class="s">${onSeam?ITEMS[VEINS[l]==='copper'?'copper_ore':'iron_ore'].name+' seam · lane '+(l+1):'row '+r+' · lane '+(l+1)}</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    <div class="bgrid">${cards||'<div class="d" style="color:var(--dim);font-size:13px">Nothing unlocked yet — feed the Core.</div>'}</div>
+    ${rowtools}`);
   hydrateIcons(sheet);
   sheet.onclick = (e)=>{
     const b = e.target.closest('[data-build]');
@@ -1491,6 +1532,33 @@ function openStock(){
   sheet.onclick = e=>{ if(e.target.closest('[data-act="close"]')) closeSheet(); };
 }
 
+// ---- order book (hold the order chip)
+function openOrders(){
+  let rows='';
+  ORDERS.forEach((o,i)=>{
+    const nm = o.kind==='flow'
+      ? `Keep lit: ${ITEMS[o.item].name}s for ${Math.floor(o.sustain/TPS)}s`
+      : `${o.count}× ${ITEMS[o.item].name}`;
+    if(i<S.orderIdx || S.ended)
+      rows += `<div class="kv" style="opacity:.55"><span>✓ ${nm}</span><b>${o.era}</b></div>`;
+    else if(i===S.orderIdx){
+      const prog = o.kind==='flow'? Math.floor(S.sustain/TPS)+'s / '+Math.floor(o.sustain/TPS)+'s' : S.oCount+' / '+o.count;
+      rows += `<div class="kv" style="color:var(--amber)"><span>▶ ${nm}</span><b>${prog}</b></div>`;
+    }
+    else if(i===S.orderIdx+1)
+      rows += `<div class="kv"><span>· ${nm}</span><b>${o.era}</b></div>`;
+    else
+      rows += `<div class="kv" style="opacity:.4"><span>? ? ?</span><b>${o.era}</b></div>`;
+  });
+  openSheet(`
+    <div class="shead"><div>
+      <div class="t">The order book</div>
+      <div class="s">What the Core wanted, wants, and will want.</div></div>
+      <button class="x" data-act="close">✕</button></div>
+    ${rows}`);
+  sheet.onclick = e=>{ if(e.target.closest('[data-act="close"]')) closeSheet(); };
+}
+
 // ---- settings
 function openSettings(){
   openSheet(`
@@ -1499,7 +1567,7 @@ function openSettings(){
       <button class="x" data-act="close">✕</button></div>
     <div style="font-size:13px;color:var(--dim);line-height:1.6">
       <b style="color:var(--ink)">Tap</b> a machine to inspect, an empty cell to build, a seam to chip ore.<br>
-      <b style="color:var(--ink)">Hold</b> a machine for quick actions (move · mirror · sell). Hold a seam to pour ore.<br>
+      <b style="color:var(--ink)">Hold</b> a machine for quick actions — or keep holding and <b style="color:var(--ink)">drag</b> to carry it. Hold a seam to pour ore. Hold the order chip for the order book.<br>
       <b style="color:var(--ink)">Drag</b> to scroll. <b style="color:var(--ink)">⛶</b> for the ant-farm view.<br>
       Moving and selling are always free and fully refunded. Rebuild without fear.<br>
       Pile-ups mean blocked. Holes mean starved. Look, don't read.
@@ -1640,7 +1708,8 @@ function tryPlaceAt(r,l){
 // ---------------------------------------------------------------- input
 let ptr = null;
 cv.addEventListener('pointerdown', e=>{
-  if(qmenuOpen){ closeQuickMenu(); return; }
+  if(ptr) clearTimeout(ptr.holdTimer); // a second finger cancels any pending hold
+  if(qmenuOpen && !dragMove){ closeQuickMenu(); return; }
   if(sheetOpen){ closeSheet(); return; }
   if(bannerOpen) return;
   cv.setPointerCapture(e.pointerId);
@@ -1656,6 +1725,17 @@ cv.addEventListener('pointermove', e=>{
     ptr.moved = true;
     clearTimeout(ptr.holdTimer);
     endPour();
+    // dragging away from a fresh quick menu lifts the machine
+    if(qmenuOpen && ptr.holdFired && qmenuFor){
+      const m = qmenuFor;
+      closeQuickMenu();
+      dragMove = { m, wx:0, wy:0 };
+    }
+  }
+  if(dragMove){
+    const [wx,wy] = px2w(e.clientX, e.clientY);
+    dragMove.wx = wx; dragMove.wy = wy;
+    return;
   }
   if(ptr.moved && !pour.active && !qmenuOpen && cam.mode==='work'){
     cam.ty -= dy/(cellPx*cam.s); cam.y = cam.ty; clampCamY();
@@ -1669,6 +1749,7 @@ function upOrCancel(e){
   const x = ptr.x0, y = ptr.y0;
   ptr = null;
   endPour();
+  if(dragMove){ dropDrag(e.type==='pointercancel'); return; }
   if(wasHold || wasMoved || e.type==='pointercancel') return;
   handleTap(x,y);
 }
@@ -1680,18 +1761,22 @@ function holdFire(){
   const [wx,wy] = px2w(ptr.x0, ptr.y0);
   const l = Math.floor(wx), r = Math.floor(wy);
   if(cam.mode!=='work' || placing) return;
-  // vein pour (also the strip just above row 0)
-  if(r<=0 && r>=-1 && l>=0 && l<S.lanes && VEINS[l] && !machineAt(0,l)){
+  if(l<0||l>=S.lanes) return;
+  // hold the seam icon itself: pour ore (an extractor there gets its menu instead).
+  // Pre-extractor, the vein cell below the seam pours too.
+  const seamish = (wy<0 && wy>=-1) || (r===0 && !S.unlocked.some(t=>MACH[t].row0));
+  if(seamish && VEINS[l] && !machineAt(0,l)){
     ptr.holdFired = true;
     pour.active=true; pour.lane=l;
     spawnVeinOre(l,false); buzz(8);
     return;
   }
-  const m = machineAt(Math.max(0,Math.min(S.depth-1,r)), Math.max(0,Math.min(S.lanes-1,l)));
+  const m = machineAt(Math.max(0,Math.min(S.depth-1,r)), l);
   if(m){
     ptr.holdFired = true;
     openQuickMenu(m);
   }
+  // empty cells: no hold action — release falls through to tap (build sheet)
 }
 function endPour(){ pour.active=false; }
 
@@ -1712,8 +1797,10 @@ function handleTap(px,py){
   // core tap
   if(wy>=S.depth && wy<S.depth+1.5){ openStock(); return; }
   if(l<0||l>=S.lanes) return;
-  // vein strip (above and including row 0)
-  if(r<=0 && r>=-1 && VEINS[l] && !machineAt(0,l)){
+  // the seam icon itself (the strip above row 0): chip ore — or the extractor squatting on it
+  if(wy<0 && wy>=-1 && VEINS[l]){
+    const ex = machineAt(0,l);
+    if(ex){ openInspect(ex); return; }
     if(spawnVeinOre(l,false)) buzz(6);
     return;
   }
@@ -1726,11 +1813,11 @@ function handleTap(px,py){
     return;
   }
   if(r===0){
-    if(VEINS[l]) { if(spawnVeinOre(l,false)) buzz(6); return; }
-    hint('The surface. Machines go below — except extractors, on seams.',2600);
-    return;
+    if(!VEINS[l]){ hint('The surface. Machines go below — extractors go on seams.',2600); return; }
+    // before anything can be built on a seam, the cell chips ore like the seam itself
+    if(!S.unlocked.some(t=>MACH[t].row0)){ if(spawnVeinOre(l,false)) buzz(6); return; }
   }
-  openBuildSheet(r,l);
+  openBuildSheet(r,l); // includes empty vein cells: build the extractor here
 }
 
 $('#zoombtn').addEventListener('click', ()=>{
@@ -1741,10 +1828,20 @@ $('#chokebtn').addEventListener('click', ()=>{
   const m = worstChoke(); if(m) jumpToMachine(m);
 });
 $('#gearbtn').addEventListener('click', openSettings);
-$('#orderchip').addEventListener('click', ()=>{
+let chipTimer=null, chipHeld=false;
+const chipEl = $('#orderchip');
+chipEl.addEventListener('pointerdown', ()=>{
+  chipHeld=false; clearTimeout(chipTimer);
+  chipTimer=setTimeout(()=>{ chipHeld=true; buzz(10); openOrders(); }, 350);
+});
+for(const ev of ['pointerup','pointercancel','pointerleave'])
+  chipEl.addEventListener(ev, ()=>clearTimeout(chipTimer));
+chipEl.addEventListener('click', ()=>{
+  if(chipHeld){ chipHeld=false; return; }
   const o = curOrder();
   if(o && o.hint) hint(o.hint, 6000);
 });
+stockbar.addEventListener('click', openStock);
 
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden) save(); });
 window.addEventListener('pagehide', save);
