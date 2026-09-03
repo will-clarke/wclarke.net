@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101219">
+</head>
+<body>
+<!--ART-->
+<title>Faultline</title>
+<style>
+:root{
+  --bg:#101219; --panel:#171a23; --panel2:#181b26; --line:#333a4c;
+  --ink:#ece8dc; --dim:#98a0b5;
+  --lava1:#ff7a2f; --lava2:#ffc23d;
+  --teal:#59e0c8; --red:#ff5964;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg)}
+body{
+  color:var(--ink);
+  font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-tap-highlight-color:transparent;
+}
+.wrap{max-width:430px;margin:0 auto;min-height:100svh;
+  padding:12px 12px calc(12px + env(safe-area-inset-bottom));
+  display:flex;flex-direction:column;gap:10px}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{margin:0;font-size:27px;font-weight:800;letter-spacing:.1em;
+  background:linear-gradient(90deg,var(--ink) 53%,var(--lava1) 58%,var(--lava2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.lvlrow{display:flex;gap:6px}
+.chip{min-width:34px;height:32px;border-radius:9px;border:1px solid var(--line);
+  background:var(--panel);color:var(--dim);font-weight:700;font-size:14px;cursor:pointer}
+.chip.on{border-color:var(--lava1);color:var(--ink);box-shadow:0 0 8px rgba(255,122,47,.25)}
+.sub{font-size:12px;letter-spacing:.12em;color:var(--dim);font-weight:700;text-transform:uppercase}
+
+.frame{position:relative;background:var(--panel);border:1px solid var(--line);
+  border-radius:16px;padding:8px}
+.board{position:relative;width:100%;aspect-ratio:1;touch-action:none;cursor:grab;overflow:hidden}
+.board:active{cursor:grabbing}
+.layer{position:absolute;inset:0;pointer-events:none}
+
+.tile,.unit,.dz,.pop{position:absolute;width:20%;height:20%}
+.tile{border:3px solid transparent;border-radius:13px;background-clip:padding-box;
+  transition:transform .16s ease;
+  background:linear-gradient(160deg,#313747,#262b38);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.t-wall{background:radial-gradient(circle at 35% 30%,#535b73,#333a4c 75%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.12),inset 0 -3px 0 rgba(0,0,0,.4)}
+.t-lava{background:radial-gradient(circle at 50% 38%,var(--lava2),var(--lava1) 55%,#c73e12);
+  box-shadow:inset 0 0 14px #7a1d00;animation:lavap 2.4s ease-in-out infinite alternate}
+@keyframes lavap{from{filter:brightness(.9)}to{filter:brightness(1.15)}}
+.t-spike{display:grid;place-items:center}
+.t-spike::after{content:"▲ ▲ ▲";font-size:clamp(8px,2.6vw,12px);letter-spacing:1px;color:#8d97ae}
+
+.dz{border-radius:13px;opacity:0;transition:opacity .2s;
+  box-shadow:inset 0 0 0 2px rgba(255,89,100,.22);
+  background:radial-gradient(circle,rgba(255,89,100,0) 45%,rgba(255,89,100,.14))}
+.dz.on{opacity:1}
+
+.unit{display:grid;place-items:center;transition:transform .16s ease,opacity .25s;z-index:2}
+.unit::before{content:"";position:absolute;inset:11%;border-radius:50%;
+  background:rgba(13,15,22,.85);border:2px solid var(--teal);box-shadow:0 3px 8px rgba(0,0,0,.5)}
+.unit.e::before{border-color:var(--red)}
+.unit.anchor::before{border-radius:24%}
+.unit .g{position:relative;font-size:clamp(22px,9.5vw,40px);line-height:1;
+  filter:drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+.unit .hp{position:absolute;right:4%;bottom:2%;min-width:17px;text-align:center;
+  font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;
+  background:#0b0d13;border:1px solid var(--line);border-radius:999px;padding:1px 4px;z-index:1}
+.unit.e .hp{border-color:rgba(255,89,100,.5)}
+.unit.atk .g{animation:pulse .3s ease}
+@keyframes pulse{40%{transform:scale(1.35)}}
+.unit.die{opacity:0}
+.unit.die .g{transform:scale(.2);transition:transform .25s}
+.tp{transition:none!important}
+
+.pop{display:grid;place-items:center;font-weight:800;font-size:16px;z-index:5;
+  text-shadow:0 1px 3px #000;animation:rise .8s ease-out forwards}
+@keyframes rise{from{margin-top:0;opacity:1}to{margin-top:-9%;opacity:0}}
+.pop.hit,.pop.jab{color:var(--teal)}
+.pop.ehit{color:var(--red)}
+.pop.burn{color:var(--lava2)}
+.pop.crush{color:#cfd6e8}
+.pop.skull{font-size:22px}
+
+.bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stat{display:flex;flex-direction:column;gap:3px}
+.lbl{font-size:10px;letter-spacing:.14em;color:var(--dim);font-weight:700}
+.pips{display:flex;gap:4px}
+.pip{width:14px;height:14px;background:var(--teal);
+  clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}
+.pip.used{background:#39405a}
+.pips.flash{animation:shake .3s}
+@keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+#turn{font-weight:800;font-size:14px;letter-spacing:.08em}
+.btns{display:flex;gap:7px}
+button.ghost,button.prime{border-radius:10px;padding:10px 12px;font-weight:800;
+  letter-spacing:.05em;font-size:13px;cursor:pointer;white-space:nowrap}
+button.ghost{background:var(--panel);border:1px solid var(--line);color:var(--ink)}
+button.prime{background:linear-gradient(120deg,var(--lava1),var(--lava2));
+  color:#221206;border:none;box-shadow:0 2px 10px rgba(255,122,47,.28)}
+button:disabled{opacity:.35;cursor:default}
+button:focus-visible,.chip:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+.log{margin:0;font-size:13px;color:var(--dim);min-height:2.7em}
+
+.ovl{position:absolute;inset:0;background:rgba(14,16,23,.86);backdrop-filter:blur(3px);
+  display:grid;place-items:center;border-radius:16px;z-index:10}
+.panel{background:var(--panel2);border:1px solid var(--line);border-radius:14px;
+  padding:18px;max-width:88%;max-height:94%;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.panel h2{margin:0 0 6px;font-size:21px;letter-spacing:.1em}
+.panel p{margin:0 0 14px;color:var(--dim);font-size:14px}
+.panel .row{display:flex;gap:8px;flex-wrap:wrap}
+.panel ul{margin:0 0 12px;padding-left:18px}
+.panel li{margin:6px 0;font-size:13.5px;color:#c9cede}
+.panel li b{color:var(--ink)}
+.roster li{list-style:none;margin-left:-18px}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>FAULTLINE</h1>
+    <button class="chip" id="helpBtn" aria-label="How to play">?</button>
+  </header>
+  <div class="lvlrow" id="lvlrow"></div>
+  <div class="sub" id="lvlname"></div>
+
+  <div class="frame">
+    <div class="board" id="board">
+      <div class="layer" id="terrL"></div>
+      <div class="layer" id="dangerL"></div>
+      <div class="layer" id="unitL"></div>
+      <div class="layer" id="fxL"></div>
+    </div>
+
+    <div class="ovl" id="ovl" hidden>
+      <div class="panel">
+        <h2 id="ovlTitle"></h2>
+        <p id="ovlText"></p>
+        <div class="row" id="ovlBtns"></div>
+      </div>
+    </div>
+
+    <div class="ovl" id="help" hidden>
+      <div class="panel">
+        <h2>HOW TO PLAY</h2>
+        <ul>
+          <li><b>Drag a row or column.</b> It slides one tile and wraps around the edge. 3 shifts a turn; UNDO is free until you end the turn.</li>
+          <li><b>Round units ride</b> the ground. <b>Square units are anchored</b> - the ground slides beneath them. Drag lava under a brute.</li>
+          <li>A rider shoved into an anchored unit stops. Both take 1 crush.</li>
+          <li>The rogue jabs adjacent enemies for 1 whenever her line shifts.</li>
+          <li><b>END TURN:</b> you strike, the ground burns (lava 2, spikes 1), they bite, they advance. Red haze marks their reach.</li>
+        </ul>
+        <ul class="roster">
+          <li>🛡️ Knight - 6 HP, 2 dmg to all adjacent</li>
+          <li>🏹 Archer - 3 HP, 1 dmg down each clear lane</li>
+          <li>🗡️ Rogue - 4 HP, 1 dmg adjacent + jab on shift</li>
+          <li>🗿 Golem - 8 HP, 2 dmg adjacent, anchored</li>
+          <li>👹 Grunt - 3 HP, bites for 1</li>
+          <li>👿 Brute - 6 HP, bites for 2, anchored, slow</li>
+        </ul>
+        <div class="row"><button class="prime" id="helpClose">DIG IN</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="stat">
+      <span class="pips" id="pips"></span>
+      <span class="lbl">SHIFTS</span>
+    </div>
+    <div class="stat">
+      <span id="turn"></span>
+      <span class="lbl" id="used"></span>
+    </div>
+    <div class="btns">
+      <button class="ghost" id="restartBtn" aria-label="Restart level">&#8634;</button>
+      <button class="ghost" id="undoBtn">UNDO</button>
+      <button class="prime" id="endBtn">END TURN</button>
+    </div>
+  </div>
+  <p class="log" id="log"></p>
+</div>
+
+<script>
+'use strict';
+const N=5, SPT=3;
+const $=id=>document.getElementById(id);
+const KINDS={
+  knight:{g:'🛡️',hp:6,atk:2,side:'p'},
+  archer:{g:'🏹',hp:3,atk:1,side:'p',ranged:1},
+  rogue: {g:'🗡️',hp:4,atk:1,side:'p',jab:1},
+  golem: {g:'🗿',hp:8,atk:2,side:'p',anchor:1},
+  grunt: {g:'👹',hp:3,atk:1,side:'e'},
+  brute: {g:'👿',hp:6,atk:2,side:'e',anchor:1,slow:1},
+};
+const UNIT_CH={K:'knight',A:'archer',R:'rogue',G:'golem',g:'grunt',b:'brute'};
+const TERR_CH={'.':'plain','#':'wall','L':'lava','S':'spike'};
+const DIRS=[[-1,0],[1,0],[0,-1],[0,1]];
+const LEVELS=[
+  {name:'1 · First Fault',hint:'Drag rows and columns to shift the ground. Line up your archer, feed your knight.',
+   map:['.g.g.','.....','..#..','.....','.K.A.']},
+  {name:'2 · Undertow',hint:'The brute is anchored - the ground slides beneath him. Drag the lava under his feet.',
+   map:['..b..','.g.g.','L...L','.....','.K.A.']},
+  {name:'3 · The Seam',hint:'The rogue jabs adjacent enemies whenever her line shifts.',
+   map:['g...g','.#.#.','..L..','.#.#.','K.R.A']},
+  {name:'4 · Bruteworks',hint:'Your golem holds his ground. Slam grunts into him for crush damage.',
+   map:['b...b','.g.g.','.LSL.','.....','K.G.A']},
+  {name:'5 · The Crucible',hint:'Everything at once. Fewest shifts wins.',
+   map:['bg.gb','..#..','L.S.L','.#.#.','KAG.R']},
+];
+
+let st=null, undoStack=[], busy=false, over=false, lvl=0, seq=0;
+let terrEls={}, unitEls={};
+const boardEl=$('board'), terrL=$('terrL'), unitL=$('unitL'), fxL=$('fxL'), dangerL=$('dangerL');
+
+const dzEls=[];
+for(let i=0;i<N*N;i++){
+  const d=document.createElement('div');
+  d.className='dz';
+  d.style.transform='translate('+(i%N)*100+'%,'+Math.floor(i/N)*100+'%)';
+  dangerL.appendChild(d); dzEls.push(d);
+}
+
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const lsGet=k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const alive=u=>!u.dead;
+const isAnchor=u=>!!KINDS[u.kind].anchor;
+const players=()=>st.units.filter(u=>alive(u)&&KINDS[u.kind].side==='p');
+const enemies=()=>st.units.filter(u=>alive(u)&&KINDS[u.kind].side==='e');
+const unitAt=(r,c)=>st.units.find(u=>alive(u)&&u.r===r&&u.c===c);
+const adjOf=(u,side)=>DIRS.map(d=>unitAt(u.r+d[0],u.c+d[1]))
+  .filter(t=>t&&KINDS[t.kind].side===side);
+
+function log(m){$('log').textContent=m}
+function snap(){return JSON.stringify({terr:st.terr,units:st.units,shifts:st.shifts,used:st.used,turn:st.turn})}
+function unsnap(s){Object.assign(st,JSON.parse(s))}
+
+function loadLevel(i){
+  lvl=i; over=false; busy=false; undoStack=[];
+  const def = i==='daily' ? genDaily() : LEVELS[i];
+  st={terr:[],units:[],shifts:SPT,turn:1,used:0};
+  for(let r=0;r<N;r++){
+    const row=[];
+    for(let c=0;c<N;c++){
+      const ch=def.map[r][c];
+      row.push({id:'t'+(seq++),t:TERR_CH[ch]||'plain'});
+      if(UNIT_CH[ch]) st.units.push({id:'u'+(seq++),kind:UNIT_CH[ch],r,c,hp:KINDS[UNIT_CH[ch]].hp,dead:false});
+    }
+    st.terr.push(row);
+  }
+  terrL.innerHTML=''; unitL.innerHTML=''; fxL.innerHTML='';
+  terrEls={}; unitEls={};
+  $('ovl').hidden=true; $('help').hidden=true;
+  $('lvlname').textContent=def.name;
+  render(); log(def.hint);
+}
+
+function place(el,r,c){
+  const pr=el.dataset.r;
+  if(pr!==undefined&&(Math.abs(pr-r)>1||Math.abs(el.dataset.c-c)>1)){
+    el.classList.add('tp');
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.remove('tp')));
+  }
+  el.dataset.r=r; el.dataset.c=c;
+  el.style.transform='translate('+c*100+'%,'+r*100+'%)';
+}
+
+function render(){
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    const cell=st.terr[r][c];
+    let el=terrEls[cell.id];
+    if(!el){el=document.createElement('div');terrEls[cell.id]=el;terrL.appendChild(el);}
+    el.className='tile t-'+cell.t+(el.classList.contains('tp')?' tp':'');
+    place(el,r,c);
+  }
+  for(const u of st.units){
+    let el=unitEls[u.id];
+    if(u.dead){
+      if(el){el.classList.add('die');delete unitEls[u.id];setTimeout(()=>el.remove(),300);}
+      continue;
+    }
+    if(!el){
+      el=document.createElement('div');
+      el.className='unit '+(KINDS[u.kind].side==='e'?'e':'p')+(isAnchor(u)?' anchor':'');
+      el.innerHTML='<span class="g">'+KINDS[u.kind].g+'</span><span class="hp"></span>';
+      unitEls[u.id]=el; unitL.appendChild(el);
+    }
+    el.querySelector('.hp').textContent=u.hp;
+    place(el,u.r,u.c);
+  }
+  const dz=new Set();
+  for(const e of enemies())for(const d of DIRS){
+    const r=e.r+d[0],c=e.c+d[1];
+    if(r>=0&&r<N&&c>=0&&c<N)dz.add(r*N+c);
+  }
+  dzEls.forEach((d,i)=>d.classList.toggle('on',dz.has(i)));
+  const pips=$('pips'); pips.innerHTML='';
+  for(let i=0;i<SPT;i++){
+    const p=document.createElement('span');
+    p.className='pip'+(i<st.shifts?'':' used');
+    pips.appendChild(p);
+  }
+  $('turn').textContent='TURN '+st.turn;
+  $('used').textContent=st.used+' SHIFTS USED';
+  $('undoBtn').disabled=!undoStack.length||busy||over;
+  $('endBtn').disabled=busy||over;
+  document.querySelectorAll('.lvlchip').forEach(ch=>ch.classList.toggle('on',ch.dataset.lvl===String(lvl)));
+}
+
+function pop(r,c,txt,cls){
+  const p=document.createElement('div');
+  p.className='pop '+(cls||'');
+  p.textContent=txt;
+  p.style.left=c*20+'%'; p.style.top=r*20+'%';
+  fxL.appendChild(p);
+  setTimeout(()=>p.remove(),820);
+}
+function dmg(u,n,cls){
+  if(!u||u.dead||n<=0)return;
+  u.hp-=n; pop(u.r,u.c,'-'+n,cls);
+  if(u.hp<=0){u.dead=true;pop(u.r,u.c,'💀','skull');}
+}
+function flash(u){
+  const el=unitEls[u.id]; if(!el)return;
+  el.classList.remove('atk'); void el.offsetWidth; el.classList.add('atk');
+}
+
+function shift(axis,idx,dir){
+  if(busy||over)return;
+  if(st.shifts<=0){
+    log('No shifts left - press END TURN.');
+    const p=$('pips'); p.classList.remove('flash'); void p.offsetWidth; p.classList.add('flash');
+    return;
+  }
+  undoStack.push(snap());
+  if(axis==='r'){
+    const row=st.terr[idx];
+    if(dir>0)row.unshift(row.pop()); else row.push(row.shift());
+  }else{
+    const col=st.terr.map(r=>r[idx]);
+    if(dir>0)col.unshift(col.pop()); else col.push(col.shift());
+    for(let r=0;r<N;r++)st.terr[r][idx]=col[r];
+  }
+  const inL=u=>alive(u)&&(axis==='r'?u.r===idx:u.c===idx);
+  const lineUnits=st.units.filter(inL);
+  const posOf=u=>axis==='r'?u.c:u.r;
+  const setPos=(u,p)=>{if(axis==='r')u.c=p;else u.r=p};
+  const at=p=>lineUnits.find(u=>alive(u)&&posOf(u)===p);
+  const memo=new Map();
+  const blocked=(u,seen)=>{
+    if(isAnchor(u))return true;
+    if(memo.has(u))return memo.get(u);
+    seen=seen||new Set();
+    if(seen.has(u))return false;
+    seen.add(u);
+    const t=at((posOf(u)+dir+N)%N);
+    const b=t?blocked(t,seen):false;
+    memo.set(u,b); return b;
+  };
+  const movers=[],crushes=[];
+  for(const u of lineUnits){
+    if(isAnchor(u))continue;
+    if(blocked(u))crushes.push([u,at((posOf(u)+dir+N)%N)]);
+    else movers.push(u);
+  }
+  for(const u of movers)setPos(u,(posOf(u)+dir+N)%N);
+  for(const cr of crushes){dmg(cr[0],1,'crush');dmg(cr[1],1,'crush');}
+  for(const u of lineUnits)
+    if(u.kind==='rogue'&&alive(u))
+      for(const e of adjOf(u,'e'))dmg(e,KINDS.rogue.jab,'jab');
+  st.shifts--; st.used++;
+  render(); checkEnd();
+}
+
+async function endTurn(){
+  if(busy||over)return;
+  busy=true; undoStack=[]; render();
+  for(const u of players()){
+    if(u.dead)continue;
+    const k=KINDS[u.kind]; let hit=false;
+    if(k.ranged){
+      for(const d of DIRS){
+        let r=u.r+d[0],c=u.c+d[1];
+        while(r>=0&&r<N&&c>=0&&c<N){
+          if(st.terr[r][c].t==='wall')break;
+          const t=unitAt(r,c);
+          if(t){if(KINDS[t.kind].side==='e'){dmg(t,k.atk,'hit');hit=true;}break;}
+          r+=d[0]; c+=d[1];
+        }
+      }
+    }else{
+      for(const e of adjOf(u,'e')){dmg(e,k.atk,'hit');hit=true;}
+    }
+    if(hit){flash(u);render();await sleep(300);}
+  }
+  render();
+  if(checkEnd()){busy=false;render();return;}
+  let burn=false;
+  for(const u of st.units){
+    if(u.dead)continue;
+    const t=st.terr[u.r][u.c].t;
+    if(t==='lava'){dmg(u,2,'burn');burn=true;}
+    else if(t==='spike'){dmg(u,1,'burn');burn=true;}
+  }
+  if(burn){render();await sleep(340);}
+  if(checkEnd()){busy=false;render();return;}
+  let bit=false;
+  for(const e of enemies()){
+    if(e.dead)continue;
+    const ts=adjOf(e,'p');
+    if(!ts.length)continue;
+    ts.sort((a,b)=>a.hp-b.hp);
+    dmg(ts[0],KINDS[e.kind].atk,'ehit'); flash(e); bit=true;
+  }
+  if(bit){render();await sleep(340);}
+  if(checkEnd()){busy=false;render();return;}
+  for(const e of enemies()){
+    if(e.dead)continue;
+    if(KINDS[e.kind].slow&&st.turn%2===1)continue;
+    stepEnemy(e);
+  }
+  st.turn++; st.shifts=SPT;
+  busy=false; render();
+  log('Turn '+st.turn+'. Fresh shifts.');
+  checkEnd();
+}
+
+function stepEnemy(e){
+  const ps=players(); if(!ps.length)return;
+  let tgt=ps[0],td=1e9;
+  for(const p of ps){
+    const d=Math.abs(p.r-e.r)+Math.abs(p.c-e.c);
+    if(d<td){td=d;tgt=p;}
+  }
+  let best=null,bd=td;
+  for(const d of DIRS){
+    const r=e.r+d[0],c=e.c+d[1];
+    if(r<0||r>=N||c<0||c>=N)continue;
+    const t=st.terr[r][c].t;
+    if(t==='wall'||t==='lava')continue;
+    if(unitAt(r,c))continue;
+    const nd=Math.abs(r-tgt.r)+Math.abs(c-tgt.c);
+    if(nd<bd){bd=nd;best=[r,c];}
+  }
+  if(best){e.r=best[0];e.c=best[1];}
+}
+
+function checkEnd(){
+  if(over)return true;
+  if(!enemies().length){win();return true;}
+  if(!players().length){lose();return true;}
+  return false;
+}
+function bestKey(){
+  return 'fl-best-'+(lvl==='daily'?'d-'+new Date().toISOString().slice(0,10):'l'+lvl);
+}
+function win(){
+  over=true; render();
+  const k=bestKey();
+  const prev=parseInt(lsGet(k),10)||0;
+  const best=(prev&&prev<=st.used)?prev:st.used;
+  lsSet(k,String(best));
+  const isNew=!prev||st.used<prev;
+  const btns=[['REPLAY',()=>loadLevel(lvl)]];
+  if(lvl!=='daily'){
+    btns.push(lvl<LEVELS.length-1
+      ?['NEXT FAULT',()=>loadLevel(lvl+1)]
+      :['DAILY FAULT',()=>loadLevel('daily')]);
+  }
+  showOvl('FAULT SEALED',
+    'Cleared in '+st.used+' shifts'+(isNew?' - a new best.':' - your best is '+best+'.'),
+    btns);
+}
+function lose(){
+  over=true; render();
+  showOvl('SQUAD LOST','The fault takes another crew. Rewind your thinking and try again.',
+    [['RETRY',()=>loadLevel(lvl)]]);
+}
+function showOvl(title,text,btns){
+  $('ovlTitle').textContent=title;
+  $('ovlText').textContent=text;
+  const row=$('ovlBtns'); row.innerHTML='';
+  btns.forEach((b,i)=>{
+    const el=document.createElement('button');
+    el.className=i===btns.length-1?'prime':'ghost';
+    el.textContent=b[0]; el.onclick=b[1];
+    row.appendChild(el);
+  });
+  $('help').hidden=true;
+  $('ovl').hidden=false;
+}
+
+function xmur(s){
+  let h=1779033703^s.length;
+  for(let i=0;i<s.length;i++){
+    h=Math.imul(h^s.charCodeAt(i),3432918353);
+    h=h<<13|h>>>19;
+  }
+  h=Math.imul(h^(h>>>16),2246822507);
+  h=Math.imul(h^(h>>>13),3266489909);
+  return (h^=h>>>16)>>>0;
+}
+function mulberry32(a){
+  return function(){
+    a|=0; a=a+0x6D2B79F5|0;
+    let t=Math.imul(a^a>>>15,1|a);
+    t=t+Math.imul(t^t>>>7,61|t)^t;
+    return((t^t>>>14)>>>0)/4294967296;
+  };
+}
+function genDaily(){
+  const ds=new Date().toISOString().slice(0,10);
+  const rnd=mulberry32(xmur('faultline-'+ds));
+  const shuffle=a=>{
+    for(let i=a.length-1;i>0;i--){
+      const j=Math.floor(rnd()*(i+1));
+      const t=a[i];a[i]=a[j];a[j]=t;
+    }
+    return a;
+  };
+  const g=Array.from({length:N},()=>Array(N).fill('.'));
+  const pc=shuffle([0,1,2,3,4]);
+  g[4][pc[0]]='K'; g[4][pc[1]]='A'; g[4][pc[2]]='R';
+  const es=[];
+  for(let r=0;r<2;r++)for(let c=0;c<N;c++)es.push([r,c]);
+  shuffle(es);
+  const roster=['g','g','b',rnd()<0.5?'g':'b'];
+  roster.forEach((ch,i)=>{g[es[i][0]][es[i][1]]=ch;});
+  const free=[];
+  for(let r=1;r<4;r++)for(let c=0;c<N;c++)if(g[r][c]==='.')free.push([r,c]);
+  shuffle(free);
+  ['L','L','L','#','#','S','S'].forEach((ch,i)=>{g[free[i][0]][free[i][1]]=ch;});
+  return {map:g.map(r=>r.join('')),name:'Daily Fault · '+ds,
+    hint:'Same board for everyone today. Clear it in the fewest shifts.'};
+}
+
+let drag=null;
+boardEl.addEventListener('pointerdown',e=>{
+  if(busy||over)return;
+  const b=boardEl.getBoundingClientRect();
+  const c=Math.min(N-1,Math.max(0,Math.floor((e.clientX-b.left)/b.width*N)));
+  const r=Math.min(N-1,Math.max(0,Math.floor((e.clientY-b.top)/b.height*N)));
+  drag={x:e.clientX,y:e.clientY,r,c};
+  boardEl.setPointerCapture(e.pointerId);
+});
+boardEl.addEventListener('pointermove',e=>{
+  if(!drag||busy||over)return;
+  const cs=boardEl.clientWidth/N, th=cs*0.38;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  if(Math.abs(dx)<th&&Math.abs(dy)<th)return;
+  if(Math.abs(dx)>Math.abs(dy)){
+    shift('r',drag.r,dx>0?1:-1);
+    drag.x+=Math.sign(dx)*cs; drag.y=e.clientY;
+  }else{
+    shift('c',drag.c,dy>0?1:-1);
+    drag.y+=Math.sign(dy)*cs; drag.x=e.clientX;
+  }
+});
+boardEl.addEventListener('pointerup',()=>{drag=null});
+boardEl.addEventListener('pointercancel',()=>{drag=null});
+boardEl.addEventListener('contextmenu',e=>e.preventDefault());
+
+$('undoBtn').addEventListener('click',()=>{
+  if(!undoStack.length||busy||over)return;
+  unsnap(undoStack.pop()); render(); log('Rewound.');
+});
+$('restartBtn').addEventListener('click',()=>loadLevel(lvl));
+$('endBtn').addEventListener('click',endTurn);
+$('helpBtn').addEventListener('click',()=>{$('help').hidden=false;});
+$('helpClose').addEventListener('click',()=>{$('help').hidden=true;});
+
+const lr=$('lvlrow');
+LEVELS.forEach((L,i)=>{
+  const b=document.createElement('button');
+  b.className='chip lvlchip'; b.dataset.lvl=String(i);
+  b.textContent=i+1; b.title=L.name;
+  b.addEventListener('click',()=>loadLevel(i));
+  lr.appendChild(b);
+});
+const db=document.createElement('button');
+db.className='chip lvlchip'; db.dataset.lvl='daily';
+db.textContent='◈'; db.title='Daily Fault';
+db.addEventListener('click',()=>loadLevel('daily'));
+lr.appendChild(db);
+
+loadLevel(0);
+</script>
+<!--/ART-->
+</body>
+</html>

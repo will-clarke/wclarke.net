@@ -516,6 +516,9 @@
   .comCard.more { display: block; }
   div.comCard:active { background: var(--btn-active); }
   .comCard .ccTop { display: flex; align-items: baseline; gap: 8px; }
+  /* T110 (G5): featured cards wear the doors' coral. */
+  .comCard.feat { border-color: rgba(214,118,95,0.55); }
+  .ccFeat { flex: 0 0 auto; color: rgba(214,118,95,0.95); font-size: 11px; letter-spacing: 0.06em; }
   .comCard .ccName { flex: 1; font-weight: 600; font-size: 15px; }
   .comCard .ccState { font-size: 13px; color: var(--solved-ink); }
   .comCard .ccState.star { color: var(--par-ink); }
@@ -631,15 +634,17 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 1px;
-    min-height: 46px;
-    padding: 2px;
+    gap: 3px;
+    min-height: 52px;
+    padding: 4px 2px 3px;
     font-size: 9px;
     letter-spacing: 0.04em;
   }
-  #edPal b { font-size: 15px; color: var(--dim); letter-spacing: 0; }
+  /* G1: the chip's icon is a real render of the glyph, baked by edPalIcons
+     with the same drawing edPaint uses - it can never drift from the grid. */
+  #edPal canvas { width: 24px; height: 24px; border-radius: 6px; pointer-events: none; }
   #edPal button.on { border-color: var(--blue); background: var(--accent-wash); }
-  #edPal button.on b { color: var(--blue); }
+  #edHead #edDrafts { flex: 0 0 auto; min-height: 46px; font-size: 12px; padding-inline: 14px; }
   .edRow { display: flex; gap: 8px; }
   .edRow button { min-height: 46px; font-size: 12px; }
   .edStep { flex: 0 0 46px; font-size: 19px; letter-spacing: 0; }
@@ -673,7 +678,7 @@
   <header id="hud">
     <button id="levelName" aria-label="Change level">MINI LEVELS</button>
     <span id="selves" hidden></span>
-    <span id="moves">0</span>
+    <span id="moves" title="moves / optimal" aria-label="Moves made, out of the optimal count">0</span>
     <button id="editBtn" class="icon" aria-label="Open this level in the editor">
       <svg viewBox="0 0 24 24"><path d="M4 20l1.2-4.4L16.7 4.1a2 2 0 0 1 2.9 0l.3.3a2 2 0 0 1 0 2.9L8.4 18.8z"/><path d="M14.5 6.3l3.2 3.2"/></svg>
     </button>
@@ -768,8 +773,8 @@
     </div>
     <div id="howto">
       <h3>How to play</h3>
-      <p>Swipe to move. Every self obeys the same swipe at once - TRY being the important word. Hold a direction to keep walking.</p>
-      <p>Push the boxes onto the round targets. Cover every target and the level is solved; beat par for a star ★.</p>
+      <p id="howMove">Swipe to move. Every self obeys the same swipe at once - TRY being the important word. Hold a direction to keep walking.</p>
+      <p>Push the boxes onto the diamond targets. Cover every target and the level is solved; match the optimal count for a star ★.</p>
       <p>The framed window is this same level, live. Doors lead into and out of it - one world, seen at every size.</p>
       <p>Two selves meeting through a door merge into one. Pits swallow whatever falls in.</p>
       <p>Undo is generous: tap for one step back, hold to rewind. Reset starts the level over.</p>
@@ -796,7 +801,10 @@
 <div id="editor" hidden>
   <div id="edHead">
     <input id="edName" maxlength="28" placeholder="Untitled" aria-label="Level name">
-    <button id="edDrafts" class="edStep" aria-label="Drafts">&#9776;</button>
+    <button id="edUndo" class="icon" aria-label="Undo edit" disabled>
+      <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
+    </button>
+    <button id="edDrafts" aria-label="Your drafts">Drafts</button>
   </div>
   <div id="edWrap"><canvas id="edCanvas"></canvas></div>
   <div id="edCode" hidden>
@@ -1763,33 +1771,59 @@ const QUITE = [
 
 // T36: generator levels that survived the pruned BFS + portal-integrity
 // filter and a diversity pick over ~48k sketches. Ordered by par.
-const GENERATED = [
-  { name: 'Gen 1', par: 11, stretch: true, requires: [],
-    rows: ['######', '-....#', '##N..#', '##N@.#', '##.*$#', '####-#'] },  // {blockstep,boxout,enter,exit,spawn}
-  { name: 'Gen 2', par: 13, stretch: true, requires: [],
-    rows: ['#-######', '#.N....#', '#@$....#', '#..#####', '#......#', '#....~*#', '#N.....#', '####-###'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 4', par: 6, stretch: true, requires: [],
+// T111 (F11 of the 2026-08-14 review): Company - the copier track. The
+// twelve best one-becomes-many levels mined out of the generated shelf,
+// renamed and noted; requires baked from banned-mechanic BFS (each listed
+// mechanic proven FORCED, not merely used, except Plus One where spawn is
+// the star line's shortcut). Ordered by par 6 -> 23.
+const COMPANY = [
+  { name: 'Plus One', par: 6, stretch: true, requires: ['blockstep'],
+    note: 'Possible alone - but the star takes two.',
     rows: ['##-###', '#N$*@#', '#....#', '-.N..#', '#.#~##', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push} T42-fresh
+  { name: 'Open Invitation', par: 8, stretch: true, requires: ['spawn', 'blockstep', 'boxout'],
+    note: 'No solving this one alone.',
+    rows: ['####-#', '-$...#', '#@NN.#', '###*.#', '#$$###', '######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Housewarming', par: 11, stretch: true, requires: ['spawn', 'blockstep', 'boxout'],
+    note: 'A box over the edge lands back inside.',
+    rows: ['######', '-....#', '##N..#', '##N@.#', '##.*$#', '####-#'] },  // {blockstep,boxout,enter,exit,spawn}
+  { name: 'The Lodger', par: 13, stretch: true, requires: ['spawn', 'blockstep'],
+    note: 'Make room for one more.',
+    rows: ['#-######', '#.N....#', '#@$....#', '#..#####', '#......#', '#....~*#', '#N.....#', '####-###'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
+  { name: 'Overboard', par: 14, stretch: true, requires: ['spawn', 'boxout'],
+    note: 'Nothing that falls is wasted.',
+    rows: ['#-####', '#~.N##', '#..N$#', '#.**.#', '-$@.##', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Second Self', par: 14, stretch: true, requires: ['spawn', 'blockstep'],
+    note: 'It cannot be done alone.',
+    rows: ['#######', '#.....#', '#.~..$#', '#.*N.N#', '####..#', '#..~@.-', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'The Volunteer', par: 16, stretch: true, requires: ['spawn', 'blockstep'],
+    note: 'Not everyone comes home.',
+    rows: ['#######', '####..#', '#.$#*.#', '#.$@..-', '#N.~..#', '#..N.*#', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn}
+  { name: 'Moving Out', par: 17, stretch: true, requires: ['spawn', 'boxout', 'blockout'],
+    note: 'The little world can leave too.',
+    rows: ['######', '#N*..#', '#.~*##', '#$@.$-', '###N.#', '###-##'] },  // {blockout,boxout,die,enter,exit,fill,push,spawn} T42-fresh
+  { name: 'No Pushing', par: 18, stretch: true, requires: ['spawn', 'blockstep', 'boxout'],
+    note: 'Not a single box is pushed.',
+    rows: ['###-##', '#.#*$#', '#$..N-', '#$N@.#', '#.*.*#', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Full House', par: 19, stretch: true, requires: ['spawn', 'blockstep'],
+    note: 'The more of you, the merrier.',
+    rows: ['########', '##.*...#', '##.....#', '##.N...#', '#.N....#', '#..#####', '#.$.@..-', '########'] },  // {blockstep,boxout,enter,exit,push,spawn} T42-fresh
+  { name: 'Reunion', par: 20, stretch: true, requires: ['spawn'],
+    note: 'Two of you can become one again.',
+    rows: ['##-####', '#..$.*#', '#.~...#', '##...N#', '#$..*.#', '#.N.@~#', '###-###'] },  // {blockstep,boxout,die,enter,exit,fill,merge,push,spawn}
+  { name: 'The Whole Company', par: 23, stretch: true, requires: ['spawn', 'boxout'],
+    note: 'All of you, all at once.',
+    rows: ['###-##', '#....-', '#.@~.#', '#N$*N#', '##.*$#', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
+];
+
+const GENERATED = [
   { name: 'Gen 5', par: 16, stretch: true, requires: [],
     rows: ['######-#', '#.@....#', '##$..*.#', '##.....#', '##.N...#', '##....$#', '##*...N-', '########'] },  // {blockout,blockstep,boxout,enter,exit,push,spawn} T42-fresh
-  { name: 'Gen 6', par: 16, stretch: true, requires: [],
-    rows: ['#######', '####..#', '#.$#*.#', '#.$@..-', '#N.~..#', '#..N.*#', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 7', par: 14, stretch: true, requires: [],
-    rows: ['#-####', '#~.N##', '#..N$#', '#.**.#', '-$@.##', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 8', par: 17, stretch: true, requires: [],
-    rows: ['######', '#N*..#', '#.~*##', '#$@.$-', '###N.#', '###-##'] },  // {blockout,boxout,die,enter,exit,fill,push,spawn} T42-fresh
   { name: 'Gen 9', par: 17, stretch: true, requires: [],
     rows: ['###-###', '#.*.$.#', '#@~N.$#', '#...*.-', '#..N..#', '#..#~.#', '#######'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn} T42-fresh
   { name: 'Gen 10', par: 18, stretch: true, requires: [],
     rows: ['########', '#.N..###', '#....*##', '#..@#*.#', '#...#..-', '#.N$#$~#', '#.~.#..#', '######-#'] },  // {blocksink,enter,push}
   { name: 'Gen 11', par: 19, stretch: true, requires: [],
     rows: ['#######', '#$...N#', '#~.N*@#', '#..$.##', '#...###', '#.*$###', '##-####'] },  // {blockstep,boxin,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 12', par: 19, stretch: true, requires: [],
-    rows: ['########', '##.*...#', '##.....#', '##.N...#', '#.N....#', '#..#####', '#.$.@..-', '########'] },  // {blockstep,boxout,enter,exit,push,spawn} T42-fresh
-  { name: 'Gen 13', par: 23, stretch: true, requires: [],
-    rows: ['###-##', '#....-', '#.@~.#', '#N$*N#', '##.*$#', '######'] },  // {boxin,boxout,die,enter,exit,fill,push,spawn}
-  { name: 'Gen 14', par: 20, stretch: true, requires: [],
-    rows: ['##-####', '#..$.*#', '#.~...#', '##...N#', '#$..*.#', '#.N.@~#', '###-###'] },  // {blockstep,boxout,die,enter,exit,fill,merge,push,spawn}
   { name: 'Gen 15', par: 20, stretch: true, requires: [],
     rows: ['#######', '#..N#.#', '-..##.#', '#...N*#', '#$....#', '#.$$@.#', '####-##'] },  // {blockstep,boxin,enter,exit,push,spawn}
   { name: 'Gen 16', par: 21, stretch: true, requires: [],
@@ -1822,10 +1856,6 @@ const GENERATED = [
     rows: ['######', '-*.###', '#*...#', '#N..$#', '#.@.$-', '######'] },  // {blockstep,boxout,exit,push}
   { name: 'Gen 31', par: 20, stretch: true, requires: [],
     rows: ['####-#', '#$.N.#', '#.~..#', '#.N*##', '#$$@##', '######'] },  // {blockstep,boxin,boxout,die,enter,exit,fill,push,spawn} T42-fresh
-  { name: 'Gen 32', par: 14, stretch: true, requires: [],
-    rows: ['#######', '#.....#', '#.~..$#', '#.*N.N#', '####..#', '#..~@.-', '#######'] },  // {blockstep,boxout,die,enter,exit,fill,push,spawn} T42-fresh
-  { name: 'Gen 33', par: 18, stretch: true, requires: [],
-    rows: ['###-##', '#.#*$#', '#$..N-', '#$N@.#', '#.*.*#', '######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
   { name: 'Gen 34', par: 28, stretch: true, requires: [],
     rows: ['######', '####.#', '#$$.*#', '#N.~.#', '#.@$N#', '####-#'] },  // {blockout,blockstep,die,enter,exit,fill,merge,push,spawn} T42-fresh
   { name: 'Gen 35', par: 20, stretch: true, requires: [],
@@ -1844,8 +1874,6 @@ const GENERATED = [
     rows: ['#######', '#..*.N-', '#..N..#', '#$~.$##', '#..@.~#', '#..*###', '#######'] },  // {blockout,blockstep,boxin,boxout,enter,exit,push,spawn}
   { name: 'Gen 42', par: 18, stretch: true, requires: [],
     rows: ['###-##', '-N*$##', '#@..##', '#N*.##', '#~$.##', '######'] },  // {blockstep,boxout,enter,exit,push,sink,spawn} T42-fresh
-  { name: 'Gen 43', par: 8, stretch: true, requires: [],
-    rows: ['####-#', '-$...#', '#@NN.#', '###*.#', '#$$###', '######'] },  // {blockstep,boxin,boxout,enter,exit,push,spawn} T42-fresh
   { name: 'Gen 44', par: 31, stretch: true, requires: [],
     rows: ['#######', '#~.$@*#', '#$.*.##', '#..$..#', '#N.####', '##....-', '#####-#'] },  // {blockstep,enter,exit,push,sink} T42-fresh
   { name: 'Gen 45', par: 35, stretch: true, requires: [],
@@ -1867,6 +1895,9 @@ const TRACKS = [
   // T85 (Will): the campaign merged into Around the Houses - one shelf, the
   // old 'c' save id carries on. The 'a' id retired with it (v13 migration).
   { id: 'c', name: 'Around the Houses', levels: HOUSES },
+  // T111 (F11): the copier's own shelf - the game's most marketable trick
+  // was fenced behind the scariest sign. Save id 'd' (v15 migration).
+  { id: 'd', name: 'Company', levels: COMPANY },
   { id: 'w', name: 'Workshop', levels: WORKSHOP },
   // T90 (Will): the middleground - "the GEN-1 ones ARE outrageously
   // difficult. Maybe there should be a nice middleground." A stage harder
@@ -2605,6 +2636,7 @@ const THEMES = {
     self: '#7aaede', selfRgb: '122,174,222', selfLine: 'rgba(44,78,110,0.5)',
     box: '#e9bc60', boxLine: 'rgba(146,103,26,0.5)', boxGlow: 'rgba(233,188,96,0.4)',
     boxOn: '#93c493', boxOnLine: 'rgba(58,110,58,0.5)', boxOnGlow: 'rgba(147,196,147,0.4)',
+    boxTick: 'rgba(38,84,38,0.85)', // F12: shape cue on a home box - survives any palette
     glow: 0,
   },
   dark: {
@@ -2622,6 +2654,7 @@ const THEMES = {
     self: '#5d83ab', selfRgb: '93,131,171', selfLine: 'rgba(8,12,18,0.75)',
     box: '#c99c50', boxLine: 'rgba(94,68,20,0.6)', boxGlow: 'rgba(201,156,80,0.4)',
     boxOn: '#7dab7d', boxOnLine: 'rgba(40,80,40,0.55)', boxOnGlow: 'rgba(125,171,125,0.4)',
+    boxTick: 'rgba(20,52,20,0.9)',
     glow: 0,
   },
 };
@@ -2643,6 +2676,7 @@ function applyTheme() {
   spriteCache = { cell: 0 };
   thumbCache.clear(); // T97: picker thumbnails re-bake in the new palette
   dirty = true;
+  edPalIcons(); // G1: the palette chips are canvas bakes too
   if (!$('editor').hidden) edPaint();
 }
 darkMq.addEventListener('change', applyTheme);
@@ -2715,12 +2749,12 @@ let outer = null;    // { x, y, w, h } placement of that giant copy, or null
 
 // --- Persistence ------------------------------------------------------------
 
-const SAVE_KEY = 'mini-level-v14'; // v14 = T89 (F1): the early-arc reorder -
-// Moving In reshuffled (window at slot 3, Twins at 9), Pinwheel back to the
-// workshop at 7 - T89MAP below carries every best to its new key. (v13 =
-// T85 great reshuffle, T85MAP; v12 = T80 Round the Back into the workshop
-// at 6; v11 = T64 level reshape; v10 = T61 community identity; T62 hearts
-// and T63 records were additive.)
+const SAVE_KEY = 'mini-level-v15'; // v15 = T111 (F11): Company - twelve
+// levels mined out of the generated shelf into their own track (save id
+// 'd'); the survivors' g: keys shift, T111MAP below carries every best.
+// (v14 = T89 early-arc reorder, T89MAP; v13 = T85 great reshuffle, T85MAP;
+// v12 = T80 Round the Back into the workshop at 6; v11 = T64 level reshape;
+// v10 = T61 community identity; T62 hearts and T63 records were additive.)
 let progress = { best: {}, unlocked: {}, coached: {}, handle: '', authorToken: '',
   hearts: {}, records: {}, at: '', theme: 'auto', anim: 'auto', seen: {} };
 
@@ -2731,10 +2765,15 @@ const unlockedIn = (t) => TRACKS[t].levels.length;
 function loadProgress() {
   try {
     let raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+    let preT111 = false; // any pre-v15 save gets the T111 Company remap below
     let preT89 = false; // any pre-v14 save gets the T89 early-arc remap below
     let preT85 = false; // any pre-v13 save gets the T85 reshuffle remap below
     let preT80 = false; // any pre-v12 save needs the T80 workshop shift below
     let preT64 = false; // any pre-v11 save needs the T64 key fixup below
+    if (!raw) {
+      preT111 = true;
+      raw = JSON.parse(localStorage.getItem('mini-level-v14') || 'null');
+    }
     if (!raw) {
       preT89 = true;
       raw = JSON.parse(localStorage.getItem('mini-level-v13') || 'null');
@@ -2881,6 +2920,31 @@ function loadProgress() {
       raw.best = best;
       raw.at = keep(raw.at || '') ? raw.at : (T89MAP[raw.at] || '');
       raw.coached = {}; // Moving In's indexes shifted again - re-show
+    }
+    if (raw && typeof raw === 'object' && preT111 && raw.best) {
+      // T111 remap (F11): twelve generated levels moved to Company ('d');
+      // the survivors' g: indexes closed ranks. Only g: keys move - older
+      // saves arrive here already T85/T89-mapped, so this composes on top.
+      const T111MAP = {
+        'g:2': 'd:0', 'g:40': 'd:1', 'g:0': 'd:2', 'g:1': 'd:3', 'g:5': 'd:4',
+        'g:29': 'd:5', 'g:4': 'd:6', 'g:6': 'd:7', 'g:30': 'd:8', 'g:10': 'd:9',
+        'g:12': 'd:10', 'g:11': 'd:11', 'g:3': 'g:0', 'g:7': 'g:1', 'g:8': 'g:2',
+        'g:9': 'g:3', 'g:13': 'g:4', 'g:14': 'g:5', 'g:15': 'g:6', 'g:16': 'g:7',
+        'g:17': 'g:8', 'g:18': 'g:9', 'g:19': 'g:10', 'g:20': 'g:11', 'g:21': 'g:12',
+        'g:22': 'g:13', 'g:23': 'g:14', 'g:24': 'g:15', 'g:25': 'g:16', 'g:26': 'g:17',
+        'g:27': 'g:18', 'g:28': 'g:19', 'g:31': 'g:20', 'g:32': 'g:21', 'g:33': 'g:22',
+        'g:34': 'g:23', 'g:35': 'g:24', 'g:36': 'g:25', 'g:37': 'g:26', 'g:38': 'g:27',
+        'g:39': 'g:28', 'g:41': 'g:29', 'g:42': 'g:30', 'g:43': 'g:31', 'g:44': 'g:32',
+        'g:45': 'g:33', 'g:46': 'g:34',
+      };
+      const keep = (k) => !k.startsWith('g:');
+      const best = {};
+      for (const k in raw.best) {
+        const nk = keep(k) ? k : T111MAP[k];
+        if (nk) best[nk] = raw.best[k];
+      }
+      raw.best = best;
+      raw.at = keep(raw.at || '') ? raw.at : (T111MAP[raw.at] || '');
     }
     if (raw && typeof raw === 'object') {
       progress.best = raw.best || {};
@@ -3050,14 +3114,23 @@ function startLevel(def, spin) {
 // T85 remap: the track grew to the full teaching arc; multi-self gets a line.
 // T89 remap (F1): the early-arc reorder - and the multi-self line moves to
 // Twins, now the first spawn level.
+// G4: itch is a desktop-first audience - a mouse-and-keyboard visitor was
+// coached to swipe. Hybrids (touch laptops) match too; arrows still work.
+const KEYSY = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
 const COACH = {
-  0: 'Swipe to move',
+  0: KEYSY ? 'Arrow keys to move' : 'Swipe to move',
   2: 'That little world is this one',
   3: 'Doors go both ways',
   5: 'Boxes fit through doors too',
-  8: 'One swipe moves every you',
+  8: KEYSY ? 'One key moves every you' : 'One swipe moves every you',
   13: 'The little world pushes like a box',
 };
+if (KEYSY) {
+  $('howMove').textContent = 'Arrow keys or WASD to move - or swipe. Every ' +
+    'self obeys the same move at once - TRY being the important word. Hold ' +
+    'a key to keep walking.';
+}
 
 function overlayOpen() {
   return !$('overlay').hidden || !$('picker').hidden || !$('editor').hidden ||
@@ -3068,6 +3141,7 @@ function closeOverlays() {
   $('publish').hidden = true;
 }
 
+let coachDive = false; // the visible coach line is the once-ever dive tip
 function showCoach(i) {
   // Coach marks belong to the tutorial's teaching arc only.
   const msg = trackIndex === 0 && i >= 0 ? COACH[i] : undefined;
@@ -3078,14 +3152,25 @@ function showCoach(i) {
   // it like a coach mark. Drafts and community (i < 0) never note.
   const note = (!coachDue && i >= 0 && levelDef && levelDef.note &&
     progress.best[bestKey(trackIndex, i)] === undefined) ? levelDef.note : undefined;
-  const show = coachDue ? msg : note;
+  let show = coachDue ? msg : note;
+  // G3 (the 2026-09-02 review): the dive is the game's showpiece and nothing
+  // pointed at it. Once Little World is solved, the next windowed teach
+  // level with no coach mark due offers it once; the level's own note gets
+  // its say on later entries.
+  coachDive = false;
+  if (!coachDue && !progress.seen.dive && trackIndex === 0 && i > 2 &&
+      progress.best[bestKey(0, 2)] !== undefined && state.blocks.length) {
+    show = 'Just for fun: tap the little world to peek inside';
+    coachDive = true;
+  }
   $('coach').hidden = !show;
   if (show) $('coach').textContent = show;
 }
 function dismissCoach() {
   if ($('coach').hidden) return;
   $('coach').hidden = true;
-  progress.coached[levelIndex] = 1;
+  if (coachDive) progress.seen.dive = 1;
+  else progress.coached[levelIndex] = 1;
   saveProgress();
 }
 
@@ -3425,8 +3510,13 @@ function comOffline() {
   comRows = Object.values(comCache);
   if (comTab === 'mine') comRows = comRows.filter((m) => m.mine);
   comMore = false;
-  comRender(comRows.length
-    ? "You're offline - saved levels only." : "You're offline.");
+  // F9: only claim "offline" when the browser agrees - a server error or a
+  // CORS refusal used to read as the player's connection.
+  const why = !NET ? 'The community needs the online version'
+    : !navigator.onLine ? "You're offline"
+    : "Couldn't reach the community";
+  comRender(why + (comRows.length ? ' - saved levels only.'
+    : NET && navigator.onLine ? ' - try again in a bit.' : '.'));
 }
 
 function comNote(msg) {
@@ -3474,6 +3564,14 @@ function comCard(m) {
   dots.textContent = '···';
   dots.setAttribute('aria-label', 'More');
   top.append(nm, st, dots);
+  // T110 (G5): Will's pins lead Top and wear the doors' coral.
+  if (m.featured) {
+    b.classList.add('feat');
+    const ft = document.createElement('span');
+    ft.className = 'ccFeat';
+    ft.textContent = '★ featured';
+    top.insertBefore(ft, dots);
+  }
   const meta = document.createElement('div');
   meta.className = 'ccMeta';
   meta.textContent = (comTab === 'mine'
@@ -3616,7 +3714,7 @@ function comRename(a, row, card, m) {
 
 async function comPlay(m) {
   if (comCache[m.id] && comCache[m.id].rows) { playCommunity(m.id); return; }
-  if (!NET) { comNote("You're offline - that one is not saved."); return; }
+  if (!NET) { comNote('That one is not saved for offline play.'); return; }
   comNote('Fetching…');
   try {
     const res = await fetch(API + '/levels/' + m.id);
@@ -3627,7 +3725,8 @@ async function comPlay(m) {
     saveComCache();
     playCommunity(m.id);
   } catch (e) {
-    comNote('No connection - try again.');
+    comNote(navigator.onLine
+      ? "Couldn't fetch that level - try again." : 'No connection - try again.');
   }
 }
 
@@ -4179,6 +4278,9 @@ function reset() {
   settle();
 }
 
+// F9: "in 1 moves" read as a typo the moment anyone solved First Push.
+const nMoves = (n) => n + (n === 1 ? ' move' : ' moves');
+
 function showWin() {
   hideToast();
   // T61: a prove-run win is the publish moment, not a win card.
@@ -4213,7 +4315,7 @@ function showWin() {
   $('cardTitle').classList.remove('gold');
   $('cardTitle').textContent =
     (com ? comStar : !draft && def.par && moves <= def.par) ? 'Solved ★' : 'Solved';
-  let body = 'in ' + moves + ' moves' + (def.par ? ' (optimal ' + def.par + ')' : '');
+  let body = 'in ' + nMoves(moves) + (def.par ? ' (optimal ' + def.par + ')' : '');
   if (com) body += ' · best known ' + com.bestMoves + ' by ' + com.bestHolder;
   else if (draft) body += ' · draft';
   else if (progress.best[bestKey(trackIndex, levelIndex)] < moves) {
@@ -4268,8 +4370,8 @@ async function comReportSolve(id, log) {
         $('cardTitle').textContent = 'Record claimed ★';
         $('cardTitle').classList.add('gold');
         if (was) {
-          $('cardBody').textContent = 'in ' + data.moves +
-            ' moves · best known was ' + was.moves + ' by ' + was.holder;
+          $('cardBody').textContent = 'in ' + nMoves(data.moves) +
+            ' · best known was ' + was.moves + ' by ' + was.holder;
         }
         play('win');
       }
@@ -4285,7 +4387,7 @@ const shareUrl = (id) => location.origin + location.pathname + '#p=' + id;
 function shareLevel(m) {
   navigator.share({
     title: 'Mini Levels',
-    text: '"' + m.name + '" by ' + m.author + ' - best known ' + m.bestMoves + ' moves.',
+    text: '"' + m.name + '" by ' + m.author + ' - best known ' + nMoves(m.bestMoves) + '.',
     url: shareUrl(m.id),
   }).catch(() => { /* declining the sheet is not an error */ });
 }
@@ -4350,7 +4452,7 @@ let proveRun = false, pubLog = '', lastPublished = null;
 function showPublish() {
   pubLog = moveLog;
   $('pubBody').textContent =
-    '"' + (levelDef.name || 'Untitled') + '" · solved in ' + moves + ' moves';
+    '"' + (levelDef.name || 'Untitled') + '" · solved in ' + nMoves(moves);
   $('pubHandle').value = progress.handle || '';
   $('pubHandle').hidden = false;
   $('pubCancel').hidden = false;
@@ -5266,9 +5368,25 @@ function spriteImg(kind) {
     c.lineWidth = Math.max(1, base * 0.08);
     roundRect(c, cx - base / 2, cy - base / 2, base, base, r);
     c.stroke();
+    if (on) drawBoxTick(c, cx, cy, base);
   }
   spriteCache[kind] = cv;
   return cv;
+}
+
+// F12: a home box carries a tick, not just a hue shift - butter vs sage is
+// mostly a hue change and deuteranopes can lose it. Baked into the boxOn
+// sprite, so the minis, the dive and the outer world all inherit it.
+function drawBoxTick(c, cx, cy, base) {
+  c.strokeStyle = THEME.boxTick;
+  c.lineWidth = Math.max(1.5, base * 0.11);
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  c.beginPath();
+  c.moveTo(cx - base * 0.22, cy + base * 0.02);
+  c.lineTo(cx - base * 0.06, cy + base * 0.18);
+  c.lineTo(cx + base * 0.24, cy - base * 0.16);
+  c.stroke();
 }
 
 function drawFlashes(c, time) {
@@ -6334,14 +6452,16 @@ const DRAFT_KEY = 'mini-level-drafts';
 const ED_CAP = 600000;   // BFS states before we call it DNF (T30: pruned, so deeper)
 const ED_MIN = 5, ED_MAX = 12;
 const PAL = [
-  ['#', 'wall'], ['.', 'floor'], ['*', 'target'], ['~', 'pit'], ['N', 'block'],
-  ['@', 'self'], ['$', 'box'], ['B', 'box+tgt'], ['-', 'door'],
+  ['#', 'wall'], ['.', 'floor'], ['*', 'target'], ['~', 'pit'], ['N', 'window'],
+  ['@', 'self'], ['$', 'box'], ['B', 'box home'], ['-', 'door'],
 ];
 
 const edCv = $('edCanvas');
 const edCtx = edCv.getContext('2d');
 let drafts = [], draftIx = 0;
 let edTool = '#', edCell = 24, edStroke = false, edNote = '', edSaveTimer = null;
+let edHist = [];      // G1 undo: { ix, rows } snapshots, newest last, cap 40
+let edErase = false;  // G1: this stroke started on its own tool = eraser stroke
 let edSearch = 0;   // token: bumped whenever a running solve is made stale
 let edSolution = null; // { key, moves } from the last successful Solve
 let preEdit = [0, 0]; // the [track, level] to drop back onto when the editor closes
@@ -6397,6 +6517,18 @@ function edBanner(text, cls) {
   b.className = cls || '';
 }
 
+// G1: the parser stays the single validator, but the banner speaks player
+// words for the errors a paint stroke can actually cause - glyph-speak like
+// "no self start (@)" greeted every fresh draft. Import-only errors (bad
+// rows, unknown glyphs) keep the parser's precise text.
+const ED_SIDE = { N: 'top', S: 'bottom', W: 'left', E: 'right' };
+function edSpeak(msg) {
+  if (/^no self start/.test(msg)) return 'needs a self to move - place one';
+  const m = msg.match(/^([NSWE]) door opens onto a wall$/);
+  if (m) return 'a wall just inside blocks the ' + ED_SIDE[m[1]] + ' door';
+  return msg;
+}
+
 // Live validity: the parser's own throw message IS the error text, so the
 // editor can never disagree with the game about what a level is. Every route
 // that changes the subject comes through here, which is why the search token
@@ -6407,7 +6539,7 @@ function edValidate() {
   $('edPublish').disabled = true;
   if (edNote) { edBanner(edNote, 'bad'); return; }
   const v = edCheck();
-  if (!v.ok) { edBanner(v.msg, 'bad'); return; }
+  if (!v.ok) { edBanner(edSpeak(v.msg), 'bad'); return; }
   const n = ed().rows.length;
   const boxes = v.state.boxes.length, targets = v.layout.targets.size;
   let msg = n + '×' + n + ' · ' + v.state.selves.length + ' self · ' +
@@ -6458,7 +6590,18 @@ function edPaint() {
     c.strokeStyle = THEME.floorLine;
     c.lineWidth = 1;
     c.strokeRect(px + 0.5, py + 0.5, C - 1, C - 1);
+    edGlyphArt(c, ch, px, py);
+  }
+  drawWallMass(c, n, n, isW);
+  CELL = savedCell;
+}
 
+// One glyph's art on an already-floored cell, at the current CELL size.
+// Shared by the grid loop above and the palette icons (edPalIcons), so the
+// chips can never drift from what the grid draws.
+function edGlyphArt(c, ch, px, py) {
+  const C = CELL;
+  {
     if (ch === '~') drawPit(c, px, py);
     if (ch === '-') {
       // T79: a flat coral mark (halo only in lamplight, like the board).
@@ -6523,11 +6666,40 @@ function edPaint() {
         c.lineWidth = Math.max(1, s * 0.08);
         roundRect(c, px + pad, py + pad, s, s, r);
         c.stroke();
+        if (ch === 'B') drawBoxTick(c, px + C / 2, py + C / 2, s);
       }
     }
   }
-  drawWallMass(c, n, n, isW);
-  CELL = savedCell;
+}
+
+// G1: bake each palette chip a little canvas of its glyph - real game art,
+// not ASCII. Re-run on theme flips (applyTheme); a run before the buttons
+// exist is a harmless no-op.
+function edPalIcons() {
+  for (const b of $('edPal').children) {
+    const cv = b.querySelector('canvas');
+    if (!cv) continue;
+    const S = 24;
+    cv.width = S * DPR;
+    cv.height = S * DPR;
+    const c = cv.getContext('2d');
+    c.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const savedCell = CELL;
+    CELL = S;
+    c.fillStyle = THEME.ground;
+    c.fillRect(0, 0, S, S);
+    if (b.dataset.g === '#') {
+      drawWallMass(c, 1, 1, (x, y) => x === 0 && y === 0);
+    } else {
+      c.fillStyle = THEME.floor;
+      c.fillRect(0, 0, S, S);
+      c.strokeStyle = THEME.floorLine;
+      c.lineWidth = 1;
+      c.strokeRect(0.5, 0.5, S - 1, S - 1);
+      edGlyphArt(c, b.dataset.g, 0, 0);
+    }
+    CELL = savedCell;
+  }
 }
 
 // --- Editor painting (the verb) ---------------------------------------------
@@ -6535,7 +6707,10 @@ function edPaint() {
 function edSet(x, y) {
   const d = ed(), n = d.rows.length;
   const ring = x === 0 || y === 0 || x === n - 1 || y === n - 1;
-  const g = edTool;
+  // G1: an eraser stroke clears only its own kind - back to wall on the
+  // ring (a lifted door), floor inside - and never turns into painting.
+  if (edErase && d.rows[y][x] !== edTool) return;
+  const g = edErase ? (ring ? '#' : '.') : edTool;
   // The boundary ring is the level's shell: only wall or door live there, and
   // a door has to sit on a face, not a corner. Refusing here (rather than
   // letting the parser throw later) keeps the sketch always-parseable-ish.
@@ -6563,21 +6738,57 @@ function edSet(x, y) {
   edTouch();
 }
 
-function edAt(e) {
+function edCellAt(e) {
   const r = edCv.getBoundingClientRect();
   const x = Math.floor((e.clientX - r.left) / edCell);
   const y = Math.floor((e.clientY - r.top) / edCell);
   const n = ed().rows.length;
-  if (x >= 0 && y >= 0 && x < n && y < n) edSet(x, y);
+  return x >= 0 && y >= 0 && x < n && y < n ? { x, y } : null;
+}
+function edAt(e) {
+  const p = edCellAt(e);
+  if (p) edSet(p.x, p.y);
+}
+
+// G1 undo: one snapshot per stroke (and per resize); a stroke that changed
+// nothing hands its snapshot back on release.
+function edSnap() {
+  edHist.push({ ix: draftIx, rows: ed().rows.slice() });
+  if (edHist.length > 40) edHist.shift();
+  edUndoSync();
+}
+function edUndoSync() {
+  $('edUndo').disabled = !edHist.some((h) => h.ix === draftIx);
+}
+function edUndo() {
+  while (edHist.length && edHist[edHist.length - 1].ix !== draftIx) edHist.pop();
+  const h = edHist.pop();
+  if (!h) { edUndoSync(); return; }
+  play('ui');
+  ed().rows = h.rows;
+  edNote = '';
+  $('edSize').textContent = h.rows.length + '×' + h.rows.length;
+  edResize();
+  edTouch();
+  edUndoSync();
 }
 
 edCv.addEventListener('pointerdown', (e) => {
+  edSnap();
+  const p = edCellAt(e);
+  edErase = !!p && ed().rows[p.y][p.x] === edTool;
   edStroke = true;
   edCv.setPointerCapture(e.pointerId);
   edAt(e);
 });
 edCv.addEventListener('pointermove', (e) => { if (edStroke) edAt(e); });
-const edUp = () => { edStroke = false; };
+const edUp = () => {
+  edStroke = false;
+  edErase = false;
+  const top = edHist[edHist.length - 1];
+  if (top && top.ix === draftIx && top.rows.join('/') === ed().rows.join('/')) edHist.pop();
+  edUndoSync();
+};
 edCv.addEventListener('pointerup', edUp);
 edCv.addEventListener('pointercancel', edUp);
 
@@ -6588,6 +6799,7 @@ edCv.addEventListener('pointercancel', edUp);
 function edSetSize(n) {
   const d = ed(), old = d.rows, m = old.length;
   if (n < ED_MIN || n > ED_MAX || n === m) return;
+  edSnap();
   const fresh = blankDraft(n).rows;
   const lim = Math.min(m, n) - 1;
   for (let y = 1; y < lim; y++) {
@@ -6737,6 +6949,7 @@ function edSync() {
   $('edName').value = ed().name;
   $('edSize').textContent = ed().rows.length + '×' + ed().rows.length;
   for (const b of $('edPal').children) b.classList.toggle('on', b.dataset.g === edTool);
+  edUndoSync();
   edResize();
   edValidate();
 }
@@ -6867,6 +7080,7 @@ $('svGo').addEventListener('click', () => { play('ui'); svApply(); });
 $('svIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') svApply(); });
 
 $('edName').addEventListener('input', () => { ed().name = $('edName').value; saveDrafts(); });
+$('edUndo').addEventListener('click', edUndo);
 $('edDrafts').addEventListener('click', () => { play('ui'); openDrafts(); });
 $('edMinus').addEventListener('click', () => { play('ui'); edSetSize(ed().rows.length - 1); });
 $('edPlus').addEventListener('click', () => { play('ui'); edSetSize(ed().rows.length + 1); });
@@ -6898,6 +7112,13 @@ $('edPlay').addEventListener('click', () => {
 });
 // T61: the prove-run. startLevel clears proveRun, so arm it after playDraft.
 $('edPublish').addEventListener('click', () => {
+  // T110 (G5): the shared shelves were filling with "Draft" and "Untitled" -
+  // a level needs a name before it goes public (the worker enforces it too).
+  if (!ed().name.trim()) {
+    edBanner('Name your level first - the community sees the name', 'bad');
+    $('edName').focus();
+    return;
+  }
   const v = edCheck();
   if (!v.ok) { edNote = ''; edValidate(); return; }
   play('ui');
@@ -6934,8 +7155,7 @@ $('edClose').addEventListener('click', () => {
 PAL.forEach(([g, label]) => {
   const b = document.createElement('button');
   b.dataset.g = g;
-  b.innerHTML = '<b></b>';
-  b.firstChild.textContent = g;
+  b.appendChild(document.createElement('canvas'));
   b.appendChild(document.createTextNode(label));
   b.addEventListener('click', () => {
     edTool = g;
@@ -6944,6 +7164,7 @@ PAL.forEach(([g, label]) => {
   });
   $('edPal').appendChild(b);
 });
+edPalIcons();
 
 // --- Input ------------------------------------------------------------------
 
@@ -7206,6 +7427,9 @@ window.addEventListener('keydown', (e) => {
     e.preventDefault();
     ($('next').hidden ? $('toLevels') : $('next')).click();
   }
+  // G1: Z in the editor undoes the last stroke (name/code fields already
+  // returned above; the board's own undo is unreachable under the editor).
+  else if (!$('editor').hidden && k === 'z') edUndo();
   else if (overlayOpen()) return;
   else if (k === 'z' || k === 'u') undo();
   else if (k === 'r') reset();

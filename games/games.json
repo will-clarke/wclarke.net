@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "faultline",
+      "name": "Faultline",
+      "accent": "#ff7a2f",
+      "tagline": "Into the Breach on a sliding-tile board. You never move your units - you drag whole rows and columns of the battlefield, wrapping at the edges, and the fight resolves around the geometry you leave behind. Round units ride the ground; anchored brutes stand still while you drag the lava underneath them. Three shifts a turn, free undo, five handcrafted faults and a seeded Daily Fault to clear in the fewest shifts."
+    },
+    {
       "slug": "dropforge",
       "name": "Dropforge",
       "accent": "#ff7a1a",
