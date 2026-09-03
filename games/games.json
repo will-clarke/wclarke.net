@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "shove",
+      "name": "Shove",
+      "accent": "#ff8a4d",
+      "tagline": "Into the Breach, rebuilt for a phone held upright. Enemies march down a five-wide corridor toward your gate, and everything you do shoves somebody - into walls, into pits, into each other, or back up the board, because distance is time and time is gate HP. Perfect information, telegraphed attacks, full undo: every loss is your fault and every turn has a clean answer. Ten fights, then a seeded Daily Siege that is the same board for everyone."
+    },
+    {
       "slug": "faultline",
       "name": "Faultline",
       "accent": "#ff7a2f",
