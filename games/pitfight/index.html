@@ -37,7 +37,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .chip{background:var(--panel2);border-radius:12px;padding:6px 3px 5px;text-align:center;
   border:2px solid transparent;line-height:1.25;position:relative;transition:border-color .12s}
-.chip b{display:block;font-size:11px;letter-spacing:.6px;color:var(--cc,#fff)}
+.chip b{display:block;font-size:10px;letter-spacing:.3px;color:var(--cc,#fff)}
 .chip .hp{display:block;font-size:10px;letter-spacing:1.5px;color:#8fe36e;min-height:12px}
 .chip .sub{display:block;font-size:9px;color:var(--dim)}
 .chip.sel{border-color:var(--cc,#fff);background:#3a2e20}
@@ -164,6 +164,21 @@ const KITS={
     pass:'Keeps veterans alive; useless alone',
     vets:{a:{n:'Reviver',d:'Once per game: revive an adjacent friendly wreck at 1 HP'},
           b:{n:'Trauma Kit',d:'Heals 2'}}},
+  warper:{name:'WARPER',hp:2,mv:2,cc:'#dd8cff',
+    act:{n:'Warp',d:'Swap places with the first unit in a straight line - friend or foe, any distance. No damage, pure position'},
+    pass:'Swaps yank channelers off shrines',
+    vets:{a:{n:'Riftwalker',d:'Warp lines pass through walls and barricades'},
+          b:{n:'Shockwarp',d:'Swapped enemies take 1 on arrival'}}},
+  leaper:{name:'LEAPER',hp:2,mv:2,cc:'#ff9ad5',
+    act:{n:'Leap',d:'Vault over an adjacent unit, wall or wreck. The landing shockwave shoves all 4 neighbours 1 tile'},
+    pass:'The shockwave shoves allies too - aim it',
+    vets:{a:{n:'Springheel',d:'Leaps up to 3 tiles and can cross anything - even pits'},
+          b:{n:'Quake',d:'The landing shockwave shoves 2 tiles'}}},
+  necromancer:{name:'NECROMANCER',hp:2,mv:1,cc:'#e8dfc0',
+    act:{n:'Raise',d:'Consume an adjacent wreck - yours or theirs - to raise it as a husk that fights for you'},
+    pass:'Husks: 1 hp forever, rise exhausted, leave no wreck, never claim shrines',
+    vets:{a:{n:'Gravecaller',d:'Raises wrecks up to 2 tiles away'},
+          b:{n:'Bonelord',d:'Fresh husks move and act the turn they rise'}}},
 };
 const KKEYS=Object.keys(KITS);
 /* maps: rows listed top (r=6) to bottom (r=0). . floor # wall O pit S shrine */
@@ -262,7 +277,7 @@ function die(st,u,cause){
   st.ev.push({t:'die',u:u.id,c:u.c,r:u.r});
   if(cause!=='pit'){
     if(u.k==='bomb'&&!u.spent){explode(st,u.c,u.r,u)}
-    else st.wrecks.push({id:st.nid++,team:u.team,k:u.k,c:u.c,r:u.r});
+    else if(!u.husk)st.wrecks.push({id:st.nid++,team:u.team,k:u.k,c:u.c,r:u.r}); // husks crumble
   }
 }
 function hurtStruct(st,s,amt){
@@ -421,6 +436,40 @@ function targetsFor(st,u){
       if(o&&o.team===u.team&&o.hp<o.mhp)out.push({c:a.c,r:a.r,kind:'heal',tid:o.id});
       if(!o&&isVet(u,'a')&&!u.revUsed){const w=wreckAt(st,a.c,a.r);if(w&&w.team===u.team)out.push({c:a.c,r:a.r,kind:'revive',wid:w.id})}
     }
+  }else if(u.k==='warper'){
+    const rift=isVet(u,'a');
+    for(const dk of DKEYS){const[dc,dr]=DIRS[dk];
+      let c=u.c,r=u.r;
+      for(;;){
+        c+=dc;r+=dr;if(!inb(c,r))break;
+        if(!rift&&st.ter[ti(c,r)]===1)break;
+        const sct=structAt(st,c,r);
+        if(!rift&&sct&&sct.type!=='spike')break;
+        const o=unitAt(st,c,r);
+        if(o){out.push({c,r,kind:'warp',tid:o.id,dk});break}
+      }}
+  }else if(u.k==='leaper'){
+    const spring=isVet(u,'a');
+    for(const dk of DKEYS){const[dc,dr]=DIRS[dk];
+      for(const cross of (spring?[1,2]:[1])){
+        const lc=u.c+dc*(cross+1),lr=u.r+dr*(cross+1);
+        if(!inb(lc,lr))continue;
+        if(!spring){ // base leap needs an obstacle to vault: unit, wall, wreck or build
+          const mc=u.c+dc,mr=u.r+dr,ms=structAt(st,mc,mr);
+          if(!(st.ter[ti(mc,mr)]===1||unitAt(st,mc,mr)||wreckAt(st,mc,mr)||(ms&&ms.type!=='spike')))continue;
+        }
+        if(st.ter[ti(lc,lr)]!==0)continue;
+        const ls=structAt(st,lc,lr);
+        if(ls&&ls.type!=='spike')continue;
+        if(unitAt(st,lc,lr))continue;
+        out.push({c:lc,r:lr,kind:'leap',dk});
+      }}
+  }else if(u.k==='necromancer'){
+    const rng=isVet(u,'a')?2:1;
+    for(const w of st.wrecks){
+      const d=man(u,w);
+      if(d>=1&&d<=rng&&!unitAt(st,w.c,w.r))out.push({c:w.c,r:w.r,kind:'raise',wid:w.id});
+    }
   }
   return out;
 }
@@ -479,6 +528,40 @@ function applyAct(st,uid,kind,args){
     const nu=mkUnit(st,w.team,w.k,w.c,w.r);
     nu.hp=1;nu.moved=true;nu.acted=true;
     st.ev.push({t:'revive',u:nu.id,c:w.c,r:w.r});
+  }else if(kind==='warp'){
+    const t=unitById(st,args.tid);if(!t||t.dead)return;
+    st.ev.push({t:'zap',c:u.c,r:u.r});st.ev.push({t:'zap',c:t.c,r:t.r});
+    const uc=u.c,ur=u.r;
+    u.c=t.c;u.r=t.r;t.c=uc;t.r=ur;
+    u.chan=false;t.chan=false;
+    st.ev.push({t:'push',u:u.id,c:u.c,r:u.r});st.ev.push({t:'push',u:t.id,c:t.c,r:t.r});
+    for(const x of[u,t]){
+      if(x.dead)continue;
+      const sct=structAt(st,x.c,x.r);
+      if(sct&&sct.type==='spike')hurt(st,x,1,{att:u.id,cause:'spike'});
+    }
+    if(isVet(u,'b')&&t.team!==u.team&&!t.dead)hurt(st,t,1,{att:u.id});
+  }else if(kind==='leap'){
+    st.ev.push({t:'leap',u:u.id,from:{c:u.c,r:u.r},c:args.c,r:args.r});
+    u.c=args.c;u.r=args.r;u.chan=false;
+    const sct=structAt(st,u.c,u.r);
+    if(sct&&sct.type==='spike')hurt(st,u,1,{cause:'spike'});
+    if(u.dead)return;
+    const steps=isVet(u,'b')?2:1;
+    for(const dk of DKEYS){
+      const[dc,dr]=DIRS[dk],nc=args.c+dc,nr=args.r+dr;if(!inb(nc,nr))continue;
+      const o=unitAt(st,nc,nr);
+      if(o)shoveEnt(st,{unit:o},dk,steps,{att:u.id});
+      else{const w=wreckAt(st,nc,nr);if(w)shoveEnt(st,{wreck:w},dk,steps,{att:u.id})}
+    }
+  }else if(kind==='raise'){
+    const w=wreckById(st,args.wid);if(!w)return;
+    st.wrecks=st.wrecks.filter(x=>x.id!==w.id);
+    const nu=mkUnit(st,u.team,w.k,w.c,w.r);
+    nu.hp=1;nu.mhp=1;nu.husk=true;
+    const ready=isVet(u,'b');
+    nu.moved=!ready;nu.acted=!ready;
+    st.ev.push({t:'raise',u:nu.id,c:w.c,r:w.r});
   }
 }
 function doMoveSim(st,uid,c,r,path){
@@ -513,7 +596,7 @@ function endTurnSim(st){
   turretsFire(st,team);
   for(const u of alive(st,team)){
     const sh=shrineAt(st,u.c,u.r);
-    if(sh){
+    if(sh&&!u.husk){ // husks squat shrines but can never claim
       if(u.k==='ghost')claimShrine(st,u,sh);
       else if(!u.chan){u.chan=true;st.ev.push({t:'chan',u:u.id,c:u.c,r:u.r})}
     }else u.chan=false;
@@ -590,8 +673,11 @@ function placeUnit(st,team,k,c,r){
 }
 
 /* ============================ AI (team-parameterized, defaults to 1) ============================ */
-const COUNTER={juggernaut:'shover',shover:'sniper',sniper:'ghost',ghost:'juggernaut',
-  bomb:'shover',engineer:'bomb',medic:'ghost'};
+/* each kit lists its design counters; AI picks one at random for draft variety */
+const COUNTER={juggernaut:['shover','leaper','necromancer'],shover:['sniper'],sniper:['ghost','warper'],
+  ghost:['juggernaut'],bomb:['shover','warper'],engineer:['bomb','leaper'],
+  medic:['ghost','necromancer'],warper:['juggernaut'],leaper:['sniper','juggernaut'],
+  necromancer:['bomb']};
 function aiPickKit(st,tm){
   tm=tm===undefined?1:tm;
   const left=kitsLeft(st,tm);
@@ -599,10 +685,10 @@ function aiPickKit(st,tm){
   const theirs=st.units.filter(u=>u.team!==tm);
   if(theirs.length){
     const last=theirs[theirs.length-1].k;
-    const c=COUNTER[last];
-    if(c&&left.includes(c)&&!mine.includes(c))return c;
+    const avail=(COUNTER[last]||[]).filter(c=>left.includes(c)&&!mine.includes(c));
+    if(avail.length)return avail[Math.floor(Math.random()*avail.length)];
   }
-  for(const k of ['juggernaut','shover','sniper','medic','ghost','engineer','bomb'])
+  for(const k of ['juggernaut','shover','sniper','warper','medic','leaper','ghost','necromancer','engineer','bomb'])
     if(left.includes(k))return k;
   return left[0];
 }
@@ -617,8 +703,8 @@ function aiPickPlace(st,k,tm){
     let dS=99;for(const sh of st.shrines)if(!sh.taken)dS=Math.min(dS,Math.abs(sh.c-p.c)+Math.abs(sh.r-p.r));
     s-=dS*1.5;
     let dF=99;for(const f of foes)dF=Math.min(dF,Math.abs(f.c-p.c)+Math.abs(f.r-p.r));
-    if(k==='sniper'||k==='engineer'||k==='medic')s+=Math.min(dF,6)*1.2; // backline
-    if(k==='sniper'){ // needs open lanes to matter
+    if(k==='sniper'||k==='engineer'||k==='medic'||k==='necromancer'||k==='warper')s+=Math.min(dF,6)*1.2; // backline
+    if(k==='sniper'||k==='warper'){ // needs open lanes to matter
       let lanes=0;
       for(const dk of DKEYS){const[dc,dr]=DIRS[dk];let c2=p.c,r2=p.r;
         for(let i=0;i<4;i++){c2+=dc;r2+=dr;if(!inb(c2,r2)||st.ter[ti(c2,r2)]!==0)break;lanes++}}
@@ -630,15 +716,16 @@ function aiPickPlace(st,k,tm){
   }).sort((a,b)=>b.s-a.s);
   return scored.length?scored[0].p:null;
 }
-const VETPREF={juggernaut:'a',shover:'a',engineer:'a',sniper:'b',bomb:'b',ghost:'a',medic:'a'};
+const VETPREF={juggernaut:'a',shover:'a',engineer:'a',sniper:'b',bomb:'b',ghost:'a',medic:'a',
+  warper:'b',leaper:'b',necromancer:'b'};
 /* concave hp value: finishing a wounded unit is worth more than chipping a fresh one */
 const HPV=[0,26,40,50,58,64];
 /* how many enemies of `tm` could plausibly reach (c,r) next turn */
 function dangerAt(st,tm,c,r){
   let n=0;
   for(const e of st.units){
-    if(e.dead||e.team===tm||e.k==='medic'||e.k==='engineer')continue;
-    const reach=KITS[e.k].mv+(e.k==='sniper'?4:1);
+    if(e.dead||e.team===tm||e.k==='medic'||e.k==='engineer'||e.k==='warper'||e.k==='necromancer')continue;
+    const reach=KITS[e.k].mv+(e.k==='sniper'?4:e.k==='leaper'?2:1);
     if(Math.abs(e.c-c)+Math.abs(e.r-r)<=reach)n++;
   }
   return n;
@@ -649,7 +736,7 @@ function aiScore(st,tm){
   let s=0;
   for(const u of st.units){
     if(u.dead)continue;
-    const v=HPV[Math.min(u.hp,5)]+40+(u.vet?35:0);
+    const v=(HPV[Math.min(u.hp,5)]+40+(u.vet?35:0))*(u.husk?0.55:1); // husks are cheap bodies
     s+=u.team===tm?v:-v;
   }
   for(const sh of st.shrines){
@@ -767,6 +854,9 @@ const SFX={
   build:()=>{noise(0.06,0.12,1200);tone(500,340,0.08,'square',0.05)},
   place:()=>tone(340,480,0.1,'triangle',0.09),
   claim:()=>{tone(520,520,0.1,'sine',0.09);setTimeout(()=>tone(780,780,0.12,'sine',0.09),100)},
+  warp:()=>tone(1400,480,0.14,'sine',0.07),
+  leap:()=>tone(300,720,0.16,'triangle',0.09),
+  raise:()=>{tone(120,300,0.32,'sawtooth',0.05);tone(90,220,0.32,'triangle',0.07)},
   vet:()=>{tone(520,520,0.12,'sine',0.1);setTimeout(()=>tone(660,660,0.12,'sine',0.1),110);setTimeout(()=>tone(990,990,0.22,'sine',0.12),220)},
   win:()=>{tone(520,520,0.12,'sine',0.1);setTimeout(()=>tone(660,660,0.12,'sine',0.1),110);setTimeout(()=>tone(880,880,0.25,'sine',0.12),220)},
   lose:()=>tone(220,60,0.7,'sawtooth',0.12),
@@ -798,7 +888,7 @@ function startGame(mapIdx,mode){
   cast=null;pb=null;floaters=[];parts=[];
   $('menu').classList.add('hidden');$('over').classList.add('hidden');$('vmodal').classList.add('hidden');
   $('hName').textContent=MAPS[mapIdx].name;
-  showTip('<b>Placement.</b> Pick a fighter below, then tap a tile. You field 4 of the 7. '+
+  showTip('<b>Placement.</b> Pick a fighter below, then tap a tile. You field 4 of the '+KKEYS.length+'. '+
     'No placing within 2 tiles of an enemy. Watch what they pick - and counter it.');
   updateAll();
 }
@@ -845,7 +935,7 @@ function updateDock(){
     b.className='chip'+(G.sel===u.id?' sel':'')+(u.dead?' dead':(u.acted?' done':''));
     b.style.setProperty('--cc',kd.cc);
     b.innerHTML=`<b>${kd.name}</b><span class="hp">${u.dead?'':chipHearts(u)}</span>`+
-      (u.vet?`<span class="vet">👑</span>`:'');
+      (u.vet?`<span class="vet">👑</span>`:u.husk?`<span class="vet">💀</span>`:'');
     b.onclick=()=>{if(G.busy||u.dead||!humanTurn||G.modal)return;SFX.tap();selectUnit(u.id)};
     chips.appendChild(b);
   }
@@ -977,7 +1067,7 @@ function nextFlow(){
         afterEvents(()=>nextFlow());
       },300);
     }else if(st.units.length===0){
-      showTip('<b>Placement.</b> Pick a fighter below, then tap a tile. You field 4 of the 7.');
+      showTip('<b>Placement.</b> Pick a fighter below, then tap a tile. You field 4 of the '+KKEYS.length+'.');
     }
     if(st.phase==='place'){updateAll();return}
   }
@@ -1029,7 +1119,7 @@ function aiTurn(){
     if(st.over){G.busy=false;return}
     guard++;
     const cands=alive(st,1).filter(u=>!u.acted);
-    if(!cands.length||guard>14){
+    if(!cands.length||guard>24){ // headroom: Bonelord husks join mid-turn
       castSnap();st.ev=[];
       endTurnSim(st);
       G.busy=false;
@@ -1093,11 +1183,11 @@ function showMenu(){
     <div class="card"><h3>VS THE MACHINE</h3><div class="maps">${mapBtns('ai')}</div></div>
     <div class="card"><h3>HOTSEAT · 2 PLAYERS</h3><div class="maps">${mapBtns('hot')}</div></div>
     <div class="card"><h3>HOW TO FIGHT</h3><ul class="rules">
-      <li><b>Place 4 of 7</b> fighters, taking turns. Every pick is public - counter theirs.</li>
+      <li><b>Place 4 of ${KKEYS.length}</b> fighters, taking turns. Every pick is public - counter theirs.</li>
       <li>Each turn, every fighter may <b>move then act</b>. Undo until you end the turn.</li>
       <li>Shove into <b>walls or bodies</b>: 1 damage. Into a <b>pit</b>: gone. The Shover shoves <b>allies too</b>.</li>
       <li>Stand on a <b>shrine</b> for one full enemy turn to claim it: full heal + a <b>veteran upgrade</b>. Ghosts claim instantly.</li>
-      <li>The dead leave <b>wrecks</b>: step on one and you stop there; they can be shoved. Medics can learn to revive them.</li>
+      <li>The dead leave <b>wrecks</b>: step on one and you stop there; they can be shoved. Medics can learn to revive them; Necromancers raise either side's as husks.</li>
       <li>Kill all four, or lead the count when <b>round ${MAXR}</b> is judged. No draws.</li></ul></div>
     <button class="bigbtn ghost" id="mMute">${MUTE?'🔇 Sound off':'🔊 Sound on'}</button>
     <div class="mini">v0.1 prototype</div>`;
@@ -1140,7 +1230,8 @@ function inspect(st,c,r){
   const u=unitAt(st,c,r);
   if(u){const kd=KITS[u.k];
     const vet=u.vet?` <b style="color:var(--gold)">👑 ${kd.vets[u.vet].n}: ${kd.vets[u.vet].d}</b>`:'';
-    showTip(`<b style="color:${TEAMS[u.team].body}">${TEAMS[u.team].name} ${kd.name}</b> · ${u.hp}/${u.mhp}hp · move ${unitMv(u)}<br>${kd.act.n}: ${kd.act.d}. ${kd.pass}.${vet}`);
+    const husk=u.husk?` · <b style="color:#8dff7a">💀 HUSK</b> (1 hp forever, no wreck, can't claim)`:'';
+    showTip(`<b style="color:${TEAMS[u.team].body}">${TEAMS[u.team].name} ${kd.name}</b> · ${u.hp}/${u.mhp}hp · move ${unitMv(u)}${husk}<br>${kd.act.n}: ${kd.act.d}. ${kd.pass}.${vet}`);
     return true}
   const sct=structAt(st,c,r);
   if(sct){showTip(sct.type==='spike'?'<b>Spike trap</b>: anyone entering takes 1 and stops.':
@@ -1219,7 +1310,8 @@ function playback(evts,done){
 }
 function addFloat(c,r,txt,col){floaters.push({x:px(c)+L.ts/2,y:py(r)+L.ts*0.3,txt,col,age:0})}
 const DUR={walk:0.12,push:0.11,slam:0.12,fall:0.26,hurt:0.16,die:0.22,boom:0.26,shot:0.18,
-  swing:0.09,build:0.16,heal:0.2,chan:0.3,claim:0.4,vet:0.4,place:0.2,crush:0.18,revive:0.3};
+  swing:0.09,build:0.16,heal:0.2,chan:0.3,claim:0.4,vet:0.4,place:0.2,crush:0.18,revive:0.3,
+  zap:0.12,leap:0.22,raise:0.32};
 function startStep(s){
   const cu=id=>cast.units[id],cw=id=>cast.wrecks[id];
   switch(s.t){
@@ -1227,6 +1319,9 @@ function startStep(s){
       if(u){s.from={c:u.c,r:u.r};u.walking=s.path}SFX.step();break}
     case 'push':{const e=s.u!==undefined?cu(s.u):cw(s.w);s.dur=DUR.push;
       if(e){s.from={c:e.c,r:e.r};e.tc=s.c;e.tr=s.r}SFX.push();break}
+    case 'zap':{s.dur=DUR.zap;parts.push({t:'vring',c:s.c,r:s.r,age:0,dur:0.35});SFX.warp();break}
+    case 'leap':{const u=cu(s.u);s.dur=DUR.leap;
+      if(u){s.from={c:u.c,r:u.r};u.tc=s.c;u.tr=s.r;u.leaping=1}SFX.leap();break}
     case 'slam':{s.dur=DUR.slam;shakeT=0.15;SFX.slam();vib(15);break}
     case 'fall':{const e=s.u!==undefined?cu(s.u):cw(s.w);s.dur=DUR.fall;
       if(e){s.from={c:e.c,r:e.r};e.tc=s.c;e.tr=s.r;e.falling=1}SFX.fall();break}
@@ -1254,10 +1349,12 @@ function startStep(s){
       parts.push({t:'gold',c:s.c,r:s.r,age:0,dur:0.5});
       addFloat(s.c,s.r,'VETERAN','#ffc94d');
       if(u){const su=unitById(G.st,s.u);if(su){u.vet=su.vet;u.hp=su.hp;u.mhp=su.mhp}}break}
-    case 'place':case 'revive':{s.dur=s.t==='place'?DUR.place:DUR.revive;
+    case 'place':case 'revive':case 'raise':{s.dur=DUR[s.t];
       const su=unitById(G.st,s.u);
       if(su&&!cast.units[s.u])cast.units[s.u]=Object.assign({},su,{fade:0,scale:0.3,fx:0,fy:0,flash:0,spawning:1});
-      if(s.t==='revive'){addFloat(s.c,s.r,'REVIVED','#8fe36e');SFX.heal()}else SFX.place();
+      if(s.t==='revive'){addFloat(s.c,s.r,'REVIVED','#8fe36e');SFX.heal()}
+      else if(s.t==='raise'){addFloat(s.c,s.r,'RAISED','#b7ff8a');SFX.raise()}
+      else SFX.place();
       break}
     default:s.dur=0.05;
   }
@@ -1267,13 +1364,14 @@ function endStep(s){
   switch(s.t){
     case 'walk':{const u=cast.units[s.u];if(u){const l=s.path[s.path.length-1];u.c=l.c;u.r=l.r;u.fx=0;u.fy=0;u.walking=null}break}
     case 'push':{settle(s.u!==undefined?cast.units[s.u]:cast.wrecks[s.w]);break}
+    case 'leap':{const u=cast.units[s.u];if(u){settle(u);u.scale=1;u.leaping=0}break}
     case 'fall':{if(s.u!==undefined)delete cast.units[s.u];else delete cast.wrecks[s.w];break}
     case 'die':{delete cast.units[s.u];
       for(const w of G.st.wrecks)if(!cast.wrecks[w.id])cast.wrecks[w.id]=Object.assign({},w,{fade:1,scale:1,fx:0,fy:0});
       break}
     case 'diew':{delete cast.wrecks[s.w];break}
     case 'swing':{const u=cast.units[s.u];if(u)u.lunge=null;break}
-    case 'place':case 'revive':{const u=cast.units[s.u];if(u){u.fade=1;u.scale=1;u.spawning=0}break}
+    case 'place':case 'revive':case 'raise':{const u=cast.units[s.u];if(u){u.fade=1;u.scale=1;u.spawning=0}break}
   }
 }
 function tickPB(dt){
@@ -1289,6 +1387,8 @@ function tickPB(dt){
   const s=pb.cur,k=Math.min(1,pb.t/s.dur);
   const lerpTo=(e,from)=>{if(e&&e.tc!==undefined&&from){e.fx=(from.c+(e.tc-from.c)*k)-e.c;e.fy=(from.r+(e.tr-from.r)*k)-e.r}};
   if(s.t==='push')lerpTo(s.u!==undefined?cast.units[s.u]:cast.wrecks[s.w],s.from);
+  else if(s.t==='leap'){const u=cast.units[s.u];
+    if(u){lerpTo(u,s.from);u.scale=1+Math.sin(k*Math.PI)*0.4}}
   else if(s.t==='walk'){
     const u=cast.units[s.u];
     if(u&&s.from){
@@ -1304,7 +1404,7 @@ function tickPB(dt){
   else if(s.t==='diew'){const w=cast.wrecks[s.w];if(w){w.fade=1-k}}
   else if(s.t==='swing'){const u=cast.units[s.u];
     if(u&&u.lunge){const m=Math.sin(k*Math.PI)*0.28;u.fx=u.lunge.dc*m;u.fy=u.lunge.dr*m}}
-  else if(s.t==='place'||s.t==='revive'){const u=cast.units[s.u];if(u){u.fade=k;u.scale=0.3+0.7*k}}
+  else if(s.t==='place'||s.t==='revive'||s.t==='raise'){const u=cast.units[s.u];if(u){u.fade=k;u.scale=0.3+0.7*k}}
   if(k>=1){endStep(s);pb.cur=null}
 }
 
@@ -1400,6 +1500,7 @@ function drawUnit(u,x,y,alpha,scale){
   ctx.translate(x+ts/2,y+ts/2);ctx.scale(scale,scale);
   const s=ts*0.31,fl=u.flash>0;
   const body=fl?'#ffffff':tc.body,dark=fl?'#ffffff':tc.dark;
+  if(u.husk){ctx.shadowColor='#7dff8a';ctx.shadowBlur=9} // necro-green glow
   if(u.chan){ctx.strokeStyle='#ffc94d';ctx.lineWidth=3;ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.arc(0,0,s*1.35,0,7);ctx.stroke();ctx.setLineDash([])}
   if(u.k==='juggernaut'){
@@ -1462,6 +1563,42 @@ function drawUnit(u,x,y,alpha,scale){
     ctx.closePath();ctx.fill();
     if(!fl){ctx.fillStyle='#141019';
       ctx.beginPath();ctx.ellipse(-s*0.3,-s*0.15,s*0.13,s*0.2,0,0,7);ctx.ellipse(s*0.3,-s*0.15,s*0.13,s*0.2,0,0,7);ctx.fill()}
+  }else if(u.k==='warper'){
+    // blob torn in two mid-teleport: left half sits low, right half rides high
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.arc(-s*0.1,s*0.18,s*0.78,Math.PI*0.5,Math.PI*1.5);ctx.closePath();ctx.fill();
+    ctx.beginPath();ctx.arc(s*0.1,-s*0.22,s*0.78,Math.PI*1.5,Math.PI*0.5);ctx.closePath();ctx.fill();
+    ctx.fillStyle=dark;
+    rr(-s*0.14,-s*1.0,s*0.28,2*s,s*0.14);ctx.fill(); // rift seam
+    if(!fl){ctx.fillStyle='#1d1812';
+      ctx.beginPath();ctx.arc(-s*0.44,s*0.1,s*0.12,0,7);ctx.arc(s*0.44,-s*0.3,s*0.12,0,7);ctx.fill()}
+  }else if(u.k==='leaper'){
+    // pea blob crouched on two zigzag spring legs, big feet
+    ctx.strokeStyle=dark;ctx.lineWidth=s*0.16;ctx.lineCap='round';ctx.lineJoin='round';
+    for(const sx of[-0.42,0.42]){
+      ctx.beginPath();ctx.moveTo(s*sx,s*0.1);
+      ctx.lineTo(s*(sx-0.2),s*0.42);ctx.lineTo(s*(sx+0.2),s*0.72);ctx.lineTo(s*(sx-0.08),s*0.98);
+      ctx.stroke();
+    }
+    ctx.fillStyle=dark;
+    ctx.beginPath();ctx.ellipse(-s*0.5,s*1.02,s*0.3,s*0.13,0,0,7);ctx.fill();
+    ctx.beginPath();ctx.ellipse(s*0.5,s*1.02,s*0.3,s*0.13,0,0,7);ctx.fill();
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.ellipse(0,-s*0.38,s*0.8,s*0.68,0,0,7);ctx.fill();
+    if(!fl){ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(-s*0.28,-s*0.44,s*0.17,0,7);ctx.arc(s*0.28,-s*0.44,s*0.17,0,7);ctx.fill();
+      ctx.fillStyle='#1d1812';
+      ctx.beginPath();ctx.arc(-s*0.24,-s*0.48,s*0.09,0,7);ctx.arc(s*0.32,-s*0.48,s*0.09,0,7);ctx.fill()}
+  }else if(u.k==='necromancer'){
+    // tall robed blob, deep hood, grave-green eyes in the void
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.ellipse(0,s*0.12,s*0.88,s*1.0,0,0,7);ctx.fill();
+    ctx.fillStyle=dark;
+    ctx.beginPath();ctx.arc(0,-s*0.18,s*0.68,Math.PI*0.92,Math.PI*2.08);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#141019';
+    ctx.beginPath();ctx.ellipse(0,-s*0.24,s*0.44,s*0.34,0,0,7);ctx.fill();
+    if(!fl){ctx.fillStyle='#8dff7a';
+      ctx.beginPath();ctx.arc(-s*0.17,-s*0.24,s*0.09,0,7);ctx.arc(s*0.17,-s*0.24,s*0.09,0,7);ctx.fill()}
   }else{ // medic
     ctx.fillStyle=body;ctx.beginPath();ctx.arc(0,0,s,0,7);ctx.fill();
     ctx.fillStyle='#f4f0e6';ctx.beginPath();ctx.arc(s*0.55,-s*0.55,s*0.42,0,7);ctx.fill();
@@ -1535,6 +1672,15 @@ function drawHighlights(st){
       }else if(t.kind==='detonate'){
         ctx.strokeStyle='#ff5c49';ctx.lineWidth=2.5;ctx.setLineDash([6,5]);
         ctx.beginPath();ctx.arc(px(t.c)+ts/2,py(t.r)+ts/2,ts*0.62,0,7);ctx.stroke();ctx.setLineDash([]);
+      }else if(t.kind==='warp'){
+        ctx.strokeStyle='#dd8cff';ctx.lineWidth=2.5;
+        rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
+      }else if(t.kind==='leap'){
+        ctx.strokeStyle='#ff9ad5';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
+        rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();ctx.setLineDash([]);
+      }else if(t.kind==='raise'){
+        ctx.strokeStyle='#8dff7a';ctx.lineWidth=2.5;
+        rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
       }else{
         ctx.strokeStyle='#ff5c49';ctx.lineWidth=2.5;
         rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
@@ -1579,6 +1725,8 @@ function drawPending(){
     if(hl>0){ctx.fillStyle='#8fe36e';ctx.font='800 '+(ts*0.3)+'px system-ui';ctx.textAlign='center';ctx.textBaseline='alphabetic';
       ctx.fillText('+'+hl,px(u.c)+ts/2,py(u.r)+ts*0.22)}
   }
+  for(const g of st2.units) // units born in the preview (raised husks)
+    if(!g.dead&&!unitById(st,g.id))drawUnit(Object.assign({},g,{flash:0,chan:false}),px(g.c),py(g.r),0.5,1);
   for(const w of st.wrecks){
     const g=wreckById(st2,w.id);
     if(g&&(g.c!==w.c||g.r!==w.r))arrow(px(w.c)+ts/2,py(w.r)+ts/2,px(g.c)+ts/2,py(g.r)+ts/2,'#ffffff66',3);
@@ -1641,6 +1789,9 @@ function draw(){
     }else if(p.t==='gold'){
       ctx.strokeStyle=`rgba(255,201,77,${1-k})`;ctx.lineWidth=4*(1-k)+1;
       ctx.beginPath();ctx.arc(px(p.c)+ts/2,py(p.r)+ts/2,ts*(0.2+k*0.9),0,7);ctx.stroke();
+    }else if(p.t==='vring'){
+      ctx.strokeStyle=`rgba(221,140,255,${1-k})`;ctx.lineWidth=4*(1-k)+1;
+      ctx.beginPath();ctx.arc(px(p.c)+ts/2,py(p.r)+ts/2,ts*(0.15+k*0.7),0,7);ctx.stroke();
     }else if(p.t==='puff'){
       ctx.fillStyle=`rgba(200,180,150,${(1-k)*0.5})`;
       ctx.beginPath();ctx.arc(px(p.c)+ts/2,py(p.r)+ts/2,ts*(0.15+k*0.4),0,7);ctx.fill();
