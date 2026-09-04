@@ -1,6 +1,6 @@
 {
-  "name": "Mini Levels",
-  "short_name": "Mini Levels",
+  "name": "Recursive-Levels",
+  "short_name": "Recursive",
   "description": "One flat level whose windows are live views of itself.",
   "start_url": "./",
   "scope": "./",

@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#f3ecdf">
-<title>Mini Levels</title>
+<title>Recursive-Levels</title>
 <!-- T58: installable PWA. The manifest/sw/icons live beside this file; from
      file:// the links just 404 quietly and the game plays exactly as before. -->
 <link rel="manifest" href="manifest.webmanifest">
@@ -9,7 +9,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Mini Levels">
+<meta name="apple-mobile-web-app-title" content="Recursive">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23f3ecdf'/%3E%3Crect x='5.5' y='5.5' width='21' height='21' rx='2' fill='none' stroke='%235f95c9' stroke-width='2.5'/%3E%3Crect x='11.5' y='11.5' width='9' height='9' rx='1.5' fill='none' stroke='%239a86cb' stroke-width='2'/%3E%3Crect x='15' y='15' width='2' height='2' fill='%23d9a94e'/%3E%3C/svg%3E">
 <style>
   /* T22 pastel pass: warm linen ground, dusty pastels, soft everything.
@@ -3357,7 +3357,7 @@ function openShelves(expand) {
   $('shelves').textContent = '';
   // T74: this screen is the hub now - it greets at boot, so it wears the
   // game's name, a star tally, and a Continue row back into the level.
-  $('pickerTitle').textContent = 'Mini Levels';
+  $('pickerTitle').textContent = 'Recursive-Levels';
   const where = communityId ? 'Community · ' + levelDef.name
     : levelIndex < 0 ? 'Draft · ' + levelDef.name
     : TRACKS[trackIndex].name + ' ' + (levelIndex + 1) + ' · ' + levelDef.name;
@@ -4386,7 +4386,7 @@ const CAN_SHARE = !!navigator.share && location.protocol === 'https:';
 const shareUrl = (id) => location.origin + location.pathname + '#p=' + id;
 function shareLevel(m) {
   navigator.share({
-    title: 'Mini Levels',
+    title: 'Recursive-Levels',
     text: '"' + m.name + '" by ' + m.author + ' - best known ' + nMoves(m.bestMoves) + '.',
     url: shareUrl(m.id),
   }).catch(() => { /* declining the sheet is not an error */ });
