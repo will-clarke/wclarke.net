@@ -1,3 +1,11 @@
+# Renamed games. Old URLs are out in the wild (sitemap, links, an installed
+# PWA at the old scope) - keep them arriving at the new slug. First match
+# wins, so these have to sit above the catch-all.
+/games/mini-level      /games/recursive-levels/          301
+/games/mini-level/*    /games/recursive-levels/:splat    301
+/games/recurr          /games/autograph/                 301
+/games/recurr/*        /games/autograph/:splat           301
+
 # The whole site is the honeycomb. Real assets (games, museum, choosetwo, css,
 # js, media, *.json, *.xml) are served directly and take precedence over this.
 # Every other path falls through to the comb, which routes it by slug: see the

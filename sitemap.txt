@@ -23,13 +23,13 @@ https://wclarke.net/games/kaleid/
 https://wclarke.net/games/lanternwake/
 https://wclarke.net/games/loom/
 https://wclarke.net/games/lumen/
-https://wclarke.net/games/mini-level/
+https://wclarke.net/games/recursive-levels/
 https://wclarke.net/games/mirror/
 https://wclarke.net/games/overtone/
 https://wclarke.net/games/paint-machine/
 https://wclarke.net/games/pitfight/
 https://wclarke.net/games/polyhedra/
-https://wclarke.net/games/recurr/
+https://wclarke.net/games/autograph/
 https://wclarke.net/games/recursive-sokoban/
 https://wclarke.net/games/seed/
 https://wclarke.net/games/shipshape/

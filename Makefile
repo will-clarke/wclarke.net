@@ -55,7 +55,7 @@ BUILD_EXCLUDES := $(foreach g,$(BUILD_GAMES),--exclude=$(g))
 # Source/tooling cruft that must never reach the site. Static games are single
 # self-contained index.html files; anything below is build source (hydra's TS,
 # node_modules, configs) or a dev-only test harness (harness.mjs). `worker`
-# is mini-level's Cloudflare Worker (server-side deploy tooling - wrangler
+# is recursive-levels' Cloudflare Worker (server-side deploy tooling - wrangler
 # config, D1 schema, and .dev.vars secrets that must NEVER land on the site;
 # the game talks to the deployed worker over https, nothing here serves it).
 # `itch` is per-game itch.io packaging/promo media (mp4s, gifs) - like /shots,

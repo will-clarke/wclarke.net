@@ -220,7 +220,7 @@ const SEED_CONTENT = {
     GPU. The app only resolves indoors, which is the correct amount of cloud
     for a database of what I had for lunch.</p>` },
   // ---- best-of, promoted out of their rooms to the top level ----
-  '2,0':  { glyph: '🌀', title: 'autograph · fractal game', act: 'play', href: '/games/recurr/', accent: '#ff7ac2',
+  '2,0':  { glyph: '🌀', title: 'autograph · fractal game', act: 'play', href: '/games/autograph/', accent: '#ff7ac2',
             blurb: 'a mark made of itself: every cell is the whole mark, smaller. match the fractal in par.' },
   '1,1':  { glyph: '🦠', title: 'evolution', act: 'watch', href: '/video/evolution.webm', accent: '#9fdc6a',
             blurb: 'an artificial-life sandbox with no fitness function: things survive because they survive. runs on the shed gpu. the clip probes one creature’s brain mid-swarm.' },
@@ -230,7 +230,7 @@ const SEED_CONTENT = {
             blurb: 'trilemmas as svg triangles - pick any two: cap theorem, zooko, career / family / hobbies, and more.' },
   '0,-2': { glyph: '🎼', title: 'ai music', act: 'listen', audio: '/audio/bach.mp3', accent: '#c9a2ff',
             blurb: 'a keyboard piece from a model trained in the shed. nobody wrote it; it came out sounding like bach anyway. tap to play.' },
-  '2,-1': { glyph: '🪆', title: 'recursive-levels · nested sokoban', act: 'play', href: '/games/mini-level/', accent: '#3f9bf4',
+  '2,-1': { glyph: '🪆', title: 'recursive-levels · nested sokoban', act: 'play', href: '/games/recursive-levels/', accent: '#3f9bf4',
             blurb: 'one block on the board is a shrunken copy of the whole level. step in through its door and you are back in the room you just left, one size down.' },
   '2,-2': { glyph: '🎬', title: 'classiccult · film finder', act: 'visit', href: 'https://classiccult.pages.dev/', accent: '#ffd166',
             blurb: 'every classic & cult screening in london, scraped nightly onto one page. no backend, nothing to pay for. i moved to dorset shortly after finishing it.' },
@@ -395,14 +395,14 @@ const PLAYED = [
 // concepts' (WORST_SLUGS) beneath that. keep each tier under 18 items -
 // that's a comb's slot count, and fillSection's overflow would otherwise
 // claim the centre cell the next tier lives in.
-const DECENT_SLUGS = ['wallflower', 'pitfight', 'dropforge', 'silicon', 'tendril', 'comet', 'bop', 'recurr', 'afterlives', 'mini-level', 'mirror', 'tile', 'drip', 'allotmatic', 'antwar'];
+const DECENT_SLUGS = ['wallflower', 'pitfight', 'dropforge', 'silicon', 'tendril', 'comet', 'bop', 'autograph', 'afterlives', 'recursive-levels', 'mirror', 'tile', 'drip', 'allotmatic', 'antwar'];
 const WORST_SLUGS = ['overtone', 'voicebox', 'lanternwake', 'fathom', 'seed', 'ants'];
 const GAME_GLYPHS = { wallflower: '🌸', pitfight: '🥊', dropforge: '⛏', silicon: '🔬',
   tendril: '🌿', comet: '☄', shipshape: '🚢', fathom: '🐙', lumen: '🏮', cascade: '🌊',
-  fracture: '💥', recurr: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
+  fracture: '💥', autograph: '🌀', seed: '🌱', loom: '🧵', echo: '⏪', debt: '💸',
   drip: '💧', gridfire: '🔥', lanternwake: '🕯', mirror: '🪞', tile: '🔷', terminus: '🚉',
   hydra: '🐉', allotmatic: '🥕', trine: '🔺', kaleid: '❋', antwar: '⚔', 'antwar-factions': '🛡', ants: '🐜',
-  'mini-level': '🪆', threescore: '🪦', afterlives: '🚪', bop: '🎶', voicebox: '🎹', overtone: '🎻' };
+  'recursive-levels': '🪆', threescore: '🪦', afterlives: '🚪', bop: '🎶', voicebox: '🎹', overtone: '🎻' };
 // games with no games.json entry, pinned into a tier by hand
 const PINNED_ROUGH = []; // nothing hand-pinned here at present
 const PINNED_WORST = [

@@ -267,7 +267,7 @@ const LEVELS=[
   { name:"Corner",   tile:L3,  flips:true,  region:rect(3,2),
     hint:"A new shape - the bent <b>tromino</b>. Two of them lock into this little box." },
   { name:"Deficient",tile:L3,  flips:true,  region:rect(4,4,[[1,1]]),
-    hint:"A 4x4 with one cell gone always falls to this corner piece - the proof is <b>recursion</b>. Recurr says hi." },
+    hint:"A 4x4 with one cell gone always falls to this corner piece - the proof is <b>recursion</b>. Autograph says hi." },
   { name:"Tee",      tile:T4,  flips:true,  region:rect(4,4),
     hint:"Four <b>T</b>s pinwheel into a perfect square - the first real think." },
   { name:"Steps",    tile:S4,  flips:true,  region:GEN.Steps,
@@ -653,7 +653,7 @@ function resetLevel(){
 function setUndoBtns(){ document.querySelectorAll('.undoB').forEach(b=>b.disabled=!undoStack.length); }
 function clearWinUI(){ $('frame').classList.remove('win','pop'); $('winMsg').classList.remove('show','clean'); $('nextUp').classList.remove('show'); const b=document.querySelector('.badge'); b.classList.remove('clean'); b.textContent='✓'; }
 
-/* ===== gestures (recurr gating, SPEC §2) ============================ */
+/* ===== gestures (autograph gating, SPEC §2) ============================ */
 let downCell=null, downPiece=null, downXY=null, holdTimer=null, held=false, moved=false;
 function cancelHold(){ if(holdTimer){ clearTimeout(holdTimer); holdTimer=null; } }
 board.addEventListener('pointerdown', e=>{
