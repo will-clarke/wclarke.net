@@ -787,6 +787,9 @@ function layout(){
   L.ox=Math.floor((w-W*L.ts)/2);L.oy=Math.floor((h-H*L.ts)/2);
 }
 window.addEventListener('resize',layout);
+/* the dock grows/shrinks with its content (placement chips vs battle chips), resizing
+   the canvas - keep L in sync or taps drift, worst at the bottom row */
+if(window.ResizeObserver)new ResizeObserver(layout).observe($('cvwrap'));
 const px=c=>L.ox+c*L.ts, py=r=>L.oy+(H-1-r)*L.ts;
 const isHuman=t=>G.mode==='hot'||t===0;
 function startGame(mapIdx,mode){
@@ -1106,7 +1109,7 @@ function showMenu(){
 function tileFromEvent(e){
   const rect=cv.getBoundingClientRect();
   let x=e.clientX-rect.left,y=e.clientY-rect.top;
-  const bw=W*L.ts,bh=H*L.ts,slop=14; // forgive near-misses at the board edge
+  const bw=W*L.ts,bh=H*L.ts,slop=Math.max(14,L.ts*0.35); // forgive near-misses at the board edge
   if(x<L.ox&&x>L.ox-slop)x=L.ox+1;
   if(x>=L.ox+bw&&x<L.ox+bw+slop)x=L.ox+bw-1;
   if(y<L.oy&&y>L.oy-slop)y=L.oy+1;
@@ -1119,8 +1122,20 @@ cv.addEventListener('pointerdown',e=>{
   if(!G.st||G.busy||G.modal||G.st.over)return;
   const t=tileFromEvent(e);
   if(!t){G.sel=null;G.pending=null;updateDock();draw();return}
-  tapTile(t.c,t.r);
+  const rect=cv.getBoundingClientRect();
+  tapTile(t.c,t.r,{x:e.clientX-rect.left,y:e.clientY-rect.top});
 });
+/* nearest tile from `tiles` whose center is within rad px of the raw tap point -
+   fat-finger forgiveness so a tap lands where it was aimed, not where it grazed */
+function snapTile(tiles,pt,rad){
+  if(!pt)return null;
+  let bd=rad,bt=null;
+  for(const t of tiles){
+    const d=Math.hypot(pt.x-(px(t.c)+L.ts/2),pt.y-(py(t.r)+L.ts/2));
+    if(d<bd){bd=d;bt=t}
+  }
+  return bt;
+}
 function inspect(st,c,r){
   const u=unitAt(st,c,r);
   if(u){const kd=KITS[u.k];
@@ -1138,28 +1153,35 @@ function inspect(st,c,r){
     '<b>Shrine</b>: end your turn here and survive until your next to claim it - full heal and a veteran upgrade. Ghosts claim instantly.');return true}
   return false;
 }
-function tapTile(c,r){
+function tapTile(c,r,pt){
   const st=G.st,human=isHuman(st.cur);
   if(G.pending){
-    if(G.pending.key===c+','+r){commitPending();return}
+    const pk=G.pending.key.split(',');
+    if(G.pending.key===c+','+r||snapTile([{c:+pk[0],r:+pk[1]}],pt,L.ts*0.65)){commitPending();return}
     G.pending=null;updateDock();
   }
   if(st.phase==='place'){
-    if(human&&G.placeSel&&placeLegal(st,st.cur).some(t=>t.c===c&&t.r===r)){
-      makePending('place',{k:G.placeSel,c,r},c+','+r);draw();return;
+    if(human&&G.placeSel){
+      const legal=placeLegal(st,st.cur);
+      const tgt=legal.find(t=>t.c===c&&t.r===r)||snapTile(legal,pt,L.ts*0.8);
+      if(tgt){makePending('place',{k:G.placeSel,c:tgt.c,r:tgt.r},tgt.c+','+tgt.r);draw();return}
     }
     if(!inspect(st,c,r))showTip(null);
     draw();return;
   }
   const u=G.sel?unitById(st,G.sel):null;
+  const tapU=unitAt(st,c,r);
+  const ownTap=!!(tapU&&human&&tapU.team===st.cur&&!tapU.dead);
   if(human&&u&&!u.dead&&u.team===st.cur&&!u.acted){
-    const tg=targetsFor(st,u).find(t=>t.c===c&&t.r===r&&(t.kind!=='build'||G.buildArm!=='off'));
+    const tgs=targetsFor(st,u).filter(t=>t.kind!=='build'||G.buildArm!=='off');
+    let tg=tgs.find(t=>t.c===c&&t.r===r);
+    if(!tg&&!ownTap)tg=snapTile(tgs,pt,L.ts*0.6); // never steal a tap on an own unit
     if(tg){
-      const args=tg.kind==='build'?{c,r,bt:G.buildArm}:
+      const args=tg.kind==='build'?{c:tg.c,r:tg.r,bt:G.buildArm}:
         {tid:tg.tid,wid:tg.wid,dk:tg.dk,c:tg.c,r:tg.r};
-      makePending(tg.kind,args,c+','+r);draw();return;
+      makePending(tg.kind,args,tg.c+','+tg.r);draw();return;
     }
-    if(u.k==='medic'&&!unitAt(st,c,r)){
+    if(u.k==='medic'&&!tapU){
       const w=wreckAt(st,c,r);
       if(w&&man(u,{c,r})===1){
         const why=!isVet(u,'a')?'Only a Reviver medic can revive wrecks':
@@ -1169,12 +1191,13 @@ function tapTile(c,r){
       }
     }
     if(!u.moved){
-      const mt=moveTiles(st,u).find(t=>t.c===c&&t.r===r);
-      if(mt){SFX.step();doMove(c,r,mt.path);return}
+      const mts=moveTiles(st,u);
+      let mt=mts.find(t=>t.c===c&&t.r===r);
+      if(!mt&&!ownTap)mt=snapTile(mts,pt,L.ts*0.6);
+      if(mt){SFX.step();doMove(mt.c,mt.r,mt.path);return}
     }
   }
-  const tapU=unitAt(st,c,r);
-  if(tapU&&human&&tapU.team===st.cur&&!tapU.dead){SFX.tap();showTip(null);selectUnit(tapU.id);draw();return}
+  if(ownTap){SFX.tap();showTip(null);selectUnit(tapU.id);draw();return}
   if(inspect(st,c,r)){draw();return}
   G.sel=null;showTip(null);updateDock();draw();
 }
@@ -1388,13 +1411,15 @@ function drawUnit(u,x,y,alpha,scale){
     if(!fl){ctx.fillStyle='#1d1812';
       ctx.beginPath();ctx.arc(-s*0.3,-s*0.5,s*0.12,0,7);ctx.arc(s*0.3,-s*0.5,s*0.12,0,7);ctx.fill()}
   }else if(u.k==='shover'){
-    ctx.fillStyle=body;ctx.beginPath();ctx.arc(0,0,s,0,7);ctx.fill();
-    ctx.strokeStyle=fl?'#fff':'#e8d9a0';ctx.lineWidth=s*0.28;ctx.lineCap='round';
-    ctx.beginPath();ctx.arc(-s*0.75,-s*0.65,s*0.5,Math.PI*0.15,Math.PI*1.25);ctx.stroke();
-    ctx.beginPath();ctx.arc(s*0.75,-s*0.65,s*0.5,Math.PI*1.85,Math.PI*0.75,true);ctx.stroke();
-    ctx.fillStyle=dark;rr(-s*0.4,s*0.25,s*0.8,s*0.5,s*0.2);ctx.fill();
+    // squat blob braced behind two big flat palms
+    ctx.fillStyle=fl?'#fff':'#e8d9a0';
+    rr(-s*1.45,-s*0.42,s*0.55,s*1.2,s*0.2);ctx.fill();
+    rr(s*0.9,-s*0.42,s*0.55,s*1.2,s*0.2);ctx.fill();
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.ellipse(0,s*0.08,s*0.95,s*0.88,0,0,7);ctx.fill();
+    ctx.fillStyle=dark;rr(-s*0.62,-s*0.62,s*1.24,s*0.3,s*0.15);ctx.fill();
     if(!fl){ctx.fillStyle='#1d1812';
-      ctx.beginPath();ctx.arc(-s*0.3,-s*0.12,s*0.12,0,7);ctx.arc(s*0.3,-s*0.12,s*0.12,0,7);ctx.fill()}
+      ctx.beginPath();ctx.arc(-s*0.28,-s*0.06,s*0.12,0,7);ctx.arc(s*0.28,-s*0.06,s*0.12,0,7);ctx.fill()}
   }else if(u.k==='engineer'){
     ctx.fillStyle=body;rr(-s*0.9,-s*0.75,1.8*s,1.6*s,s*0.3);ctx.fill();
     ctx.fillStyle=fl?'#fff':'#ffc94d';
@@ -1406,23 +1431,18 @@ function drawUnit(u,x,y,alpha,scale){
     if(!fl){ctx.fillStyle='#1d1812';
       ctx.beginPath();ctx.arc(-s*0.26,-s*0.14,s*0.11,0,7);ctx.arc(s*0.26,-s*0.14,s*0.11,0,7);ctx.fill()}
   }else if(u.k==='sniper'){
-    ctx.strokeStyle=fl?'#fff':'#48605c';ctx.lineWidth=s*0.2;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(-s*0.7,s*0.8);ctx.lineTo(s*1.35,-s*1.05);ctx.stroke();
-    ctx.strokeStyle=fl?'#fff':'#d8e8e6';ctx.lineWidth=s*0.11;
-    ctx.beginPath();ctx.moveTo(s*0.72,-s*0.48);ctx.lineTo(s*1.35,-s*1.05);ctx.stroke();
-    ctx.fillStyle=fl?'#fff':'#48605c';ctx.beginPath();ctx.arc(s*0.55,-s*0.33,s*0.15,0,7);ctx.fill();
-    ctx.fillStyle=body;rr(-s*0.85,-s*0.6,1.7*s,1.5*s,s*0.5);ctx.fill();
+    // tall pea blob, one huge crosshair scope-eye
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.ellipse(0,0,s*0.85,s*1.05,0,0,7);ctx.fill();
     ctx.fillStyle=dark;
-    ctx.beginPath();ctx.arc(0,-s*0.3,s*0.66,Math.PI*1.02,Math.PI*1.98);ctx.fill();
+    ctx.beginPath();ctx.arc(0,-s*0.52,s*0.55,Math.PI,0);ctx.fill();
     if(!fl){
-      ctx.fillStyle='#f4f0e6';ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.32,0,7);ctx.fill();
-      ctx.strokeStyle='#1d1812';ctx.lineWidth=1.4;
-      ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.32,0,7);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(s*0.24-s*0.32,-s*0.06);ctx.lineTo(s*0.24+s*0.32,-s*0.06);
-      ctx.moveTo(s*0.24,-s*0.06-s*0.32);ctx.lineTo(s*0.24,-s*0.06+s*0.32);ctx.stroke();
-      ctx.fillStyle='#1d1812';ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.11,0,7);ctx.fill();
-      ctx.strokeStyle='#1d1812';ctx.lineWidth=s*0.09;ctx.lineCap='round';
-      ctx.beginPath();ctx.moveTo(-s*0.46,-s*0.06);ctx.lineTo(-s*0.2,-s*0.06);ctx.stroke();
+      ctx.fillStyle='#f4f0e6';ctx.beginPath();ctx.arc(0,-s*0.02,s*0.46,0,7);ctx.fill();
+      ctx.strokeStyle='#1d1812';ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.arc(0,-s*0.02,s*0.46,0,7);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-s*0.46,-s*0.02);ctx.lineTo(s*0.46,-s*0.02);
+      ctx.moveTo(0,-s*0.48);ctx.lineTo(0,s*0.44);ctx.stroke();
+      ctx.fillStyle='#1d1812';ctx.beginPath();ctx.arc(0,-s*0.02,s*0.16,0,7);ctx.fill();
     }
   }else if(u.k==='bomb'){
     ctx.fillStyle=fl?'#fff':'#33333d';ctx.beginPath();ctx.arc(0,s*0.12,s*0.95,0,7);ctx.fill();
@@ -1646,7 +1666,7 @@ window.DBG={G,startGame,tapTile,doEndTurn,selectUnit,makePending,commitPending,
   st:()=>G.st,aiBestFor,moveTiles,targetsFor,applyAct,placeLegal,newGame,
   placeUnit,endTurnSim,pendingClaims,claimShrine,applyVet,checkWin,judge,
   kitsLeft,alive,unitById,doMoveSim,aiPickKit,aiPickPlace,aiClaimChoice,
-  aiScore,aiPlanApply,aiPickPlan,isVet,clone,
+  aiScore,aiPlanApply,aiPickPlan,isVet,clone,L,snapTile,
   unitAt,structAt,wreckAt,shrineAt,KITS,MAPS};
 </script>
 </body>
