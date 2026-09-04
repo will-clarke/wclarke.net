@@ -24,7 +24,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .hbtn:active{background:#4a3b29}
 #cvwrap{flex:1;position:relative;min-height:0}
 #cv{position:absolute;inset:0;width:100%;height:100%;touch-action:none;display:block}
-#tip{position:absolute;left:10px;right:10px;top:8px;z-index:5;background:#2a2117ee;border:1px solid #4a3a26;
+#tip{position:absolute;left:10px;right:10px;top:8px;z-index:5;pointer-events:none;background:#2a2117ee;border:1px solid #4a3a26;
   border-radius:12px;padding:9px 12px;font-size:12.5px;line-height:1.45;color:#e6dcc8;box-shadow:0 6px 20px #0008}
 #tip b{color:var(--gold)}
 #toast{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;z-index:5;background:#2a2117f2;
@@ -722,7 +722,7 @@ const SFX={
 };
 function vib(ms){if(navigator.vibrate)try{navigator.vibrate(ms)}catch(e){}}
 /* ============================ controller ============================ */
-const G={scr:'menu',st:null,mode:'ai',undo:[],sel:null,placeSel:null,buildArm:'spike',
+const G={scr:'menu',st:null,mode:'ai',undo:[],sel:null,placeSel:null,buildArm:'off',
   pending:null,busy:false,modal:false};
 let cast=null,pb=null,shakeT=0,floaters=[],parts=[];
 const $=id=>document.getElementById(id);
@@ -806,10 +806,12 @@ function updateDock(){
         for(const[bt,n,d]of kinds){
           const b=document.createElement('button');
           b.className='ab'+(G.buildArm===bt?' armed':'');
-          b.innerHTML=`<b>${n}</b><span>${d}</span>`;
-          b.onclick=()=>{SFX.tap();G.buildArm=bt;updateDock();draw()};
+          b.innerHTML=`<b>${n}</b><span>${G.buildArm===bt?'tap a tile to build':d}</span>`;
+          b.onclick=()=>{SFX.tap();G.buildArm=G.buildArm===bt?'off':bt;updateDock();draw()};
           ab.appendChild(b);
         }
+        if(G.buildArm==='off')ab.insertAdjacentHTML('beforeend',
+          '<div id="abhint" style="flex:.9">tap a tile to move,<br>or arm a build</div>');
       }else if(u.k==='bomb'&&!u.spent){
         const b=document.createElement('button');
         b.className='ab armed';
@@ -841,12 +843,15 @@ function pendingButtons(ab){
   bx.onclick=()=>{if(G.busy)return;SFX.tap();G.pending=null;updateDock();draw()};
   ab.appendChild(bc);ab.appendChild(bx);
 }
-let tipTimer=null;
-function showTip(html){const t=$('tip');if(!html){t.classList.add('hidden');return}t.innerHTML=html;t.classList.remove('hidden')}
+let tipTimer=null,tipHide=null;
+function showTip(html){const t=$('tip');clearTimeout(tipHide);
+  if(!html){t.classList.add('hidden');return}
+  t.innerHTML=html;t.classList.remove('hidden');
+  tipHide=setTimeout(()=>t.classList.add('hidden'),7000)}
 function toast(msg){const t=$('toast');t.textContent=msg;t.style.opacity=1;
   clearTimeout(tipTimer);tipTimer=setTimeout(()=>t.style.opacity=0,2200)}
 /* ---- selection / pending / undo ---- */
-function selectUnit(id){G.sel=id;G.pending=null;updateDock();draw()}
+function selectUnit(id){G.sel=id;G.pending=null;G.buildArm='off';updateDock();draw()}
 function makePending(kind,args,key){
   const st2=clone(G.st);st2.ev=[];
   if(kind==='place')st2._place=1;
@@ -913,7 +918,7 @@ function nextFlow(){
         placeUnit(st,st.cur,k,p.c,p.r);
         SFX.place();G.busy=false;
         afterEvents(()=>nextFlow());
-      },420);
+      },300);
     }else if(st.units.length===0){
       showTip('<b>Placement.</b> Pick a fighter below, then tap a tile. You field 4 of the 7.');
     }
@@ -1049,7 +1054,12 @@ function showMenu(){
 /* ============================ input ============================ */
 function tileFromEvent(e){
   const rect=cv.getBoundingClientRect();
-  const x=e.clientX-rect.left,y=e.clientY-rect.top;
+  let x=e.clientX-rect.left,y=e.clientY-rect.top;
+  const bw=W*L.ts,bh=H*L.ts,slop=14; // forgive near-misses at the board edge
+  if(x<L.ox&&x>L.ox-slop)x=L.ox+1;
+  if(x>=L.ox+bw&&x<L.ox+bw+slop)x=L.ox+bw-1;
+  if(y<L.oy&&y>L.oy-slop)y=L.oy+1;
+  if(y>=L.oy+bh&&y<L.oy+bh+slop)y=L.oy+bh-1;
   const c=Math.floor((x-L.ox)/L.ts),r=H-1-Math.floor((y-L.oy)/L.ts);
   return inb(c,r)?{c,r}:null;
 }
@@ -1092,7 +1102,7 @@ function tapTile(c,r){
   }
   const u=G.sel?unitById(st,G.sel):null;
   if(human&&u&&!u.dead&&u.team===st.cur&&!u.acted){
-    const tg=targetsFor(st,u).find(t=>t.c===c&&t.r===r);
+    const tg=targetsFor(st,u).find(t=>t.c===c&&t.r===r&&(t.kind!=='build'||G.buildArm!=='off'));
     if(tg){
       const args=tg.kind==='build'?{c,r,bt:G.buildArm}:
         {tid:tg.tid,wid:tg.wid,dk:tg.dk,c:tg.c,r:tg.r};
@@ -1112,7 +1122,6 @@ $('bUndo').onclick=doUndo;
 $('bEnd').onclick=()=>{ac();doEndTurn()};
 $('bBack').onclick=()=>{if(G.busy)return;showMenu()};
 $('bRetry').onclick=()=>{if(G.busy||!G.st)return;startGame(G.st.mapIdx,G.mode)};
-$('tip').onclick=()=>showTip(null);
 /* ============================ playback ============================ */
 function castSnap(){
   cast={units:{},wrecks:{}};
@@ -1428,6 +1437,7 @@ function drawHighlights(st){
   if(!u.acted){
     for(const t of targetsFor(st,u)){
       if(t.kind==='build'){
+        if(G.buildArm==='off')continue;
         ctx.strokeStyle='#f0a132aa';ctx.lineWidth=2.5;ctx.setLineDash([5,4]);
         rr(px(t.c)+5,py(t.r)+5,ts-10,ts-10,ts*0.18);ctx.stroke();ctx.setLineDash([]);
       }else if(t.kind==='heal'||t.kind==='revive'){
