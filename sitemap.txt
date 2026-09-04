@@ -27,6 +27,7 @@ https://wclarke.net/games/mini-level/
 https://wclarke.net/games/mirror/
 https://wclarke.net/games/overtone/
 https://wclarke.net/games/paint-machine/
+https://wclarke.net/games/pitfight/
 https://wclarke.net/games/polyhedra/
 https://wclarke.net/games/recurr/
 https://wclarke.net/games/recursive-sokoban/

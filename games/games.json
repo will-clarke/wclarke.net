@@ -1,6 +1,12 @@
 {
   "games": [
     {
+      "slug": "pitfight",
+      "name": "Pitfight",
+      "accent": "#f0a132",
+      "tagline": "Go's opening, Into the Breach's fights, TF2's roster - in a portrait duel to the death. Place 4 of 7 fighters one at a time, every pick public, then brawl on a 5x7 arena where shoves, spikes, pits and bombs do most of the killing. Claim a shrine to crown a veteran with an exaggerated upgrade. Kill all four or win the round-20 judgement: no draws, ever. Duel the machine or a friend on one phone."
+    },
+    {
       "slug": "shove",
       "name": "Shove",
       "accent": "#ff8a4d",
