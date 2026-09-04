@@ -174,11 +174,21 @@ const KITS={
     pass:'The shockwave shoves allies too - aim it',
     vets:{a:{n:'Springheel',d:'Leaps up to 3 tiles and can cross anything - even pits'},
           b:{n:'Quake',d:'The landing shockwave shoves 2 tiles'}}},
-  necromancer:{name:'NECROMANCER',hp:2,mv:1,cc:'#e8dfc0',
+  necromancer:{name:'NECROMANCER',hp:2,mv:2,cc:'#e8dfc0',
     act:{n:'Raise',d:'Consume an adjacent wreck - yours or theirs - to raise it as a husk that fights for you'},
     pass:'Husks: 1 hp forever, rise exhausted, leave no wreck, never claim shrines',
     vets:{a:{n:'Gravecaller',d:'Raises wrecks up to 2 tiles away'},
           b:{n:'Bonelord',d:'Fresh husks move and act the turn they rise'}}},
+  mule:{name:'MULE',hp:3,mv:2,cc:'#c89b6e',
+    act:{n:'Haul',d:'Pick up an adjacent ally or any wreck; later, drop it on an adjacent tile. Cargo cannot be touched'},
+    pass:'If the Mule dies, a carried ally is dropped where it fell; a carried wreck is lost',
+    vets:{a:{n:'Warhorse',d:'Moves 3'},
+          b:{n:'Ambulance',d:'A carried ally heals 1 at the end of each of your turns'}}},
+  drummer:{name:'DRUMMER',hp:2,mv:2,cc:'#a4b0ff',
+    act:{n:'Rally',d:'An adjacent ally that already moved or acted gets to go again this turn'},
+    pass:'Drummers never dance to drums - a Drummer cannot be rallied',
+    vets:{a:{n:'Warhorn',d:'Rallies allies up to 2 tiles away'},
+          b:{n:'Second Wind',d:'Rallied allies also heal 1'}}},
 };
 const KKEYS=Object.keys(KITS);
 /* maps: rows listed top (r=6) to bottom (r=0). . floor # wall O pit S shrine */
@@ -206,7 +216,7 @@ function newGame(mapIdx,mode){
   return {phase:'place',cur:0,round:1,mapIdx,mode,ter,
     shrines:shr,units:[],structs:[],wrecks:[],nid:1,ev:[],over:null};
 }
-const unitAt=(st,c,r)=>st.units.find(u=>!u.dead&&u.c===c&&u.r===r);
+const unitAt=(st,c,r)=>st.units.find(u=>!u.dead&&!u.carried&&u.c===c&&u.r===r); // cargo is off-board
 const unitById=(st,id)=>st.units.find(u=>u.id===id);
 const structAt=(st,c,r)=>st.structs.find(s=>s.c===c&&s.r===r);
 const structById=(st,id)=>st.structs.find(s=>s.id===id);
@@ -218,15 +228,15 @@ const isVet=(u,v)=>u.vet===v;
 function mkUnit(st,team,k,c,r){
   const kd=KITS[k];
   const u={id:st.nid++,team,k,c,r,hp:kd.hp,mhp:kd.hp,moved:false,acted:false,
-    dead:false,vet:null,revUsed:false,chan:false};
+    dead:false,vet:null,revUsed:false,chan:false,carried:false,cargo:null};
   st.units.push(u);
   return u;
 }
-function unitMv(u){let m=KITS[u.k].mv;if(u.k==='juggernaut'&&isVet(u,'b'))m=2;return m}
+function unitMv(u){let m=KITS[u.k].mv;if(u.k==='juggernaut'&&isVet(u,'b'))m=2;if(u.k==='mule'&&isVet(u,'a'))m=3;return m}
 /* zone of control: tiles orthogonally adjacent to enemy juggernauts (ghosts immune) */
 function zocSet(st,team){
   const s=new Set();
-  for(const u of st.units)if(!u.dead&&u.team!==team&&u.k==='juggernaut')
+  for(const u of st.units)if(!u.dead&&!u.carried&&u.team!==team&&u.k==='juggernaut')
     for(const dk of DKEYS){const[dc,dr]=DIRS[dk],c=u.c+dc,r=u.r+dr;if(inb(c,r))s.add(ti(c,r))}
   return s;
 }
@@ -278,6 +288,21 @@ function die(st,u,cause){
   if(cause!=='pit'){
     if(u.k==='bomb'&&!u.spent){explode(st,u.c,u.r,u)}
     else if(!u.husk)st.wrecks.push({id:st.nid++,team:u.team,k:u.k,c:u.c,r:u.r}); // husks crumble
+  }
+  if(u.cargo){ // mule down: ally cargo drops where it fell (into a pit, it falls too); wrecks are lost
+    const cg=u.cargo;u.cargo=null;
+    if(cg.unit){
+      const t=unitById(st,cg.unit);
+      if(t){
+        t.carried=false;t.c=u.c;t.r=u.r;
+        if(cause==='pit'){t.hp=0;die(st,t,'pit')}
+        else{
+          st.ev.push({t:'drop',u:t.id,c:t.c,r:t.r});
+          const sct=structAt(st,t.c,t.r);
+          if(sct&&sct.type==='spike')hurt(st,t,1,{cause:'spike'});
+        }
+      }
+    }
   }
 }
 function hurtStruct(st,s,amt){
@@ -333,7 +358,7 @@ function shoveEnt(st,ent,dk,steps,opts){
     if(t===2){ // pit
       st.ev.push({t:'fall',[isW?'w':'u']:e.id,c:nc,r:nr});
       if(isW)st.wrecks=st.wrecks.filter(x=>x.id!==e.id);
-      else{e.c=nc;e.r=nr;e.hp=0;e.dead=true;e.chan=false;st.ev.push({t:'die',u:e.id,c:nc,r:nr,pit:1})}
+      else{e.c=nc;e.r=nr;e.hp=0;die(st,e,'pit')} // through die() so a mule's cargo goes down too
       return;
     }
     const sct=structAt(st,nc,nr);
@@ -393,7 +418,7 @@ function adjEnemy(st,u){
 }
 /* what can this unit's ability hit right now (for UI + AI) */
 function targetsFor(st,u){
-  const out=[];if(u.acted||u.dead)return out;
+  const out=[];if(u.acted||u.dead||u.carried)return out;
   const adj=[];for(const dk of DKEYS){const[dc,dr]=DIRS[dk];const c=u.c+dc,r=u.r+dr;if(inb(c,r))adj.push({dk,c,r})}
   if(u.k==='juggernaut'){
     for(const a of adj){const o=unitAt(st,a.c,a.r);if(o&&o.team!==u.team)out.push({c:a.c,r:a.r,kind:'bash',tid:o.id,dk:a.dk})}
@@ -469,6 +494,31 @@ function targetsFor(st,u){
     for(const w of st.wrecks){
       const d=man(u,w);
       if(d>=1&&d<=rng&&!unitAt(st,w.c,w.r))out.push({c:w.c,r:w.r,kind:'raise',wid:w.id});
+    }
+  }else if(u.k==='mule'){
+    if(!u.cargo){
+      for(const a of adj){
+        const o=unitAt(st,a.c,a.r);
+        if(o&&o.team===u.team)out.push({c:a.c,r:a.r,kind:'load',tid:o.id});
+        else if(!o){const w=wreckAt(st,a.c,a.r);if(w)out.push({c:a.c,r:a.r,kind:'load',wid:w.id})}
+      }
+    }else{
+      for(const a of adj){
+        if(st.ter[ti(a.c,a.r)]!==0)continue;
+        if(unitAt(st,a.c,a.r))continue;
+        const sct=structAt(st,a.c,a.r);
+        if(sct&&sct.type!=='spike')continue;
+        if(u.cargo.wreck&&wreckAt(st,a.c,a.r))continue; // no stacking a wreck on a wreck
+        out.push({c:a.c,r:a.r,kind:'unload'});
+      }
+    }
+  }else if(u.k==='drummer'){
+    const rng=isVet(u,'a')?2:1;
+    for(const o of st.units){
+      if(o.dead||o.carried||o.team!==u.team||o.id===u.id||o.k==='drummer')continue;
+      if(!(o.moved||o.acted))continue; // nothing to give back
+      const d=man(u,o);
+      if(d>=1&&d<=rng)out.push({c:o.c,r:o.r,kind:'rally',tid:o.id});
     }
   }
   return out;
@@ -562,6 +612,37 @@ function applyAct(st,uid,kind,args){
     const ready=isVet(u,'b');
     nu.moved=!ready;nu.acted=!ready;
     st.ev.push({t:'raise',u:nu.id,c:w.c,r:w.r});
+  }else if(kind==='load'){
+    if(u.cargo)return;
+    if(args.tid){
+      const t=unitById(st,args.tid);if(!t||t.dead||t.carried)return;
+      t.carried=true;t.chan=false;
+      u.cargo={unit:t.id};
+      st.ev.push({t:'load',u:t.id,c:t.c,r:t.r});
+    }else{
+      const w=wreckById(st,args.wid);if(!w)return;
+      st.wrecks=st.wrecks.filter(x=>x.id!==w.id);
+      u.cargo={wreck:{team:w.team,k:w.k}};
+      st.ev.push({t:'loadw',w:w.id,c:w.c,r:w.r});
+    }
+  }else if(kind==='unload'){
+    const cg=u.cargo;if(!cg)return;
+    u.cargo=null;
+    if(cg.unit){
+      const t=unitById(st,cg.unit);if(!t)return;
+      t.carried=false;t.c=args.c;t.r=args.r;
+      st.ev.push({t:'drop',u:t.id,c:args.c,r:args.r});
+      const sct=structAt(st,args.c,args.r);
+      if(sct&&sct.type==='spike')hurt(st,t,1,{cause:'spike'});
+    }else{
+      st.wrecks.push({id:st.nid++,team:cg.wreck.team,k:cg.wreck.k,c:args.c,r:args.r});
+      st.ev.push({t:'dropw',c:args.c,r:args.r});
+    }
+  }else if(kind==='rally'){
+    const t=unitById(st,args.tid);if(!t||t.dead||t.carried||t.k==='drummer')return;
+    t.moved=false;t.acted=false;
+    if(isVet(u,'b'))t.hp=Math.min(t.mhp,t.hp+1);
+    st.ev.push({t:'rally',u:t.id,c:t.c,r:t.r,hp:t.hp});
   }
 }
 function doMoveSim(st,uid,c,r,path){
@@ -594,9 +675,15 @@ function turretsFire(st,team){
 function endTurnSim(st){
   const team=st.cur;
   turretsFire(st,team);
+  for(const m of alive(st,team)){ // Ambulance: carried ally heals 1
+    if(m.k==='mule'&&isVet(m,'b')&&m.cargo&&m.cargo.unit){
+      const t=unitById(st,m.cargo.unit);
+      if(t&&!t.dead&&t.hp<t.mhp){t.hp++;st.ev.push({t:'heal',u:t.id,hp:t.hp,c:m.c,r:m.r,amt:1})}
+    }
+  }
   for(const u of alive(st,team)){
     const sh=shrineAt(st,u.c,u.r);
-    if(sh&&!u.husk){ // husks squat shrines but can never claim
+    if(sh&&!u.husk&&!u.carried){ // husks squat shrines but can never claim; cargo can't channel
       if(u.k==='ghost')claimShrine(st,u,sh);
       else if(!u.chan){u.chan=true;st.ev.push({t:'chan',u:u.id,c:u.c,r:u.r})}
     }else u.chan=false;
@@ -673,24 +760,27 @@ function placeUnit(st,team,k,c,r){
 }
 
 /* ============================ AI (team-parameterized, defaults to 1) ============================ */
-/* each kit lists its design counters; AI picks one at random for draft variety */
-const COUNTER={juggernaut:['shover','leaper','necromancer'],shover:['sniper'],sniper:['ghost','warper'],
-  ghost:['juggernaut'],bomb:['shover','warper'],engineer:['bomb','leaper'],
-  medic:['ghost','necromancer'],warper:['juggernaut'],leaper:['sniper','juggernaut'],
-  necromancer:['bomb']};
+/* each kit lists its design counters */
+const COUNTER={juggernaut:['shover','leaper','necromancer'],shover:['sniper','juggernaut'],
+  sniper:['ghost','warper','medic'],ghost:['juggernaut','engineer'],bomb:['shover','warper'],
+  engineer:['bomb','leaper'],medic:['ghost','necromancer'],warper:['juggernaut'],
+  leaper:['sniper','juggernaut'],necromancer:['bomb'],mule:['sniper','juggernaut'],
+  drummer:['ghost','bomb']};
+/* draft: countering their last pick weighs most, then a base priority, then real noise -
+   every kit is reachable and squads vary game to game */
+const DRAFTPRIO={juggernaut:2,shover:2,sniper:2,warper:1.5,medic:1.2,leaper:1,ghost:1,
+  mule:1.6,drummer:1.6,necromancer:0.6,engineer:0.6,bomb:0.6};
 function aiPickKit(st,tm){
   tm=tm===undefined?1:tm;
   const left=kitsLeft(st,tm);
-  const mine=st.units.filter(u=>u.team===tm).map(u=>u.k);
   const theirs=st.units.filter(u=>u.team!==tm);
-  if(theirs.length){
-    const last=theirs[theirs.length-1].k;
-    const avail=(COUNTER[last]||[]).filter(c=>left.includes(c)&&!mine.includes(c));
-    if(avail.length)return avail[Math.floor(Math.random()*avail.length)];
+  const counters=new Set(theirs.length?COUNTER[theirs[theirs.length-1].k]||[]:[]);
+  let best=left[0],bs=-9;
+  for(const k of left){
+    const s=(counters.has(k)?3:0)+(DRAFTPRIO[k]||1)+Math.random()*2.5;
+    if(s>bs){bs=s;best=k}
   }
-  for(const k of ['juggernaut','shover','sniper','warper','medic','leaper','ghost','necromancer','engineer','bomb'])
-    if(left.includes(k))return k;
-  return left[0];
+  return best;
 }
 function aiPickPlace(st,k,tm){
   tm=tm===undefined?1:tm;
@@ -717,14 +807,15 @@ function aiPickPlace(st,k,tm){
   return scored.length?scored[0].p:null;
 }
 const VETPREF={juggernaut:'a',shover:'a',engineer:'a',sniper:'b',bomb:'b',ghost:'a',medic:'a',
-  warper:'b',leaper:'b',necromancer:'b'};
+  warper:'b',leaper:'b',necromancer:'b',mule:'b',drummer:'b'};
 /* concave hp value: finishing a wounded unit is worth more than chipping a fresh one */
 const HPV=[0,26,40,50,58,64];
 /* how many enemies of `tm` could plausibly reach (c,r) next turn */
 function dangerAt(st,tm,c,r){
   let n=0;
   for(const e of st.units){
-    if(e.dead||e.team===tm||e.k==='medic'||e.k==='engineer'||e.k==='warper'||e.k==='necromancer')continue;
+    if(e.dead||e.carried||e.team===tm)continue;
+    if(e.k==='medic'||e.k==='engineer'||e.k==='warper'||e.k==='necromancer'||e.k==='mule'||e.k==='drummer')continue;
     const reach=KITS[e.k].mv+(e.k==='sniper'?4:e.k==='leaper'?2:1);
     if(Math.abs(e.c-c)+Math.abs(e.r-r)<=reach)n++;
   }
@@ -738,6 +829,7 @@ function aiScore(st,tm){
     if(u.dead)continue;
     const v=(HPV[Math.min(u.hp,5)]+40+(u.vet?35:0))*(u.husk?0.55:1); // husks are cheap bodies
     s+=u.team===tm?v:-v;
+    if(u.carried&&u.team===tm)s-=10; // an ally on the mule's back isn't fighting
   }
   for(const sh of st.shrines){
     if(sh.taken)continue;
@@ -761,7 +853,7 @@ function aiScore(st,tm){
 }
 /* best (move,act) for one unit, by simulation */
 function aiBestFor(st,uid){
-  const u=unitById(st,uid);if(!u||u.dead||u.acted)return null;
+  const u=unitById(st,uid);if(!u||u.dead||u.acted||u.carried)return null;
   const tm=u.team;
   const spots=[{c:u.c,r:u.r,path:null,spike:false}].concat(moveTiles(st,u));
   let best=null;
@@ -786,6 +878,7 @@ function aiBestFor(st,uid){
       if(op)applyAct(s2,uid,op.tg.kind,op.args);
       let sc=aiScore(s2,tm)+Math.random()*1.5;
       if(!op)sc-=2; // mild bias to act
+      if(op&&op.tg.kind==='rally')sc+=8; // a second action is worth more than the static score sees
       if(!best||sc>best.sc)best={sc,move:sp.path?sp:null,act:op?{kind:op.tg.kind,args:op.args}:null};
     }
   }
@@ -857,6 +950,7 @@ const SFX={
   warp:()=>tone(1400,480,0.14,'sine',0.07),
   leap:()=>tone(300,720,0.16,'triangle',0.09),
   raise:()=>{tone(120,300,0.32,'sawtooth',0.05);tone(90,220,0.32,'triangle',0.07)},
+  drum:()=>{tone(150,85,0.09,'square',0.13);setTimeout(()=>tone(180,95,0.1,'square',0.14),110)},
   vet:()=>{tone(520,520,0.12,'sine',0.1);setTimeout(()=>tone(660,660,0.12,'sine',0.1),110);setTimeout(()=>tone(990,990,0.22,'sine',0.12),220)},
   win:()=>{tone(520,520,0.12,'sine',0.1);setTimeout(()=>tone(660,660,0.12,'sine',0.1),110);setTimeout(()=>tone(880,880,0.25,'sine',0.12),220)},
   lose:()=>tone(220,60,0.7,'sawtooth',0.12),
@@ -932,11 +1026,13 @@ function updateDock(){
   for(const u of show){
     const kd=KITS[u.k];
     const b=document.createElement('button');
-    b.className='chip'+(G.sel===u.id?' sel':'')+(u.dead?' dead':(u.acted?' done':''));
+    b.className='chip'+(G.sel===u.id?' sel':'')+(u.dead?' dead':(u.acted||u.carried?' done':''));
     b.style.setProperty('--cc',kd.cc);
     b.innerHTML=`<b>${kd.name}</b><span class="hp">${u.dead?'':chipHearts(u)}</span>`+
-      (u.vet?`<span class="vet">👑</span>`:u.husk?`<span class="vet">💀</span>`:'');
-    b.onclick=()=>{if(G.busy||u.dead||!humanTurn||G.modal)return;SFX.tap();selectUnit(u.id)};
+      (u.vet?`<span class="vet">👑</span>`:u.husk?`<span class="vet">💀</span>`:u.carried?`<span class="vet">🧺</span>`:'');
+    b.onclick=()=>{if(G.busy||u.dead||!humanTurn||G.modal)return;
+      if(u.carried){toast('Riding the Mule - drop it to act');return}
+      SFX.tap();selectUnit(u.id)};
     chips.appendChild(b);
   }
   if(G.pending){pendingButtons(ab)}
@@ -968,6 +1064,9 @@ function updateDock(){
         if(u.k==='medic'&&isVet(u,'a'))vetTxt+=u.revUsed
           ?' <span style="color:var(--dim)">(revive spent)</span>'
           :' <span style="color:var(--dim)">(revive ready - stand beside a friendly wreck)</span>';
+        if(u.k==='mule')vetTxt+=u.cargo
+          ?` <span style="color:var(--dim)">(carrying ${u.cargo.unit?'your '+KITS[unitById(st,u.cargo.unit).k].name:'a '+KITS[u.cargo.wreck.k].name+' wreck'} - tap a tile beside you to drop)</span>`
+          :' <span style="color:var(--dim)">(nothing on its back)</span>';
         ab.innerHTML=`<div id="abhint" style="text-align:left"><span><b>${kd.act.n}:</b> ${kd.act.d}${vetTxt}</span></div>`;
       }
     }else{
@@ -1263,7 +1362,7 @@ function tapTile(c,r,pt){
   const u=G.sel?unitById(st,G.sel):null;
   const tapU=unitAt(st,c,r);
   const ownTap=!!(tapU&&human&&tapU.team===st.cur&&!tapU.dead);
-  if(human&&u&&!u.dead&&u.team===st.cur&&!u.acted){
+  if(human&&u&&!u.dead&&!u.carried&&u.team===st.cur&&!u.acted){
     const tgs=targetsFor(st,u).filter(t=>t.kind!=='build'||G.buildArm!=='off');
     let tg=tgs.find(t=>t.c===c&&t.r===r);
     if(!tg&&!ownTap)tg=snapTile(tgs,pt,L.ts*0.6); // never steal a tap on an own unit
@@ -1299,7 +1398,7 @@ $('bRetry').onclick=()=>{if(G.busy||!G.st)return;startGame(G.st.mapIdx,G.mode)};
 /* ============================ playback ============================ */
 function castSnap(){
   cast={units:{},wrecks:{}};
-  for(const u of G.st.units)if(!u.dead)cast.units[u.id]=Object.assign({},u,{fade:1,scale:1,fx:0,fy:0,flash:0});
+  for(const u of G.st.units)if(!u.dead&&!u.carried)cast.units[u.id]=Object.assign({},u,{fade:1,scale:1,fx:0,fy:0,flash:0});
   for(const w of G.st.wrecks)cast.wrecks[w.id]=Object.assign({},w,{fade:1,scale:1,fx:0,fy:0});
 }
 function playback(evts,done){
@@ -1311,7 +1410,7 @@ function playback(evts,done){
 function addFloat(c,r,txt,col){floaters.push({x:px(c)+L.ts/2,y:py(r)+L.ts*0.3,txt,col,age:0})}
 const DUR={walk:0.12,push:0.11,slam:0.12,fall:0.26,hurt:0.16,die:0.22,boom:0.26,shot:0.18,
   swing:0.09,build:0.16,heal:0.2,chan:0.3,claim:0.4,vet:0.4,place:0.2,crush:0.18,revive:0.3,
-  zap:0.12,leap:0.22,raise:0.32};
+  zap:0.12,leap:0.22,raise:0.32,load:0.16,loadw:0.16,drop:0.2,dropw:0.2,rally:0.3};
 function startStep(s){
   const cu=id=>cast.units[id],cw=id=>cast.wrecks[id];
   switch(s.t){
@@ -1320,6 +1419,13 @@ function startStep(s){
     case 'push':{const e=s.u!==undefined?cu(s.u):cw(s.w);s.dur=DUR.push;
       if(e){s.from={c:e.c,r:e.r};e.tc=s.c;e.tr=s.r}SFX.push();break}
     case 'zap':{s.dur=DUR.zap;parts.push({t:'vring',c:s.c,r:s.r,age:0,dur:0.35});SFX.warp();break}
+    case 'load':case 'loadw':case 'dropw':{s.dur=DUR[s.t];
+      parts.push({t:'puff',c:s.c,r:s.r,age:0,dur:0.3});SFX.push();break}
+    case 'rally':{const u=cu(s.u);s.dur=DUR.rally;
+      parts.push({t:'gold',c:s.c,r:s.r,age:0,dur:0.4});
+      addFloat(s.c,s.r,'RALLIED!','#ffc94d');
+      if(u&&s.hp!==undefined)u.hp=s.hp;
+      SFX.drum();break}
     case 'leap':{const u=cu(s.u);s.dur=DUR.leap;
       if(u){s.from={c:u.c,r:u.r};u.tc=s.c;u.tr=s.r;u.leaping=1}SFX.leap();break}
     case 'slam':{s.dur=DUR.slam;shakeT=0.15;SFX.slam();vib(15);break}
@@ -1349,9 +1455,9 @@ function startStep(s){
       parts.push({t:'gold',c:s.c,r:s.r,age:0,dur:0.5});
       addFloat(s.c,s.r,'VETERAN','#ffc94d');
       if(u){const su=unitById(G.st,s.u);if(su){u.vet=su.vet;u.hp=su.hp;u.mhp=su.mhp}}break}
-    case 'place':case 'revive':case 'raise':{s.dur=DUR[s.t];
+    case 'place':case 'revive':case 'raise':case 'drop':{s.dur=DUR[s.t];
       const su=unitById(G.st,s.u);
-      if(su&&!cast.units[s.u])cast.units[s.u]=Object.assign({},su,{fade:0,scale:0.3,fx:0,fy:0,flash:0,spawning:1});
+      if(su&&!cast.units[s.u])cast.units[s.u]=Object.assign({},su,{c:s.c,r:s.r,fade:0,scale:0.3,fx:0,fy:0,flash:0,spawning:1});
       if(s.t==='revive'){addFloat(s.c,s.r,'REVIVED','#8fe36e');SFX.heal()}
       else if(s.t==='raise'){addFloat(s.c,s.r,'RAISED','#b7ff8a');SFX.raise()}
       else SFX.place();
@@ -1365,13 +1471,16 @@ function endStep(s){
     case 'walk':{const u=cast.units[s.u];if(u){const l=s.path[s.path.length-1];u.c=l.c;u.r=l.r;u.fx=0;u.fy=0;u.walking=null}break}
     case 'push':{settle(s.u!==undefined?cast.units[s.u]:cast.wrecks[s.w]);break}
     case 'leap':{const u=cast.units[s.u];if(u){settle(u);u.scale=1;u.leaping=0}break}
+    case 'load':{delete cast.units[s.u];break}
+    case 'loadw':{delete cast.wrecks[s.w];break}
+    case 'dropw':{for(const w of G.st.wrecks)if(!cast.wrecks[w.id])cast.wrecks[w.id]=Object.assign({},w,{fade:1,scale:1,fx:0,fy:0});break}
     case 'fall':{if(s.u!==undefined)delete cast.units[s.u];else delete cast.wrecks[s.w];break}
     case 'die':{delete cast.units[s.u];
       for(const w of G.st.wrecks)if(!cast.wrecks[w.id])cast.wrecks[w.id]=Object.assign({},w,{fade:1,scale:1,fx:0,fy:0});
       break}
     case 'diew':{delete cast.wrecks[s.w];break}
     case 'swing':{const u=cast.units[s.u];if(u)u.lunge=null;break}
-    case 'place':case 'revive':case 'raise':{const u=cast.units[s.u];if(u){u.fade=1;u.scale=1;u.spawning=0}break}
+    case 'place':case 'revive':case 'raise':case 'drop':{const u=cast.units[s.u];if(u){u.fade=1;u.scale=1;u.spawning=0}break}
   }
 }
 function tickPB(dt){
@@ -1404,7 +1513,7 @@ function tickPB(dt){
   else if(s.t==='diew'){const w=cast.wrecks[s.w];if(w){w.fade=1-k}}
   else if(s.t==='swing'){const u=cast.units[s.u];
     if(u&&u.lunge){const m=Math.sin(k*Math.PI)*0.28;u.fx=u.lunge.dc*m;u.fy=u.lunge.dr*m}}
-  else if(s.t==='place'||s.t==='revive'||s.t==='raise'){const u=cast.units[s.u];if(u){u.fade=k;u.scale=0.3+0.7*k}}
+  else if(s.t==='place'||s.t==='revive'||s.t==='raise'||s.t==='drop'){const u=cast.units[s.u];if(u){u.fade=k;u.scale=0.3+0.7*k}}
   if(k>=1){endStep(s);pb.cur=null}
 }
 
@@ -1599,6 +1708,41 @@ function drawUnit(u,x,y,alpha,scale){
     ctx.beginPath();ctx.ellipse(0,-s*0.24,s*0.44,s*0.34,0,0,7);ctx.fill();
     if(!fl){ctx.fillStyle='#8dff7a';
       ctx.beginPath();ctx.arc(-s*0.17,-s*0.24,s*0.09,0,7);ctx.arc(s*0.17,-s*0.24,s*0.09,0,7);ctx.fill()}
+  }else if(u.k==='mule'){
+    // long low blob on four stub legs, big ears, cargo sack when loaded
+    ctx.fillStyle=dark;
+    for(const lx of[-0.62,-0.22,0.26,0.66]){rr(s*lx-s*0.09,s*0.45,s*0.18,s*0.5,s*0.08);ctx.fill()}
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.ellipse(s*0.08,s*0.02,s*0.92,s*0.58,0,0,7);ctx.fill();  // body
+    ctx.beginPath();ctx.ellipse(-s*0.88,-s*0.38,s*0.4,s*0.34,0,0,7);ctx.fill(); // head
+    ctx.fillStyle=dark; // ears
+    ctx.beginPath();ctx.ellipse(-s*1.02,-s*0.82,s*0.09,s*0.3,-0.35,0,7);ctx.fill();
+    ctx.beginPath();ctx.ellipse(-s*0.72,-s*0.84,s*0.09,s*0.3,0.25,0,7);ctx.fill();
+    if(!fl){ctx.fillStyle='#1d1812';
+      ctx.beginPath();ctx.arc(-s*0.95,-s*0.4,s*0.09,0,7);ctx.fill()}
+    if(u.cargo){ // sack on the back, tinted by what's inside
+      ctx.fillStyle='#8a6f4d';
+      ctx.beginPath();ctx.ellipse(s*0.3,-s*0.62,s*0.44,s*0.4,0,0,7);ctx.fill();
+      ctx.strokeStyle='#5c4a33';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(s*0.3,-s*0.98);ctx.lineTo(s*0.3,-s*0.26);ctx.stroke();
+      const ck=u.cargo.unit?(unitById(G.st,u.cargo.unit)||{}).k:u.cargo.wreck.k;
+      if(ck){ctx.fillStyle=KITS[ck].cc;ctx.beginPath();ctx.arc(s*0.3,-s*0.62,s*0.13,0,7);ctx.fill()}
+    }
+  }else if(u.k==='drummer'){
+    // round blob behind a big drum, two sticks up mid-beat
+    ctx.strokeStyle=fl?'#fff':'#e8dfc0';ctx.lineWidth=s*0.12;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-s*0.4,-s*0.3);ctx.lineTo(-s*0.75,-s*0.95);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(s*0.4,-s*0.3);ctx.lineTo(s*0.75,-s*0.95);ctx.stroke();
+    ctx.fillStyle=body;
+    ctx.beginPath();ctx.arc(0,-s*0.3,s*0.72,0,7);ctx.fill();
+    ctx.fillStyle=dark; // drum shell
+    rr(-s*0.68,s*0.1,s*1.36,s*0.78,s*0.14);ctx.fill();
+    ctx.fillStyle=fl?'#fff':'#f4ecd8'; // drum skin
+    ctx.beginPath();ctx.ellipse(0,s*0.1,s*0.68,s*0.2,0,0,7);ctx.fill();
+    ctx.strokeStyle=fl?'#fff':'#f4ecd8';ctx.lineWidth=2; // lacing
+    ctx.beginPath();ctx.moveTo(-s*0.5,s*0.24);ctx.lineTo(-s*0.2,s*0.8);ctx.moveTo(s*0.5,s*0.24);ctx.lineTo(s*0.2,s*0.8);ctx.stroke();
+    if(!fl){ctx.fillStyle='#1d1812';
+      ctx.beginPath();ctx.arc(-s*0.24,-s*0.4,s*0.11,0,7);ctx.arc(s*0.24,-s*0.4,s*0.11,0,7);ctx.fill()}
   }else{ // medic
     ctx.fillStyle=body;ctx.beginPath();ctx.arc(0,0,s,0,7);ctx.fill();
     ctx.fillStyle='#f4f0e6';ctx.beginPath();ctx.arc(s*0.55,-s*0.55,s*0.42,0,7);ctx.fill();
@@ -1681,6 +1825,13 @@ function drawHighlights(st){
       }else if(t.kind==='raise'){
         ctx.strokeStyle='#8dff7a';ctx.lineWidth=2.5;
         rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
+      }else if(t.kind==='load'||t.kind==='unload'){
+        ctx.strokeStyle='#c89b6e';ctx.lineWidth=2.5;
+        if(t.kind==='unload')ctx.setLineDash([5,4]);
+        rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();ctx.setLineDash([]);
+      }else if(t.kind==='rally'){
+        ctx.strokeStyle='#ffc94d';ctx.lineWidth=2.5;
+        rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
       }else{
         ctx.strokeStyle='#ff5c49';ctx.lineWidth=2.5;
         rr(px(t.c)+4,py(t.r)+4,ts-8,ts-8,ts*0.18);ctx.stroke();
@@ -1709,9 +1860,14 @@ function drawPending(){
       if(e.t==='hurt'&&e.u===u.id)dmg+=e.amt;
       if(e.t==='heal'&&e.u===u.id)hl+=e.amt;
     }
-    if(g&&!g.dead&&(g.c!==u.c||g.r!==u.r)){
-      arrow(px(u.c)+ts/2,py(u.r)+ts/2,px(g.c)+ts/2,py(g.r)+ts/2,'#ffffff88',3);
+    if(g&&!g.dead&&!g.carried&&(g.c!==u.c||g.r!==u.r||u.carried)){
+      const src=(u.carried&&G.sel&&unitById(st,G.sel))||u; // drops start at the mule
+      arrow(px(src.c)+ts/2,py(src.r)+ts/2,px(g.c)+ts/2,py(g.r)+ts/2,'#ffffff88',3);
       drawUnit(Object.assign({},g,{flash:0,chan:false}),px(g.c),py(g.r),0.5,1);
+    }
+    if(g&&!g.dead&&g.carried&&!u.carried){ // being picked up: arrow onto the mule
+      const m=G.sel?unitById(st2,G.sel):null;
+      if(m)arrow(px(u.c)+ts/2,py(u.r)+ts/2,px(m.c)+ts/2,py(m.r)+ts/2,'#c89b6ecc',3);
     }
     if(g&&g.dead){
       let dx=u.c,dy=u.r;
@@ -1778,7 +1934,7 @@ function draw(){
     for(const k in cast.units){const u=cast.units[k];drawUnit(u,px(u.c+(u.fx||0)),py(u.r+(u.fy||0)),u.fade,u.scale)}
   }else{
     for(const w of st.wrecks)drawWreck(w,px(w.c),py(w.r),1);
-    for(const u of st.units)if(!u.dead)drawUnit(u,px(u.c),py(u.r),1,1);
+    for(const u of st.units)if(!u.dead&&!u.carried)drawUnit(u,px(u.c),py(u.r),1,1);
     drawPending();
   }
   for(const p of parts){
