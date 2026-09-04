@@ -34,8 +34,8 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #dock{background:linear-gradient(#1c1610,#16120e);border-top:1px solid #3a2e20;
   padding:8px 10px calc(8px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:7px}
 #chips,#abil,#ctrl{width:100%;max-width:520px;margin:0 auto}
-#chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{flex:1;min-width:60px;background:var(--panel2);border-radius:12px;padding:6px 3px 5px;text-align:center;
+#chips{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.chip{background:var(--panel2);border-radius:12px;padding:6px 3px 5px;text-align:center;
   border:2px solid transparent;line-height:1.25;position:relative;transition:border-color .12s}
 .chip b{display:block;font-size:11px;letter-spacing:.6px;color:var(--cc,#fff)}
 .chip .hp{display:block;font-size:10px;letter-spacing:1.5px;color:#8fe36e;min-height:12px}
@@ -129,12 +129,12 @@ const TEAMS=[
   {name:'RED', body:'#ff7a55',dark:'#a03a24',glow:'#ff7a55'},
 ];
 const KITS={
-  bulwark:{name:'BULWARK',hp:3,mv:1,cc:'#c9d1e0',
+  juggernaut:{name:'JUGGERNAUT',hp:3,mv:1,cc:'#c9d1e0',
     act:{n:'Bash',d:'Hit an adjacent enemy for 1'},
     pass:'Zone of control: enemies stepping beside it must stop',
     vets:{a:{n:'Sentinel',d:'+1 max HP; counter-hits adjacent attackers for 1'},
-          b:{n:'Juggernaut',d:'Moves 2; Bash also shoves the target 1'}}},
-  ram:{name:'RAM',hp:2,mv:2,cc:'#ffc94d',
+          b:{n:'Bulldozer',d:'Moves 2; Bash also shoves the target 1'}}},
+  shover:{name:'SHOVER',hp:2,mv:2,cc:'#ffc94d',
     act:{n:'Shove',d:'Shove any adjacent unit or wreck 2 tiles. No damage - walls, pits and bodies do the hurting'},
     pass:'Can shove allies too - throw your own Bomb',
     vets:{a:{n:'Piledriver',d:'Shoves 3; victims smash through walls and builds'},
@@ -144,7 +144,7 @@ const KITS={
     pass:'Spikes hurt anyone entering; barricades block',
     vets:{a:{n:'Turretsmith',d:'Can build turrets: they shoot 1 down a lane each turn'},
           b:{n:'Fortifier',d:'Max 5 builds; barricades have 3 HP'}}},
-  lancer:{name:'LANCER',hp:2,mv:1,cc:'#7fe0d6',
+  sniper:{name:'SNIPER',hp:2,mv:1,cc:'#7fe0d6',
     act:{n:'Shoot',d:'Hit the first thing in a straight line, range 4. Not with an enemy adjacent'},
     pass:'Walls block shots; wrecks and spikes do not',
     vets:{a:{n:'Longbarrel',d:'Range 6; the shot pierces through its first victim'},
@@ -207,16 +207,17 @@ function mkUnit(st,team,k,c,r){
   st.units.push(u);
   return u;
 }
-function unitMv(u){let m=KITS[u.k].mv;if(u.k==='bulwark'&&isVet(u,'b'))m=2;return m}
-/* zone of control: tiles orthogonally adjacent to enemy bulwarks (ghosts immune) */
+function unitMv(u){let m=KITS[u.k].mv;if(u.k==='juggernaut'&&isVet(u,'b'))m=2;return m}
+/* zone of control: tiles orthogonally adjacent to enemy juggernauts (ghosts immune) */
 function zocSet(st,team){
   const s=new Set();
-  for(const u of st.units)if(!u.dead&&u.team!==team&&u.k==='bulwark')
+  for(const u of st.units)if(!u.dead&&u.team!==team&&u.k==='juggernaut')
     for(const dk of DKEYS){const[dc,dr]=DIRS[dk],c=u.c+dc,r=u.r+dr;if(inb(c,r))s.add(ti(c,r))}
   return s;
 }
 /* BFS with paths. Ghost passes through units (wraith: walls+barricades too).
-   Spikes and ZoC tiles can be entered but end movement. Can't stop on occupied tiles. */
+   Spikes, wrecks and ZoC tiles can be entered but end movement (wrecks hurt nobody).
+   Can't stop on unit-occupied tiles. */
 function moveTiles(st,u){
   const ghost=u.k==='ghost',wraith=ghost&&isVet(u,'b');
   const zoc=ghost?new Set():zocSet(st,u.team);
@@ -234,11 +235,11 @@ function moveTiles(st,u){
       const hardWall=(t===1)||(sct&&(sct.type==='barr'||sct.type==='turret'));
       if(hardWall&&!wraith)continue;
       const occ=unitAt(st,nc,nr),wrk=wreckAt(st,nc,nr);
-      if((occ||wrk)&&!ghost)continue;                     // ghosts pass through bodies
+      if(occ&&!ghost)continue;                            // ghosts pass through the living
       if(best[k2]!==undefined&&best[k2]<=d+1)continue;
       const np=path.concat([{c:nc,r:nr}]);
-      const canStop=!occ&&!wrk&&!hardWall;
-      const terminal=(sct&&sct.type==='spike')||zoc.has(k2);
+      const canStop=!occ&&!hardWall;
+      const terminal=(sct&&sct.type==='spike')||zoc.has(k2)||(wrk&&!ghost);
       if(canStop){best[k2]=d+1;out.push({c:nc,r:nr,path:np,spike:!!(sct&&sct.type==='spike')})}
       if(!terminal)q.push([nc,nr,d+1,np]);
     }
@@ -251,7 +252,7 @@ function hurt(st,u,amt,src){
   u.hp-=amt;
   st.ev.push({t:'hurt',u:u.id,amt,hp:u.hp,c:u.c,r:u.r});
   if(u.hp<=0&&!u.dead){die(st,u,src.cause||'hit')}
-  else if(u.k==='bulwark'&&isVet(u,'a')&&src.att&&!src.counter){
+  else if(u.k==='juggernaut'&&isVet(u,'a')&&src.att&&!src.counter){
     const a=unitById(st,src.att);
     if(a&&!a.dead&&a.team!==u.team&&man(a,u)===1)hurt(st,a,1,{att:u.id,counter:true});
   }
@@ -379,9 +380,9 @@ function adjEnemy(st,u){
 function targetsFor(st,u){
   const out=[];if(u.acted||u.dead)return out;
   const adj=[];for(const dk of DKEYS){const[dc,dr]=DIRS[dk];const c=u.c+dc,r=u.r+dr;if(inb(c,r))adj.push({dk,c,r})}
-  if(u.k==='bulwark'){
+  if(u.k==='juggernaut'){
     for(const a of adj){const o=unitAt(st,a.c,a.r);if(o&&o.team!==u.team)out.push({c:a.c,r:a.r,kind:'bash',tid:o.id,dk:a.dk})}
-  }else if(u.k==='ram'){
+  }else if(u.k==='shover'){
     for(const a of adj){
       const o=unitAt(st,a.c,a.r);if(o)out.push({c:a.c,r:a.r,kind:'shove',tid:o.id,dk:a.dk});
       else{const w=wreckAt(st,a.c,a.r);if(w)out.push({c:a.c,r:a.r,kind:'shove',wid:w.id,dk:a.dk})}
@@ -404,7 +405,7 @@ function targetsFor(st,u){
         if(unitAt(st,a.c,a.r)||structAt(st,a.c,a.r)||wreckAt(st,a.c,a.r)||shrineAt(st,a.c,a.r))continue;
         out.push({c:a.c,r:a.r,kind:'build'});
       }
-  }else if(u.k==='lancer'){
+  }else if(u.k==='sniper'){
     if(!adjEnemy(st,u))
       for(const dk of DKEYS){
         const hits=shootRay(st,u,dk);
@@ -535,7 +536,7 @@ function claimShrine(st,u,sh){
 }
 function applyVet(st,u,v){
   u.vet=v;u.needVet=false;
-  if(u.k==='bulwark'&&v==='a'){u.mhp+=1;u.hp+=1}
+  if(u.k==='juggernaut'&&v==='a'){u.mhp+=1;u.hp+=1}
   u.hp=u.mhp;
   st.ev.push({t:'vet',u:u.id,c:u.c,r:u.r});
 }
@@ -588,69 +589,93 @@ function placeUnit(st,team,k,c,r){
   return u;
 }
 
-/* ============================ AI (team 1) ============================ */
-const COUNTER={bulwark:'ram',ram:'lancer',lancer:'ghost',ghost:'bulwark',
-  bomb:'ram',engineer:'bomb',medic:'ghost'};
-function aiPickKit(st){
-  const left=kitsLeft(st,1);
-  const mine=st.units.filter(u=>u.team===1).map(u=>u.k);
-  const theirs=st.units.filter(u=>u.team===0);
+/* ============================ AI (team-parameterized, defaults to 1) ============================ */
+const COUNTER={juggernaut:'shover',shover:'sniper',sniper:'ghost',ghost:'juggernaut',
+  bomb:'shover',engineer:'bomb',medic:'ghost'};
+function aiPickKit(st,tm){
+  tm=tm===undefined?1:tm;
+  const left=kitsLeft(st,tm);
+  const mine=st.units.filter(u=>u.team===tm).map(u=>u.k);
+  const theirs=st.units.filter(u=>u.team!==tm);
   if(theirs.length){
     const last=theirs[theirs.length-1].k;
     const c=COUNTER[last];
     if(c&&left.includes(c)&&!mine.includes(c))return c;
   }
-  for(const k of ['bulwark','ram','lancer','medic','ghost','engineer','bomb'])
+  for(const k of ['juggernaut','shover','sniper','medic','ghost','engineer','bomb'])
     if(left.includes(k))return k;
   return left[0];
 }
-function aiPickPlace(st,k){
-  const legal=placeLegal(st,1);
-  const foes=alive(st,0);
+function aiPickPlace(st,k,tm){
+  tm=tm===undefined?1:tm;
+  const legal=placeLegal(st,tm);
+  const foes=alive(st,1-tm);
   const scored=legal.map(p=>{
     let s=0;
-    s+=p.r*3;                                     // prefer own (top) half
+    s+=(tm===1?p.r:H-1-p.r)*3;                    // prefer own half
     s-=Math.abs(p.c-2)*1.2;                       // slight center bias
     let dS=99;for(const sh of st.shrines)if(!sh.taken)dS=Math.min(dS,Math.abs(sh.c-p.c)+Math.abs(sh.r-p.r));
     s-=dS*1.5;
     let dF=99;for(const f of foes)dF=Math.min(dF,Math.abs(f.c-p.c)+Math.abs(f.r-p.r));
-    if(k==='lancer'||k==='engineer'||k==='medic')s+=Math.min(dF,6)*1.2; // backline
-    for(const m of alive(st,1))if(Math.abs(m.c-p.c)+Math.abs(m.r-p.r)===1)s+=1.5; // clump a little
+    if(k==='sniper'||k==='engineer'||k==='medic')s+=Math.min(dF,6)*1.2; // backline
+    if(k==='sniper'){ // needs open lanes to matter
+      let lanes=0;
+      for(const dk of DKEYS){const[dc,dr]=DIRS[dk];let c2=p.c,r2=p.r;
+        for(let i=0;i<4;i++){c2+=dc;r2+=dr;if(!inb(c2,r2)||st.ter[ti(c2,r2)]!==0)break;lanes++}}
+      s+=lanes*0.6;
+    }
+    for(const m of alive(st,tm))if(Math.abs(m.c-p.c)+Math.abs(m.r-p.r)===1)s+=1.5; // clump a little
     s+=Math.random()*2;
     return {p,s};
   }).sort((a,b)=>b.s-a.s);
   return scored.length?scored[0].p:null;
 }
-const VETPREF={bulwark:'a',ram:'a',engineer:'a',lancer:'b',bomb:'b',ghost:'a',medic:'a'};
-/* score a state from team 1's point of view */
-function aiScore(st){
+const VETPREF={juggernaut:'a',shover:'a',engineer:'a',sniper:'b',bomb:'b',ghost:'a',medic:'a'};
+/* concave hp value: finishing a wounded unit is worth more than chipping a fresh one */
+const HPV=[0,26,40,50,58,64];
+/* how many enemies of `tm` could plausibly reach (c,r) next turn */
+function dangerAt(st,tm,c,r){
+  let n=0;
+  for(const e of st.units){
+    if(e.dead||e.team===tm||e.k==='medic'||e.k==='engineer')continue;
+    const reach=KITS[e.k].mv+(e.k==='sniper'?4:1);
+    if(Math.abs(e.c-c)+Math.abs(e.r-r)<=reach)n++;
+  }
+  return n;
+}
+/* score a state from team tm's point of view */
+function aiScore(st,tm){
+  tm=tm===undefined?1:tm;
   let s=0;
   for(const u of st.units){
     if(u.dead)continue;
-    const v=(u.hp*22)+40+(u.vet?35:0);
-    s+=u.team===1?v:-v;
+    const v=HPV[Math.min(u.hp,5)]+40+(u.vet?35:0);
+    s+=u.team===tm?v:-v;
   }
   for(const sh of st.shrines){
     if(sh.taken)continue;
     const occ=unitAt(st,sh.c,sh.r);
-    if(occ){s+=occ.team===1?(occ.chan?55:38):-(occ.chan?55:38)}
-    let d0=99,d1=99;
+    if(occ){s+=(occ.team===tm?1:-1)*(occ.chan?70:38)}
+    let dMe=99,dFoe=99;
     for(const u of st.units){if(u.dead)continue;
       const d=Math.abs(u.c-sh.c)+Math.abs(u.r-sh.r);
-      if(u.team===1)d1=Math.min(d1,d);else d0=Math.min(d0,d);}
-    s+=(d0-d1)*2;
+      if(u.team===tm)dMe=Math.min(dMe,d);else dFoe=Math.min(dFoe,d);}
+    s+=(dFoe-dMe)*2;
   }
-  // pressure: closer to nearest enemy is mildly good
-  for(const u of alive(st,1)){
-    let d=99;for(const f of alive(st,0))d=Math.min(d,Math.abs(u.c-f.c)+Math.abs(u.r-f.r));
+  // pressure: closer to nearest enemy is mildly good; standing in reach of many, hurt, is not
+  for(const u of alive(st,tm)){
+    let d=99;for(const f of alive(st,1-tm))d=Math.min(d,Math.abs(u.c-f.c)+Math.abs(u.r-f.r));
     if(d<99)s-=d*1.1;
+    const dg=dangerAt(st,tm,u.c,u.r);
+    if(dg)s-=dg*(u.hp===1?7:u.hp===2?3:1.5);
   }
-  for(const x of st.structs)s+=x.team===1?6:-6;
+  for(const x of st.structs)s+=x.team===tm?6:-6;
   return s;
 }
 /* best (move,act) for one unit, by simulation */
 function aiBestFor(st,uid){
   const u=unitById(st,uid);if(!u||u.dead||u.acted)return null;
+  const tm=u.team;
   const spots=[{c:u.c,r:u.r,path:null,spike:false}].concat(moveTiles(st,u));
   let best=null;
   for(const sp of spots){
@@ -658,7 +683,7 @@ function aiBestFor(st,uid){
     const bu=unitById(base,uid);
     if(sp.path){doMoveSim(base,uid,sp.c,sp.r,sp.path)}
     if(bu.dead){ // walked onto spikes and died
-      const sc=aiScore(base)+Math.random();
+      const sc=aiScore(base,tm)+Math.random();
       if(!best||sc>best.sc)best={sc,move:sp.path?sp:null,act:null};
       continue;
     }
@@ -672,12 +697,38 @@ function aiBestFor(st,uid){
     for(const op of opts){
       const s2=clone(base);s2.ev=[];
       if(op)applyAct(s2,uid,op.tg.kind,op.args);
-      let sc=aiScore(s2)+Math.random()*1.5;
+      let sc=aiScore(s2,tm)+Math.random()*1.5;
       if(!op)sc-=2; // mild bias to act
       if(!best||sc>best.sc)best={sc,move:sp.path?sp:null,act:op?{kind:op.tg.kind,args:op.args}:null};
     }
   }
   return best;
+}
+/* apply a plan from aiBestFor to a state (used for order lookahead + harness) */
+function aiPlanApply(st,uid,plan){
+  if(plan.move)doMoveSim(st,uid,plan.move.c,plan.move.r,plan.move.path);
+  const u=unitById(st,uid);
+  if(u&&!u.dead&&plan.act)applyAct(st,uid,plan.act.kind,plan.act.args);
+  if(u)u.acted=true;
+}
+/* pick which unit should act next: greedy argmax, plus a 2-permutation check of the
+   top two plans (shove-then-shoot beats shoot-then-shove) */
+function aiPickPlan(st,cands){
+  const plans=[];
+  for(const u of cands){const b=aiBestFor(st,u.id);if(b)plans.push({u,plan:b})}
+  if(!plans.length)return null;
+  plans.sort((a,b)=>b.plan.sc-a.plan.sc);
+  if(plans.length>1){
+    const orderSc=(first,second)=>{
+      const s2=clone(st);s2.ev=[];
+      aiPlanApply(s2,first.u.id,first.plan);
+      const nb=aiBestFor(s2,second.u.id);
+      return nb?nb.sc:aiScore(s2,first.u.team);
+    };
+    const[pA,pB]=plans;
+    if(orderSc(pB,pA)>orderSc(pA,pB)+0.5)return pB;
+  }
+  return plans[0];
 }
 function aiClaimChoice(u){return VETPREF[u.k]||'a'}
 
@@ -820,7 +871,10 @@ function updateDock(){
         ab.appendChild(b);
         ab.insertAdjacentHTML('beforeend',`<div id="abhint">or tap a blue tile to move first</div>`);
       }else{
-        const vetTxt=u.vet?` · <b style="color:var(--gold)">${kd.vets[u.vet].n}</b>`:'';
+        let vetTxt=u.vet?` · <b style="color:var(--gold)">${kd.vets[u.vet].n}</b>`:'';
+        if(u.k==='medic'&&isVet(u,'a'))vetTxt+=u.revUsed
+          ?' <span style="color:var(--dim)">(revive spent)</span>'
+          :' <span style="color:var(--dim)">(revive ready - stand beside a friendly wreck)</span>';
         ab.innerHTML=`<div id="abhint" style="text-align:left"><span><b>${kd.act.n}:</b> ${kd.act.d}${vetTxt}</span></div>`;
       }
     }else{
@@ -979,12 +1033,9 @@ function aiTurn(){
       afterEvents(()=>nextFlow());
       return;
     }
-    let best=null,bu=null;
-    for(const u of cands){
-      const b=aiBestFor(st,u.id);
-      if(b&&(!best||b.sc>best.sc)){best=b;bu=u}
-    }
-    if(!best){bu=cands[0];bu.acted=true;setTimeout(step,60);return}
+    const pick=aiPickPlan(st,cands);
+    if(!pick){cands[0].acted=true;setTimeout(step,60);return}
+    const best=pick.plan,bu=pick.u;
     const doAct=()=>{
       const u=unitById(st,bu.id);
       if(!u||u.dead){setTimeout(step,120);return}
@@ -1041,9 +1092,9 @@ function showMenu(){
     <div class="card"><h3>HOW TO FIGHT</h3><ul class="rules">
       <li><b>Place 4 of 7</b> fighters, taking turns. Every pick is public - counter theirs.</li>
       <li>Each turn, every fighter may <b>move then act</b>. Undo until you end the turn.</li>
-      <li>Shove into <b>walls or bodies</b>: 1 damage. Into a <b>pit</b>: gone. The Ram shoves <b>allies too</b>.</li>
+      <li>Shove into <b>walls or bodies</b>: 1 damage. Into a <b>pit</b>: gone. The Shover shoves <b>allies too</b>.</li>
       <li>Stand on a <b>shrine</b> for one full enemy turn to claim it: full heal + a <b>veteran upgrade</b>. Ghosts claim instantly.</li>
-      <li>The dead leave <b>wrecks</b> that block and can be shoved. Medics can learn to revive them.</li>
+      <li>The dead leave <b>wrecks</b>: step on one and you stop there; they can be shoved. Medics can learn to revive them.</li>
       <li>Kill all four, or lead the count when <b>round ${MAXR}</b> is judged. No draws.</li></ul></div>
     <button class="bigbtn ghost" id="mMute">${MUTE?'🔇 Sound off':'🔊 Sound on'}</button>
     <div class="mini">v0.1 prototype</div>`;
@@ -1081,7 +1132,7 @@ function inspect(st,c,r){
     sct.type==='barr'?`<b>Barricade</b> (${sct.hp}hp): blocks movement and shots.`:
     `<b>Turret</b> (${sct.hp}hp): shoots the nearest enemy in a lane for 1 each turn.`);return true}
   const w=wreckAt(st,c,r);
-  if(w){showTip(`<b>Wreck</b> of a ${TEAMS[w.team].name} ${KITS[w.k].name}. Blocks the tile, can be shoved. A veteran Medic can revive it.`);return true}
+  if(w){showTip(`<b>Wreck</b> of a ${TEAMS[w.team].name} ${KITS[w.k].name}. Step on it and you must stop. Can be shoved. A <b>Reviver</b> medic beside it can raise it - once per game. Bombs and pit-falls leave no wreck.`);return true}
   const sh=st.shrines.find(x=>x.c===c&&x.r===r);
   if(sh){showTip(sh.taken?'A <b>spent shrine</b>. Its power is gone.':
     '<b>Shrine</b>: end your turn here and survive until your next to claim it - full heal and a veteran upgrade. Ghosts claim instantly.');return true}
@@ -1107,6 +1158,15 @@ function tapTile(c,r){
       const args=tg.kind==='build'?{c,r,bt:G.buildArm}:
         {tid:tg.tid,wid:tg.wid,dk:tg.dk,c:tg.c,r:tg.r};
       makePending(tg.kind,args,c+','+r);draw();return;
+    }
+    if(u.k==='medic'&&!unitAt(st,c,r)){
+      const w=wreckAt(st,c,r);
+      if(w&&man(u,{c,r})===1){
+        const why=!isVet(u,'a')?'Only a Reviver medic can revive wrecks':
+          u.revUsed?'Revive is once per game - already spent':
+          w.team!==u.team?'Only your own wrecks can be revived':null;
+        if(why)toast(why);
+      }
     }
     if(!u.moved){
       const mt=moveTiles(st,u).find(t=>t.c===c&&t.r===r);
@@ -1319,7 +1379,7 @@ function drawUnit(u,x,y,alpha,scale){
   const body=fl?'#ffffff':tc.body,dark=fl?'#ffffff':tc.dark;
   if(u.chan){ctx.strokeStyle='#ffc94d';ctx.lineWidth=3;ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.arc(0,0,s*1.35,0,7);ctx.stroke();ctx.setLineDash([])}
-  if(u.k==='bulwark'){
+  if(u.k==='juggernaut'){
     ctx.fillStyle=body;rr(-s,-s*1.05,2*s,1.7*s,s*0.35);ctx.fill();
     ctx.fillStyle=fl?'#fff':'#aab4c4';rr(-s*1.12,-s*0.1,2.24*s,s*0.95,s*0.22);ctx.fill();
     ctx.fillStyle=fl?'#fff':'#8b95a6';rr(-s*1.12,-s*0.1,2.24*s,s*0.3,s*0.15);ctx.fill();
@@ -1327,7 +1387,7 @@ function drawUnit(u,x,y,alpha,scale){
     ctx.beginPath();ctx.arc(-s*0.7,s*0.45,s*0.09,0,7);ctx.arc(s*0.7,s*0.45,s*0.09,0,7);ctx.fill();
     if(!fl){ctx.fillStyle='#1d1812';
       ctx.beginPath();ctx.arc(-s*0.3,-s*0.5,s*0.12,0,7);ctx.arc(s*0.3,-s*0.5,s*0.12,0,7);ctx.fill()}
-  }else if(u.k==='ram'){
+  }else if(u.k==='shover'){
     ctx.fillStyle=body;ctx.beginPath();ctx.arc(0,0,s,0,7);ctx.fill();
     ctx.strokeStyle=fl?'#fff':'#e8d9a0';ctx.lineWidth=s*0.28;ctx.lineCap='round';
     ctx.beginPath();ctx.arc(-s*0.75,-s*0.65,s*0.5,Math.PI*0.15,Math.PI*1.25);ctx.stroke();
@@ -1345,16 +1405,25 @@ function drawUnit(u,x,y,alpha,scale){
     ctx.beginPath();ctx.arc(s*1.08,s*0.75,s*0.18,Math.PI*0.8,Math.PI*2.2);ctx.stroke();
     if(!fl){ctx.fillStyle='#1d1812';
       ctx.beginPath();ctx.arc(-s*0.26,-s*0.14,s*0.11,0,7);ctx.arc(s*0.26,-s*0.14,s*0.11,0,7);ctx.fill()}
-  }else if(u.k==='lancer'){
-    ctx.fillStyle=body;
-    ctx.beginPath();ctx.moveTo(0,-s*1.1);ctx.lineTo(s*0.75,0);ctx.lineTo(0,s*1.1);ctx.lineTo(-s*0.75,0);ctx.closePath();ctx.fill();
-    ctx.strokeStyle=fl?'#fff':'#d8e8e6';ctx.lineWidth=s*0.14;ctx.lineCap='round';
-    ctx.beginPath();ctx.moveTo(-s*0.9,s*0.9);ctx.lineTo(s*1.05,-s*1.05);ctx.stroke();
-    ctx.fillStyle=fl?'#fff':'#d8e8e6';
-    ctx.beginPath();ctx.moveTo(s*1.05,-s*1.05);ctx.lineTo(s*0.6,-s*0.85);ctx.lineTo(s*0.85,-s*0.6);ctx.closePath();ctx.fill();
-    ctx.fillStyle=dark;rr(-s*0.5,-s*0.28,s,s*0.3,s*0.12);ctx.fill();
-    if(!fl){ctx.fillStyle='#e8f4f2';
-      ctx.beginPath();ctx.arc(-s*0.22,-s*0.13,s*0.09,0,7);ctx.arc(s*0.22,-s*0.13,s*0.09,0,7);ctx.fill()}
+  }else if(u.k==='sniper'){
+    ctx.strokeStyle=fl?'#fff':'#48605c';ctx.lineWidth=s*0.2;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(-s*0.7,s*0.8);ctx.lineTo(s*1.35,-s*1.05);ctx.stroke();
+    ctx.strokeStyle=fl?'#fff':'#d8e8e6';ctx.lineWidth=s*0.11;
+    ctx.beginPath();ctx.moveTo(s*0.72,-s*0.48);ctx.lineTo(s*1.35,-s*1.05);ctx.stroke();
+    ctx.fillStyle=fl?'#fff':'#48605c';ctx.beginPath();ctx.arc(s*0.55,-s*0.33,s*0.15,0,7);ctx.fill();
+    ctx.fillStyle=body;rr(-s*0.85,-s*0.6,1.7*s,1.5*s,s*0.5);ctx.fill();
+    ctx.fillStyle=dark;
+    ctx.beginPath();ctx.arc(0,-s*0.3,s*0.66,Math.PI*1.02,Math.PI*1.98);ctx.fill();
+    if(!fl){
+      ctx.fillStyle='#f4f0e6';ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.32,0,7);ctx.fill();
+      ctx.strokeStyle='#1d1812';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.32,0,7);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(s*0.24-s*0.32,-s*0.06);ctx.lineTo(s*0.24+s*0.32,-s*0.06);
+      ctx.moveTo(s*0.24,-s*0.06-s*0.32);ctx.lineTo(s*0.24,-s*0.06+s*0.32);ctx.stroke();
+      ctx.fillStyle='#1d1812';ctx.beginPath();ctx.arc(s*0.24,-s*0.06,s*0.11,0,7);ctx.fill();
+      ctx.strokeStyle='#1d1812';ctx.lineWidth=s*0.09;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(-s*0.46,-s*0.06);ctx.lineTo(-s*0.2,-s*0.06);ctx.stroke();
+    }
   }else if(u.k==='bomb'){
     ctx.fillStyle=fl?'#fff':'#33333d';ctx.beginPath();ctx.arc(0,s*0.12,s*0.95,0,7);ctx.fill();
     ctx.fillStyle=body;rr(-s*0.95,s*0.05,1.9*s,s*0.32,s*0.16);ctx.fill();
@@ -1577,6 +1646,7 @@ window.DBG={G,startGame,tapTile,doEndTurn,selectUnit,makePending,commitPending,
   st:()=>G.st,aiBestFor,moveTiles,targetsFor,applyAct,placeLegal,newGame,
   placeUnit,endTurnSim,pendingClaims,claimShrine,applyVet,checkWin,judge,
   kitsLeft,alive,unitById,doMoveSim,aiPickKit,aiPickPlace,aiClaimChoice,
+  aiScore,aiPlanApply,aiPickPlan,isVet,clone,
   unitAt,structAt,wreckAt,shrineAt,KITS,MAPS};
 </script>
 </body>
