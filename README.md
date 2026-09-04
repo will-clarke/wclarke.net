@@ -100,9 +100,11 @@ sink again into "unfinished concepts" at *that* room's centre);
 `'-1,1'` the tech blog; `'0,1'` intuition (every post from the
 sibling repo, via `/intuition.json`); `'-1,-1'` the workshop (inside
 it: `'-1,-1|-1,1'` the shed, née homelab). Top-level plaques include
-`'-1,0'` culprit, `'2,-2'` classiccult, `'2,0'` recurr, `'2,-1'`
-mini-level and `'0,-2'` the generated music (the two games also appear
-in the games room - promotion here doesn't remove them from it). The FILMS / BOOKS / PLAYED arrays after `SEED_CONTENT` fill
+`'-1,0'` culprit, `'2,-2'` classiccult, `'2,0'` autograph, `'2,-1'`
+recursive-levels, `'-2,1'` wallflower and `'0,-2'` the generated music (the
+promoted games also appear in the games room - promotion here doesn't
+remove them from it; `'0,-1'`, `'-2,0'` and `'-2,2'` stay procedural
+because easter eggs hang off them). The FILMS / BOOKS / PLAYED arrays after `SEED_CONTENT` fill
 their rooms via `fillSection` (called from `index.html`). Easter-egg cells hide in the procedural wilds (end of
 `SEED_CONTENT`); their ancestor paths are hash-verified deep (every
 ancestor is a section or hashes below the `isDeep` threshold), so don't

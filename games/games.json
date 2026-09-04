@@ -92,7 +92,7 @@
     },
     {
       "slug": "mini-level",
-      "name": "Mini Levels",
+      "name": "Recursive-Levels",
       "accent": "#3f9bf4",
       "tagline": "Sokoban that contains itself. One block on the board is a shrunken copy of the whole level - push it around, or step in through its door and you are back in the room you just left, one size down. Walk out through the outer wall instead and the level becomes a giant around you, with a second self already copying every move you make. Voids eat whatever you drop in them, boxes ride in and out of the nest with you, and every level has a par to beat."
     },
@@ -110,7 +110,7 @@
     },
     {
       "slug": "recurr",
-      "name": "Recurr",
+      "name": "Autograph",
       "accent": "#ff7ac2",
       "tagline": "Design one tiny mark that is made of itself - tap cells to cycle self and other, hold to invert into ink or anti. Match the fractal in as few cells as par, reverse-engineer a random mark, or fuse two grids with a boolean operator."
     },

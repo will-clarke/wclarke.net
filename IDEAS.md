@@ -8,7 +8,7 @@ repo (`organised/ideas/wclarke-net-honeycomb-content.md`).
 ## Decisions that override older versions of this file
 
 - The sokoban variants live **in the games room**, not at the top level.
-  Only recurr, drip and polyhedra are promoted out of their rooms.
+  Only autograph, drip and polyhedra are promoted out of their rooms.
 - classiccult is a top-level tile at `(2,-2)` - it earned it by being alive.
 - No war-stories room in the homelab: one throwaway "things die on a rota"
   cell. Lots dies; no ceremonies.
